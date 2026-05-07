@@ -32,8 +32,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-AIRTABLE_PERSONAL_ACCESS_TOKEN=pats3mU1cGRVZXvfb.0da25d1ec295263056e938035370d1b9e0981659bbcf5e6a615ea48bc16b1805
-AIRTABLE_BASE_ID=appBbL0mVKkMw5wIb
 
 # vercel
 .vercel
