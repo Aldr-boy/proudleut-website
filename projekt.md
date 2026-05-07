@@ -14,15 +14,20 @@
 
 **Was ist proudleut?**
 
-proudleut.com ist ein kuratiertes Liveband-Verzeichnis mit direktem Anfrageweg zur Band
-für den deutschsprachigen (DACH) Markt. Die Seite hilft Veranstaltern dabei, die richtige
-Liveband für ihr Event zu finden – nicht über einen Algorithmus, nicht über ein anonymes
-Buchungssystem, sondern über kuratierten Content, klare Profilseiten und den persönlichen
+proudleut.com ist ein Liveband-Verzeichnis mit direktem Anfrageweg zur Band für den
+deutschsprachigen (DACH) Markt. Die Seite hilft Veranstaltern dabei, die richtige Liveband
+für ihr Event zu finden – nicht über einen Algorithmus, nicht über ein anonymes
+Buchungssystem, sondern über klare Profilseiten, sinnvolle Filter und den persönlichen
 Matchmaker-Ansatz von Xandi (Alexander Dressler).
 
+Xandi kennt die Szene. Er weiß, welche Bands für welche Anlässe passen – aus Erfahrung als
+Booking-Manager, nicht als Musikkritiker. proudleut ist kein Türsteher, der 80% aussortiert.
+Es ist eine Orientierungshilfe mit Überblick: viele Bands, aber mit dem Gefühl, dass man
+hier schnell das Richtige findet.
+
 proudleut ist keine klassische Booking-Plattform mit Provision, Postfach-Routing oder
-Account-Logik. Die Plattform schafft Orientierung, Vertrauen und Sichtbarkeit. Der Kontakt
-zur Band bleibt direkt.
+Account-Logik. Die Plattform schafft Orientierung, Vertrauen und Sichtbarkeit.
+Der Kontakt zur Band bleibt direkt.
 
 **Was gebaut wird:**
 
@@ -39,9 +44,10 @@ sind die primäre Referenz. Der Aufbau erfolgt in Phasen.
 
 **Warum relevant:**
 
-proudleut positioniert sich bewusst als Gegenentwurf zu großen, generischen
-Eventplattformen (wie eventpeppers). Die Plattform ist kleiner, persönlicher und stärker
-von Erfahrung geprägt – ein „Feinkostladen" statt Supermarkt.
+proudleut positioniert sich bewusst als Gegenentwurf zu großen, anonymen
+Eventplattformen (wie eventpeppers). Nicht weil es weniger Bands hat, sondern weil es
+sich anders anfühlt: persönlicher, übersichtlicher, hilfreicher. Ein Ort, an dem man sich
+gut aufgehoben fühlt – nicht erschlagen von Masse.
 
 ---
 
@@ -49,7 +55,7 @@ von Erfahrung geprägt – ein „Feinkostladen" statt Supermarkt.
 
 - Veranstaltern die schnelle, sichere Bandauswahl ermöglichen
 - Bands eine hochwertige Visitenkarte und Sichtbarkeit geben
-- Xandi als glaubwürdigen Kurator und Matchmaker positionieren
+- Xandi als erfahrenen Matchmaker mit Szeneüberblick positionieren
 - Organische Sichtbarkeit über SEO, strukturierte Daten und lokale Suchanfragen aufbauen
 - Die Plattform für zukünftige Erweiterungen (neue Kategorien, neue Regionen) vorbereiten
 - Den bestehenden Workflow mit Airtable und Make erhalten, aber technisch sauberer anbinden
@@ -64,13 +70,13 @@ von Erfahrung geprägt – ein „Feinkostladen" statt Supermarkt.
 - Firmen, die eine Band für Firmenfeier oder Business Event buchen wollen
 - Gemeinden, Vereine, Stadtfeste (Festzelt, Kirchweih, Bürgerfest)
 - Gastronomie und Eventlocations (Gala, Biergarten)
-- Mentalität: Sie wollen Qualität, Verlässlichkeit und eine persönliche Empfehlung –
-  kein Scrollen durch hunderte unbekannte Bands
+- Mentalität: Sie wollen nicht durch hunderte unbekannte Bands scrollen. Sie wollen jemanden,
+  der den Markt kennt und ihnen hilft, schnell das Passende zu finden.
 
 **Sekundär – Bands:**
 
-- Livebands im DACH-Raum, die gelistet sein wollen
-- Bands, die von Xandi empfohlen werden und von der Sichtbarkeit profitieren
+- Livebands im DACH-Raum, die Sichtbarkeit und einen direkten Anfrageweg wollen
+- Bands, die von Xandis Erfahrung als Booking-Manager profitieren
 - Sie sehen proudleut als Ergänzung zu ihrer eigenen Website, nicht als Ersatz
 
 ---
@@ -79,33 +85,64 @@ von Erfahrung geprägt – ein „Feinkostladen" statt Supermarkt.
 
 Die Seite soll:
 
-- **Warm, kuratiert und vertrauenswürdig** wirken
-- Das Gefühl geben: *„Hier hat jemand vorausgedacht für mich"*
-- Xandis Persönlichkeit und Expertise sichtbar machen – ohne aufdringlich zu sein
+- **Warm, übersichtlich und vertrauenswürdig** wirken
+- Das Gefühl geben: *„Hier kenne ich mich aus – hier werde ich fündig"*
+- Viele Bands zeigen, ohne dass es sich nach Masse anfühlt
+- Xandis Erfahrung und Szenekenntnis sichtbar machen – ohne Selbstdarstellung
 - Professionell, aber nicht corporate – nahbar, aber nicht amateurhaft
-- Nach Plattform aussehen, aber nach persönlicher Auswahl funktionieren
+- Nach Plattform aussehen, aber nach persönlicher Begleitung anfühlen
 
 Sie soll auf keinen Fall:
 
 - Generisch oder austauschbar wirken
 - Wie ein KI-generiertes Template aussehen
 - Kalt, technisch oder seelenlos sein
-- Wie eine Massenplattform wirken (kein eventpeppers-Feeling)
-- Den Eindruck erwecken, dass proudleut eine anonyme Vermittlungs- oder Provisionsplattform ist
+- Wie eine anonyme Massenplattform wirken (kein eventpeppers-Feeling)
+- Den Eindruck erwecken, dass proudleut eine Provisions- oder Buchungsplattform ist
+- Wie ein elitärer Türsteher wirken, der Bands nach Geschmack aussortiert
 - Überladen oder unübersichtlich sein
 
 **Der interne Leitspruch:**
 
-„Außen Plattform. Innen Kurator."
+„Außen Plattform. Innen Überblick."
 
-**Produktbegriff intern:**
+---
 
-Wenn möglich nicht von „Booking-Plattform" sprechen, sondern von:
+## Positionierung: Was Xandi wirklich ist
 
-- kuratiertem Liveband-Verzeichnis
-- direktem Anfrageweg zur Band
-- Matchmaker-Einstieg für Veranstalter
-- Plattform für Orientierung und Sichtbarkeit
+Xandi ist kein Musikkritiker und kein Qualitätsprüfer.
+Er ist jemand, der die Szene kennt – als Booking-Manager, der täglich mit Bands und
+Veranstaltern arbeitet.
+
+Das ist die ehrliche Stärke von proudleut:
+
+- **Nicht:** „Ich hab alles persönlich geprüft und nur das Beste ausgewählt"
+- **Sondern:** „Ich kenne den Markt, ich hab den Überblick, und ich helfe dir zu finden,
+  was zu dir passt"
+
+Das erlaubt **viele Bands** – mit dem Gefühl: hier bin ich gut aufgehoben.
+
+Dieser Unterschied muss sich in allen Texten, CTAs und im „Über mich"-Block widerspiegeln.
+
+---
+
+## Produktbegriff – Sprachregelung
+
+**Im Frontend vermeiden:**
+- „kuratiert" / „kuratiertes Verzeichnis" → klingt nach Türsteher-Mentalität
+- „Booking-Plattform" → suggeriert Provision und Postfach-Routing
+- „Wir empfehlen nur die Besten" → nicht belegbar, nicht ehrlich
+
+**Stattdessen verwenden:**
+- „Ich kenne die Szene" / „Xandi kennt den Markt"
+- „Orientierung für Veranstalter"
+- „Der direkte Weg zur richtigen Band"
+- „Liveband-Verzeichnis mit persönlichem Matchmaker-Ansatz"
+- „Hier findest du, was zu deinem Event passt"
+- „Viele Bands. Gute Orientierung. Direkter Kontakt."
+
+**Intern (in Docs) darf „kuratiert" als Shorthand verwendet werden** –
+im Frontend-Code, in Headlines, CTAs und Fließtexten aber vermeiden.
 
 ---
 
@@ -116,8 +153,8 @@ Wenn möglich nicht von „Booking-Plattform" sprechen, sondern von:
 1. Kategorie-Seiten (Festzelt, Gala, Hochzeit, Firmenfeier & Business Event) –
    Haupteinstieg für Veranstalter per Google-Suche
 2. Bandprofil – Visitenkarte der Band, Conversion-Seite für Direktkontakt
-3. Homepage – Überblick, Vertrauensaufbau, Einstieg in die Kategorien
-4. Über mich / Xandi – Matchmaker-Identität, Vertrauen, Persönlichkeit
+3. Homepage – Überblick, Orientierung, Einstieg in die Kategorien
+4. Über mich / Xandi – Matchmaker-Identität, Szenekenntnis, Vertrauen
 5. Blog / Ratgeber – SEO, Kontext und Entscheidungshilfe
 
 **Wichtige Funktionen:**
@@ -126,7 +163,7 @@ Wenn möglich nicht von „Booking-Plattform" sprechen, sondern von:
 - Bandprofil mit direktem Kontaktweg zur Band (kein Mittelsmann)
 - „Ähnliche Bands"-Empfehlung auf jedem Profil
 - Blog / Content für SEO und Wissensaufbau
-- Saubere interne Verlinkung zwischen Bandprofilen, Kategorien und relevanten Kontextseiten
+- Saubere interne Verlinkung zwischen Bandprofilen, Kategorien und redaktionellen Inhalten
 
 **Wichtige Conversion-Ziele:**
 
@@ -141,6 +178,7 @@ Wenn möglich nicht von „Booking-Plattform" sprechen, sondern von:
 - „Passt diese Band zu meinem Anlass, Budget und Publikum?"
 - „Wer steckt hinter proudleut, und kann ich dem vertrauen?"
 - „Wie komme ich mit der Band in Kontakt?"
+- „Muss ich über proudleut buchen oder kann ich direkt anfragen?"
 
 ---
 
@@ -170,8 +208,7 @@ Wenn möglich nicht von „Booking-Plattform" sprechen, sondern von:
 - Design: von Webflow-Template zu eigenem, warmem Charakter
 - Strukturierte Daten (Schema.org) für bessere Auffindbarkeit
 - Weniger bewegliche Teile: Whalesync und Webflow fallen weg
-- Sauberere Daten-Normalisierung zwischen Airtable und Frontend
-- Klare Bildstrategie für stabile, performante Bildauslieferung
+- Positionierung: ehrlicher, persönlicher, weniger nach „Plattform"
 
 **Was bewusst erhalten bleibt:**
 
@@ -192,7 +229,7 @@ Wenn möglich nicht von „Booking-Plattform" sprechen, sondern von:
 - Airtable (read-only, Banddatenbank)
 - Vercel
 - Make (bleibt unberührt)
-- GitHub: Aldr-boy/[Repository eintragen]
+- GitHub: Aldr-boy/proudleut-website
 
 ---
 
@@ -208,11 +245,8 @@ Wenn möglich nicht von „Booking-Plattform" sprechen, sondern von:
 /fuer-bands                → Für Bands (Sanity)
 ```
 
-**Wichtig:**
-
 Vor dem Domainumzug muss geprüft werden, welche bestehenden Webflow-URLs erhalten bleiben
-oder per 301-Redirect sauber auf neue URLs umgeleitet werden. Details stehen in
-`migration-notes.md` unter „SEO-Migration / Redirect-Strategie".
+oder per 301-Redirect umgeleitet werden. Details → `migration-notes.md`.
 
 ---
 
@@ -228,7 +262,6 @@ oder per 301-Redirect sauber auf neue URLs umgeleitet werden. Details stehen in
   - `/blog/` – Wissensaufbau, Cluster-Strategie
 - Structured Data: `MusicGroup`, `ItemList`, `CollectionPage`, `WebSite`, `Organization`, `Person`
 - `sameAs`-Verlinkung zwischen Bandprofilen und externen Band-Websites ist gewollt
-- Interne Verlinkung über „Ähnliche Bands", Kategorie-Zuordnung und passende redaktionelle Inhalte
 - Keine künstlich aufgeblähten SEO-Texte; Nutzerklarheit geht vor Keyword-Füllung
 
 ---
@@ -239,11 +272,12 @@ oder per 301-Redirect sauber auf neue URLs umgeleitet werden. Details stehen in
 
 Kurz:
 
-- Warm, kuratiert, vertrauenswürdig
+- Warm, übersichtlich, vertrauenswürdig
+- Viele Bands – aber mit dem Gefühl, gut aufgehoben zu sein
 - Keine generische Plattform-Optik
 - Lila bleibt als Markenfarbe, aber bewusster eingesetzt
 - Bandkarten-Grid bleibt das Herzstück der Kategorie-Seiten
-- Xandis Persönlichkeit darf sichtbar sein
+- Xandis Persönlichkeit und Szenekenntnis dürfen sichtbar sein
 - Bandfotos tragen die emotionale Wirkung der Seite
 
 ---
@@ -253,17 +287,17 @@ Kurz:
 Texte sollen:
 
 - Klar, glaubwürdig und nahbar klingen
-- Kompetenz zeigen, ohne abzuheben
-- Zur Zielgruppe passen: Veranstalter, die eine gute Entscheidung treffen wollen
+- Szenekenntnis und Erfahrung zeigen – ohne Selbstbeweihräucherung
+- Zur Zielgruppe passen: Veranstalter, die schnell eine gute Entscheidung treffen wollen
 - Den direkten Kontakt zur Band verständlich machen
-- proudleut als Orientierungshilfe und persönliche Vorauswahl erklären
+- proudleut als Orientierungshilfe erklären, nicht als Qualitätsfilter
 
 Vermeiden:
 
-- Generische Marketingfloskeln ("Ihre perfekte Band für jeden Anlass")
+- „Nur die Besten" / „handverlesen" / „exklusiv ausgewählt" → nicht belegbar
+- „kuratiert" im Frontend → klingt nach Türsteher
+- Generische Marketingfloskeln („Ihre perfekte Band für jeden Anlass")
 - Austauschbare KI-Formulierungen
-- Zu formelle oder zu werbliche Sprache
-- Floskeln, die auf jeder Event-Plattform stehen könnten
 - Begriffe, die proudleut wie eine Provisions-/Buchungsplattform wirken lassen
 
 ---
@@ -273,10 +307,10 @@ Vermeiden:
 - **Primäres Ziel:** Veranstalter findet passende Band und nimmt direkt Kontakt auf
 - **Wichtigste Hürden abbauen:**
   - „Passt die Band zu meinem Event?" → Kategorie-Filter, Bandprofil-Details
-  - „Kann ich der Plattform vertrauen?" → Xandi als Kurator sichtbar machen
+  - „Kann ich der Plattform vertrauen?" → Xandis Erfahrung und Szenekenntnis sichtbar machen
   - „Wie funktioniert das?" → Klarer Prozess auf Homepage und Kategorie-Seiten
-  - „Muss ich über proudleut buchen?" → Nein, direkter Kontakt zur Band; proudleut gibt Orientierung
-- Kein Postfach-Routing, keine Provision – das ist ein USP und muss verständlich kommuniziert werden
+  - „Muss ich über proudleut buchen?" → Nein, direkter Kontakt; proudleut gibt Orientierung
+- Kein Postfach-Routing, keine Provision – das ist ein USP und muss kommuniziert werden
 
 ---
 
@@ -290,61 +324,41 @@ Vermeiden:
 - Performance hat Vorrang: ISR, optimierte Bilder, minimale Client-JS
 - Rohdaten aus Airtable werden nie direkt in UI-Komponenten verwendet, sondern zuerst normalisiert
 - Airtable-Attachment-URLs werden nicht als dauerhaft stabile öffentliche Bildquelle behandelt
+- „kuratiert" im Frontend-Code, in Texten und CTAs **nicht verwenden** – intern als Shorthand okay
 
 ---
 
 ## Startstrategie / MVP
 
-Der Neubau startet nicht mit der vollständigen Homepage, sondern mit einem technischen
-Durchstich. Erst wenn Datenfluss, Bildstrategie und Deployment bewiesen sind, werden
-umfangreiche Seiten und Designsystem ausgebaut.
-
 **Phase 1A – Technischer Durchstich:**
-
 - Next.js-Projekt steht
 - Airtable-Verbindung funktioniert read-only
-- Eine echte Band wird über `/band/[slug]` geladen
-- Airtable-Daten werden über eine Normalisierungsfunktion in einen stabilen `Band`-Type gemappt
+- Eine echte Band wird über `/band/[slug]` geladen und normalisiert
 - Bildstrategie ist geklärt oder bewusst temporär gelöst
 - Vercel-Build läuft
 
 **Phase 1B – Grundsystem:**
-
-- Sanity-Grundschemas
-- Layout, Navigation, Footer
-- erste Kategorie-Seite
-- erste Bandkarten-Logik
+- Sanity-Grundschemas, Layout, Navigation, Footer
+- Erste Kategorie-Seite + Bandkarten-Logik
 
 **Phase 2 – Kernseiten:**
-
-- Bandprofil-Seiten
-- Kategorie-Seiten mit Filterlogik
-- Homepage
+- Bandprofil-Seiten, Kategorie-Seiten mit Filterlogik, Homepage
 
 **Phase 3 – Inhalte & SEO:**
-
-- Sanity-Inhalte befüllen
-- Structured Data
-- Sitemap, robots.txt
-- Redirect-Strategie
-- On-Demand-Revalidierung prüfen
+- Sanity-Inhalte befüllen, Structured Data, Sitemap, Redirects
 
 **Phase 4 – Ablösung Webflow:**
-
-- Staging prüfen
-- Domainumzug
-- Webflow-Abo erst nach stabiler Livephase kündigen
-- Whalesync-Abo erst nach stabiler Livephase kündigen
+- Staging → Domainumzug → Webflow + Whalesync kündigen
 
 ---
 
 ## Besondere Hinweise
 
-- Die Ähnliche-Bands-Felder (`similar_1/2/3`) in Airtable sind Textfelder (kein Linked Record).
-  Matching erfolgt über Bandname-Vergleich; Fallback auf Tag-Matching wenn leer.
-- Die Geo-Hierarchie in Airtable (PLZ → Ort → Landkreis → Regierungsbezirk → Bundesland)
-  ist für regionale Filter und Local SEO sehr wertvoll – sorgfältig nutzen.
+- Die Ähnliche-Bands-Felder (`similar_1/2/3`) sind Textfelder (kein Linked Record).
+  Matching über Bandname-Vergleich; Fallback auf Tag-Matching wenn leer.
+- Die Geo-Hierarchie (PLZ → Ort → Landkreis → Regierungsbezirk → Bundesland) ist für
+  regionale Filter und Local SEO sehr wertvoll.
 - Xandi betreibt proudleut als Kleinunternehmer (§19 UStG) – keine Umsatzsteuer-Ausweisung
   in automatisierten E-Mails oder Rechnungen.
 - `search_tokens_all`, `filter_tags_regio`, `event_keys` in Airtable sind Webflow-Hilfskonstrukte
-  und können ignoriert werden – im neuen Stack nicht verwenden.
+  – im neuen Stack ignorieren.

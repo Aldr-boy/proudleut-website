@@ -48,7 +48,7 @@ Airtable (Bands)          Sanity (Redaktionell)
 
 | Seitentyp | Airtable | Sanity |
 |-----------|----------|--------|
-| Homepage | Featured Bands (optional) | Hero-Text, Explainer, Testimonials, FAQ, CTAs |
+| Homepage | Featured Bands (optional) | Hero-Text, Hero-Mosaik, Explainer, Testimonials, FAQ, CTAs |
 | Kategorie-Seite `/veranstaltung/[slug]` | Band-Liste (gefiltert) | Kategorie-Name, Hero-Bild, Beschreibungstext, Airtable-Mapping |
 | Bandprofil `/band/[slug]` | Alle Banddaten | – |
 | Blog `/blog/[slug]` | – | Artikel-Content |
@@ -154,35 +154,81 @@ Im Frontend soll mit klaren Begriffen gearbeitet werden: `name`, `slug`, `shortD
 
 ---
 
-## Bildstrategie / Airtable Attachments
+## Bildstrategie
 
-Airtable-Attachment-URLs dürfen nicht als dauerhaft stabile öffentliche Bildquelle für die
-Website behandelt werden. Bilder aus Airtable müssen deshalb bewusst behandelt werden.
+Bilder kommen bei proudleut aus zwei Quellen – für jede gilt eine klare Regel.
 
-**Grundregel:**
+---
 
-- In Phase 1A wird geprüft, wie Attachment-URLs aus der Airtable API konkret ankommen.
-- Vor finalem Einsatz auf Live-Seiten muss eine stabile Bildstrategie festgelegt sein.
-- UI-Komponenten sollen nicht direkt rohe Airtable-Attachment-URLs kennen.
-- Bilddaten laufen ebenfalls durch die Normalisierungsschicht.
+### Quelle 1: Hero-Mosaik → Sanity Assets (entschieden)
 
-**Mögliche Strategien:**
+Die Bilder für das Homepage-Mosaik leben in Sanity. Keine offene Frage mehr.
 
-1. **Temporär für den technischen Durchstich:**
-   Airtable-Bild-URLs nur lokal/staging verwenden, um Datenfluss und Layout zu prüfen.
+**Warum Sanity für den Hero:**
+- Stabile CDN-URLs – kein Risiko wie bei Airtable-Attachments
+- Automatische Bildoptimierung über Sanity Image Pipeline
+- Xandi kann Fotos im Sanity Studio tauschen – ohne Code, ohne Deploy
+- Der Hero ist redaktioneller Content, kein Bandprofil-Datum → gehört nach Sanity
 
-2. **Stabile Spiegelung in ein CDN / Asset-System:**
-   Airtable-Attachments werden in einen stabilen Bildspeicher gespiegelt, z. B. Sanity Assets,
-   Cloudinary, S3/R2 oder ein vergleichbarer Dienst.
+**Wie es funktioniert:**
+1. Xandi wählt 12–16 starke Bandfotos aus (Vielfalt: Anlass, Stil, Region)
+2. Upload direkt im Sanity Studio unter `Homepage → Hero-Mosaik`
+3. Next.js holt die Bilder per GROQ-Query aus Sanity
+4. Foto tauschen → im Studio erledigt, live in Minuten, kein Code-Eingriff nötig
 
-3. **Eigene Proxy-/Caching-Route:**
-   Next.js lädt Bilder kontrolliert serverseitig und cached sie. Nur sinnvoll, wenn die
-   Caching- und Revalidierungslogik sauber gelöst wird.
+**Auswahlkriterien für das Hero-Mosaik:**
+- Keine zwei Fotos derselben Band direkt nebeneinander
+- Mischung aus Nahaufnahme, Bühne, Publikum und Atmosphäre
+- Mischung aus Anlässen: Hochzeit, Festzelt, Firmenfeier, Gala
+- Mischung aus Stilen: Blasmusik, Partyband, Hochzeitsband, moderne Eventband
+- Nicht zu viele helle Tageslichtbilder – das Mosaik muss auf dunklem Grund tragen
+- Keine Logos, Flyer, Pressebilder oder Studio-Portraits im Mosaik
+- Jedes Bild muss auch klein noch wirken; schwache Bilder lieber nicht verwenden
+
+**Sanity-Schema** (im `homepage`-Singleton):
+```typescript
+{
+  name: 'heroMosaic',
+  title: 'Hero-Mosaik Bilder',
+  type: 'array',
+  of: [{ type: 'image', options: { hotspot: true } }],
+  description: '12–16 Bandfotos für das Mosaik. Vielfalt zeigen: Anlass, Stil, Region.',
+  validation: Rule => Rule.min(8).max(20)
+}
+```
+
+**Was nicht passieren darf:**
+- Keine Hero-Bilder aus dem `/public`-Ordner des Repos
+- Keine rohen Airtable-Attachment-URLs im Hero
+
+---
+
+### Quelle 2: Bandprofilbilder → Airtable (mit Vorsicht)
+
+Für Bandprofile (Hero-Bild, Thumbnail, Gallery) kommen Bilder aus Airtable.
+Airtable-Attachment-URLs sind aber nicht dauerhaft stabile öffentliche Bildquellen.
+
+**Grundregeln:**
+- UI-Komponenten kennen niemals rohe Airtable-Attachment-URLs direkt
+- Bilddaten laufen durch die Normalisierungsschicht (`normalizeImage()` → `ImageAsset`)
+- In Phase 1A wird geprüft, wie Attachment-URLs aus der API konkret ankommen
+- Vor dem Live-Gang muss die Stabilität der URLs bewiesen oder eine Lösung gefunden sein
+
+**Strategien für Bandbilder (Entscheidung nach Phase 1A):**
+
+1. **Temporär für den Durchstich:**
+   Airtable-Bild-URLs lokal/staging verwenden um Datenfluss und Layout zu prüfen.
+
+2. **Next.js Image mit Airtable-Domain-Whitelist (bevorzugt wenn URLs stabil):**
+   Airtable-Domain in `next.config.js` als erlaubte Bildquelle eintragen.
+   Next.js optimiert die Bilder automatisch – einfachste Lösung.
+
+3. **Sanity-Spiegelung (wenn URLs instabil):**
+   Bandbilder einmalig in Sanity Assets hochladen. Aufwand: einmalig pro Band.
 
 **Vorläufige Empfehlung:**
-
-Für den Start: nicht überoptimieren, aber das Risiko nicht verdrängen. Phase 1A soll den
-Datenfluss beweisen. Danach wird entschieden, ob eine CDN-/Asset-Spiegelung nötig ist.
+Phase 1A beweist den Datenfluss. Danach konkrete Entscheidung für Bandbilder.
+Hero-Mosaik ist bereits entschieden: Sanity.
 
 ---
 
@@ -244,6 +290,14 @@ Editierbarer Content der Homepage.
     { name: 'heroHeadline', type: 'string' },
     { name: 'heroSubline', type: 'string' },
     { name: 'heroCta', type: 'string' },
+    {
+      name: 'heroMosaic',
+      title: 'Hero-Mosaik Bilder',
+      type: 'array',
+      of: [{ type: 'image', options: { hotspot: true } }],
+      description: '12–16 Bandfotos für das Homepage-Mosaik. Vielfalt zeigen: Anlass, Stil, Region.',
+      validation: Rule => Rule.min(8).max(20)
+    },
     { name: 'explainerTitle', type: 'string' },
     { name: 'explainerSteps', type: 'array' },
     { name: 'trustLogos', type: 'array' },
