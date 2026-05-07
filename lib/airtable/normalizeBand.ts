@@ -7,30 +7,34 @@ type RawBandFields = {
   'Slug'?: string;
   'Webflow Status'?: string;
   // Tippfehler im Airtable-Feldnamen ist hier bewusst gekapselt
-  'Short Descripton /...'?: string;
+  'Short Descripton / Subheadline'?: string;
   'Main Text'?: string;
   'Meta Description'?: string;
   'Hauptkategorie/Bandart'?: string;
+  // Linked Record – gibt Record-IDs zurück, nicht lesbare Namen.
+  // Phase 1A: event_keys wird stattdessen verwendet (siehe parseEventKeys).
+  // TODO Phase 2: PAT um Veranstaltungstypen-Tabelle erweitern, dann ID→Name-Lookup einbauen.
   'Veranstaltungstypen'?: string[];
+  'event_keys'?: string;
   'Main IMG - Hero'?: AirtableAttachment[];
   'Main IMG - Thumbnail'?: AirtableAttachment[];
-  'Main IMG - Alt-Text'?: string;
+  'Main IMG Alt-Text'?: string;
   'Gallery'?: AirtableAttachment[];
   'Bandlogo'?: AirtableAttachment[];
   'Website Link'?: string;
   'YouTube Video Link'?: string;
-  'PLZ'?: string;
+  'PLZ'?: unknown;
   // Lookup-Felder kommen als Array aus der Airtable API
-  'Orte (from Orte-Master)'?: string[];
+  'orte (from Orte-Master)'?: string[];
   'landkreise (from Orte-Master)'?: string[];
   'regierungsbezirk (from Orte-Master)'?: string[];
-  'bundesland (from AT-PLZ Referenz)'?: string[];
+  'bundesland (from Orte-Master)'?: string[];
   'Info - Bandgröße'?: string;
   'Info - Konstellation'?: string;
   'Info - Brautentführung'?: string;
   'Info - Gagenniveau'?: string;
   'Info - Moderation'?: string;
-  'Info - Mögliche...'?: string;
+  'Info - Mögliche Spieldauer'?: string;
   'Info - So feiern wir Hochzeit'?: string;
   'Social - Facebook'?: string;
   'Social - Instagram'?: string;
@@ -77,10 +81,38 @@ function normalizeUrl(value?: unknown): string | undefined {
   }
 }
 
+// Sonderzeichen-Mapping für Airtable event_keys Slugs (Webflow-Konvention)
+const EVENT_KEY_OVERRIDES: Record<string, string> = {
+  'firmenfeier-business-event': 'Firmenfeier & Business Event',
+  'staedtische-veranstaltung': 'Städtische Veranstaltung',
+  'buergerfest': 'Bürgerfest',
+  'oeffentliche-veranstaltung': 'Öffentliche Veranstaltung',
+};
+
+function slugToDisplayName(slug: string): string {
+  if (EVENT_KEY_OVERRIDES[slug]) return EVENT_KEY_OVERRIDES[slug];
+  return slug
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Phase 1A: event_keys als Workaround für Veranstaltungstypen (Linked Record).
+// event_keys enthält kommagetrennte Slugs aus Webflow-Ära, z.B. "festzelt, hochzeit".
+// TODO Phase 2: Durch ID→Name-Lookup gegen Veranstaltungstypen-Tabelle ersetzen.
+function parseEventKeys(raw?: string): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map(slugToDisplayName);
+}
+
 export function normalizeBand(record: RawAirtableBandRecord): Band {
   const f = record.fields;
   const name = str(f['Bandname']) ?? 'Unbekannte Band';
-  const altText = str(f['Main IMG - Alt-Text']) ?? `Livefoto von ${name}`;
+  const altText = str(f['Main IMG Alt-Text']) ?? `Livefoto von ${name}`;
 
   const heroImage = normalizeImage(f['Main IMG - Hero']?.[0], altText);
   const thumbnailImage = normalizeImage(
@@ -92,7 +124,7 @@ export function normalizeBand(record: RawAirtableBandRecord): Band {
   // Fallback-Kette: Hero → Thumbnail → erstes Gallery-Bild
   const resolvedHeroImage = heroImage ?? thumbnailImage ?? gallery[0];
 
-  let shortDescription = str(f['Short Descripton /...']);
+  let shortDescription = str(f['Short Descripton / Subheadline']);
   if (!shortDescription) {
     const desc = str(f['Main Text']);
     if (desc) {
@@ -106,7 +138,7 @@ export function normalizeBand(record: RawAirtableBandRecord): Band {
     slug: str(f['Slug']) ?? '',
     status: normalizeStatus(f['Webflow Status']),
     category: str(f['Hauptkategorie/Bandart']),
-    eventTypes: f['Veranstaltungstypen'] ?? [],
+    eventTypes: parseEventKeys(f['event_keys']),
     shortDescription,
     description: str(f['Main Text']),
     metaDescription: str(f['Meta Description']),
@@ -118,10 +150,10 @@ export function normalizeBand(record: RawAirtableBandRecord): Band {
     gallery,
     location: {
       postalCode: str(f['PLZ']),
-      city: f['Orte (from Orte-Master)']?.[0],
+      city: f['orte (from Orte-Master)']?.[0],
       district: f['landkreise (from Orte-Master)']?.[0],
       administrativeRegion: f['regierungsbezirk (from Orte-Master)']?.[0],
-      state: f['bundesland (from AT-PLZ Referenz)']?.[0],
+      state: f['bundesland (from Orte-Master)']?.[0],
       country: 'Deutschland',
     },
     weddingInfo: {
@@ -130,7 +162,7 @@ export function normalizeBand(record: RawAirtableBandRecord): Band {
       kidnappingBride: normalizeBoolean(f['Info - Brautentführung']),
       feeRange: str(f['Info - Gagenniveau']),
       moderation: normalizeBoolean(f['Info - Moderation']),
-      possiblePlaytimes: str(f['Info - Mögliche...']),
+      possiblePlaytimes: str(f['Info - Mögliche Spieldauer']),
       weddingDescription: str(f['Info - So feiern wir Hochzeit']),
     },
     socialLinks: {

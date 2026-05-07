@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getBandBySlug } from '@/lib/airtable/queries';
+import { MarkdownText } from '@/components/MarkdownText';
 
 // ISR: Seite wird on-demand gecacht und alle 5 Minuten revalidiert.
 // generateStaticParams wird erst in Phase 2 mit Rate-Limiting ergänzt.
@@ -78,7 +79,7 @@ export default async function BandPage({ params }: Props) {
       {band.description && (
         <section>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Über die Band</h2>
-          <p style={{ lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>{band.description}</p>
+          <MarkdownText text={band.description} />
         </section>
       )}
     </main>
