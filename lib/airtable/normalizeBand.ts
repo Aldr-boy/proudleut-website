@@ -53,8 +53,13 @@ export type RawAirtableBandRecord = {
 
 function str(value?: unknown): string | undefined {
   if (value == null) return undefined;
+  // Linked Record Arrays nie als Text rendern
+  if (Array.isArray(value)) return undefined;
   const s = typeof value === 'string' ? value : String(value);
-  return s.trim() || undefined;
+  const trimmed = s.trim();
+  // Airtable Record-IDs (rec + 10+ alphanumerische Zeichen) filtern
+  if (/^rec[A-Za-z0-9]{10,}$/.test(trimmed)) return undefined;
+  return trimmed || undefined;
 }
 
 function normalizeStatus(value?: string): Band['status'] {
