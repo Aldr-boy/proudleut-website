@@ -40,6 +40,7 @@ export type Band = {
 
   category?: string;
   eventTypes: string[];
+  categorySlugs?: string[];
 
   shortDescription?: string;
   description?: string;

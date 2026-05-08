@@ -11,11 +11,9 @@ type RawBandFields = {
   'Main Text'?: string;
   'Meta Description'?: string;
   'Hauptkategorie/Bandart'?: string;
-  // Linked Record – gibt Record-IDs zurück, nicht lesbare Namen.
-  // Phase 1A: event_keys wird stattdessen verwendet (siehe parseEventKeys).
-  // TODO Phase 2: PAT um Veranstaltungstypen-Tabelle erweitern, dann ID→Name-Lookup einbauen.
+  // Linked Record – liefert Record-IDs aus der Veranstaltungen-Tabelle.
+  // Auflösung zu lesbaren Namen erfolgt über den eventTypeMap-Parameter.
   'Veranstaltungstypen'?: string[];
-  'event_keys'?: string;
   'Main IMG - Hero'?: AirtableAttachment[];
   'Main IMG - Thumbnail'?: AirtableAttachment[];
   'Main IMG Alt-Text'?: string;
@@ -50,6 +48,8 @@ export type RawAirtableBandRecord = {
   createdTime: string;
   fields: RawBandFields;
 };
+
+export type EventTypeEntry = { displayName: string; slug: string };
 
 function str(value?: unknown): string | undefined {
   if (value == null) return undefined;
@@ -86,35 +86,27 @@ function normalizeUrl(value?: unknown): string | undefined {
   }
 }
 
-// Sonderzeichen-Mapping für Airtable event_keys Slugs (Webflow-Konvention)
-const EVENT_KEY_OVERRIDES: Record<string, string> = {
-  'firmenfeier-business-event': 'Firmenfeier & Business Event',
-  'staedtische-veranstaltung': 'Städtische Veranstaltung',
-  'buergerfest': 'Bürgerfest',
-  'oeffentliche-veranstaltung': 'Öffentliche Veranstaltung',
-};
-
-function slugToDisplayName(slug: string): string {
-  if (EVENT_KEY_OVERRIDES[slug]) return EVENT_KEY_OVERRIDES[slug];
-  return slug
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+function resolveEventTypes(
+  rawIds?: string[],
+  eventTypeMap?: Map<string, EventTypeEntry>
+): { eventTypes: string[]; categorySlugs: string[] } {
+  if (!rawIds?.length || !eventTypeMap) return { eventTypes: [], categorySlugs: [] };
+  const eventTypes: string[] = [];
+  const categorySlugs: string[] = [];
+  for (const id of rawIds) {
+    const entry = eventTypeMap.get(id);
+    if (entry) {
+      eventTypes.push(entry.displayName);
+      categorySlugs.push(entry.slug);
+    }
+  }
+  return { eventTypes, categorySlugs };
 }
 
-// Phase 1A: event_keys als Workaround für Veranstaltungstypen (Linked Record).
-// event_keys enthält kommagetrennte Slugs aus Webflow-Ära, z.B. "festzelt, hochzeit".
-// TODO Phase 2: Durch ID→Name-Lookup gegen Veranstaltungstypen-Tabelle ersetzen.
-function parseEventKeys(raw?: string): string[] {
-  if (!raw?.trim()) return [];
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map(slugToDisplayName);
-}
-
-export function normalizeBand(record: RawAirtableBandRecord): Band {
+export function normalizeBand(
+  record: RawAirtableBandRecord,
+  eventTypeMap?: Map<string, EventTypeEntry>
+): Band {
   const f = record.fields;
   const name = str(f['Bandname']) ?? 'Unbekannte Band';
   const altText = str(f['Main IMG Alt-Text']) ?? `Livefoto von ${name}`;
@@ -137,13 +129,19 @@ export function normalizeBand(record: RawAirtableBandRecord): Band {
     }
   }
 
+  const { eventTypes, categorySlugs } = resolveEventTypes(
+    f['Veranstaltungstypen'],
+    eventTypeMap
+  );
+
   return {
     id: record.id,
     name,
     slug: str(f['Slug']) ?? '',
     status: normalizeStatus(f['Webflow Status']),
     category: str(f['Hauptkategorie/Bandart']),
-    eventTypes: parseEventKeys(f['event_keys']),
+    eventTypes,
+    categorySlugs,
     shortDescription,
     description: str(f['Main Text']),
     metaDescription: str(f['Meta Description']),
