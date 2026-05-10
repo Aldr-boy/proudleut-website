@@ -72,6 +72,8 @@ export type Band = {
   location: BandLocation;
   weddingInfo?: WeddingInfo;
   socialLinks: SocialLinks;
+  socialMediaStats?: SocialMediaStats;
+  referenceEvents: ReferenceEvent[];
   similarBands: SimilarBandReferences;
 };
 ```
@@ -178,6 +180,102 @@ Mapping:
 | `instagram` | `Social - Instagram` |
 | `spotify` | `Social - Spotify` |
 | `youtube` | `Social - YouTube` |
+
+---
+
+## Frontend-Type: `SocialMediaStats`
+
+```typescript
+export type SocialMediaStats = {
+  igFollowers?: number;
+  igFollowing?: number;
+  fbFollowers?: number;
+  fbFollowing?: number;
+  ytSubscribers?: number;
+};
+```
+
+Mapping:
+
+| Frontend-Feld | Airtable-Feld | Hinweis |
+|---|---|---|
+| `igFollowers` | `IG_Followers` | aus Tabelle „Social Media Index", Lookup über Bandname |
+| `igFollowing` | `IG_Following` | |
+| `fbFollowers` | `FB_Followers` | |
+| `fbFollowing` | `FB_Following` | |
+| `ytSubscribers` | `YT_Subs` | |
+
+**Regeln:**
+
+- Nur Plattformen anzeigen, bei denen ein Wert > 0 vorhanden ist
+- Keine leeren Platzhalter für fehlende Plattformen
+- Follower-Zahlen menschenfreundlich formatieren (z. B. `1.322` statt `1322`,
+  ab 10.000 optional `10,3k`)
+- Keine Wertung im UI – die Zahl ist Information, kein Ranking
+- Kein Vergleich zwischen Bands – jede Band zeigt nur ihre eigenen Werte
+- `igFollowing` und `fbFollowing` werden nicht im UI angezeigt, können aber
+  für interne Qualitäts-/Aktivitätsbewertung genutzt werden
+
+**Hinweis zur Datenqualität:**
+
+Der Lookup über Bandname ist für den Start pragmatisch, aber nicht ideal.
+Langfristig sollte die Zuordnung über einen stabilen Schlüssel erfolgen, z. B. `slug`
+oder eine eindeutige Band-ID, damit Umbenennungen oder abweichende Schreibweisen
+keine falschen Zuordnungen erzeugen.
+
+---
+
+## Frontend-Type: `ReferenceEvent`
+
+```typescript
+export type ReferenceEvent = {
+  eventName: string;
+  venue?: string;
+  city?: string;
+  year?: number;
+};
+```
+
+**Datenquelle:** Neues Airtable-Feld (noch anzulegen).
+
+**Empfohlene Airtable-Umsetzung:**
+
+Option A – Einfach (für den Start):
+Ein Textfeld `Referenz-Events` mit zeilenweiser Eingabe in einer klaren,
+leicht parsebaren Struktur:
+
+```txt
+Gillamoos | Gillamoos | Abensberg | 2024
+Dult Regensburg | Dultplatz | Regensburg | 2023
+Stadthalle Germering | Stadthalle Germering | Germering | 2024
+```
+
+Empfohlenes Format pro Zeile:
+
+```txt
+Event-Name | Venue | Stadt | Jahr
+```
+
+Parsing im Frontend über `normalizeReferenceEvents()`. Wenn eine Zeile nicht sauber
+geparst werden kann, wird sie nicht für JSON-LD verwendet. Optional kann sie im UI
+als normaler Text erscheinen, aber nicht als strukturierte Daten.
+
+Option B – Strukturiert (bei Bedarf später):
+Eigene Airtable-Tabelle `Reference Events` mit Feldern: Event-Name, Venue, Stadt,
+Jahr, verknüpft mit der Band über Linked Record. Sauberer, aber mehr Pflegeaufwand.
+
+**Empfehlung:** Mit Option A starten. Für ~150 Bands reicht ein Textfeld.
+Wenn das Feature sich bewährt und Bands aktiv Referenzen liefern, auf Option B
+wechseln.
+
+**Regeln:**
+
+- Nur anzeigen, wenn mindestens ein Referenz-Event vorhanden ist
+- Keine leere „Referenz-Events"-Section auf Bandprofilen
+- Reihenfolge: neueste zuerst (nach Jahr, falls vorhanden)
+- Maximal 5–8 Events anzeigen, auch wenn mehr vorhanden sind
+- Im UI wie eine ruhige Auflistung, keine Karten oder aufwändige Darstellung
+- Wording: „Referenzen" oder „Aufgetreten bei" – nicht „Highlights" oder „Erfolge"
 
 ---
 

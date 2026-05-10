@@ -44,10 +44,26 @@ Was „modern" wirkt, aber nicht zur Identität passt, ist falsch.
   filtern fühlt sich leicht an, nicht technisch
 - **GetYourGuide** – starke Hero-Momente pro Kategorie; klarer nächster Schritt immer sichtbar.
   Achtung: Bewertungssysteme, Preisfilter und Buchungsflow sind nicht übertragbar und nicht gewollt.
+- **Trivago** – Meta-Vergleicher, kein Buchungsportal. Gleiche Grundidee wie proudleut:
+  Orientierung geben und weiterleiten, nicht selbst die Transaktion sein.
+  Was wir übernehmen:
+  - **Programmatische SEO-Seiten**: automatisch generierte Landing Pages pro Stadt/Kategorie
+    („Hotels Hamburg" → „Hochzeitsband München", „Partyband Bayern"). Jede sinnvolle
+    Suchintention bekommt eine eigene, indexierbare Seite mit echtem Inhalt.
+  - **Facetten-Filter mit URL-State**: kombinierbare Filter, deren Zustand in der URL lebt
+    (`/bands?region=bayern&genre=jazz&event=hochzeit`). Gefilterte Ergebnisse sind
+    teilbar und reproduzierbar – wichtig für UX, interne Weitergabe und spätere
+    Auswertbarkeit. Für SEO entstehen die primären Einstiegsseiten bewusst über
+    programmatische Routen wie `/bandtyp/[slug]`, `/region/[slug]` und ausgewählte
+    Kombinationen wie `/hochzeitsband-muenchen`.
+  - **Performante Bildauslieferung**: automatische Format-/Qualitätsanpassung pro Device
+    (Trivago nutzt Cloudinary mit `f_auto,q_auto`; für proudleut reicht Next.js Image via Vercel).
+  Was wir nicht übernehmen: Preisvergleiche, Echtzeit-Verfügbarkeit, Partner-API-Integrationen,
+  Account-System mit Favoriten. Das ist Trivagos Kern, aber für proudleut irrelevant.
 
 **Wichtig:** Sekundäre Referenzen dürfen die primäre Referenz nie überstimmen.
-Von Netflix, Airbnb und GetYourGuide werden nur die UX-Prinzipien übernommen –
-nicht die Komplexität, nicht die Plattform-Ästhetik.
+Von Netflix, Airbnb, GetYourGuide und Trivago werden nur die UX- und Architektur-Prinzipien
+übernommen – nicht die Komplexität, nicht die Plattform-Ästhetik, nicht die Buchungslogik.
 
 ---
 
@@ -166,7 +182,7 @@ Das Mosaik ist der visuelle Beweis: wir haben was du suchst.
 ### Technische Anforderungen
 
 **Mosaik-Hintergrund:**
-- Echte Bandfotos – handverlesen für Vielfalt, Qualität und Kontrast
+- Echte Bandfotos – gezielt ausgewählt für Vielfalt, Qualität und Kontrast
 - **Bildquelle: Sanity Assets** – nicht Airtable, nicht `/public`-Ordner (siehe unten)
 - CSS Grid – gleichmäßiges Raster, einheitliche Bildausschnitte (Aspect Ratio fest)
 - Dunkler Overlay über dem gesamten Mosaik (`background: rgba(0,0,0,0.55)`)
@@ -406,6 +422,23 @@ Grundsatz:
 - Sie dürfen nicht dominanter wirken als die Bandkarten.
 - Keine Preisfilter, keine Bewertungssterne, keine Verfügbarkeitslogik.
 - Keine UI-Muster, die eine direkte Plattformbuchung suggerieren.
+
+**URL-State für Filter (Trivago-Prinzip):**
+
+Gefilterte Bandlisten sollen saubere, teilbare URLs erzeugen.
+Beispiele:
+- `/bands?region=bayern` → alle Bands in Bayern
+- `/bands?genre=jazz&event=hochzeit` → Jazzbands für Hochzeiten
+- `/bands?region=oberpfalz&genre=partyband` → Partybands in der Oberpfalz
+
+Ein Veranstalter, der eine gefilterte Ansicht an einen Kollegen schickt, soll das gleiche
+Ergebnis sehen. Für SEO sind gefilterte Query-URLs aber nicht der primäre Hebel.
+Indexierbare Einstiegsseiten entstehen gezielt über programmatische Routen wie
+`/bandtyp/[slug]`, `/region/[slug]` und später ausgewählte Kombinationen wie
+`/hochzeitsband-muenchen`.
+
+Technisch: Query-Parameter in der URL, ausgelesen per `useSearchParams()` in Next.js,
+Client-seitige Filterung im React-State. Keine Serverseite nötig für ~150 Bands.
 
 Desktop:
 - Filter dürfen oberhalb oder seitlich der Bandliste stehen.

@@ -57,6 +57,13 @@ gut aufgehoben fühlt – nicht erschlagen von Masse.
 - Bands eine hochwertige Visitenkarte und Sichtbarkeit geben
 - Xandi als erfahrenen Matchmaker mit Szeneüberblick positionieren
 - Organische Sichtbarkeit über SEO, strukturierte Daten und lokale Suchanfragen aufbauen
+- Programmatische Kategorieseiten für organische Sichtbarkeit aufbauen:
+  bewusst generierte Landing Pages pro sinnvolle Kombination aus Region, Bandtyp und Anlass
+  (z. B. „Hochzeitsband München", „Jazzband Bayern", „Partyband Oberpfalz") –
+  jede mit gefiltertem Bandergebnis, regionalem Kontext und Schema.org-Markup.
+  Inspiration: Trivagos Stadt-Landingpages. Für proudleut bedeutet das: passende
+  Suchintentionen bekommen eigene, indexierbare Seiten – aber nur, wenn es dazu echte
+  Band-Ergebnisse und hilfreichen Kontext gibt. Kein Thin Content, keine Doorway Pages.
 - Die Plattform für zukünftige Erweiterungen (neue Kategorien, neue Regionen) vorbereiten
 - Den bestehenden Workflow mit Airtable und Make erhalten, aber technisch sauberer anbinden
 
@@ -98,6 +105,8 @@ Sie soll auf keinen Fall:
 - Wie ein KI-generiertes Template aussehen
 - Kalt, technisch oder seelenlos sein
 - Wie eine anonyme Massenplattform wirken (kein eventpeppers-Feeling)
+- Wie ein Buchungsportal wirken (kein Trivago-/Eventpeppers-Transaktions-Feeling –
+  proudleut gibt Orientierung und Empfehlung, kein Warenkorb)
 - Den Eindruck erwecken, dass proudleut eine Provisions- oder Buchungsplattform ist
 - Wie ein elitärer Türsteher wirken, der Bands nach Geschmack aussortiert
 - Überladen oder unübersichtlich sein
@@ -123,6 +132,26 @@ Das ist die ehrliche Stärke von proudleut:
 Das erlaubt **viele Bands** – mit dem Gefühl: hier bin ich gut aufgehoben.
 
 Dieser Unterschied muss sich in allen Texten, CTAs und im „Über mich"-Block widerspiegeln.
+
+---
+
+## Strategische Referenzen
+
+proudleut lässt sich von verschiedenen Plattformen inspirieren – aber immer selektiv:
+
+| Referenz | Was wir übernehmen | Was wir bewusst nicht übernehmen |
+|---|---|---|
+| Netflix | Dunkles UI, Thumbnails die leuchten, Browsing-Lust | Algorithmus, Personalisierung, Autoplay |
+| Airbnb | Eine Karte = eine Entscheidung, leichte Filter-UX | Buchungsflow, Bewertungen, Preislogik |
+| GetYourGuide | Starke Hero-Momente, klarer nächster Schritt | Bewertungssterne, Preisfilter, Warenkorb |
+| Trivago | Programmatische SEO-Seiten, Facetten-Filter mit URL-State, performante Bildauslieferung | Preisvergleich, Echtzeit-Verfügbarkeit, Account/Favoriten |
+| Booking.com | Internes Verlinkungsnetz als System, Schema Markup auf jeder Seite, programmatische Seiten pro Region/Kategorie (bestätigt Trivago-Ansatz), Social Media Index als objektiver Vertrauensanker | Urgency/Scarcity-Taktiken (FOMO-Counter, „Nur noch 2 verfügbar"), Bewertungssystem, Account-System, Dark Patterns |
+
+**Gemeinsamer Nenner:** Alle fünf schaffen es, große Mengen an Content so aufzubereiten,
+dass der Nutzer sich nicht verloren fühlt, sondern geführt wird. Booking.com zeigt
+zusätzlich, wie programmatische Seiten, Schema Markup und internes Verlinkungsnetz
+als *System* zusammenwirken – nicht als Einzelmaßnahmen. Das ist der Kern,
+den proudleut übernimmt – nicht die Features, sondern das Gefühl und die Architektur.
 
 ---
 
@@ -163,7 +192,21 @@ im Frontend-Code, in Headlines, CTAs und Fließtexten aber vermeiden.
 - Bandprofil mit direktem Kontaktweg zur Band (kein Mittelsmann)
 - „Ähnliche Bands"-Empfehlung auf jedem Profil
 - Blog / Content für SEO und Wissensaufbau
-- Saubere interne Verlinkung zwischen Bandprofilen, Kategorien und redaktionellen Inhalten
+- Internes Verlinkungsnetz als System – nicht nur „saubere Links", sondern ein
+  bewusstes Netz: Jedes Bandprofil verlinkt zu ähnlichen Bands, zur Regionsseite,
+  zum Bandtyp und zur passenden Veranstaltungskategorie. Jede Kategorieseite verlinkt
+  zu den Bands und zu verwandten Kategorien. Jede Regionsseite verlinkt zu Bands vor
+  Ort und zu Nachbar-Regionen. Das ist das klickbare Gegenstück zum Schema.org-Netz –
+  es stärkt sowohl die interne Verlinkung (SEO) als auch die Nutzerführung (UX).
+  Inspiration: Booking.com baut am Ende jeder Seite eine Verlinkungssektion zu
+  Kategorien, Landmarks und nahegelegenen Orten.
+- Social Media Index auf Bandprofilen: Follower-Zahlen (Instagram, Facebook, YouTube)
+  als objektiver Aktivitäts-Indikator – keine Bewertung, kein Ranking, aber ein
+  Vertrauensanker für Veranstalter, die sehen wollen, ob eine Band aktiv und greifbar ist
+- Referenz-Events auf Bandprofilen: verifizierbare Auftrittsorte und Events
+  (z. B. „Gillamoos Abensberg", „Dult Regensburg") als Glaubwürdigkeitsanker –
+  keine Bewertungen, keine Sterne, aber echte Nachweise. Am Boden bleiben,
+  aber zeigen was man kann.
 
 **Wichtige Conversion-Ziele:**
 
@@ -239,6 +282,10 @@ im Frontend-Code, in Headlines, CTAs und Fließtexten aber vermeiden.
 /                          → Homepage
 /veranstaltung/[slug]      → Kategorie-Seite (dynamisch aus Sanity)
 /band/[slug]               → Bandprofil (Daten aus Airtable)
+/bands                     → Bandübersicht mit Filter-UI (Query-Params für URL-State)
+/bandtyp/[slug]            → Programmatische Seite pro Bandart (Phase 2+)
+/region/[slug]             → Programmatische Seite pro Region (Phase 2+)
+/[kombination]             → Kombinierte Landing Pages, z. B. /hochzeitsband-muenchen (Phase 3+, nur freigegeben)
 /blog/[slug]               → Blogpost (Sanity)
 /ueber-mich                → Über Xandi (Sanity)
 /kontakt                   → Kontaktseite (Sanity + Make-Webhook)
@@ -247,6 +294,11 @@ im Frontend-Code, in Headlines, CTAs und Fließtexten aber vermeiden.
 
 Vor dem Domainumzug muss geprüft werden, welche bestehenden Webflow-URLs erhalten bleiben
 oder per 301-Redirect umgeleitet werden. Details → `migration-notes.md`.
+
+Root-Level-Kombinationen wie `/hochzeitsband-muenchen` sind ein SEO-Hebel, aber kein
+Freifahrtschein für beliebige Slugs. Sie dürfen nur bewusst freigegeben werden und müssen
+reservierte Pfade wie `/kontakt`, `/blog`, `/bands`, `/band`, `/region`, `/bandtyp` und
+`/veranstaltung` schützen.
 
 ---
 
@@ -259,6 +311,11 @@ oder per 301-Redirect umgeleitet werden. Details → `migration-notes.md`.
   - `/veranstaltung/festzelt` – Hochvolumen-Suchbegriffe
   - `/veranstaltung/hochzeit` – hoher Wettbewerb, hohe Kaufintention
   - `/band/[slug]` – Long-Tail pro Bandname + Ort + Stil
+  - `/bandtyp/[slug]` und `/region/[slug]` – programmatische SEO-Seiten (Phase 2+),
+    inspiriert von Trivagos Stadt-Landingpages. Query-Parameter-Filter sind für UX
+    und teilbare Ansichten wichtig; die eigentlichen SEO-Einstiegsseiten entstehen
+    über bewusst generierte Routen. Nur Seiten erzeugen, zu denen es echte Bands gibt –
+    keine leeren Kategorieseiten (Thin Content).
   - `/blog/` – Wissensaufbau, Cluster-Strategie
 - Structured Data: `MusicGroup`, `ItemList`, `CollectionPage`, `WebSite`, `Organization`, `Person`
 - `sameAs`-Verlinkung zwischen Bandprofilen und externen Band-Websites ist gewollt

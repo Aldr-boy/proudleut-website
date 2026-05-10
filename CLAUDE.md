@@ -176,6 +176,21 @@ unreflektiert als finale Produktionslösung.
   - Homepage: `WebSite` + `Organization`, optional `Person`
 - `sameAs`-Verlinkungen zwischen proudleut-Profilen und Bandwebsites sind gewollt –
   das ist Teil einer bewussten semantischen SEO-Strategie
+- Internes Verlinkungsnetz bewusst aufbauen: Bandprofile verlinken zu ähnlichen Bands,
+  Regionsseiten, Bandtyp-Seiten und Kategorien. Kategorieseiten verlinken zu Bands und
+  verwandten Kategorien. Regionsseiten verlinken zu Bands und Nachbar-Regionen. Das ist
+  die klickbare Navigation zum Schema.org-Datennetz. Beim Anlegen neuer Seitentypen
+  immer mitdenken: Welche internen Links gehören auf diese Seite, und welche Seiten
+  sollten hierher zurückverlinken?
+- Referenz-Events auf Bandprofilen können optional als `MusicEvent` in JSON-LD
+  eingebettet werden – Details in `migration-notes.md`. Dabei keinen direkten
+  SEO- oder Knowledge-Graph-Effekt behaupten; Structured Data unterstützt nur die
+  semantische Klarheit.
+- Social-Media-Zahlen auf Bandprofilen sind Vertrauensanker, keine Rankings. Nicht
+  als Vergleich zwischen Bands darstellen und nicht prominent wie Bewertungsmetriken inszenieren.
+- Booking.com nur als Architektur-Referenz nutzen: interne Verlinkung, programmatische
+  Seitenlogik und semantische Struktur ja; Dark Patterns, FOMO, Verknappung,
+  Bewertungsdruck oder Buchungsportal-Logik nein.
 - Keine künstlich aufgeblähten SEO-Texte
 - Structured Data minimal, sauber und wartbar halten
 - Am Ende einer SEO-Aufgabe kurz dokumentieren: welche Datei, welcher Schema-Typ, welche Felder

@@ -26,6 +26,21 @@ export type SocialLinks = {
   youtube?: string;
 };
 
+export type SocialMediaStats = {
+  igFollowers?: number;
+  igFollowing?: number;
+  fbFollowers?: number;
+  fbFollowing?: number;
+  ytSubscribers?: number;
+};
+
+export type ReferenceEvent = {
+  eventName: string;
+  venue?: string;
+  city?: string;
+  year?: number;
+};
+
 export type SimilarBandReferences = {
   manual1?: string;
   manual2?: string;
@@ -57,5 +72,7 @@ export type Band = {
   location: BandLocation;
   weddingInfo?: WeddingInfo;
   socialLinks: SocialLinks;
+  socialMediaStats?: SocialMediaStats;
+  referenceEvents: ReferenceEvent[];
   similarBands: SimilarBandReferences;
 };

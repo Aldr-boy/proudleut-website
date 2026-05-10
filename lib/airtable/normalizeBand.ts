@@ -1,4 +1,4 @@
-import type { Band } from '../types/band';
+import type { Band, ReferenceEvent } from '../types/band';
 import { normalizeImage, normalizeImageArray } from './normalizeImage';
 import type { AirtableAttachment } from './normalizeImage';
 
@@ -41,6 +41,7 @@ type RawBandFields = {
   'similar_1'?: string;
   'similar_2'?: string;
   'similar_3'?: string;
+  'Referenz-Events'?: string;
 };
 
 export type RawAirtableBandRecord = {
@@ -84,6 +85,25 @@ function normalizeUrl(value?: unknown): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function normalizeReferenceEvents(raw?: string): ReferenceEvent[] {
+  if (!raw) return [];
+  return raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split('|').map((p) => p.trim());
+      const yearRaw = parts[3] ? parseInt(parts[3], 10) : NaN;
+      return {
+        eventName: parts[0] ?? '',
+        venue: parts[1] || undefined,
+        city: parts[2] || undefined,
+        year: isNaN(yearRaw) ? undefined : yearRaw,
+      };
+    })
+    .filter((ev) => ev.eventName.length > 0);
 }
 
 function resolveEventTypes(
@@ -174,6 +194,7 @@ export function normalizeBand(
       spotify: normalizeUrl(f['Social - Spotify']),
       youtube: normalizeUrl(f['Social - YouTube']),
     },
+    referenceEvents: normalizeReferenceEvents(f['Referenz-Events']),
     similarBands: {
       manual1: str(f['similar_1']),
       manual2: str(f['similar_2']),

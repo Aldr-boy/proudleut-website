@@ -232,6 +232,25 @@ Hero-Mosaik ist bereits entschieden: Sanity.
 
 ---
 
+### Bildoptimierung – Performance-Prinzip
+
+Trivago nutzt Cloudinary mit automatischer Format-/Qualitätsanpassung (`f_auto,q_auto`).
+Für proudleut setzen wir auf **Next.js Image Optimization via Vercel** – gleiches Prinzip,
+kein zusätzlicher Service:
+
+- `next/image` mit `sizes`-Attribut für responsive Bilder
+- Automatische WebP/AVIF-Konvertierung durch Vercel
+- Lazy Loading standardmäßig (außer Hero/Above-the-fold)
+- Domain-Whitelist in `next.config.ts` für Airtable-Bild-URLs
+
+Falls die Anzahl der Bands auf 300+ wächst oder Airtable-URLs instabil werden,
+wäre ein Wechsel zu Cloudinary oder Sanity als Bild-CDN der nächste Schritt.
+Für ~150 Bands ist Next.js Image + Vercel voraussichtlich ausreichend,
+ohne zunächst einen zusätzlichen Bilddienst wie Cloudinary einzuführen.
+Die konkreten Vercel-Limits und Kosten werden vor dem Livegang geprüft.
+
+---
+
 ## Sanity – Schema-Übersicht
 
 ### eventCategory (Veranstaltungskategorie)
@@ -407,6 +426,54 @@ Filter-State lebt in React (`useState`). Bei ~150 Bands ist das performant.
 - Region: Bundesland → Regierungsbezirk → Landkreis (Geo-Kaskade aus Airtable)
 - Bandgröße (aus `Info - Bandgröße`)
 
+**URL-State für Filter:**
+
+Gefilterte Bandlisten sollen saubere, teilbare URLs erzeugen – Query-Parameter in der URL,
+ausgelesen per `useSearchParams()`. Ein Veranstalter, der eine gefilterte Ansicht an einen
+Kollegen schickt, soll das gleiche Ergebnis sehen.
+
+Wichtig: URL-State ist primär ein UX- und Sharing-Prinzip.
+Für SEO sind gefilterte Query-URLs nicht der Haupthebel. Indexierbare Landingpages entstehen
+bewusst über programmatische Routen wie `/bandtyp/[slug]`, `/region/[slug]` und später
+ausgewählte Kombinationen wie `/hochzeitsband-muenchen`.
+
+---
+
+## Programmatische Kategorie-Seiten (SEO-Hebel, Phase 2+)
+
+Inspiriert von Trivagos Stadt-Landingpages generiert proudleut automatisch Landing Pages
+für jede sinnvolle Kombination aus Bandtyp, Region und Anlass.
+
+### Geplante URL-Struktur
+
+- **Bandtyp**: `/bandtyp/partyband`, `/bandtyp/jazzband`, `/bandtyp/hochzeitsband`
+- **Region**: `/region/bayern`, `/region/oberpfalz`, `/region/muenchen`
+- **Anlass**: über bestehende `/veranstaltung/[slug]` abgedeckt
+- **Kombinationen** (Phase 3+): `/hochzeitsband-muenchen`, `/partyband-bayern`
+
+**Wichtig bei Root-Level-Kombinationen:**
+
+- Nur bewusst freigegebene Kombinationen generieren – keine freie Slug-Wildcard.
+- Reservierte Slugs wie `kontakt`, `blog`, `ueber-mich`, `fuer-bands`, `bands`,
+  `band`, `region`, `bandtyp` und `veranstaltung` dürfen nie als Kombination verwendet werden.
+- Vor Umsetzung prüfen, ob Root-Level-SEO-Slugs gewünscht sind oder ob eine sicherere
+  Struktur wie `/bands/hochzeitsband-muenchen` sinnvoller ist.
+
+### Was jede Seite enthält
+
+- Gefilterte Bandliste aus Airtable (ISR, `revalidate` alle 5–10 Min.)
+- Redaktioneller Intro-Text aus Sanity (pro Kategorie/Region individuell pflegbar)
+- Schema.org `ItemList` oder `CollectionPage` Markup
+- Breadcrumb-Navigation
+
+### Regeln
+
+- **Nur Seiten generieren, für die es auch Bands gibt.**
+  Keine leeren Kategorieseiten – das wäre Thin Content und schadet dem SEO.
+- Umsetzung: Next.js Dynamic Routes mit `generateStaticParams()` aus Airtable-Daten.
+- Sanity liefert den redaktionellen Content pro Kategorie/Region.
+- Neue Sanity-Schemas nötig: `bandTypeCategory` und `regionPage` (analog zu `eventCategory`).
+
 ---
 
 ## Ähnliche Bands – Implementierung
@@ -492,6 +559,43 @@ export async function POST(req: Request) {
 }
 ```
 
+### Referenz-Events als `MusicEvent` (optional, Phase 3+)
+
+Wenn Referenz-Events auf Bandprofilen angezeigt werden, können sie optional als
+`MusicEvent` im JSON-LD der Bandprofilseite eingebettet werden. Das stärkt die
+Verbindung zwischen Band und Auftrittsorten im Google Knowledge Graph.
+
+```json
+{
+  "@type": "MusicGroup",
+  "name": "Donnaweda",
+  "url": "https://proudleut.com/band/donnaweda",
+  "event": [
+    {
+      "@type": "MusicEvent",
+      "name": "Gillamoos 2024",
+      "location": {
+        "@type": "Place",
+        "name": "Gillamoos",
+        "address": {
+          "addressLocality": "Abensberg",
+          "addressRegion": "Bayern"
+        }
+      },
+      "startDate": "2024-09-01"
+    }
+  ]
+}
+```
+
+**Regeln:**
+
+- Nur Referenz-Events mit sinnvollen Daten (mindestens Event-Name und Stadt)
+  in JSON-LD aufnehmen
+- `startDate` nur setzen, wenn ein konkretes Datum oder zumindest Jahr bekannt ist
+- Keine Zukunfts-Events als Referenz-Events (dafür gibt es Bandsintown/Live-Dates)
+- Das ist ein Phase-3-Feature – nicht im ersten Durchstich umsetzen
+
 ### Kategorie-Seite `/veranstaltung/[slug]`
 
 ```json
@@ -571,11 +675,12 @@ zu prüfen.
 
 ### Phase 2 – Kernseiten
 
-- [ ] Kategorie-Seiten mit Filterlogik
+- [ ] Kategorie-Seiten mit Filterlogik und URL-State
 - [ ] Bandprofil-Seiten finalisieren
 - [ ] Homepage
 - [ ] Kontaktseite / Anfrageweg
 - [ ] Über mich / Für Bands
+- [ ] Programmatische Seiten: `/bandtyp/[slug]` und `/region/[slug]` (Trivago-Prinzip)
 
 ### Phase 3 – Inhalte & SEO
 
@@ -584,6 +689,7 @@ zu prüfen.
 - [ ] Sitemap, robots.txt
 - [ ] Redirect-Strategie finalisieren
 - [ ] On-Demand-Revalidierung via Make prüfen
+- [ ] Kombinierte Landing Pages prüfen (z. B. `/hochzeitsband-muenchen`)
 
 ### Phase 4 – Ablösung Webflow
 
