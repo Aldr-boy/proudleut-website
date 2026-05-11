@@ -1,5 +1,9 @@
 import { notFound } from 'next/navigation';
-import { getBandsByCategory, getAllCategorySlugs } from '@/lib/airtable/queries';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { getBands } from '@/lib/airtable/queries';
+import { CATEGORIES, bandMatchesCategory } from '@/lib/categories';
+import BandCard from '@/components/BandCard';
 
 export const revalidate = 300;
 
@@ -8,54 +12,76 @@ type Props = {
 };
 
 export async function generateStaticParams() {
-  const slugs = await getAllCategorySlugs();
-  return slugs.map((slug) => ({ slug }));
+  return CATEGORIES.map((c) => ({ slug: c.slug }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const category = CATEGORIES.find((c) => c.slug === slug);
+  if (!category) return {};
+  return {
+    title: category.seoTitle,
+    description: category.seoDescription,
+  };
 }
 
 export default async function VeranstaltungPage({ params }: Props) {
   const { slug } = await params;
-  const allSlugs = await getAllCategorySlugs();
+  const category = CATEGORIES.find((c) => c.slug === slug);
+  if (!category) notFound();
 
-  if (!allSlugs.includes(slug)) notFound();
-
-  const bands = await getBandsByCategory(slug);
+  const allBands = await getBands();
+  const bands = allBands.filter((b) => bandMatchesCategory(b, category));
 
   return (
-    <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
-        Phase 1B – Technischer Durchstich
-      </p>
-      <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Kategorie: {slug}</h1>
-      <p style={{ color: '#666', marginBottom: '1.5rem' }}>
-        {bands.length} {bands.length === 1 ? 'Band' : 'Bands'} gefunden
-      </p>
+    <>
+      {/* Category hero */}
+      <section className="bg-pl-bg py-16 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          <Link
+            href="/"
+            className="text-pl-text-muted text-sm hover:text-pl-text motion-safe:transition-colors mb-6 inline-block"
+          >
+            ← Alle Bands
+          </Link>
+          <h1 className="text-3xl md:text-4xl font-bold text-pl-text mb-3">
+            {category.title}
+          </h1>
+          {category.description && (
+            <p className="text-pl-text-muted text-lg max-w-xl">{category.description}</p>
+          )}
+        </div>
+      </section>
 
-      {bands.length === 0 ? (
-        <p style={{ color: '#888' }}>Keine Bands für diese Kategorie gefunden.</p>
-      ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {bands.map((band) => (
-            <li key={band.slug} style={{ borderBottom: '1px solid #eee', padding: '0.75rem 0' }}>
-              <a
-                href={`/band/${band.slug}`}
-                style={{ fontWeight: 600, textDecoration: 'none', color: '#000' }}
+      {/* Band grid */}
+      <section className="py-16 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto">
+          {bands.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-pl-text-muted text-lg mb-4">
+                Keine Bands für diese Kategorie gefunden.
+              </p>
+              <Link
+                href="/"
+                className="text-pl-primary hover:opacity-80 motion-safe:transition-opacity"
               >
-                {band.name}
-              </a>
-              {band.location.city && (
-                <span style={{ color: '#888', marginLeft: '0.75rem', fontSize: '0.9rem' }}>
-                  {band.location.city}
-                </span>
-              )}
-              {band.shortDescription && (
-                <p style={{ margin: '0.25rem 0 0', color: '#555', fontSize: '0.9rem' }}>
-                  {band.shortDescription}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+                Alle Bands entdecken
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="text-pl-text-muted text-sm mb-6">
+                {bands.length} {bands.length === 1 ? 'Band' : 'Bands'} gefunden
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {bands.map((band) => (
+                  <BandCard key={band.slug} band={band} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    </>
   );
 }

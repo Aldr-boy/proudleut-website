@@ -3,6 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* proudleut design tokens */
+  --pl-bg: #111111;
+  --pl-surface: #1a1a1a;
+  --pl-surface-elevated: #1e1e1e;
+  --pl-card: #1a1a1a;
+  --pl-card-hover: #222222;
+  --pl-primary: #7C3AED;
+  --pl-text: #f5f5f5;
+  --pl-text-muted: #b8b8b8;
 }
 
 @theme inline {
@@ -10,6 +20,16 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* proudleut color utilities: bg-pl-*, text-pl-*, border-pl-*, etc. */
+  --color-pl-bg: var(--pl-bg);
+  --color-pl-surface: var(--pl-surface);
+  --color-pl-surface-elevated: var(--pl-surface-elevated);
+  --color-pl-card: var(--pl-card);
+  --color-pl-card-hover: var(--pl-card-hover);
+  --color-pl-primary: var(--pl-primary);
+  --color-pl-text: var(--pl-text);
+  --color-pl-text-muted: var(--pl-text-muted);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,7 +40,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--pl-bg);
+  color: var(--pl-text);
+  font-family: var(--font-geist-sans), Arial, sans-serif;
 }
