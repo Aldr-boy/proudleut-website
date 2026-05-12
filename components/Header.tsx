@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 const NAV_LINKS = [
   { label: 'Livebands entdecken', href: '/#bands' },
-  { label: 'Über mich', href: '#' },
+  { label: 'Über mich', href: '/ueber-mich' },
   { label: 'Kontakt', href: '#' },
 ] as const;
 

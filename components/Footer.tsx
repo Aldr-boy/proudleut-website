@@ -14,7 +14,7 @@ export default function Footer() {
           className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-pl-text-muted"
           aria-label="Footer"
         >
-          <Link href="#" className="hover:text-pl-text motion-safe:transition-colors">
+          <Link href="/ueber-mich" className="hover:text-pl-text motion-safe:transition-colors">
             Über mich
           </Link>
           <Link href="#" className="hover:text-pl-text motion-safe:transition-colors">
