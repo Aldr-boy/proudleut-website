@@ -41,6 +41,9 @@ type RawBandFields = {
   'similar_1'?: string;
   'similar_2'?: string;
   'similar_3'?: string;
+  'similar_1_name'?: unknown;
+  'similar_2_name'?: unknown;
+  'similar_3_name'?: unknown;
   'Referenz-Events'?: string;
 };
 
@@ -61,6 +64,11 @@ function str(value?: unknown): string | undefined {
   // Airtable Record-IDs (rec + 10+ alphanumerische Zeichen) filtern
   if (/^rec[A-Za-z0-9]{10,}$/.test(trimmed)) return undefined;
   return trimmed || undefined;
+}
+
+function firstStr(value: unknown): string | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return str(raw);
 }
 
 function normalizeStatus(value?: string): Band['status'] {
@@ -196,9 +204,9 @@ export function normalizeBand(
     },
     referenceEvents: normalizeReferenceEvents(f['Referenz-Events']),
     similarBands: {
-      manual1: str(f['similar_1']),
-      manual2: str(f['similar_2']),
-      manual3: str(f['similar_3']),
+      manual1: firstStr(f['similar_1_name']),
+      manual2: firstStr(f['similar_2_name']),
+      manual3: firstStr(f['similar_3_name']),
     },
   };
 }
