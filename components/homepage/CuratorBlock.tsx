@@ -2,12 +2,12 @@ import Image from 'next/image';
 
 export default function CuratorBlock() {
   return (
-    <section className="bg-pl-bg py-16 md:py-24 px-4 sm:px-6">
+    <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
           {/* Text – links auf Desktop, darunter auf Mobile */}
           <div className="order-2 md:order-1">
-            <p className="text-pl-primary text-sm font-medium tracking-wide uppercase mb-3">
+            <p className="text-pl-accent text-sm font-medium tracking-wide uppercase mb-3">
               Persönliche Unterstützung bei der Bandsuche
             </p>
             <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-6 leading-snug">
@@ -31,7 +31,7 @@ export default function CuratorBlock() {
             </div>
             <a
               href="mailto:alexander.dressler@proudleut.com"
-              className="inline-flex items-center mt-8 px-6 py-3 rounded-full bg-pl-primary text-white font-semibold hover:opacity-90 motion-safe:transition-opacity"
+              className="inline-flex items-center mt-8 px-6 py-3 rounded-full bg-pl-accent text-pl-on-accent font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
             >
               Schreib mir direkt
             </a>

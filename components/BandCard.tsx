@@ -13,11 +13,11 @@ export default function BandCard({ band }: BandCardProps) {
   return (
     <Link
       href={`/band/${band.slug}`}
-      className="group block rounded-xl overflow-hidden bg-pl-card
-                 motion-safe:transition-colors hover:bg-pl-card-hover"
+      className="group block rounded-xl overflow-hidden bg-pl-elevated border border-pl-soft
+                 shadow-pl-photo hover:border-pl-medium motion-safe:transition-colors"
     >
       {/* Bildbereich – dominiert die Karte */}
-      <div className="relative aspect-[3/2] w-full bg-pl-surface">
+      <div className="relative aspect-[3/2] w-full bg-pl-elevated">
         {image ? (
           <Image
             src={image.url}
@@ -28,8 +28,8 @@ export default function BandCard({ band }: BandCardProps) {
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-pl-surface-elevated">
-            <span className="text-5xl font-bold text-white/10 select-none" aria-hidden="true">
+          <div className="absolute inset-0 flex items-center justify-center bg-pl-canvas">
+            <span className="text-5xl font-bold text-pl-text-hint/30 select-none" aria-hidden="true">
               {band.name.charAt(0).toUpperCase()}
             </span>
           </div>

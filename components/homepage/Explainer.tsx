@@ -67,7 +67,7 @@ const steps = [
 
 export default function Explainer() {
   return (
-    <section className="bg-pl-surface py-16 md:py-24 px-4 sm:px-6">
+    <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-12 text-center">
           So funktioniert proudleut
@@ -76,7 +76,7 @@ export default function Explainer() {
           {steps.map((step) => (
             <div key={step.number} className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
-                <span className="text-pl-primary">{step.icon}</span>
+                <span className="text-pl-accent">{step.icon}</span>
                 <span className="text-pl-text-muted text-sm font-medium tracking-widest uppercase">
                   {step.number}
                 </span>

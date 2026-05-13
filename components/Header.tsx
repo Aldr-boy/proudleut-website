@@ -21,11 +21,11 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-pl-surface border-b border-white/5">
+    <header className="sticky top-0 z-50 bg-pl-stage/80 backdrop-blur-sm border-b border-pl-stage">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link
           href="/"
-          className="text-pl-text font-bold text-xl tracking-tight hover:text-pl-primary motion-safe:transition-colors"
+          className="text-pl-on-stage font-bold text-xl tracking-tight hover:text-pl-accent-light motion-safe:transition-colors"
         >
           proudleut
         </Link>
@@ -36,7 +36,7 @@ export default function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-pl-text-muted text-sm hover:text-pl-text motion-safe:transition-colors"
+              className="text-pl-on-stage-muted text-sm hover:text-pl-accent-light motion-safe:transition-colors"
             >
               {link.label}
             </Link>
@@ -45,7 +45,7 @@ export default function Header() {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 text-pl-text-muted hover:text-pl-text motion-safe:transition-colors"
+          className="md:hidden p-2 text-pl-on-stage-muted hover:text-pl-on-stage motion-safe:transition-colors"
           aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
@@ -88,7 +88,7 @@ export default function Header() {
       {menuOpen && (
         <nav
           id="mobile-menu"
-          className="md:hidden bg-pl-surface border-t border-white/5"
+          className="md:hidden bg-pl-stage/90 border-t border-pl-stage"
           aria-label="Mobile Navigation"
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-4">
@@ -96,7 +96,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-pl-text text-base py-1"
+                className="text-pl-on-stage text-base py-1"
                 onClick={() => setMenuOpen(false)}
               >
                 {link.label}

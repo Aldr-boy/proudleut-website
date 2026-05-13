@@ -4,7 +4,7 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  /* proudleut design tokens */
+  /* proudleut design tokens (legacy dark-only – werden schrittweise durch semantische Tokens ersetzt) */
   --pl-bg: #111111;
   --pl-surface: #1a1a1a;
   --pl-surface-elevated: #1e1e1e;
@@ -12,7 +12,48 @@
   --pl-card-hover: #222222;
   --pl-primary: #7C3AED;
   --pl-text: #f5f5f5;
-  --pl-text-muted: #b8b8b8;
+  --pl-text-muted: #6b5f65;
+
+  /* ── Semantisches Farbsystem (Hybrid: 30% Bühne / 70% Feinkostladen) ── */
+
+  /* Hintergrundflächen */
+  --pl-bg-stage:          #12101a;  /* Bühne: Hero, Referenz-Events, Footer */
+  --pl-bg-stage-elevated: #1e1a28;  /* Karten auf Bühnenfläche */
+  --pl-bg-paper:          #f5f0e8;  /* Warmes Papier: Kategorien, Xandi, CTA */
+  --pl-bg-canvas:         #f9f7f3;  /* Ruhige Leinwand: Prozess, FAQ, Testimonials */
+  --pl-bg-elevated:       #fefdfb;  /* Cards auf hellem Grund (kein reines Weiß) */
+
+  /* Text – helle Flächen */
+  --pl-text-main:         #2a2226;  /* Haupttext. Warm-Schwarz, nie #000 */
+  --pl-text-hint:         #84787e;  /* Meta-Infos, Bandanzahl, Timestamps */
+
+  /* Text – dunkle Flächen */
+  --pl-text-on-stage:       #ede8e3;  /* Haupttext auf Bühne. Warmes Offwhite */
+  --pl-text-on-stage-muted: #8a7e84;  /* Subtexte auf Bühne */
+
+  /* Text auf Accent-Buttons */
+  --pl-text-on-accent: #fefdfb;  /* Kein reines #fff */
+
+  /* Brand-Akzent */
+  --pl-accent:            #75518b;  /* CTAs, aktive Links, Icons, Fokusringe */
+  --pl-accent-hover:      #8a64a0;  /* Hover für Buttons */
+  --pl-accent-link-hover: #5e3f72;  /* Hover für Text-Links auf hellem Grund */
+  --pl-accent-subtle:     #f4f0f6;  /* Pills, Tags, Badges (Hintergrund) */
+  --pl-accent-deep:       #5e3f72;  /* Text auf accent-subtle */
+  --pl-accent-on-stage:   #c4a8d8;  /* Akzent auf dunklem Grund */
+
+  /* Borders */
+  --pl-border-soft:   rgba(117, 81, 139, 0.10);  /* Cards auf hellem Grund */
+  --pl-border-medium: rgba(117, 81, 139, 0.20);  /* Hover, Divider, FAQ-Trennlinien */
+  --pl-border-stage:  rgba(196, 168, 216, 0.15); /* Cards/Elemente auf Bühnenfläche */
+
+  /* Schatten (nur für Foto-Cards) */
+  --pl-shadow-photo: 0 2px 8px rgba(42, 34, 38, 0.06);
+
+  /* Bühnen-Gradienten */
+  --pl-gradient-stage: linear-gradient(180deg, #12101a 0%, #17122a 45%, #12101a 100%);
+  --pl-gradient-footer: linear-gradient(180deg, #17122a 0%, #12101a 100%);
+  --pl-gradient-spotlight: radial-gradient(ellipse at 50% 100%, rgba(117, 81, 139, 0.12) 0%, transparent 60%);
 }
 
 @theme inline {
@@ -21,16 +62,52 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* proudleut color utilities: bg-pl-*, text-pl-*, border-pl-*, etc. */
+  /* Legacy Utilities (dark-only) – bleiben für bestehende Komponenten erhalten */
   --color-pl-bg: var(--pl-bg);
   --color-pl-surface: var(--pl-surface);
   --color-pl-surface-elevated: var(--pl-surface-elevated);
   --color-pl-card: var(--pl-card);
   --color-pl-card-hover: var(--pl-card-hover);
   --color-pl-primary: var(--pl-primary);
-  --color-pl-text: var(--pl-text);
+
+  /* Text – semantisch aktualisiert (text-pl-text → Haupttext auf hellen Flächen) */
+  --color-pl-text:       var(--pl-text-main);
   --color-pl-text-muted: var(--pl-text-muted);
+  --color-pl-text-hint:  var(--pl-text-hint);
+
+  /* Hintergrundflächen */
+  --color-pl-stage:          var(--pl-bg-stage);
+  --color-pl-stage-elevated: var(--pl-bg-stage-elevated);
+  --color-pl-paper:          var(--pl-bg-paper);
+  --color-pl-canvas:         var(--pl-bg-canvas);
+  --color-pl-elevated:       var(--pl-bg-elevated);
+
+  /* Text – dunkle Flächen */
+  --color-pl-on-stage:       var(--pl-text-on-stage);
+  --color-pl-on-stage-muted: var(--pl-text-on-stage-muted);
+  --color-pl-on-accent:      var(--pl-text-on-accent);
+
+  /* Accent */
+  --color-pl-accent:            var(--pl-accent);
+  --color-pl-accent-hover:      var(--pl-accent-hover);
+  --color-pl-accent-link-hover: var(--pl-accent-link-hover);
+  --color-pl-accent-subtle:     var(--pl-accent-subtle);
+  --color-pl-accent-deep:       var(--pl-accent-deep);
+  --color-pl-accent-light:      var(--pl-accent-on-stage);
+
+  /* Schatten */
+  --shadow-pl-photo: var(--pl-shadow-photo);
 }
+
+/* ── Border-Utilities ── */
+@utility border-pl-soft   { border-color: var(--pl-border-soft);   }
+@utility border-pl-medium { border-color: var(--pl-border-medium); }
+@utility border-pl-stage  { border-color: var(--pl-border-stage);  }
+
+/* ── Gradient-Utilities ── */
+@utility bg-pl-gradient-stage     { background: var(--pl-gradient-stage);     }
+@utility bg-pl-gradient-footer    { background: var(--pl-gradient-footer);    }
+@utility bg-pl-gradient-spotlight { background: var(--pl-gradient-spotlight); }
 
 @media (prefers-color-scheme: dark) {
   :root {

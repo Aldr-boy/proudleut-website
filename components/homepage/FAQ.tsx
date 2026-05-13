@@ -2,15 +2,15 @@ import { faqs } from '@/lib/content/faqs';
 
 export default function FAQ() {
   return (
-    <section className="bg-pl-bg py-16 md:py-24 px-4 sm:px-6">
+    <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-10 text-center">
           Häufige Fragen
         </h2>
-        <div className="divide-y divide-white/8">
+        <div className="divide-y divide-[var(--pl-border-medium)]">
           {faqs.map((faq, i) => (
             <details key={i} className="group py-1">
-              <summary className="flex items-center justify-between gap-4 py-4 cursor-pointer list-none text-pl-text font-medium hover:text-pl-primary motion-safe:transition-colors select-none">
+              <summary className="flex items-center justify-between gap-4 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden text-pl-text font-medium hover:text-pl-accent motion-safe:transition-colors select-none">
                 <span>{faq.question}</span>
                 <svg
                   viewBox="0 0 24 24"

@@ -57,7 +57,7 @@ export default async function VeranstaltungPage({ params }: Props) {
       </section>
 
       {/* Grid oder Empty State */}
-      <section className="py-16 px-4 sm:px-6">
+      <section className="bg-pl-canvas py-16 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           {bands.length === 0 ? (
             <div className="py-12">

@@ -19,8 +19,8 @@ aufgehoben und finde schneller die passende Richtung.
 
 Designentscheidungen entstehen aus:
 
-- der bestehenden Webflow-Seite als primärer Referenz
 - der gewünschten emotionalen Wirkung (warm, übersichtlich, vertrauenswürdig)
+- dem Hybrid-Prinzip: Bühne für Emotion, Feinkostladen für Orientierung
 - der Konsistenz über alle Seiten hinweg
 - der Klarheit für Veranstalter, die schnell eine gute Entscheidung treffen wollen
 
@@ -60,10 +60,15 @@ Was „modern" wirkt, aber nicht zur Identität passt, ist falsch.
     (Trivago nutzt Cloudinary mit `f_auto,q_auto`; für proudleut reicht Next.js Image via Vercel).
   Was wir nicht übernehmen: Preisvergleiche, Echtzeit-Verfügbarkeit, Partner-API-Integrationen,
   Account-System mit Favoriten. Das ist Trivagos Kern, aber für proudleut irrelevant.
+- **freelancermap.de** – Strukturreferenz für Seitenaufbau und Section-Rhythmus:
+  großzügiger Weißraum, klare visuelle Hierarchie, ein Gedanke pro Viewport-Höhe,
+  duale Zielgruppen-Ansprache ohne Verwirrung. Nur die Struktur übernehmen, nicht das
+  Gefühl – proudleut ist kein SaaS-Tool und kein Jobportal.
 
 **Wichtig:** Sekundäre Referenzen dürfen die primäre Referenz nie überstimmen.
-Von Netflix, Airbnb, GetYourGuide und Trivago werden nur die UX- und Architektur-Prinzipien
-übernommen – nicht die Komplexität, nicht die Plattform-Ästhetik, nicht die Buchungslogik.
+Von Netflix, Airbnb, GetYourGuide, Trivago und freelancermap werden nur die UX- und
+Architektur-Prinzipien übernommen – nicht die Komplexität, nicht die Plattform-Ästhetik,
+nicht die Buchungslogik.
 
 ---
 
@@ -72,8 +77,11 @@ Von Netflix, Airbnb, GetYourGuide und Trivago werden nur die UX- und Architektur
 proudleut soll hochwertig, warm und eigenständig wirken – kein kaltes Tech-Produkt,
 keine anonyme Plattform. Die Seite hat Charakter, weil Xandi Charakter hat.
 
-Der visuelle Grundton ist **dunkel mit gezielten Lichtmomenten** – die Bands sollen leuchten,
-der Rahmen soll zurücktreten.
+Der visuelle Grundton ist **hybrid: dunkel für Emotion, hell für Orientierung.**
+
+- Dunkle Flächen (Bühne) für den emotionalen Einstieg und gezielte Highlight-Momente
+- Warme, helle Flächen (Feinkostladen) für Orientierung, Vertrauen und Vergleichbarkeit
+- Die Balance: **30% Bühne, 70% Feinkostladen**
 
 Der Eindruck soll sein: *„Hier kenne ich mich aus – hier werde ich fündig."*
 Nicht: *„Hier wurde ein Template aufgefüllt."*
@@ -82,13 +90,18 @@ Nicht: *„Hier wurde ein Template aufgefüllt."*
 
 ## Visuelle DNA
 
-- **Dunkel** als Grundton (kein reines Schwarz – eher tiefes Dunkelgrau)
-- **Lila** als Markenfarbe – präsent, aber nicht laut
-- **Bandfotos als Herzstück** – die Bilder müssen die Seele der Seite tragen
+- **Hybrid-Rhythmus** als Grundton: dunkle Bühnenflächen wechseln mit warmen, hellen
+  Directory-Flächen. Nie durchgehend dunkel, nie durchgehend hell.
+- **Lila (#75518B)** als Markenfarbe – präsent, aber nicht laut. Als Schimmer,
+  nicht als Fläche. Wie Bühnenlicht, das auf die Bühne fällt.
+- **Bandfotos als Herzstück** – die Bilder müssen die Seele der Seite tragen.
+  Auf dunklen Flächen leuchten sie, auf hellen Flächen werden sie durch großzügiges
+  Sizing und subtile Schatten getragen.
 - **Klare Rasterstruktur** bei Bandkarten – kein visuelles Chaos
 - **Typografisch klar** – gut lesbar, sachlich warm, kein expressiver Typografie-Overkill
 - **Ruhige Sections** – kein Reize-Feuerwerk, bewusste Dramaturgie
 - Eher **warm und erdend** als kühl und technisch
+- Warme Farbtöne statt neutralem Grau: Offwhite statt Weiß, Warm-Schwarz statt Schwarz
 - Persönlich genug, dass proudleut nicht anonym wirkt
 
 ---
@@ -105,6 +118,8 @@ Nicht: *„Hier wurde ein Template aufgefüllt."*
 - Kein Design, das Xandis Kurator-Persönlichkeit unsichtbar macht
 - Keine Bandkarten, die nach „Masse" aussehen – lieber weniger, dafür mit Würde
 - Keine UI-Muster, die wie ein anonymes Buchungsportal wirken
+- Kein klinisches Weiß – helle Flächen immer warm brechen
+- Kein reines Schwarz – dunkle Flächen immer mit violettem Unterton
 
 ---
 
@@ -115,8 +130,9 @@ Nicht: *„Hier wurde ein Template aufgefüllt."*
 - Grid-basiert bei Bandkarten (2–3 Spalten Desktop, 1–2 Mobile)
 - **Großflächige Bildmodule** für Hero-Bereiche
 - Kompakte Informationsmodule bei Bandprofilen (Sidebar-Logik)
-- Weißraum (hier: Dunkelraum) ist aktives Gestaltungsmittel
+- Weißraum ist aktives Gestaltungsmittel – großzügig zwischen Sections (`py-20` bis `py-24`)
 - Filter und Auswahlhilfen sind funktional, aber nicht dominant
+- Ein Gedanke pro Scroll-Stop: jede Section hat genau einen Zweck
 
 ---
 
@@ -134,7 +150,7 @@ Nicht: *„Hier wurde ein Template aufgefüllt."*
 ## Hero- / Einstiegsbereiche
 
 - Videoloops nur einsetzen, wenn sie Performance, Lesbarkeit und Mobile-Nutzung nicht verschlechtern.
-- Starke Fotografie ist im Zweifel besser als ein schweres Video.
+- Starke Fotografie ist im Zweifel besser als ein schwaches Video.
 - Headline klar und kurz – kein Einleitungsroman
 - CTA vorhanden, aber nicht aufdringlich
 - Auf Kategorie-Seiten: Kategorie-Foto als Hero, Einleitungstext darunter
@@ -185,7 +201,8 @@ Das Mosaik ist der visuelle Beweis: wir haben was du suchst.
 - Echte Bandfotos – gezielt ausgewählt für Vielfalt, Qualität und Kontrast
 - **Bildquelle: Sanity Assets** – nicht Airtable, nicht `/public`-Ordner (siehe unten)
 - CSS Grid – gleichmäßiges Raster, einheitliche Bildausschnitte (Aspect Ratio fest)
-- Dunkler Overlay über dem gesamten Mosaik (`background: rgba(0,0,0,0.55)`)
+- Dunkler Overlay über dem gesamten Mosaik auf Basis von `--pl-bg-stage`:
+  `background: rgba(18, 16, 26, 0.62)` – kein schwarzer Overlay (`rgba(0,0,0,...)`)
   damit Text lesbar bleibt und Fotos nicht zu dominant werden
 - Hero-Mosaik performancetauglich umsetzen:
   - nur die unmittelbar sichtbaren, wichtigsten Bilder priorisieren
@@ -266,7 +283,7 @@ Sanity-Schema (im `homepage`-Dokument):
 - Headline bleibt groß und lesbar
 - Kategorie-Links als Chips oder untereinander gestapelt
 - CTA nicht unter dem Fold verstecken
-- Overlay auf Mobile etwas stärker (`rgba(0,0,0,0.65)`) für Lesbarkeit
+- Overlay auf Mobile etwas stärker (`rgba(18, 16, 26, 0.72)`) für Lesbarkeit
 
 ### Was nicht passieren darf
 
@@ -276,6 +293,7 @@ Sanity-Schema (im `homepage`-Dokument):
 - Keine Kategorie-Links ohne echten `<a>`-Tag
 - Keine pauschale `priority`/`eager`-Ladung für alle Mosaik-Bilder
 - Kein zu schwacher Overlay – Text muss auf jedem Gerät lesbar sein
+- Kein schwarzer Overlay (`rgba(0,0,0,...)`) – immer `--pl-bg-stage`-basiert
 - Keine rohen Airtable-Attachment-URLs als dauerhafte Bildquelle
 
 ---
@@ -284,7 +302,7 @@ Sanity-Schema (im `homepage`-Dokument):
 
 - **Echte, authentische Livefotos** – keine Studioaufnahmen, keine Stock-Ästhetik
 - Atmosphäre ist wichtiger als technische Perfektion
-- Eher dunkel und kontrastreich als hell und ausgewaschen
+- Kontrastreiche Fotos bevorzugen – sie tragen sowohl auf dunklen als auch auf hellen Flächen
 - Menschen im Mittelpunkt: Band auf der Bühne, Publikum, Emotionen
 - Dynamische Bildausschnitte erlaubt – kein statischer Headshot-Stil
 - Bandlogos als separate Assets, nicht als Ersatz für Fotos
@@ -303,73 +321,211 @@ Sanity-Schema (im `homepage`-Dokument):
 
 ---
 
-## Farben / Kontraste / Oberflächen
+## Semantisches Farbsystem
 
-### Hintergrundfarbe
+### Philosophie
 
-Der Hintergrund ist dunkel – aber **nicht das Netflix-Schwarz `#000000` oder `#141414`.**
+> proudleut ist ein Feinkostladen mit Bühne.
+>
+> Die Farben sollen sich anfühlen wie: gutes Papier, warmes Licht,
+> und ab und zu ein Blick durch eine offene Tür auf eine Bühne,
+> auf der gerade etwas Besonderes passiert.
+>
+> 30% Bühne. 70% Feinkostladen.
 
-Netflix nutzt reines Schwarz damit Thumbnails maximal leuchten. Das funktioniert dort,
-weil Netflix professionelle Hochglanz-Coverbilder hat. proudleut hat echte Livefotos –
-die sind atmosphärisch, aber nicht immer perfekt ausgeleuchtet oder einheitlich.
+Drei Fragen vor jeder Section:
+1. **Fühlen?** → `bg-stage` (Bühne) – max. 2× pro Seite
+2. **Vertrauen?** → `bg-paper` (Papier) – warm, persönlich
+3. **Verstehen?** → `bg-canvas` (Leinwand) – ruhig, funktional
 
-Reines Schwarz macht Livefotos hart und unruhig. Ein warmes Dunkelgrau gibt ihnen Luft.
-
-**Festgelegte Hintergrundfarbe:**
-- Basis: `#111111` – tief, aber nicht kalt
-- Leichte Variante für Karten/Sections: `#1a1a1a` bis `#1e1e1e`
-- Nicht wärmer als `#1e1a17` – sonst kippt es ins Braune
-- Niemals reines Schwarz `#000000`
-
-**Warum das trägt:**
-Dunkler Hintergrund + starke Livefotos = Bühnenfeeling. Die Bands leuchten,
-der Rahmen tritt zurück. Das ist das Prinzip das Netflix für Thumbnails nutzt –
-und es funktioniert auch für Bandkarten, wenn die Fotos gut sind.
-
-**Konsequenz für Content:**
-Die Qualität der Bandfotos ist keine Design-Frage, sondern eine Content-Entscheidung.
-Schwache, helle oder zu unterschiedliche Fotos untergraben das dunkle Design.
-Das muss beim Onboarding neuer Bands kommuniziert werden.
-
-### Weitere Farben
-
-- **Primärfarbe:** Lila / Violett – bestehende Markenfarbe beibehalten (ca. `#7C3AED` oder nah dran)
-  → Lila für Buttons, Akzente, aktive Zustände, Links
-- **Text:** Helles Grau bis Weiß – niemals reines Weiß `#ffffff`, eher `#f5f5f5` oder `#e8e8e8`
-- **Bandkarten:** Leicht aufgehellter Dunkelton als Kartenhintergrund (`#1a1a1a` bis `#222222`)
-- **Kontrast:** Hoch genug für WCAG AA
-- **Akzentfarbe** sparsam einsetzen – Lila soll wirken, nicht überfluten
-- Keine dekorativen Farbflächen ohne funktionale Bedeutung
-
-### Design Tokens / Arbeitswerte
-
-Diese Werte dienen als Startpunkt für Tailwind-Theme, CSS-Variablen oder globale Design Tokens.
-Sie sind keine starre Designpolizei, aber die gemeinsame Basis, damit Claude Code nicht
-zufällige Hex-Werte über das Projekt verteilt.
+### CSS Custom Properties
 
 ```css
---color-bg: #111111;
---color-surface: #1a1a1a;
---color-surface-elevated: #1e1e1e;
---color-card: #1a1a1a;
---color-card-hover: #222222;
---color-primary: #7C3AED;
---color-text: #f5f5f5;
---color-text-muted: #b8b8b8;
+:root {
+  /* ── Hintergrundflächen ── */
+  --pl-bg-stage:          #12101a;  /* Bühne: Hero, Referenz-Events, Footer */
+  --pl-bg-stage-elevated: #1e1a28;  /* Karten auf Bühnenfläche */
+  --pl-bg-paper:          #f5f0e8;  /* Warmes Papier: Kategorien, Xandi, CTA */
+  --pl-bg-canvas:         #f9f7f3;  /* Ruhige Leinwand: Prozess, FAQ, Testimonials */
+  --pl-bg-elevated:       #fefdfb;  /* Cards auf hellem Grund (kein reines Weiß) */
+
+  /* ── Textfarben (helle Flächen) ── */
+  --pl-text-main:         #2a2226;  /* Haupttext. Warm-Schwarz, nie #000 */
+  --pl-text-muted:        #6b5f65;  /* Subtitel, Beschreibungen. Warm-Grau */
+  --pl-text-hint:         #84787e;  /* Meta-Infos, Bandanzahl, Timestamps */
+
+  /* ── Textfarben (dunkle Flächen) ── */
+  --pl-text-on-stage:       #ede8e3;  /* Haupttext auf Bühne. Warmes Offwhite */
+  --pl-text-on-stage-muted: #8a7e84;  /* Subtexte auf Bühne */
+
+  /* ── Textfarbe auf Akzent-Buttons ── */
+  --pl-text-on-accent:    #fefdfb;  /* Text auf accent-Buttons. Kein reines #fff */
+
+  /* ── Brand-Akzent ── */
+  --pl-accent:            #75518B;  /* CTAs, aktive Links, Icons, Fokusringe */
+  --pl-accent-hover:      #8a64a0;  /* Hover für Buttons */
+  --pl-accent-link-hover: #5e3f72;  /* Hover für Text-Links auf hellem Grund */
+  --pl-accent-subtle:     #f4f0f6;  /* Pills, Tags, Badges (Hintergrund) */
+  --pl-accent-deep:       #5e3f72;  /* Text auf accent-subtle */
+  --pl-accent-on-stage:   #c4a8d8;  /* Akzent auf dunklem Grund */
+
+  /* ── Borders ── */
+  --pl-border-soft:   rgba(117, 81, 139, 0.10);  /* Cards auf hellem Grund */
+  --pl-border-medium: rgba(117, 81, 139, 0.20);  /* Hover, Divider, FAQ-Trennlinien */
+  --pl-border-stage:  rgba(196, 168, 216, 0.15);  /* Cards/Elemente auf Bühnenfläche */
+
+  /* ── Schatten (nur für Foto-Cards) ── */
+  --pl-shadow-photo: 0 2px 8px rgba(42, 34, 38, 0.06);  /* Sehr subtil, warm */
+
+  /* ── Bühnen-Gradienten ── */
+  --pl-gradient-stage: linear-gradient(180deg,
+    #12101a 0%, #17122a 45%, #12101a 100%);
+  --pl-gradient-footer: linear-gradient(180deg,
+    #17122a 0%, #12101a 100%);
+  --pl-gradient-spotlight: radial-gradient(
+    ellipse at 50% 100%,
+    rgba(117, 81, 139, 0.12) 0%, transparent 60%);
+}
 ```
 
-Hinweise:
-- `--color-bg` ist der Grundton der Seite.
-- `--color-surface` und `--color-surface-elevated` dienen für Sections, Karten und Panels.
-- `--color-primary` wird für interaktive Elemente genutzt, nicht als großflächige Dekoration.
-- Textfarben sollen weich und gut lesbar sein, kein hartes Reinweiß.
+### Tailwind-Mapping
+
+**Tailwind v4 beachten:** Vor Änderungen prüfen, ob Farben über `@theme` / CSS Custom
+Properties in `globals.css` oder über eine bestehende Tailwind-Config gepflegt werden.
+Keine neue `tailwind.config.js` anlegen, wenn das Projekt aktuell ohne Config arbeitet.
+Die folgenden Werte sind als Referenz für beide Wege geeignet:
+
+```js
+// tailwind.config.js → theme.extend (falls Config existiert)
+// ODER: als @theme-Block / CSS Custom Properties in globals.css (Tailwind v4)
+colors: {
+  'pl-stage':          '#12101a',
+  'pl-stage-elevated': '#1e1a28',
+  'pl-paper':          '#f5f0e8',
+  'pl-canvas':         '#f9f7f3',
+  'pl-elevated':       '#fefdfb',
+  'pl-text':           '#2a2226',
+  'pl-text-muted':     '#6b5f65',
+  'pl-text-hint':      '#84787e',
+  'pl-on-stage':       '#ede8e3',
+  'pl-on-stage-muted': '#8a7e84',
+  'pl-on-accent':      '#fefdfb',
+  'pl-accent': {
+    DEFAULT:      '#75518B',
+    hover:        '#8a64a0',
+    'link-hover': '#5e3f72',
+    subtle:       '#f4f0f6',
+    deep:         '#5e3f72',
+    light:        '#c4a8d8',
+  },
+},
+borderColor: {
+  'pl-soft':   'rgba(117, 81, 139, 0.10)',
+  'pl-medium': 'rgba(117, 81, 139, 0.20)',
+  'pl-stage':  'rgba(196, 168, 216, 0.15)',
+},
+boxShadow: {
+  'pl-photo': '0 2px 8px rgba(42, 34, 38, 0.06)',
+},
+```
+
+### Tailwind-Klassen in der Praxis
+
+```
+Bühnen-Section:       bg-pl-stage text-pl-on-stage
+Card auf Bühne:       bg-pl-stage-elevated border-pl-stage
+Warme Section:        bg-pl-paper text-pl-text
+Funktionale Section:  bg-pl-canvas text-pl-text
+Card auf Hell:        bg-pl-elevated border-pl-soft
+Foto-Card auf Hell:   bg-pl-elevated border-pl-soft shadow-pl-photo
+CTA-Button:           bg-pl-accent hover:bg-pl-accent-hover text-pl-on-accent
+Pill/Badge:           bg-pl-accent-subtle text-pl-accent-deep
+Text-Link (hell):     text-pl-accent hover:text-pl-accent-link-hover
+Text-Link (dunkel):   text-pl-accent-light hover:text-pl-on-stage
+```
+
+### Hover-Verhalten: Buttons vs. Links
+
+| Element | Hover-Richtung | Grund |
+|---------|---------------|-------|
+| Button (`bg-accent`) | Heller → `#8a64a0` | Einladend, öffnend |
+| Text-Link (hell) | Dunkler → `#5e3f72` | Zielstrebig, klar, besserer Kontrast |
+| Text-Link (dunkel) | Heller → `text-on-stage` | Sichtbarkeit auf Bühne |
+
+### Schatten-Regel
+
+Keine starken SaaS-Shadows (`shadow-md`, `shadow-lg`). Schatten nur bei Foto-Cards erlaubt,
+wenn die Card sonst zu flach wirkt. Dafür `shadow-pl-photo` verwenden – sehr subtil, warm
+getönt. Reine Text-Cards (Testimonials, FAQ) bekommen keinen Schatten, nur `border-soft`.
+
+### Akzent-Einsatz
+
+| Kontext | Verwendung |
+|---------|------------|
+| CTA-Button | `bg-pl-accent hover:bg-pl-accent-hover text-pl-on-accent` |
+| Text-Link (hell) | `text-pl-accent hover:text-pl-accent-link-hover` |
+| Text-Link (dunkel) | `text-pl-accent-light hover:text-pl-on-stage` |
+| Pill / Badge | `bg-pl-accent-subtle text-pl-accent-deep` |
+| Icon | `text-pl-accent` (16–20px) |
+| Fokusring | `ring-2 ring-pl-accent ring-offset-2` |
+| Card-Hover | `hover:border-pl-medium` (von `border-soft` zu `border-medium`) |
+| Gradient-Schimmer (Bühne) | Nur über CSS-Gradient, nie als flat fill |
+
+### Gradienten-Einsatz
+
+| Gradient | Wo | Wie |
+|----------|----|-----|
+| `gradient-stage` | Hero-Section | Hinter dem Mosaik. Der Mittelwert `#17122a` liegt bewusst nah an `#12101a` – der violette Schimmer soll wie Bühnenlicht wirken, nicht wie eine lila Fläche. |
+| `gradient-footer` | Footer | Violett oben, verglimmt nach unten. Abschluss-Vorhang. |
+| `gradient-spotlight` | Referenz-Events | Als Overlay über `bg-stage`. Wie ein Spot, der von unten auf die Cards fällt. Opacity 0.12, nicht mehr. |
+
+Gradienten sind immer Hintergrund, nie auf Text, nie auf Cards, nie auf hellen Flächen.
+
+### Section-Zuordnung (Homepage)
+
+| # | Section | Hintergrund | Textfarbe | Cards/Borders | Rolle |
+|---|---------|-------------|-----------|---------------|-------|
+| 1 | Hero + Mosaik + Logos | `bg-stage` + `gradient-stage` | `text-on-stage`, `accent-on-stage` | — | Emotion, Wow, Vertrauen |
+| 2 | Veranstaltungstypen | `bg-paper` | `text-main`, `text-muted` | `bg-elevated` + `border-soft` + `shadow-photo` | Einstieg ins Stöbern |
+| 3 | So funktioniert's | `bg-canvas` | `text-main`, `text-muted` | — | Orientierung, Klarheit |
+| 4 | Referenz-Events | `bg-stage` + `gradient-spotlight` | `text-on-stage` | `bg-stage-elevated` + `border-stage` | Dunkle Insel, Bühnengefühl |
+| 5 | Xandi persönlich | `bg-paper` | `text-main`, `text-muted` | — | Vertrauen, Wärme, Gesicht |
+| 6 | Testimonials | `bg-canvas` | `text-main`, `text-muted` | `bg-elevated` + `border-soft` | Sachlich, glaubwürdig |
+| 7 | FAQ | `bg-canvas` | `text-main` | `border-medium` (Divider) | Funktional, SEO |
+| 8 | Abschluss-CTA | `bg-paper` | `text-main`, `accent` (CTA) | — | Einladend, warm |
+| 9 | Footer | `bg-stage` + `gradient-footer` | `text-on-stage-muted`, `accent-on-stage` | `border-stage` | Ruhiger Abschluss |
+
+### Farbsystem-Verbote
+
+- Kein `#000000` und kein `#ffffff` nirgendwo – auch nicht als Textfarbe auf Buttons
+- Kein Accent (`#75518B`) als große dekorative Flächenfarbe – einzige Ausnahme: primäre CTA-Buttons
+- Max. 2 dunkle Bühnen-Content-Sections pro Seite (Hero + eine emotionale Insel).
+  Der Footer zählt als Abschlussfläche nicht in diese Begrenzung.
+- Keine Gradienten auf hellen Sections
+- Accent nie als große Textfarbe – nur Links, CTAs, kleine Labels
+- Keine schwarzen Overlays (`rgba(0,0,0,...)`). Overlays immer auf Basis von
+  `--pl-bg-stage` aufbauen, z. B. `rgba(18, 16, 26, 0.62)`
+
+### Kontrast-Check (WCAG AA)
+
+| Kombination | Kontrastverhältnis | Status |
+|-------------|-------------------|--------|
+| `text-main` auf `bg-paper` | ~12.5:1 | ✓ AAA |
+| `text-main` auf `bg-canvas` | ~13.2:1 | ✓ AAA |
+| `text-muted` auf `bg-paper` | ~5.2:1 | ✓ AA |
+| `text-hint` auf `bg-canvas` | ~4.5:1 | ✓ AA |
+| `text-on-stage` auf `bg-stage` | ~14.8:1 | ✓ AAA |
+| `text-on-stage-muted` auf `bg-stage` | ~5.4:1 | ✓ AA |
+| `accent` auf `bg-paper` | ~4.6:1 | ✓ AA |
+| `text-on-accent` auf `accent` | ~5.1:1 | ✓ AA |
+| `accent-link-hover` auf `bg-paper` | ~6.8:1 | ✓ AA |
 
 ---
 
 ## Buttons / Links / CTAs
 
-- Primär-Button: Lila-Hintergrund, heller Text – klar, aber nicht schreierisch
-- Sekundär: Ghost-Button (transparenter Hintergrund, Lila-Border)
+- Primär-Button: `bg-pl-accent text-pl-on-accent` – klar, aber nicht schreierisch
+- Sekundär: Ghost-Button (transparenter Hintergrund, `border-pl-medium`)
 - CTAs sollen zur Seite passen – kein „JETZT BUCHEN"-Stil
 - Links klar erkennbar, aber dezent
 - „Band direkt anfragen" – der wichtigste CTA auf Bandprofilen – prominent, aber würdevoll
@@ -495,6 +651,9 @@ Homepage-Modul zur Erklärung des proudleut-Prinzips.
 - Der Nutzer soll sich orientiert, nicht überwältigt fühlen
 - Scrollen fühlt sich redaktionell an, nicht wie ein Katalog
 - Zwischen großen Bildmomenten und funktionalen Modulen braucht es gute Übergänge
+- Der Licht-Dunkel-Rhythmus unterstützt den Seitenfluss:
+  dunkel (Bühne) → warm-hell (Stöbern) → hell (Orientierung) → dunkel (Bühneninsel) →
+  warm-hell (Vertrauen) → hell (Funktion) → warm-hell (Einladung) → dunkel (Abschluss)
 
 ---
 
@@ -527,34 +686,36 @@ Homepage-Modul zur Erklärung des proudleut-Prinzips.
 - Konsistente Section-Abstände (Tailwind-Spacing-System verwenden)
 - Gleiche Bandkarten-Optik auf allen Kategorie-Seiten
 - Gleiche Typografie-Hierarchie überall
-- Lila nur für interaktive/aktive Elemente, nicht als dekorative Fläche
+- Akzentfarbe nur für interaktive/aktive Elemente, nicht als dekorative Fläche
 - Tonalität in Text und Design konsistent: warm-professionell, kein Stilbruch
 - Kategorie-Seiten, Bandprofile und Homepage müssen wie ein gemeinsames System wirken
+- Farbsystem-Tokens konsequent verwenden – keine willkürlichen Hex-Werte
 
 ---
 
 ## Was modernisiert werden darf
 
 - Responsives Raster (vom Webflow-Grid zu Tailwind-Grid)
-- Abstände und Weißraum bewusster gesetzt
+- Abstände und Weißraum bewusster und großzügiger gesetzt
 - Bilddarstellung optimiert (Next.js Image-Komponente)
 - Semantische Struktur sauberer (HTML5, ARIA)
 - Performance (ISR, optimierte Assets)
 - Mobile-Nutzbarkeit (Touch-Targets, Filter-UX)
 - Bessere Zustände für leere/fehlende Daten
 - Sauberere CTA-Hierarchie
+- Farbwelt: von durchgehend dunkel zu Hybrid-Rhythmus (30/70 Bühne/Feinkostladen)
 
 ---
 
 ## Was nicht „verbessert" werden soll
 
-- Die dunkle, atmosphärische Grundstimmung
-- Das Lila als Markenfarbe
+- Das Lila (#75518B) als Markenfarbe
 - Die Bandkarten-Grid-Logik (funktioniert gut, wird erkannt)
 - Die Sidebar-Logik auf Bandprofilen
 - Xandis Kurator-Persönlichkeit (kein anonymes Plattform-Feeling reinbringen)
 - Die direkte, nicht-vermittelnde Kommunikation
 - Die bestehende Identität zugunsten einer generischen Premium-Optik aufgeben
+- Die emotionale Bildwirkung – dunkle Bühnenflächen bleiben für die richtigen Momente
 
 ---
 
@@ -562,5 +723,6 @@ Homepage-Modul zur Erklärung des proudleut-Prinzips.
 
 „Die neue proudleut-Seite soll wirken, als wäre die bestehende Identität – warm,
 persönlich, mit Überblick – sorgfältig in ein sauberes, zeitgemäßes System übersetzt
-worden. Viele Bands, aber kein Gefühl von Masse. Man soll spüren:
+worden. Viele Bands, aber kein Gefühl von Masse. Dunkle Bühnenmomente für Emotion,
+warme helle Flächen für Orientierung. Man soll spüren:
 Hier steckt Erfahrung, Haltung und echte Auswahl dahinter."

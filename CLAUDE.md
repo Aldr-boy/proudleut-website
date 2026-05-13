@@ -22,7 +22,7 @@ Bitte vor jeder Aufgabe insbesondere diese Punkte aus `projekt.md` berücksichti
 ## Projekt
 
 proudleut.com ist ein kuratiertes Liveband-Verzeichnis mit direktem Anfrageweg zur Band
-für den deutschsprachigen (DACH) Markt. Die Seite richtet sich primär an Veranstalter, die
+für den deutschsprachigen Raum, mit Schwerpunkt Bayern und Deutschland. Die Seite richtet sich primär an Veranstalter, die
 eine passende Liveband für ihr Event suchen – nicht an die breite Masse, sondern an Menschen,
 die Qualität schätzen und einen verlässlichen Kurator wollen.
 
@@ -140,6 +140,29 @@ unreflektiert als finale Produktionslösung.
   weiterentwickeln – nicht grundlos neu erfinden
 - Design darf semantische Klarheit und inhaltliche Verständlichkeit nie überdecken
 
+### Farbsystem
+
+Das Projekt verwendet ein semantisches Farbsystem mit drei Flächenrollen:
+
+- **`--pl-bg-stage`** (dunkel, violett-schwarz) – für emotionale Bühnenflächen (Hero, Referenz-Events, Footer)
+- **`--pl-bg-paper`** (warmes Offwhite) – für persönliche, einladende Sections (Kategorien, Xandi, CTA)
+- **`--pl-bg-canvas`** (helles Neutral) – für funktionale Sections (Prozess, FAQ, Testimonials)
+
+Grundregel: 30% Bühne, 70% Feinkostladen. Kein `#000000`, kein `#ffffff`.
+Brand-Akzent `#75518B` nur als Button, Pill, Border, Icon – nie als dekorative Flächenfarbe
+(einzige Ausnahme: primäre CTA-Buttons).
+
+Bühnen-Regel: Max. 2 dunkle Bühnen-Content-Sections pro Seite (Hero + eine emotionale Insel).
+Der Footer zählt als Abschlussfläche nicht in diese Begrenzung.
+
+Tailwind v4: Das Projekt nutzt Tailwind CSS v4. Vor Änderungen am Farbsystem prüfen, ob
+Farben über `@theme` / CSS Custom Properties in `globals.css` oder über eine bestehende
+Tailwind-Config gepflegt werden. Keine neue `tailwind.config.js` anlegen, wenn das Projekt
+aktuell ohne Config arbeitet.
+
+Alle Tokens, Tailwind-Klassen, Gradienten und Einsatzregeln stehen in
+`design-reference.md` → Abschnitt „Semantisches Farbsystem".
+
 ---
 
 ## Motion / Microinteractions
@@ -235,6 +258,31 @@ Wenn eine Aufgabe URL-Struktur, Routing, Sitemap oder Deployment betrifft:
 - Direkte Verwendung roher Airtable-Feldnamen in UI-Komponenten
 - Finaler Einsatz von Airtable-Attachment-URLs ohne geprüfte Bildstrategie
 - Begriffe oder UI-Muster, die proudleut wie eine anonyme Provisionsplattform wirken lassen
+
+---
+
+## Quick Win: llms.txt
+
+Datei `public/llms.txt` anlegen. Inhalt basiert auf `docs/llms-txt-entwurf.md`.
+
+Ziel: KI-Systemen eine knappe, sachliche Orientierung geben, worum es bei proudleut.com
+geht. Keine übertriebenen SEO-Versprechen. proudleut nicht als Booking-Agentur oder
+Vermittlungsplattform darstellen. Schwerpunkt: Liveband-Verzeichnis, direkte
+Kontaktaufnahme, Bayern/Deutschland, Veranstalter-Zielgruppe.
+
+Umsetzung:
+
+1. Datei `public/llms.txt` anlegen
+2. Inhalt aus `docs/llms-txt-entwurf.md` übernehmen
+3. Prüfen, ob die genannten URLs im aktuellen Routing existieren
+4. Falls `/bands` oder Kategorie-URLs noch nicht final sind, nur sichere URLs eintragen
+5. Keine weiteren Dateien ändern
+
+Nach Umsetzung kurz berichten: Datei angelegt, erreichbare URL, ob alle Links gültig sind.
+
+Einordnung: Hygiene-Maßnahme, kein strategischer Haupthebel. Die eigentlichen
+SEO-Prioritäten (Kategorie-Seiten, interne Verlinkung, Textcontent, JSON-LD) bleiben davon
+unberührt.
 
 ---
 

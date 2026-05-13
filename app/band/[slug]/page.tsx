@@ -413,7 +413,7 @@ export default async function BandPage({ params }: PageProps) {
 
       {/* Ähnliche Bands – volle Container-Breite */}
       {similarBands.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12 border-t border-white/5">
+        <section className="bg-pl-canvas max-w-6xl mx-auto px-4 sm:px-6 py-12 border-t border-pl-soft">
           <h2 className="text-xl font-bold text-pl-text mb-6">Ähnliche Bands</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {similarBands.map((b) => (
