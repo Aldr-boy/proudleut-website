@@ -6,7 +6,7 @@ export const bandLogos = [
   { src: "/images/logos/blechstreet-boys.png",       name: "Blechstreet Boys",    href: "/band/blechstreet-boys" },
   { src: "/images/logos/d-quertreiber.webp",         name: "D'Quertreiber",       href: "/band/d-quertreiber" },
   { src: "/images/logos/donnaweda.png",              name: "Donnaweda",           href: "/band/donnaweda",      className: "max-w-40 md:max-w-48" },
-  { src: "/images/logos/groegoetz-weissbir.png",     name: "Grögoetz Weißbier" /* href weggelassen: Dateiname 'weissbir' erscheint abgekürzt, Slug unsicher */ },
+  { src: "/images/logos/san2.png",                    name: "San2 & His Soul Patrol", href: "/band/san2-and-his-soul-patrol" },
   { src: "/images/logos/muckasaeck.png",             name: "Muckasäck",           href: "/band/muckasaeck" },
   { src: "/images/logos/rotzloeffl-band.webp",       name: "Rotzlöffl Band",      href: "/band/rotzloeffl-band" },
   { src: "/images/logos/ruescherl-muse.png",         name: "Rüscherl & Muse",     href: "/band/ruescherl-muse" },

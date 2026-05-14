@@ -8,6 +8,7 @@ import Testimonials from '@/components/homepage/Testimonials';
 import FAQ from '@/components/homepage/FAQ';
 import CTASection from '@/components/homepage/CTASection';
 import LogoStrip from '@/components/homepage/LogoStrip';
+import ReferenzEvents from '@/components/homepage/ReferenzEvents';
 
 export const revalidate = 300;
 
@@ -45,6 +46,7 @@ export default async function HomePage() {
       </section>
 
       <Explainer />
+      <ReferenzEvents />
       <CuratorBlock />
       <Testimonials />
       <FAQ />

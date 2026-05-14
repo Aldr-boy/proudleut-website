@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const NAV_LINKS = [
   { label: 'Livebands entdecken', href: '/#bands' },
@@ -23,11 +24,15 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-pl-stage/80 backdrop-blur-sm border-b border-pl-stage">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link
-          href="/"
-          className="text-pl-on-stage font-bold text-xl tracking-tight hover:text-pl-accent-light motion-safe:transition-colors"
-        >
-          proudleut
+        <Link href="/" aria-label="Zur Startseite">
+          <Image
+            src="/images/proudleut-logo-white.png"
+            alt="proudleut – Livebands entdecken"
+            width={1004}
+            height={185}
+            className="h-6 md:h-7 w-auto"
+            priority
+          />
         </Link>
 
         {/* Desktop nav */}

@@ -1,11 +1,20 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Footer() {
   return (
-    <footer className="bg-pl-stage border-t border-pl-stage mt-16">
+    <footer className="bg-pl-gradient-footer border-t border-pl-stage mt-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
-          <p className="text-pl-on-stage font-semibold text-base">proudleut</p>
+          <Link href="/" aria-label="Zur Startseite">
+            <Image
+              src="/images/proudleut-logo-white.png"
+              alt="proudleut – Livebands entdecken"
+              width={1004}
+              height={185}
+              className="h-6 w-auto"
+            />
+          </Link>
           <p className="text-pl-on-stage-muted text-sm mt-1">
             Das Liveband-Verzeichnis für DACH
           </p>
