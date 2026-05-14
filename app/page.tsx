@@ -7,6 +7,7 @@ import CuratorBlock from '@/components/homepage/CuratorBlock';
 import Testimonials from '@/components/homepage/Testimonials';
 import FAQ from '@/components/homepage/FAQ';
 import CTASection from '@/components/homepage/CTASection';
+import LogoStrip from '@/components/homepage/LogoStrip';
 
 export const revalidate = 300;
 
@@ -16,6 +17,7 @@ export default async function HomePage() {
   return (
     <>
       <HeroMosaic />
+      <LogoStrip />
 
       {/* Band grid – max. 12 Bands auf der Homepage */}
       <section id="bands" className="bg-pl-paper py-16 px-4 sm:px-6">
