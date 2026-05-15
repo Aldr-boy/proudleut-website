@@ -75,4 +75,5 @@ export type Band = {
   socialMediaStats?: SocialMediaStats;
   referenceEvents: ReferenceEvent[];
   similarBands: SimilarBandReferences;
+  homepageReady: boolean;
 };

@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 export default function Footer() {
   return (
-    <footer className="bg-pl-gradient-footer border-t border-pl-stage mt-16">
+    <footer className="bg-pl-gradient-footer border-t border-pl-stage">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
           <Link href="/" aria-label="Zur Startseite">

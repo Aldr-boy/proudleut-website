@@ -45,6 +45,7 @@ type RawBandFields = {
   'similar_2_name'?: unknown;
   'similar_3_name'?: unknown;
   'Referenz-Events'?: string;
+  'Homepage-ready: ja/nein'?: string;
 };
 
 export type RawAirtableBandRecord = {
@@ -78,8 +79,14 @@ function normalizeStatus(value?: string): Band['status'] {
 }
 
 function normalizeBoolean(value?: unknown): boolean | null {
-  if (value === 'ja' || value === true) return true;
-  if (value === 'nein' || value === false) return false;
+  if (value == null) return null;
+  if (value === true) return true;
+  if (value === false) return false;
+  if (typeof value === 'string') {
+    const s = value.trim().toLowerCase();
+    if (s === 'ja') return true;
+    if (s === 'nein') return false;
+  }
   return null;
 }
 
@@ -208,5 +215,6 @@ export function normalizeBand(
       manual2: firstStr(f['similar_2_name']),
       manual3: firstStr(f['similar_3_name']),
     },
+    homepageReady: normalizeBoolean(f['Homepage-ready: ja/nein']) === true,
   };
 }
