@@ -57,6 +57,9 @@ export type Band = {
   eventTypes: string[];
   categorySlugs?: string[];
 
+  klingtNach: string[];
+  musikalischVerortet: string[];
+
   shortDescription?: string;
   description?: string;
   metaDescription?: string;

@@ -46,6 +46,17 @@ type RawBandFields = {
   'similar_3_name'?: unknown;
   'Referenz-Events'?: string;
   'Homepage-ready: ja/nein'?: string;
+  // Kuratierte Stimmungs- und Stil-Tags (pipe-getrennt: "Tag A | Tag B | Tag C")
+  'Klingt_Nach'?: string;
+  'AI_Klingt_Nach_Vorschlag'?: string;
+  'Musikalisch_Verortet'?: string;
+  'AI_Musikalisch_Verortet_Vorschlag'?: string;
+  // Social Media Statistiken (Lookup aus Tabelle „Social Media Index")
+  'IG_Followers'?: number;
+  'IG_Following'?: number;
+  'FB_Followers'?: number;
+  'FB_Following'?: number;
+  'YT_Subs'?: number;
 };
 
 export type RawAirtableBandRecord = {
@@ -121,6 +132,11 @@ function normalizeReferenceEvents(raw?: string): ReferenceEvent[] {
     .filter((ev) => ev.eventName.length > 0);
 }
 
+function splitPipe(value?: string): string[] {
+  if (!value) return [];
+  return value.split('|').map((s) => s.trim()).filter(Boolean);
+}
+
 function resolveEventTypes(
   rawIds?: string[],
   eventTypeMap?: Map<string, EventTypeEntry>
@@ -177,6 +193,8 @@ export function normalizeBand(
     category: str(f['Hauptkategorie/Bandart']),
     eventTypes,
     categorySlugs,
+    klingtNach: splitPipe(str(f['Klingt_Nach']) ?? str(f['AI_Klingt_Nach_Vorschlag'])),
+    musikalischVerortet: splitPipe(str(f['Musikalisch_Verortet']) ?? str(f['AI_Musikalisch_Verortet_Vorschlag'])),
     shortDescription,
     description: str(f['Main Text']),
     metaDescription: str(f['Meta Description']),
@@ -208,6 +226,13 @@ export function normalizeBand(
       instagram: normalizeUrl(f['Social - Instagram']),
       spotify: normalizeUrl(f['Social - Spotify']),
       youtube: normalizeUrl(f['Social - YouTube']),
+    },
+    socialMediaStats: {
+      igFollowers: typeof f['IG_Followers'] === 'number' ? f['IG_Followers'] : undefined,
+      igFollowing: typeof f['IG_Following'] === 'number' ? f['IG_Following'] : undefined,
+      fbFollowers: typeof f['FB_Followers'] === 'number' ? f['FB_Followers'] : undefined,
+      fbFollowing: typeof f['FB_Following'] === 'number' ? f['FB_Following'] : undefined,
+      ytSubscribers: typeof f['YT_Subs'] === 'number' ? f['YT_Subs'] : undefined,
     },
     referenceEvents: normalizeReferenceEvents(f['Referenz-Events']),
     similarBands: {
