@@ -52,11 +52,12 @@ type RawBandFields = {
   'Musikalisch_Verortet'?: string;
   'AI_Musikalisch_Verortet_Vorschlag'?: string;
   // Social Media Statistiken (Lookup aus Tabelle „Social Media Index")
-  'IG_Followers'?: number;
-  'IG_Following'?: number;
-  'FB_Followers'?: number;
-  'FB_Following'?: number;
-  'YT_Subs'?: number;
+  // Airtable Lookup-Felder kommen als number[] – number als Fallback für Tests
+  'IG_Followers'?: number[] | number;
+  'IG_Following'?: number[] | number;
+  'FB_Followers'?: number[] | number;
+  'FB_Following'?: number[] | number;
+  'YT_Subs'?: number[] | number;
 };
 
 export type RawAirtableBandRecord = {
@@ -130,6 +131,15 @@ function normalizeReferenceEvents(raw?: string): ReferenceEvent[] {
       };
     })
     .filter((ev) => ev.eventName.length > 0);
+}
+
+function firstNumber(value?: number | number[]): number | undefined {
+  if (typeof value === 'number') return value;
+  if (Array.isArray(value)) {
+    const first = value.find((item) => typeof item === 'number');
+    return typeof first === 'number' ? first : undefined;
+  }
+  return undefined;
 }
 
 function splitPipe(value?: string): string[] {
@@ -228,11 +238,11 @@ export function normalizeBand(
       youtube: normalizeUrl(f['Social - YouTube']),
     },
     socialMediaStats: {
-      igFollowers: typeof f['IG_Followers'] === 'number' ? f['IG_Followers'] : undefined,
-      igFollowing: typeof f['IG_Following'] === 'number' ? f['IG_Following'] : undefined,
-      fbFollowers: typeof f['FB_Followers'] === 'number' ? f['FB_Followers'] : undefined,
-      fbFollowing: typeof f['FB_Following'] === 'number' ? f['FB_Following'] : undefined,
-      ytSubscribers: typeof f['YT_Subs'] === 'number' ? f['YT_Subs'] : undefined,
+      igFollowers: firstNumber(f['IG_Followers']),
+      igFollowing: firstNumber(f['IG_Following']),
+      fbFollowers: firstNumber(f['FB_Followers']),
+      fbFollowing: firstNumber(f['FB_Following']),
+      ytSubscribers: firstNumber(f['YT_Subs']),
     },
     referenceEvents: normalizeReferenceEvents(f['Referenz-Events']),
     similarBands: {

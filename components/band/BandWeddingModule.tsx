@@ -3,15 +3,7 @@ import type { Band } from '@/lib/types/band';
 type Props = { band: Band };
 
 function hasWeddingContent(band: Band): boolean {
-  return (
-    band.eventTypes.some((et) => et.toLowerCase().includes('hochzeit')) ||
-    !!band.weddingInfo?.weddingDescription ||
-    !!band.weddingInfo?.bandSize ||
-    !!band.weddingInfo?.constellation ||
-    band.weddingInfo?.kidnappingBride != null ||
-    band.weddingInfo?.moderation != null ||
-    !!band.weddingInfo?.possiblePlaytimes
-  );
+  return band.eventTypes.some((et) => et.trim().toLowerCase().includes('hochzeit'));
 }
 
 export function BandWeddingModule({ band }: Props) {

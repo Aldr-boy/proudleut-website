@@ -94,11 +94,11 @@ export default async function BandPage({ params }: PageProps) {
 
       <BandHero band={band} />
       <BandTagsSection band={band} />
+      <BandSocialIndex band={band} />
       <BandDescription band={band} embedUrl={embedUrl} />
       <BandReferenceEvents band={band} />
       <BandGallery band={band} />
       <BandWeddingModule band={band} />
-      <BandSocialIndex band={band} />
       <BandContactSection band={band} websiteUrl={websiteUrl} />
 
       {/* Ähnliche Bands */}

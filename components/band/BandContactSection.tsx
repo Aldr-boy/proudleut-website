@@ -1,4 +1,6 @@
 import type { Band } from '@/lib/types/band';
+import { AnfrageButton } from './AnfrageButton';
+import { MerkButton } from './MerkButton';
 
 type Props = {
   band: Band;
@@ -63,17 +65,19 @@ export function BandContactSection({ band, websiteUrl }: Props) {
     ] as (LinkItem | null)[]
   ).filter((l): l is LinkItem => l !== null);
 
+  const hasLinks = links.length > 0;
+
   return (
     <section className="bg-pl-paper border-t border-pl-soft py-12 md:py-16">
       <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
+        <div className={`grid grid-cols-1 gap-10 ${hasLinks ? 'md:grid-cols-2 md:gap-16' : ''}`}>
 
-          {/* Linke Spalte: Mehr von [Band] */}
-          <div>
-            <h2 className="text-lg font-bold text-pl-text mb-5">
-              Mehr von {band.name}
-            </h2>
-            {links.length > 0 ? (
+          {/* Linke Spalte: Mehr von [Band] – nur wenn Links vorhanden */}
+          {hasLinks && (
+            <div>
+              <h2 className="text-lg font-bold text-pl-text mb-5">
+                Mehr von {band.name}
+              </h2>
               <ul className="space-y-3">
                 {links.map(({ label, href, icon }) => (
                   <li key={label}>
@@ -92,42 +96,40 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-sm text-pl-text-muted">Keine weiteren Links verfügbar.</p>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Rechte Spalte: CTA */}
+          {/* Rechte Spalte: CTA – immer sichtbar */}
           <div>
             <h2 className="text-lg font-bold text-pl-text mb-3">
               Interesse an dieser Band?
             </h2>
-            <p className="text-sm text-pl-text-muted leading-relaxed mb-6">
-              Schreib der Band direkt — oder melde dich kurz bei mir, wenn du Unterstützung
-              bei der Auswahl möchtest.
+            <p className="text-sm text-pl-text-muted leading-relaxed mb-5">
+              Deine Anfrage wird über proudleut an die Band weitergeleitet.
             </p>
+
             <div className="flex flex-col sm:flex-row gap-3">
-              {websiteUrl && (
-                <a
-                  href={websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-full
-                             text-sm font-semibold bg-pl-accent text-pl-on-accent
-                             hover:bg-pl-accent-hover motion-safe:transition-colors"
-                >
-                  Zur Band-Website
-                </a>
-              )}
+              <AnfrageButton
+                name={band.name}
+                slug={band.slug}
+                eventTypes={band.eventTypes}
+              />
+              <MerkButton
+                name={band.name}
+                slug={band.slug}
+                eventTypes={band.eventTypes}
+              />
+            </div>
+
+            <p className="text-xs text-pl-text-hint mt-5">
+              Noch unsicher?{' '}
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="inline-flex items-center justify-center px-6 py-3 rounded-full
-                           text-sm font-semibold border border-pl-soft text-pl-text-muted
-                           hover:border-pl-medium hover:text-pl-text motion-safe:transition-colors"
+                className="underline hover:text-pl-text-muted motion-safe:transition-colors"
               >
-                Hilfe bei der Auswahl
+                Schreib mir kurz, wenn du Hilfe bei der Auswahl möchtest.
               </a>
-            </div>
+            </p>
           </div>
 
         </div>
