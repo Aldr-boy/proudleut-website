@@ -13,6 +13,7 @@ import { BandGallery } from '@/components/band/BandGallery';
 import { BandWeddingModule } from '@/components/band/BandWeddingModule';
 import { BandSocialIndex } from '@/components/band/BandSocialIndex';
 import { BandContactSection } from '@/components/band/BandContactSection';
+import { HeroCTA } from '@/components/band/HeroCTA';
 
 export const revalidate = 300;
 
@@ -93,6 +94,7 @@ export default async function BandPage({ params }: PageProps) {
       />
 
       <BandHero band={band} />
+      <HeroCTA name={band.name} slug={band.slug} eventTypes={band.eventTypes ?? []} />
       <BandTagsSection band={band} />
       <BandSocialIndex band={band} />
       <BandDescription band={band} embedUrl={embedUrl} />
