@@ -14,6 +14,7 @@ import { BandWeddingModule } from '@/components/band/BandWeddingModule';
 import { BandSocialIndex } from '@/components/band/BandSocialIndex';
 import { BandContactSection } from '@/components/band/BandContactSection';
 import { HeroCTA } from '@/components/band/HeroCTA';
+import { BandVideoSection } from '@/components/band/BandVideoSection';
 
 export const revalidate = 300;
 
@@ -96,9 +97,22 @@ export default async function BandPage({ params }: PageProps) {
       <BandHero band={band} />
       <HeroCTA name={band.name} slug={band.slug} eventTypes={band.eventTypes ?? []} />
       <BandTagsSection band={band} />
-      <BandSocialIndex band={band} />
-      <BandDescription band={band} embedUrl={embedUrl} />
-      <BandReferenceEvents band={band} />
+      <BandVideoSection embedUrl={embedUrl} bandName={band.name} />
+      <BandDescription band={band} />
+      {(() => {
+        const hasReferenceEvents = band.referenceEvents.length > 0;
+        const s = band.socialMediaStats;
+        const hasSocialStats = !!(s?.igFollowers || s?.fbFollowers || s?.ytSubscribers);
+        const both = hasReferenceEvents && hasSocialStats;
+        if (!hasReferenceEvents && !hasSocialStats) return null;
+        return (
+          <section className="bg-pl-stage">
+            <BandReferenceEvents band={band} compactBottom={both} />
+            {both && <div className="border-t border-white/10" />}
+            <BandSocialIndex band={band} compactTop={both} />
+          </section>
+        );
+      })()}
       <BandGallery band={band} />
       <BandWeddingModule band={band} />
       <BandContactSection band={band} websiteUrl={websiteUrl} />

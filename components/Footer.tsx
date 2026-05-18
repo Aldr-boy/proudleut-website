@@ -26,7 +26,7 @@ export default function Footer() {
           <Link href="/ueber-mich" className="hover:text-pl-on-stage motion-safe:transition-colors">
             Über mich
           </Link>
-          <Link href="#" className="hover:text-pl-on-stage motion-safe:transition-colors">
+          <Link href="/fuer-bands" className="hover:text-pl-on-stage motion-safe:transition-colors">
             Für Bands
           </Link>
           <Link href="#" className="hover:text-pl-on-stage motion-safe:transition-colors">

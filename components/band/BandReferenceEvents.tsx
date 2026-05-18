@@ -5,9 +5,9 @@ import type { Band } from '@/lib/types/band';
 
 const INITIAL_COUNT = 4;
 
-type Props = { band: Band };
+type Props = { band: Band; compactBottom?: boolean };
 
-export function BandReferenceEvents({ band }: Props) {
+export function BandReferenceEvents({ band, compactBottom }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   if (band.referenceEvents.length === 0) return null;
@@ -18,7 +18,7 @@ export function BandReferenceEvents({ band }: Props) {
   const hasMore = band.referenceEvents.length > INITIAL_COUNT;
 
   return (
-    <section className="bg-pl-stage py-12 md:py-16">
+    <div className={compactBottom ? 'pt-12 md:pt-16 pb-8' : 'py-12 md:py-16'}>
       <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
         <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-2">
           Referenz-Events
@@ -31,13 +31,13 @@ export function BandReferenceEvents({ band }: Props) {
           {visible.map((ev, i) => (
             <div
               key={i}
-              className="bg-pl-stage-elevated border border-pl-stage rounded-xl px-5 py-4"
+              className="bg-pl-stage-elevated border border-pl-stage rounded-xl p-5"
             >
-              <p className="text-sm font-semibold text-pl-on-stage leading-snug">
+              <p className="text-base md:text-lg font-semibold text-pl-on-stage">
                 {ev.eventName}
               </p>
               {(ev.city || ev.year) && (
-                <p className="text-xs text-pl-on-stage-muted mt-1.5">
+                <p className="mt-1 text-sm text-pl-on-stage-muted">
                   {[ev.city, ev.year].filter(Boolean).join(' · ')}
                 </p>
               )}
@@ -62,6 +62,6 @@ export function BandReferenceEvents({ band }: Props) {
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }

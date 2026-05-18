@@ -1,6 +1,6 @@
 import type { Band } from '@/lib/types/band';
 
-type Props = { band: Band };
+type Props = { band: Band; compactTop?: boolean };
 
 function formatCount(n: number): string {
   return n.toLocaleString('de-DE');
@@ -39,7 +39,7 @@ type StatCard = {
   icon: React.ReactNode;
 };
 
-export function BandSocialIndex({ band }: Props) {
+export function BandSocialIndex({ band, compactTop }: Props) {
   const stats = band.socialMediaStats;
 
   const cards: StatCard[] = (
@@ -53,13 +53,7 @@ export function BandSocialIndex({ band }: Props) {
   if (cards.length === 0) return null;
 
   return (
-    <section
-      className="border-t py-12 md:py-14"
-      style={{
-        background: 'var(--pl-bg-stage)',
-        borderColor: 'rgba(196,168,216,0.12)',
-      }}
-    >
+    <div className={compactTop ? 'pt-8 pb-12 md:pb-14' : 'py-12 md:py-14'}>
       <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
         <p
           className="text-xs font-semibold uppercase tracking-wider mb-2"
@@ -71,13 +65,13 @@ export function BandSocialIndex({ band }: Props) {
           className="text-xl md:text-2xl font-bold mb-1"
           style={{ color: 'var(--pl-text-on-stage)' }}
         >
-          {band.name} online
+          Sichtbarkeit über die Bühne hinaus
         </h2>
         <p
           className="text-sm mb-8 max-w-xl"
           style={{ color: 'rgba(196,168,216,0.6)' }}
         >
-          Follower- und Abo-Zahlen aus den öffentlichen Kanälen der Band.
+          Besonders relevant für Volksfeste, Stadtfeste, Vereinsfeste sowie Veranstaltungen von Städten und Gemeinden.
         </p>
 
         <div className={`grid gap-3 ${cards.length === 1 ? 'grid-cols-1 max-w-xs' : 'grid-cols-1 sm:grid-cols-3'}`}>
@@ -111,6 +105,6 @@ export function BandSocialIndex({ band }: Props) {
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

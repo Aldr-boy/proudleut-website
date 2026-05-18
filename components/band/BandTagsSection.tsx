@@ -121,7 +121,7 @@ export function BandTagsSection({ band }: Props) {
                       <Link
                         key={et}
                         href={`/veranstaltung/${slug}`}
-                        className={`${NEUTRAL_CHIP} hover:border-pl-medium hover:text-pl-text motion-safe:transition-colors`}
+                        className={`${NEUTRAL_CHIP} hover:border-pl-medium hover:text-pl-text motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent`}
                       >
                         {et}
                       </Link>

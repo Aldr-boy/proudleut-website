@@ -7,6 +7,7 @@ import Image from 'next/image';
 const NAV_LINKS = [
   { label: 'Livebands entdecken', href: '/#bands' },
   { label: 'Über mich', href: '/ueber-mich' },
+  { label: 'Für Bands', href: '/fuer-bands' },
   { label: 'Kontakt', href: '#' },
 ] as const;
 
