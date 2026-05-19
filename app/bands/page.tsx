@@ -1,40 +1,52 @@
+import type { Metadata } from 'next';
 import { getBands } from '@/lib/airtable/queries';
+import BandExplorer from '@/components/bands/BandExplorer';
+import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 
 export const revalidate = 300;
 
+export const metadata: Metadata = {
+  title: 'Livebands entdecken – proudleut',
+  description:
+    'Entdecke Livebands und Acts für Hochzeiten, Feste, Firmenfeiern und besondere Events auf proudleut.',
+};
+
 export default async function BandsPage() {
   const bands = await getBands();
+  const activeBands = bands.filter((band) => band.status === 'active');
+
+  const regions = REGION_ORDER.filter((r) =>
+    activeBands.some((b) => getBandRegionBucket(b) === r)
+  );
 
   return (
-    <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '0.5rem' }}>
-        Phase 1B – Technischer Durchstich
-      </p>
-      <h1 style={{ fontSize: '2rem', marginBottom: '1.5rem' }}>
-        Alle Bands ({bands.length})
-      </h1>
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {bands.map((band) => (
-          <li key={band.slug} style={{ borderBottom: '1px solid #eee', padding: '0.75rem 0' }}>
-            <a
-              href={`/band/${band.slug}`}
-              style={{ fontWeight: 600, textDecoration: 'none', color: '#000' }}
-            >
-              {band.name}
-            </a>
-            {band.location.city && (
-              <span style={{ color: '#888', marginLeft: '0.75rem', fontSize: '0.9rem' }}>
-                {band.location.city}
-              </span>
-            )}
-            {band.shortDescription && (
-              <p style={{ margin: '0.25rem 0 0', color: '#555', fontSize: '0.9rem' }}>
-                {band.shortDescription}
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+    <main>
+      {/* Hero */}
+      <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
+        <div className="max-w-[1140px] mx-auto">
+          <p className="text-pl-accent-light text-sm font-medium tracking-wider uppercase mb-4">
+            Bands auf proudleut
+          </p>
+          <h1 className="text-3xl md:text-4xl font-bold text-pl-on-stage mb-4 leading-tight">
+            Livebands entdecken
+          </h1>
+          <p className="text-base md:text-lg text-pl-on-stage-muted leading-relaxed max-w-[640px]">
+            Stöbere durch Bands und Live-Acts für Hochzeiten, Feste, Firmenfeiern
+            und besondere Events.
+          </p>
+        </div>
+      </section>
+
+      {/* Explorer */}
+      <section className="bg-pl-canvas py-16 px-4 sm:px-6">
+        <div className="max-w-[1140px] mx-auto">
+          {activeBands.length === 0 ? (
+            <p className="text-pl-text-muted">Keine Bands gefunden.</p>
+          ) : (
+            <BandExplorer bands={activeBands} regions={regions} />
+          )}
+        </div>
+      </section>
     </main>
   );
 }

@@ -23,6 +23,9 @@ type RawBandFields = {
   'YouTube Video Link'?: string;
   'PLZ'?: unknown;
   // Lookup-Felder kommen als Array aus der Airtable API
+  'plz (from Orte-Master)'?: unknown;
+  'lat (from Orte-Master)'?: unknown;
+  'lon (from Orte-Master)'?: unknown;
   'orte (from Orte-Master)'?: string[];
   'landkreise (from Orte-Master)'?: string[];
   'regierungsbezirk (from Orte-Master)'?: string[];
@@ -142,6 +145,14 @@ function firstNumber(value?: number | number[]): number | undefined {
   return undefined;
 }
 
+function parseCoord(value: unknown): number | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw == null) return undefined;
+  const n = typeof raw === 'number' ? raw
+    : parseFloat(String(raw).replace(',', '.'));
+  return isFinite(n) ? n : undefined;
+}
+
 function splitPipe(value?: string): string[] {
   if (!value) return [];
   return value.split('|').map((s) => s.trim()).filter(Boolean);
@@ -215,7 +226,9 @@ export function normalizeBand(
     thumbnailImage,
     gallery,
     location: {
-      postalCode: str(f['PLZ']),
+      postalCode: firstStr(f['plz (from Orte-Master)']) ?? firstStr(f['PLZ']),
+      latitude: parseCoord(f['lat (from Orte-Master)']),
+      longitude: parseCoord(f['lon (from Orte-Master)']),
       city: f['orte (from Orte-Master)']?.[0],
       district: f['landkreise (from Orte-Master)']?.[0],
       administrativeRegion: f['regierungsbezirk (from Orte-Master)']?.[0],

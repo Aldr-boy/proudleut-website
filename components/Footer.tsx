@@ -16,7 +16,7 @@ export default function Footer() {
             />
           </Link>
           <p className="text-pl-on-stage-muted text-sm mt-1">
-            Das Liveband-Verzeichnis für DACH
+            Livebands für besondere Momente.
           </p>
         </div>
         <nav
