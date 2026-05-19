@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -15,28 +16,28 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   {
-    title: 'Hero mit Bandfoto',
-    desc: 'Der erste Eindruck: groß, atmosphärisch und passend zu eurer Band.',
+    title: 'Bandfoto mit Atmosphäre',
+    desc: 'Der erste Eindruck: groß, atmosphärisch und passend zu eurem Auftritt.',
   },
   {
-    title: 'Video als Live-Beweis',
-    desc: 'Veranstalter sehen sofort, wie ihr klingt, wirkt und auf der Bühne seid.',
+    title: 'Video als Live-Eindruck',
+    desc: 'Veranstalter sehen und hören sofort, wie ihr klingt und wie ihr auf der Bühne wirkt.',
   },
   {
-    title: 'Redaktioneller Bandtext',
+    title: 'Text mit Haltung',
     desc: 'Nicht einfach Keywords, sondern ein Text, der erklärt, was euch ausmacht.',
   },
   {
-    title: 'Referenz-Events',
-    desc: 'Aus Auftritten werden Bühnenmomente: wo ihr gespielt habt und in welchem Rahmen.',
+    title: 'Referenzen & Bühnenmomente',
+    desc: 'Aus Auftritten werden echte Eindrücke: wo ihr gespielt habt und in welchem Rahmen.',
   },
   {
-    title: 'Tags und Kategorien',
-    desc: 'Damit ihr auf den passenden Veranstaltungsseiten gefunden werdet.',
+    title: 'Anlässe, Stil & Region',
+    desc: 'Damit ihr dort gefunden werdet, wo Veranstalter nach passenden Acts suchen.',
   },
   {
-    title: 'Direktanfrage',
-    desc: 'Interessierte Veranstalter können euch direkt kontaktieren — ohne Umweg und ohne Provision.',
+    title: 'Direkter Kontakt',
+    desc: 'Interessierte Veranstalter können euch direkt kontaktieren — ohne Umweg über ein Buchungsportal.',
   },
 ];
 
@@ -118,32 +119,63 @@ export default function FuerBandsPage() {
 
       {/* 2 — Was proudleut ist */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[820px] mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-8">
-            Was proudleut ist — und was nicht.
-          </h2>
-          <div className="space-y-5 text-base md:text-[1.05rem] text-pl-text leading-8">
-            <p>
-              proudleut ist ein Ort für Live-Acts, die in einem passenden Umfeld sichtbar sein
-              möchten — ohne zwischen Preisvergleich, Bewertungssystem und Buchungsportal unterzugehen.
-            </p>
-            <p>
-              Veranstalter finden auf proudleut ein echtes Bandprofil: mit Bildern, Video, Text,
-              Referenzen und direktem Kontakt. Die Anfrage geht nicht über einen Marktplatz,
-              sondern direkt an euch.
-            </p>
-            <p>
-              Ich bin Alex. Ich baue und pflege proudleut persönlich, weil ich aus dem
-              Livemusik-Geschäft komme und weiß, wie viel in einer guten Band steckt: Sound,
-              Haltung, Erfahrung, Menschen, Bühnenmomente. Genau das soll ein Profil sichtbar
-              machen.
-            </p>
-            <p>
-              proudleut ist kein automatisches Selbsteintragssystem. Nicht, weil ich Bands
-              aussortieren möchte — sondern weil ein gutes Profil ein bisschen Austausch braucht.
-              Fast jede Band ist willkommen. Mir geht es darum, dass euer Auftritt auf proudleut
-              gut aussieht, verständlich ist und Veranstaltern hilft, euch richtig einzuordnen.
-            </p>
+        <div className="max-w-[1140px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-10 lg:gap-16 items-start">
+
+            {/* Linke Spalte: Editorial-Text */}
+            <div className="max-w-[680px]">
+              <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-6">
+                Was proudleut ist — und was nicht.
+              </h2>
+              <div className="space-y-5 text-base md:text-[1.05rem] leading-8">
+                <p className="text-pl-text-muted">
+                  proudleut ist kein Buchungsportal und kein Vergleichssystem. Es ist ein persönlich
+                  gepflegter Ort für Live-Acts, die in einem passenden Umfeld sichtbar sein möchten.
+                </p>
+                <p className="text-pl-text">
+                  Ich bin Alex. Ich baue und pflege proudleut persönlich, weil ich aus dem
+                  Livemusik-Geschäft komme und weiß, wie viel in einer guten Band steckt: Sound,
+                  Haltung, Erfahrung, Menschen, Bühnenmomente. Genau das soll ein Profil sichtbar
+                  machen.
+                </p>
+                <p className="text-pl-text-muted">
+                  Ein Profil entsteht auf proudleut nicht einfach per Formular und Klick auf
+                  „Veröffentlichen". Nicht, weil ich Bands aussortieren möchte — sondern weil ein
+                  guter Auftritt etwas Austausch braucht. Grundsätzlich bin ich offen für viele gute
+                  Bands und Acts. Mir geht es darum, dass euer Profil gut aussieht, verständlich ist
+                  und Veranstaltern hilft, euch richtig einzuordnen.
+                </p>
+              </div>
+            </div>
+
+            {/* Rechte Spalte: Positionierungs-Card */}
+            <div className="rounded-2xl border border-pl-soft bg-pl-elevated p-8">
+              <p className="text-sm font-semibold text-pl-text-muted uppercase tracking-wider mb-6">
+                Kurz gesagt
+              </p>
+              <div className="divide-y divide-pl-soft">
+                {[
+                  {
+                    nicht: 'Preisvergleich',
+                    sondern: 'ein echtes Profil mit Atmosphäre',
+                  },
+                  {
+                    nicht: 'Bewertungssystem',
+                    sondern: 'wertschätzende Einordnung nach Stil, Anlass und Region',
+                  },
+                  {
+                    nicht: 'anonymer Marktplatz',
+                    sondern: 'direkter Kontakt zwischen Veranstalter und Act',
+                  },
+                ].map(({ nicht, sondern }) => (
+                  <div key={nicht} className="py-5">
+                    <p className="text-xs text-pl-text-hint mb-1.5">Nicht: {nicht}</p>
+                    <p className="text-sm font-semibold text-pl-text leading-snug">{sondern}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -151,11 +183,11 @@ export default function FuerBandsPage() {
       {/* 2.5 — Profil-Mockup */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-[1140px] mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
 
-            {/* Links: Einleitung + Nutzenpunkte */}
-            <div>
-              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-4">
+            {/* Links (Mobile) / Rechts (Desktop): Einleitung + Nutzenpunkte */}
+            <div className="max-w-[480px] order-1 lg:order-2">
+              <p className="text-sm font-semibold text-pl-text-muted uppercase tracking-wider mb-4">
                 So wirkt ein Profil auf proudleut
               </p>
               <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-4">
@@ -189,10 +221,28 @@ export default function FuerBandsPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Musiker-O-Ton */}
+              <div className="mt-8 pt-6 border-t border-pl-soft">
+                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
+                  Aus Musiker-Sicht
+                </p>
+                <div
+                  className="pl-4 border-l-2"
+                  style={{ borderColor: 'rgba(117,81,139,0.20)' }}
+                >
+                  <p className="text-sm md:text-base text-pl-text italic leading-relaxed mb-2">
+                    „Mit Alex zu arbeiten ist angenehm — strukturiert, entspannt und zuverlässig.
+                    Er behält den Überblick, reagiert schnell und bleibt menschlich."
+                  </p>
+                  <p className="text-xs font-medium text-pl-text">Dominik Palmer</p>
+                  <p className="text-xs text-pl-text-muted mt-0.5">Bassist &amp; Bandleader, More Candy</p>
+                </div>
+              </div>
             </div>
 
-            {/* Rechts: Mockup-Card */}
-            <div>
+            {/* Rechts (Mobile) / Links (Desktop): Mockup-Card */}
+            <div className="w-full max-w-[560px] order-2 lg:order-1">
               <div
                 className="rounded-2xl overflow-hidden"
                 style={{
@@ -200,22 +250,30 @@ export default function FuerBandsPage() {
                   border: '1px solid rgba(196,168,216,0.12)',
                 }}
               >
-                {/* Bild-Placeholder */}
+                {/* Bild-Bereich */}
                 <div
-                  className="relative aspect-video"
+                  className="relative aspect-video overflow-hidden"
                   style={{
                     background:
                       'radial-gradient(ellipse 70% 55% at 50% 15%, rgba(50,40,65,0.7) 0%, transparent 65%), linear-gradient(170deg, #211c2e 0%, #17131f 45%, #0e0c14 100%)',
                   }}
                 >
+                  <Image
+                    src="/images/fuer-bands/profil-mockup-live.jpg"
+                    alt="Liveband auf der Bühne – Beispielprofil auf proudleut"
+                    fill
+                    className="object-cover"
+                    style={{ objectPosition: 'center 45%' }}
+                    sizes="(max-width: 1024px) 100vw, 560px"
+                  />
                   <div
-                    className="absolute inset-0"
+                    className="absolute inset-0 z-10"
                     style={{
                       background:
-                        'linear-gradient(to top, rgba(18,16,26,0.92) 0%, rgba(18,16,26,0.3) 50%, transparent 100%)',
+                        'linear-gradient(to top, rgba(18,16,26,0.97) 0%, rgba(18,16,26,0.55) 45%, rgba(18,16,26,0.08) 100%)',
                     }}
                   />
-                  <div className="absolute bottom-0 left-0 p-5 z-10">
+                  <div className="absolute bottom-0 left-0 p-5 z-20">
                     <span
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-2"
                       style={{
@@ -223,10 +281,10 @@ export default function FuerBandsPage() {
                         color: 'var(--pl-accent-deep)',
                       }}
                     >
-                      Party &amp; Feier
+                      Blues &amp; Soul
                     </span>
                     <p className="text-xl font-bold text-pl-on-stage leading-tight">
-                      Euer Auftritt auf proudleut
+                      San2 &amp; His Soul Patrol
                     </p>
                     <p className="text-xs text-pl-on-stage-muted mt-0.5">
                       Bayern · München und Umgebung
@@ -237,11 +295,11 @@ export default function FuerBandsPage() {
                 {/* Profil-Body */}
                 <div className="p-5">
                   <p className="text-sm text-pl-on-stage-muted italic leading-relaxed mb-4">
-                    „Eine vielseitige Liveband für Hochzeiten, Stadtfeste und Firmenevents — mit
-                    eigenem Programm und echtem Live-Feeling."
+                    „Blues, Soul und Rhythm &amp; Blues mit eigener Handschrift — live, direkt
+                    und mit viel Bühnengefühl."
                   </p>
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {['Pop & Rock', 'Live-Programm', 'Atmosphäre'].map((tag) => (
+                    {['Blues', 'Soul', 'Rhythm & Blues'].map((tag) => (
                       <span
                         key={tag}
                         className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
@@ -256,9 +314,9 @@ export default function FuerBandsPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                     {[
-                      { label: 'Bandart', value: 'Liveband (5 Pers.)' },
+                      { label: 'Besetzung', value: 'Liveband' },
                       { label: 'Herkunft', value: 'München' },
-                      { label: 'Spielt bei', value: 'Hochzeit, Stadtfest' },
+                      { label: 'Spielt bei', value: 'Festival, Club, Event' },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <p className="text-[10px] uppercase tracking-wider text-pl-on-stage-muted mb-0.5">
@@ -268,12 +326,22 @@ export default function FuerBandsPage() {
                       </div>
                     ))}
                   </div>
-                  <div
-                    className="inline-flex items-center px-5 py-2.5 rounded-full text-sm font-semibold
-                               bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
-                    aria-hidden="true"
-                  >
-                    Direkt anfragen →
+                  <div className="flex flex-wrap gap-3">
+                    <div
+                      className="inline-flex items-center px-5 py-2.5 rounded-full text-sm font-semibold
+                                 bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
+                      aria-hidden="true"
+                    >
+                      Direkt anfragen →
+                    </div>
+                    <div
+                      className="inline-flex items-center px-5 py-2.5 rounded-full text-sm font-medium
+                                 text-pl-on-stage-muted"
+                      style={{ border: '1px solid rgba(196,168,216,0.25)' }}
+                      aria-hidden="true"
+                    >
+                      ♡ Band merken
+                    </div>
                   </div>
                 </div>
               </div>
@@ -286,17 +354,16 @@ export default function FuerBandsPage() {
         </div>
       </section>
 
-      {/* 3 — Was dein Profil kann */}
+      {/* 3 — Was in eurem Profil sichtbar wird */}
       <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
         <div className="max-w-[1140px] mx-auto">
           <div className="max-w-[820px] mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
-              Was dein Profil kann
+              Was in eurem Profil sichtbar wird
             </h2>
             <p className="text-base text-pl-on-stage-muted leading-relaxed">
-              Ein Profil bei proudleut ist keine Zeile in einem Verzeichnis. Es ist eine
-              eigenständige, wertige Präsentation deiner Band — mit allem, was Veranstalter
-              brauchen, um sich ein gutes Bild zu machen.
+              Ein gutes Profil zeigt nicht nur, dass es euch gibt. Es macht spürbar, wie ihr
+              klingt, wo ihr passt und warum Veranstalter euch anfragen sollten.
             </p>
           </div>
 
@@ -316,16 +383,16 @@ export default function FuerBandsPage() {
             ))}
           </div>
 
-          <p className="text-sm text-pl-on-stage-muted mb-8 max-w-[820px]">
-            Veranstalter sehen euer Profil, bevor sie anfragen. Das erspart beiden Seiten
-            Erklärungen und schafft von Anfang an mehr Klarheit.
+          <p className="text-sm text-pl-on-stage-muted mb-10 max-w-[820px]">
+            So entsteht vor der Anfrage schon ein Gefühl dafür, ob ihr zum Anlass, zur
+            Atmosphäre und zum Veranstalter passt.
           </p>
 
           <div>
-            <p className="text-sm text-pl-on-stage-muted mb-4">
-              So unterschiedlich können Bands auf proudleut aussehen:
+            <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-5">
+              Acts auf proudleut
             </p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <Link
                 href="/band/donnaweda"
                 className="group flex items-baseline gap-2 focus-visible:outline focus-visible:outline-2
@@ -360,7 +427,7 @@ export default function FuerBandsPage() {
                            focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
               >
                 <span className="text-sm font-medium text-pl-accent-light group-hover:text-pl-on-stage motion-safe:transition-colors">
-                  San2
+                  San2 &amp; His Soul Patrol
                 </span>
                 <span className="text-xs text-pl-on-stage-muted">— Blues, Soul &amp; Rhythm&apos;n&apos;Blues</span>
               </Link>
@@ -371,39 +438,57 @@ export default function FuerBandsPage() {
 
       {/* 4 — Was nutzt dir proudleut wirklich? */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[820px] mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-8">
+        <div className="max-w-[1140px] mx-auto">
+          <div className="max-w-[820px]">
+          <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-6">
             Was nutzt dir proudleut wirklich?
           </h2>
-          <div className="space-y-5 text-base md:text-[1.05rem] text-pl-text leading-8">
-            <p>
-              Ein Profil bei proudleut ist kein Versprechen auf Buchungen. Aber es kann helfen,
-              dass deine Band an Stellen sichtbar wird, an denen Veranstalter sonst vielleicht
-              nicht nach euch gesucht hätten.
-            </p>
-            <p>
-              Viele Bands sind in ihrer eigenen Region gut bekannt. proudleut kann den Blick etwas
-              öffnen: Eine Band aus Amberg taucht plötzlich auch für Veranstalter in Neumarkt,
-              Ingolstadt oder Kelheim auf. Nicht als Werbeanzeige, sondern als Teil eines
-              passenden Band-Kontexts.
-            </p>
-            <p>
-              Dazu kommt: Jedes gute Profil stärkt das Netzwerk. Wenn Bands, Kategorien,
-              Veranstaltungsarten und Regionen sinnvoll miteinander verlinkt sind, entsteht über
-              die Zeit mehr Sichtbarkeit für alle. Vielleicht merkt man das nicht von heute auf
-              morgen — aber genau solche sauberen Verbindungen bauen langfristig Autorität auf.
-            </p>
-            <p className="text-pl-text-muted">
-              Kurz gesagt: proudleut kann dir helfen, sichtbarer zu werden, anders gefunden zu
-              werden und deine Band professionell einzuordnen.
-            </p>
+          <p className="text-base text-pl-text-muted leading-relaxed mb-10">
+            Ein Profil bei proudleut ist kein Versprechen auf Buchungen. Aber es kann helfen,
+            dass deine Band dort sichtbar wird, wo Veranstalter wirklich suchen.
+          </p>
+
+          <div className="divide-y divide-pl-soft">
+            {[
+              {
+                title: 'Sichtbarer werden',
+                desc: 'Euer Profil erscheint in Kategorien und Regionen, die zu euch passen — nicht versteckt in einer Datenbank, sondern als eigenständige Präsentation.',
+              },
+              {
+                title: 'Über die eigene Region hinaus',
+                desc: 'Viele Bands kennt man in ihrer Heimat gut. Auf proudleut können Veranstalter aus der Nachbarschaft auf euch stoßen — eine Band aus Amberg taucht so plötzlich für Veranstalter in Neumarkt, Ingolstadt oder Kelheim auf.',
+              },
+              {
+                title: 'Als passender Act wahrgenommen werden',
+                desc: 'Ein gutes Profil steht nicht allein. Es wird im Umfeld anderer starker Bands und Acts sichtbar — nach Anlass, Stil und Region. So entsteht ein Zusammenhang, von dem alle profitieren können.',
+              },
+            ].map(({ title, desc }) => (
+              <div key={title} className="py-5">
+                <p className="text-sm font-semibold text-pl-text mb-1">{title}</p>
+                <p className="text-sm text-pl-text-muted leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <p
+            className="my-8 text-sm text-pl-text-muted text-center py-5 border-t border-b"
+            style={{ borderColor: 'rgba(117,81,139,0.10)' }}
+          >
+            Profil → gute Gesellschaft → passende Kontexte → mehr Sichtbarkeit
+          </p>
+
+          <p className="text-sm text-pl-text-muted leading-relaxed">
+            Kurz gesagt: proudleut kann dir helfen, sichtbarer zu werden, anders gefunden
+            zu werden und als passender Act in Erinnerung zu bleiben.
+          </p>
           </div>
         </div>
       </section>
 
       {/* 5 — Wie es läuft */}
       <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[820px] mx-auto">
+        <div className="max-w-[1140px] mx-auto">
+          <div className="max-w-[820px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-10">
             Wie es läuft
           </h2>
@@ -427,12 +512,14 @@ export default function FuerBandsPage() {
               </div>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
       {/* 6 — FAQ */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[820px] mx-auto">
+        <div className="max-w-[1140px] mx-auto">
+          <div className="max-w-[900px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-8">
             Häufige Fragen
           </h2>
@@ -454,18 +541,20 @@ export default function FuerBandsPage() {
               </details>
             ))}
           </div>
+          </div>
         </div>
       </section>
 
       {/* 7 — Kontakt */}
       <section id="kontakt" className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[820px] mx-auto">
+        <div className="max-w-[1140px] mx-auto">
+          <div className="max-w-[820px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-6">
             Klingt das interessant?
           </h2>
           <div className="space-y-5 text-base md:text-[1.05rem] text-pl-on-stage-muted leading-8 mb-10">
             <p>
-              Wenn du glaubst, dass deine Band auf proudleut gut aufgehoben wäre, schreib mir kurz.
+              Wenn du glaubst, dass dein Act auf proudleut gut aufgehoben wäre, schreib mir kurz.
             </p>
             <p>
               Ich bin Alex und mache Booking und Management für Bands wie Donnaweda, San2, Freunde
@@ -482,11 +571,12 @@ export default function FuerBandsPage() {
                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                        focus-visible:outline-[var(--pl-accent-on-stage)]"
           >
-            alexander.dressler@proudleut.com
+            Schreib mir kurz
           </a>
           <p className="mt-5 text-sm text-pl-on-stage-muted">
             Ich melde mich meistens innerhalb weniger Tage.
           </p>
+          </div>
         </div>
       </section>
 

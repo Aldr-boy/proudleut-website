@@ -13,14 +13,17 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export default function BandGrid({ bands }: { bands: Band[] }) {
-  const [displayed, setDisplayed] = useState<Band[]>(() => bands.slice(0, 9));
+export default function BandGrid({ bands, limit }: { bands: Band[]; limit?: number }) {
+  const [displayed, setDisplayed] = useState<Band[]>(() =>
+    limit != null ? bands.slice(0, limit) : bands
+  );
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    setDisplayed(shuffle(bands).slice(0, 9));
+    const shuffled = shuffle(bands);
+    setDisplayed(limit != null ? shuffled.slice(0, limit) : shuffled);
     setVisible(true);
-  }, [bands]);
+  }, [bands, limit]);
 
   return (
     <div className={`transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>

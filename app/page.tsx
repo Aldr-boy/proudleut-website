@@ -28,7 +28,7 @@ export default async function HomePage() {
           {homepagePool.length === 0 ? (
             <p className="text-pl-text-muted">Keine Bands gefunden.</p>
           ) : (
-            <BandGrid bands={homepagePool} />
+            <BandGrid bands={homepagePool} limit={9} />
           )}
           <div className="mt-10 text-center">
             <Link
