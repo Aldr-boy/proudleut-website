@@ -4,11 +4,11 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Für Bands – proudleut',
   description:
-    'Du bist Liveband und willst sichtbarer werden? proudleut zeigt Bands mit echtem Profil, Live-Eindruck und direktem Kontaktweg für Veranstalter.',
+    'Ihr seid eine Liveband, ein Ensemble oder ein Solo-Act? proudleut zeigt euch mit echtem Profil, Live-Eindruck und direktem Kontakt für Veranstalter.',
   openGraph: {
     title: 'Für Bands – proudleut',
     description:
-      'Du bist Liveband und willst sichtbarer werden? proudleut zeigt Bands mit echtem Profil, Live-Eindruck und direktem Kontaktweg für Veranstalter.',
+      'Ihr seid eine Liveband, ein Ensemble oder ein Solo-Act? proudleut zeigt euch mit echtem Profil, Live-Eindruck und direktem Kontakt für Veranstalter.',
     type: 'website',
   },
 };
@@ -66,7 +66,7 @@ const STEPS = [
 const FAQ_ITEMS = [
   {
     q: 'Kostet ein Profil bei proudleut etwas?',
-    a: 'Aktuell kostet ein Profil auf proudleut nichts. Mir ist wichtiger, dass gute Livebands sichtbar werden und die Plattform sinnvoll wächst. Falls sich daran irgendwann etwas ändert, kommuniziere ich das offen und rechtzeitig.',
+    a: 'Aktuell kostet ein Profil auf proudleut nichts. Mir ist wichtiger, dass gute Bands und Live-Acts sichtbar werden und die Plattform sinnvoll wächst. Falls sich daran irgendwann etwas ändert, kommuniziere ich das offen und rechtzeitig.',
   },
   {
     q: 'Bekomme ich dadurch sicher mehr Anfragen?',
@@ -78,7 +78,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Kann jede Band mitmachen?',
-    a: 'Grundsätzlich ja. proudleut soll offen für viele gute Livebands sein. Wichtig ist nur, dass genug Material für ein sinnvolles Profil vorhanden ist: gute Fotos, ein kurzer Text, idealerweise Video und klare Kontaktdaten.',
+    a: 'Grundsätzlich ja. proudleut soll offen für viele gute Livebands, Duos und Solo-Acts sein. Wichtig ist nur, dass genug Material für ein sinnvolles Profil vorhanden ist: gute Fotos, ein kurzer Text, idealerweise Video und klare Kontaktdaten.',
   },
   {
     q: 'Gibt es einen Fragebogen?',
@@ -94,14 +94,14 @@ export default function FuerBandsPage() {
       <section className="bg-pl-stage py-20 md:py-28 px-4 sm:px-6">
         <div className="max-w-[820px] mx-auto text-center">
           <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-5">
-            Für Bands
+            Für Livebands, Duos &amp; Solo-Acts
           </p>
           <h1 className="text-4xl md:text-5xl font-bold text-pl-on-stage leading-tight mb-6">
-            Deine Band sichtbar machen — ohne Marktplatz-Gefühl.
+            Deine Musik sichtbar machen — in einem Umfeld, das zu dir passt.
           </h1>
           <p className="text-base md:text-lg text-pl-on-stage-muted leading-relaxed mb-10 max-w-[600px] mx-auto">
-            proudleut zeigt Livebands in einem hochwertigen Umfeld: mit Profil, Atmosphäre, echten
-            Eindrücken und direktem Kontakt zu Veranstaltern.
+            proudleut zeigt Live-Acts mit Profil, Atmosphäre, echten Eindrücken und direktem Kontakt
+            zu Veranstaltern.
           </p>
           <a
             href="#kontakt"
@@ -124,8 +124,8 @@ export default function FuerBandsPage() {
           </h2>
           <div className="space-y-5 text-base md:text-[1.05rem] text-pl-text leading-8">
             <p>
-              proudleut ist ein Ort für Livebands, die professionell sichtbar sein möchten — ohne
-              zwischen Preisvergleich, Bewertungssystem und Buchungsportal unterzugehen.
+              proudleut ist ein Ort für Live-Acts, die in einem passenden Umfeld sichtbar sein
+              möchten — ohne zwischen Preisvergleich, Bewertungssystem und Buchungsportal unterzugehen.
             </p>
             <p>
               Veranstalter finden auf proudleut ein echtes Bandprofil: mit Bildern, Video, Text,
@@ -144,6 +144,144 @@ export default function FuerBandsPage() {
               Fast jede Band ist willkommen. Mir geht es darum, dass euer Auftritt auf proudleut
               gut aussieht, verständlich ist und Veranstaltern hilft, euch richtig einzuordnen.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 2.5 — Profil-Mockup */}
+      <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
+        <div className="max-w-[1140px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+            {/* Links: Einleitung + Nutzenpunkte */}
+            <div>
+              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-4">
+                So wirkt ein Profil auf proudleut
+              </p>
+              <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-4">
+                Mehr als nur ein Eintrag.
+              </h2>
+              <p className="text-base text-pl-text-muted leading-relaxed mb-8">
+                Ein proudleut-Profil zeigt nicht nur Fakten, sondern Atmosphäre, Stil und den
+                direkten Weg zur Anfrage.
+              </p>
+              <div className="space-y-6">
+                {[
+                  {
+                    title: 'Atmosphäre statt Eintrag',
+                    desc: 'Foto, Video und Text zeigen, wer ihr seid — bevor jemand fragt.',
+                  },
+                  {
+                    title: 'Direkter Kontakt',
+                    desc: 'Anfragen kommen direkt bei euch an — ohne Umweg über ein Buchungsportal.',
+                  },
+                  {
+                    title: 'Passend gefunden',
+                    desc: 'Euer Profil wird dort sichtbar, wo Veranstalter nach passenden Acts suchen.',
+                  },
+                ].map(({ title, desc }) => (
+                  <div key={title} className="flex gap-4">
+                    <span className="shrink-0 mt-0.5 text-pl-text-muted select-none">—</span>
+                    <div>
+                      <p className="text-sm font-semibold text-pl-text mb-0.5">{title}</p>
+                      <p className="text-sm text-pl-text-muted leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Rechts: Mockup-Card */}
+            <div>
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{
+                  background: 'var(--pl-bg-stage-elevated, #1e1a28)',
+                  border: '1px solid rgba(196,168,216,0.12)',
+                }}
+              >
+                {/* Bild-Placeholder */}
+                <div
+                  className="relative aspect-video"
+                  style={{
+                    background:
+                      'radial-gradient(ellipse 70% 55% at 50% 15%, rgba(50,40,65,0.7) 0%, transparent 65%), linear-gradient(170deg, #211c2e 0%, #17131f 45%, #0e0c14 100%)',
+                  }}
+                >
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        'linear-gradient(to top, rgba(18,16,26,0.92) 0%, rgba(18,16,26,0.3) 50%, transparent 100%)',
+                    }}
+                  />
+                  <div className="absolute bottom-0 left-0 p-5 z-10">
+                    <span
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mb-2"
+                      style={{
+                        background: 'var(--pl-accent-subtle)',
+                        color: 'var(--pl-accent-deep)',
+                      }}
+                    >
+                      Party &amp; Feier
+                    </span>
+                    <p className="text-xl font-bold text-pl-on-stage leading-tight">
+                      Euer Auftritt auf proudleut
+                    </p>
+                    <p className="text-xs text-pl-on-stage-muted mt-0.5">
+                      Bayern · München und Umgebung
+                    </p>
+                  </div>
+                </div>
+
+                {/* Profil-Body */}
+                <div className="p-5">
+                  <p className="text-sm text-pl-on-stage-muted italic leading-relaxed mb-4">
+                    „Eine vielseitige Liveband für Hochzeiten, Stadtfeste und Firmenevents — mit
+                    eigenem Programm und echtem Live-Feeling."
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    {['Pop & Rock', 'Live-Programm', 'Atmosphäre'].map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+                        style={{
+                          background: 'var(--pl-accent-subtle)',
+                          color: 'var(--pl-accent-deep)',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                    {[
+                      { label: 'Bandart', value: 'Liveband (5 Pers.)' },
+                      { label: 'Herkunft', value: 'München' },
+                      { label: 'Spielt bei', value: 'Hochzeit, Stadtfest' },
+                    ].map(({ label, value }) => (
+                      <div key={label}>
+                        <p className="text-[10px] uppercase tracking-wider text-pl-on-stage-muted mb-0.5">
+                          {label}
+                        </p>
+                        <p className="text-sm font-medium text-pl-on-stage">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    className="inline-flex items-center px-5 py-2.5 rounded-full text-sm font-semibold
+                               bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
+                    aria-hidden="true"
+                  >
+                    Direkt anfragen →
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-pl-text-muted text-center mt-4">
+                Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.
+              </p>
+            </div>
+
           </div>
         </div>
       </section>
