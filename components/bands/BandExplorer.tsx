@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { Band } from '@/lib/types/band';
 import { CATEGORIES, bandMatchesCategory } from '@/lib/categories';
-import { getBandRegionBucket } from '@/lib/regions';
+import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import BandCard from '@/components/BandCard';
+import BandCardSkeleton from '@/components/BandCardSkeleton';
 
 type Props = {
   bands: Band[];
@@ -42,22 +44,59 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function buildUrl(params: { anlass: string | null; region: string | null; suche: string }): string {
+  const p = new URLSearchParams();
+  if (params.anlass) p.set('anlass', params.anlass);
+  if (params.region) p.set('region', params.region.toLowerCase());
+  if (params.suche) p.set('suche', params.suche);
+  const qs = p.toString();
+  return qs ? `/bands?${qs}` : '/bands';
+}
+
 const PLZ_RE = /^\d{5}$/;
 const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
 
 export default function BandExplorer({ bands, regions }: Props) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [shuffled, setShuffled] = useState<Band[]>([]);
-  const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [query, setQuery] = useState<string>(() => searchParams.get('suche') ?? '');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+    const p = searchParams.get('anlass');
+    return p && CATEGORIES.some((c) => c.slug === p) ? p : null;
+  });
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(() => {
+    const p = searchParams.get('region');
+    if (!p) return null;
+    return REGION_ORDER.find((r) => r.toLowerCase() === p.toLowerCase()) ?? null;
+  });
   const [radiusKm, setRadiusKm] = useState<RadiusKm>(0);
   const [centerCoords, setCenterCoords] = useState<[number, number] | null>(null);
   const [plzLoading, setPlzLoading] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(24);
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const scrollAfterLoad = useRef(false);
+  const prevVisibleRef = useRef(0);
 
   useEffect(() => {
     setShuffled(shuffle(bands));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Scroll zur ersten neuen Card nach „Weitere Bands anzeigen"
+  useEffect(() => {
+    if (!scrollAfterLoad.current || !gridRef.current) return;
+    scrollAfterLoad.current = false;
+    const firstNew = gridRef.current.children[prevVisibleRef.current] as HTMLElement | undefined;
+    firstNew?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [visibleCount]);
+
+  // Bei Filter-Änderung visibleCount zurücksetzen
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [query, selectedCategory, selectedRegion, radiusKm]);
 
   // PLZ erkennen → Koordinaten lazy laden
   useEffect(() => {
@@ -81,6 +120,25 @@ export default function BandExplorer({ bands, regions }: Props) {
       })
       .finally(() => setPlzLoading(false));
   }, [query]);
+
+  // URL → State bei Back/Forward (nur lesen, nie schreiben)
+  const searchParamString = searchParams.toString();
+  useEffect(() => {
+    const p = new URLSearchParams(searchParamString);
+
+    const nextQuery = p.get('suche') ?? '';
+    const nextCatRaw = p.get('anlass');
+    const nextCat = nextCatRaw && CATEGORIES.some((c) => c.slug === nextCatRaw) ? nextCatRaw : null;
+    const nextRegRaw = p.get('region');
+    const nextReg = nextRegRaw
+      ? (REGION_ORDER.find((r) => r.toLowerCase() === nextRegRaw.toLowerCase()) ?? null)
+      : null;
+
+    setQuery((prev) => (prev !== nextQuery ? nextQuery : prev));
+    setSelectedCategory((prev) => (prev !== nextCat ? nextCat : prev));
+    setSelectedRegion((prev) => (prev !== nextReg ? nextReg : prev));
+    setRadiusKm(0);
+  }, [searchParamString]);
 
   const isPLZ = PLZ_RE.test(query.trim());
 
@@ -142,13 +200,24 @@ export default function BandExplorer({ bands, regions }: Props) {
     setSelectedCategory(null);
     setSelectedRegion(null);
     setRadiusKm(0);
-    // centerCoords folgt via query-useEffect
-  }, []);
+    router.push('/bands');
+  }, [router]);
 
-  const countLabel =
-    radiusKm > 0
-      ? `${displayed.length} ${displayed.length === 1 ? 'Band' : 'Bands'} mit Standort im Umkreis von ${radiusKm} km um ${query.trim()}`
-      : `${filtered.length} ${filtered.length === 1 ? 'passende Band' : 'passende Bands'}`;
+  const countLabel = (() => {
+    if (shuffled.length === 0) return '';
+    const count = displayed.length;
+    const plural = count === 1 ? 'Liveband' : 'Livebands';
+    if (count === 0) return 'Keine Livebands gefunden';
+    if (radiusKm > 0) {
+      return `${count} ${plural} im Umkreis von ${radiusKm} km um ${query.trim()} gefunden`;
+    }
+    if (selectedCategory && !query && !selectedRegion) {
+      const cat = CATEGORIES.find((c) => c.slug === selectedCategory);
+      if (cat) return `${count} ${plural} für ${cat.title} gefunden`;
+    }
+    if (hasFilter) return `${count} passende ${plural} gefunden`;
+    return `${count} ${plural} gefunden`;
+  })();
 
   const emptyMessage =
     radiusKm > 0
@@ -164,7 +233,11 @@ export default function BandExplorer({ bands, regions }: Props) {
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setQuery(next);
+            router.replace(buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: next }));
+          }}
           placeholder="Band, Ort oder PLZ suchen…"
           aria-label="Bands suchen"
           className="w-full max-w-md rounded-lg border border-pl-soft bg-pl-elevated px-4 py-2.5 text-pl-text placeholder:text-pl-text-hint text-sm focus:outline-none focus:border-pl-accent"
@@ -194,7 +267,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                 onClick={() => setRadiusKm(active ? 0 : km)}
                 className={`px-3.5 py-1.5 rounded-full text-sm border motion-safe:transition-colors ${
                   active
-                    ? 'bg-pl-accent-subtle text-pl-accent-deep border-pl-accent-subtle'
+                    ? 'bg-pl-accent text-white border-pl-accent'
                     : 'border-pl-soft text-pl-text-muted hover:border-pl-accent hover:text-pl-text'
                 }`}
               >
@@ -214,10 +287,14 @@ export default function BandExplorer({ bands, regions }: Props) {
               key={cat.slug}
               type="button"
               aria-pressed={active}
-              onClick={() => setSelectedCategory(active ? null : cat.slug)}
+              onClick={() => {
+                const next = active ? null : cat.slug;
+                setSelectedCategory(next);
+                router.push(buildUrl({ anlass: next, region: selectedRegion, suche: query }));
+              }}
               className={`px-3.5 py-1.5 rounded-full text-sm border motion-safe:transition-colors ${
                 active
-                  ? 'bg-pl-accent-subtle text-pl-accent-deep border-pl-accent-subtle'
+                  ? 'bg-pl-accent text-white border-pl-accent'
                   : 'border-pl-soft text-pl-text-muted hover:border-pl-accent hover:text-pl-text'
               }`}
             >
@@ -241,10 +318,14 @@ export default function BandExplorer({ bands, regions }: Props) {
                 key={region}
                 type="button"
                 aria-pressed={active}
-                onClick={() => setSelectedRegion(active ? null : region)}
+                onClick={() => {
+                  const next = active ? null : region;
+                  setSelectedRegion(next);
+                  router.push(buildUrl({ anlass: selectedCategory, region: next, suche: query }));
+                }}
                 className={`px-3.5 py-1.5 rounded-full text-sm border motion-safe:transition-colors ${
                   active
-                    ? 'bg-pl-accent-subtle text-pl-accent-deep border-pl-accent-subtle'
+                    ? 'bg-pl-accent text-white border-pl-accent'
                     : 'border-pl-soft text-pl-text-muted hover:border-pl-accent hover:text-pl-text'
                 }`}
               >
@@ -256,39 +337,63 @@ export default function BandExplorer({ bands, regions }: Props) {
       )}
 
       {/* Zähler + Reset – nur bei aktivem Filter */}
-      {hasFilter && (
+      {shuffled.length > 0 && hasFilter && (
         <div className="flex items-center gap-4 mb-8">
           <p className="text-pl-text-hint text-sm">{countLabel}</p>
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="text-sm text-pl-text-muted hover:text-pl-text motion-safe:transition-colors underline underline-offset-2"
-          >
-            Filter zurücksetzen
-          </button>
-        </div>
-      )}
-
-      {/* Grid – erst nach Shuffle */}
-      {shuffled.length > 0 &&
-        (displayed.length === 0 ? (
-          <div className="py-12 text-center">
-            <p className="text-pl-text-muted mb-4">{emptyMessage}</p>
+          {hasFilter && (
             <button
               type="button"
               onClick={resetFilters}
-              className="text-sm text-pl-accent hover:opacity-80 motion-safe:transition-opacity"
+              className="text-sm text-pl-text-muted hover:text-pl-text motion-safe:transition-colors underline underline-offset-2"
             >
-              Alle Bands anzeigen
+              Filter zurücksetzen
             </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayed.map((band) => (
-              <BandCard key={band.id} band={band} />
+          )}
+        </div>
+      )}
+
+      {/* Grid */}
+      {shuffled.length === 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 24 }).map((_, i) => (
+            <BandCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : displayed.length === 0 ? (
+        <div className="py-12 text-center">
+          <p className="text-pl-text-muted mb-4">{emptyMessage}</p>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="text-sm text-pl-accent hover:opacity-80 motion-safe:transition-opacity"
+          >
+            Alle Bands anzeigen
+          </button>
+        </div>
+      ) : (
+        <>
+          <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayed.slice(0, visibleCount).map((band, index) => (
+              <BandCard key={band.id} band={band} priority={index < 6} />
             ))}
           </div>
-        ))}
+          {visibleCount < displayed.length && (
+            <div className="mt-10 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  prevVisibleRef.current = visibleCount;
+                  scrollAfterLoad.current = true;
+                  setVisibleCount((n) => n + 24);
+                }}
+                className="px-6 py-3 rounded-lg border border-pl-soft text-pl-text-muted text-sm hover:border-pl-accent hover:text-pl-text motion-safe:transition-colors"
+              >
+                Weitere Bands anzeigen
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

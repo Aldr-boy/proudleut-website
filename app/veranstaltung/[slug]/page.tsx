@@ -44,7 +44,7 @@ export default async function VeranstaltungPage({ params }: Props) {
       <section className="bg-pl-bg py-16 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <Link
-            href="/#bands"
+            href="/bands"
             className="text-pl-text-muted text-sm hover:text-pl-text motion-safe:transition-colors mb-6 inline-block"
           >
             ← Zurück zur Bandübersicht
@@ -68,7 +68,7 @@ export default async function VeranstaltungPage({ params }: Props) {
                 Neue Bands werden regelmäßig ergänzt. Schau gerne in den verwandten Kategorien nach.
               </p>
               <Link
-                href="/#bands"
+                href="/bands"
                 className="text-pl-primary text-sm hover:opacity-80 motion-safe:transition-opacity"
               >
                 Alle Bands entdecken →
@@ -80,6 +80,14 @@ export default async function VeranstaltungPage({ params }: Props) {
                 {bandCount} {bandLabel}
               </p>
               <BandGrid bands={bands} />
+              <div className="mt-10 text-center">
+                <Link
+                  href={`/bands?anlass=${category.slug}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-pl-text-muted hover:text-pl-text motion-safe:transition-colors underline underline-offset-2"
+                >
+                  Alle Bands für {category.title} in der Suche ansehen
+                </Link>
+              </div>
             </>
           )}
         </div>

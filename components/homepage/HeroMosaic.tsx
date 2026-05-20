@@ -57,7 +57,7 @@ export default function HeroMosaic() {
             ))}
           </div>
           <Link
-            href="/#bands"
+            href="/bands"
             className="inline-flex items-center px-6 py-3 rounded-full bg-pl-accent text-pl-on-accent font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
           >
             Bands entdecken

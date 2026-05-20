@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { getBands } from '@/lib/airtable/queries';
 import BandExplorer from '@/components/bands/BandExplorer';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
@@ -43,7 +44,9 @@ export default async function BandsPage() {
           {activeBands.length === 0 ? (
             <p className="text-pl-text-muted">Keine Bands gefunden.</p>
           ) : (
+            <Suspense fallback={null}>
             <BandExplorer bands={activeBands} regions={regions} />
+          </Suspense>
           )}
         </div>
       </section>
