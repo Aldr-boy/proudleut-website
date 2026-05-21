@@ -200,7 +200,7 @@ export default function BandExplorer({ bands, regions }: Props) {
     setSelectedCategory(null);
     setSelectedRegion(null);
     setRadiusKm(0);
-    router.push('/bands');
+    router.push('/bands', { scroll: false });
   }, [router]);
 
   const countLabel = (() => {
@@ -236,7 +236,7 @@ export default function BandExplorer({ bands, regions }: Props) {
           onChange={(e) => {
             const next = e.target.value;
             setQuery(next);
-            router.replace(buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: next }));
+            router.replace(buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: next }), { scroll: false });
           }}
           placeholder="Band, Ort oder PLZ suchen…"
           aria-label="Bands suchen"
@@ -290,7 +290,7 @@ export default function BandExplorer({ bands, regions }: Props) {
               onClick={() => {
                 const next = active ? null : cat.slug;
                 setSelectedCategory(next);
-                router.push(buildUrl({ anlass: next, region: selectedRegion, suche: query }));
+                router.push(buildUrl({ anlass: next, region: selectedRegion, suche: query }), { scroll: false });
               }}
               className={`px-3.5 py-1.5 rounded-full text-sm border motion-safe:transition-colors ${
                 active
@@ -321,7 +321,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                 onClick={() => {
                   const next = active ? null : region;
                   setSelectedRegion(next);
-                  router.push(buildUrl({ anlass: selectedCategory, region: next, suche: query }));
+                  router.push(buildUrl({ anlass: selectedCategory, region: next, suche: query }), { scroll: false });
                 }}
                 className={`px-3.5 py-1.5 rounded-full text-sm border motion-safe:transition-colors ${
                   active

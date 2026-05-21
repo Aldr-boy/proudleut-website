@@ -4,7 +4,8 @@
 **/
 import { defineCliConfig } from 'sanity/cli'
 
-const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET
+// Fallback: Sanity CLI lädt .env.local nicht automatisch (nur Next.js).
+const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID ?? '6w0eaklc'
+const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET ?? 'production'
 
 export default defineCliConfig({ api: { projectId, dataset } })
