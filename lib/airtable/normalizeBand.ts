@@ -10,7 +10,9 @@ type RawBandFields = {
   'Short Descripton / Subheadline'?: string;
   'Main Text'?: string;
   'Meta Description'?: string;
-  'Hauptkategorie/Bandart'?: string;
+  'Hauptkategorie/Bandart'?: string | string[];
+  'Name (Kurzform)'?: string | string[];
+  'Slug (from Hauptkategorie/Bandart)'?: string | string[];
   // Linked Record – liefert Record-IDs aus der Veranstaltungen-Tabelle.
   // Auflösung zu lesbaren Namen erfolgt über den eventTypeMap-Parameter.
   'Veranstaltungstypen'?: string[];
@@ -158,6 +160,12 @@ function splitPipe(value?: string): string[] {
   return value.split('|').map((s) => s.trim()).filter(Boolean);
 }
 
+function normalizeStringArray(value: unknown): string[] {
+  if (!value) return [];
+  const arr = Array.isArray(value) ? value : [value];
+  return arr.map((v) => String(v).trim()).filter(Boolean);
+}
+
 function resolveEventTypes(
   rawIds?: string[],
   eventTypeMap?: Map<string, EventTypeEntry>
@@ -206,12 +214,17 @@ export function normalizeBand(
     eventTypeMap
   );
 
+  const bandartNames = normalizeStringArray(f['Name (Kurzform)']);
+  const bandartSlugs = normalizeStringArray(f['Slug (from Hauptkategorie/Bandart)']);
+
   return {
     id: record.id,
     name,
     slug: str(f['Slug']) ?? '',
     status: normalizeStatus(f['Webflow Status']),
-    category: str(f['Hauptkategorie/Bandart']),
+    bandartNames,
+    bandartSlugs,
+    category: bandartNames[0],
     eventTypes,
     categorySlugs,
     klingtNach: splitPipe(str(f['Klingt_Nach']) ?? str(f['AI_Klingt_Nach_Vorschlag'])),

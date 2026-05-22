@@ -56,6 +56,8 @@ export type Band = {
   status: 'active' | 'new' | 'inactive';
 
   category?: string;
+  bandartNames: string[];
+  bandartSlugs: string[];
   eventTypes: string[];
   categorySlugs?: string[];
 
