@@ -1,9 +1,12 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { getBands } from '@/lib/airtable/queries';
 import { CATEGORIES, bandMatchesCategory, getCategoryBySlug, getRelatedCategories } from '@/lib/categories';
 import BandGrid from '@/components/homepage/BandGrid';
+import { fetchEventCategoryHero } from '@/sanity/lib/fetchEventCategoryHero';
+import { urlFor } from '@/sanity/lib/image';
 
 export const revalidate = 300;
 
@@ -30,31 +33,62 @@ export default async function VeranstaltungPage({ params }: Props) {
   const category = getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const allBands = await getBands();
+  const [allBands, heroData] = await Promise.all([
+    getBands(),
+    fetchEventCategoryHero(slug),
+  ]);
+
   const bands = allBands.filter((b) => bandMatchesCategory(b, category));
   const related = getRelatedCategories(slug);
 
   const h1 = category.h1Title ?? category.title;
+  const subtitleText = heroData?.subtitle ?? category.description ?? null;
   const bandCount = bands.length;
   const bandLabel = bandCount === 1 ? 'passende Band' : 'passende Bands';
 
   return (
     <>
       {/* Hero */}
-      <section className="bg-pl-bg py-16 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <Link
-            href="/bands"
-            className="text-pl-text-muted text-sm hover:text-pl-text motion-safe:transition-colors mb-6 inline-block"
-          >
-            ← Zurück zur Bandübersicht
-          </Link>
-          <h1 className="text-3xl md:text-4xl font-bold text-pl-text mb-3">{h1}</h1>
-          {category.description && (
-            <p className="text-pl-text-muted text-lg max-w-xl">{category.description}</p>
-          )}
-        </div>
-      </section>
+      {heroData ? (
+        <section className="relative bg-pl-stage overflow-hidden py-20 sm:py-24 md:py-28 px-4 sm:px-6">
+          <Image
+            src={urlFor(heroData.heroImage).width(1400).height(600).url()}
+            alt={heroData.heroImageAlt ?? h1}
+            fill
+            className="object-cover opacity-[0.28]"
+            priority
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+          <div className="relative z-10 max-w-6xl mx-auto">
+            <Link
+              href="/bands"
+              className="text-white/50 text-sm hover:text-white/80 motion-safe:transition-colors mb-6 inline-block"
+            >
+              ← Zurück zur Bandübersicht
+            </Link>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">{h1}</h1>
+            {subtitleText && (
+              <p className="text-white/70 text-lg max-w-xl">{subtitleText}</p>
+            )}
+          </div>
+        </section>
+      ) : (
+        <section className="bg-pl-bg py-16 px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto">
+            <Link
+              href="/bands"
+              className="text-pl-text-muted text-sm hover:text-pl-text motion-safe:transition-colors mb-6 inline-block"
+            >
+              ← Zurück zur Bandübersicht
+            </Link>
+            <h1 className="text-3xl md:text-4xl font-bold text-pl-text mb-3">{h1}</h1>
+            {subtitleText && (
+              <p className="text-pl-text-muted text-lg max-w-xl">{subtitleText}</p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Grid oder Empty State */}
       <section className="bg-pl-canvas py-16 px-4 sm:px-6">

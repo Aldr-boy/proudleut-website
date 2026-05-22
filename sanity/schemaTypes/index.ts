@@ -4,7 +4,8 @@ import {
   bandsPageFeaturedSlider,
   featuredSliderSlide,
 } from './bandsPageFeaturedSlider'
+import { eventCategoryHero } from './eventCategoryHero'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [featuredSliderSlide, bandsPageFeaturedSlider],
+  types: [featuredSliderSlide, bandsPageFeaturedSlider, eventCategoryHero],
 }

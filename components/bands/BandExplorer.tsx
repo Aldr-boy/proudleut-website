@@ -328,7 +328,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                   { scroll: false }
                 );
               }}
-              placeholder="Ort oder PLZ"
+              placeholder="Bandname, Ort oder PLZ"
               aria-label="Bands suchen"
               className="flex-1 min-w-0 bg-transparent text-pl-text placeholder:text-pl-text-hint text-sm focus:outline-none"
             />
@@ -340,7 +340,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'anlass'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'anlass' ? null : 'anlass')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[180px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[180px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
@@ -365,14 +365,14 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'region'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'region' ? null : 'region')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[128px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[128px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
-                Wo
+                Region
               </p>
               <p className={`text-sm truncate leading-snug ${selectedRegion ? 'text-pl-text font-medium' : 'text-pl-text-muted'}`}>
-                {selectedRegion ?? 'Region / Ort'}
+                {selectedRegion ?? 'Region wählen'}
               </p>
             </div>
             <svg
@@ -390,7 +390,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'bandtyp'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'bandtyp' ? null : 'bandtyp')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[172px] sm:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[172px] sm:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">

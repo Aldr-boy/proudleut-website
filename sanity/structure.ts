@@ -11,4 +11,9 @@ export const structure: StructureResolver = (S) =>
             .schemaType('bandsPageFeaturedSlider')
             .documentId('bandsPageFeaturedSlider')
         ),
+      S.listItem()
+        .title('Kategorie-Heroes')
+        .child(
+          S.documentTypeList('eventCategoryHero').title('Kategorie-Heroes')
+        ),
     ])

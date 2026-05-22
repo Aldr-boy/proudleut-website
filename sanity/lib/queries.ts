@@ -25,3 +25,17 @@ export type BandsPageFeaturedSliderQueryResult = {
     ctaHref?: string
   }>
 } | null
+
+export const eventCategoryHeroQuery = `*[_type == "eventCategoryHero" && slug == $slug][0]{
+  slug,
+  heroImage,
+  heroImageAlt,
+  subtitle
+}`
+
+export type EventCategoryHeroQueryResult = {
+  slug?: string
+  heroImage?: SanityImageSource
+  heroImageAlt?: string
+  subtitle?: string
+} | null
