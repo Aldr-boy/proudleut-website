@@ -8,7 +8,7 @@ const NAV_LINKS = [
   { label: 'Livebands entdecken', href: '/bands' },
   { label: 'Über mich', href: '/ueber-mich' },
   { label: 'Für Bands', href: '/fuer-bands' },
-  { label: 'Kontakt', href: '#' },
+  { label: 'Kontakt', href: '/kontakt' },
 ] as const;
 
 export default function Header() {
