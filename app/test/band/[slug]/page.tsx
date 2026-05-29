@@ -1,6 +1,17 @@
 export const dynamic = 'force-dynamic'
 
 import { getBandFromSupabase } from '@/lib/supabase/queries'
+import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand'
+import { BandHero } from '@/components/band/BandHero'
+import { HeroCTA } from '@/components/band/HeroCTA'
+import { BandTagsSection } from '@/components/band/BandTagsSection'
+import { BandVideoSection } from '@/components/band/BandVideoSection'
+import { BandDescription } from '@/components/band/BandDescription'
+import { BandReferenceEvents } from '@/components/band/BandReferenceEvents'
+import { BandSocialIndex } from '@/components/band/BandSocialIndex'
+import { BandGallery } from '@/components/band/BandGallery'
+import { BandWeddingModule } from '@/components/band/BandWeddingModule'
+import { BandContactSection } from '@/components/band/BandContactSection'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -11,6 +22,40 @@ type Row = Record<string, unknown>
 function asArray<T>(value: T | T[] | null | undefined): T[] {
   if (!value) return []
   return Array.isArray(value) ? value : [value]
+}
+
+function safeUrl(raw?: string): string | null {
+  if (!raw) return null
+  try {
+    const u = new URL(raw)
+    if (u.protocol === 'javascript:') return null
+    return u.href
+  } catch {
+    return null
+  }
+}
+
+function getYouTubeEmbedUrl(url?: string): string | null {
+  if (!url) return null
+  try {
+    const u = new URL(url)
+    let id: string | null = null
+    if (u.hostname === 'youtu.be') {
+      id = u.pathname.slice(1).split('?')[0]
+    } else if (u.hostname.includes('youtube.com')) {
+      if (u.pathname === '/watch') {
+        id = u.searchParams.get('v')
+      } else if (u.pathname.startsWith('/embed/')) {
+        id = u.pathname.replace('/embed/', '').split('?')[0]
+      } else if (u.pathname.startsWith('/shorts/')) {
+        id = u.pathname.replace('/shorts/', '').split('?')[0]
+      }
+    }
+    if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id)) return null
+    return `https://www.youtube-nocookie.com/embed/${id}`
+  } catch {
+    return null
+  }
 }
 
 export default async function SupabaseTestPage({ params }: Props) {
@@ -30,6 +75,9 @@ export default async function SupabaseTestPage({ params }: Props) {
   }
 
   const band = data as Row
+  const normalizedBand = normalizeBandFromSupabase(data)
+  const embedUrl = getYouTubeEmbedUrl(normalizedBand.youtubeVideoUrl)
+  const websiteUrl = safeUrl(normalizedBand.websiteUrl)
 
   const profiles = asArray<Row>(band.band_profiles as Row | Row[] | null)
   const contacts = asArray<Row>(band.band_contacts as Row | Row[] | null)
@@ -55,6 +103,46 @@ export default async function SupabaseTestPage({ params }: Props) {
       <h1 style={{ borderBottom: '2px solid #333', paddingBottom: '0.5rem' }}>
         Supabase Debug – /test/band/{slug}
       </h1>
+
+      {/* 0. Normalisiertes Band-Objekt */}
+      <section style={{ marginTop: '2rem', background: '#e8f5e9', padding: '1rem', borderRadius: '4px' }}>
+        <h2>0. Normalisiertes Band-Objekt (normalizeBandFromSupabase)</h2>
+        <pre style={{ background: '#f1f8f1', color: '#333', padding: '1rem', whiteSpace: 'pre-wrap', overflowX: 'auto', fontSize: '0.75rem' }}>
+          {JSON.stringify(normalizedBand, null, 2)}
+        </pre>
+      </section>
+
+      {/* 0b. Komponenten-Vorschau */}
+      <section style={{ marginTop: '2rem', borderTop: '3px solid #555', paddingTop: '1rem' }}>
+        <h2>0b. Komponenten-Vorschau (Supabase → normalizeBandFromSupabase)</h2>
+        <p style={{ color: '#555', fontSize: '0.85rem', marginBottom: '1rem' }}>
+          Die bestehenden Band-Komponenten rendern mit dem Supabase-normalisierten Band-Objekt — kein Airtable.
+        </p>
+      </section>
+      <article className="bg-pl-canvas">
+        <BandHero band={normalizedBand} />
+        <HeroCTA name={normalizedBand.name} slug={normalizedBand.slug} eventTypes={normalizedBand.eventTypes} />
+        <BandTagsSection band={normalizedBand} />
+        <BandVideoSection embedUrl={embedUrl} bandName={normalizedBand.name} />
+        <BandDescription band={normalizedBand} />
+        {(() => {
+          const hasReferenceEvents = normalizedBand.referenceEvents.length > 0
+          const s = normalizedBand.socialMediaStats
+          const hasSocialStats = !!(s?.igFollowers || s?.fbFollowers || s?.ytSubscribers)
+          const both = hasReferenceEvents && hasSocialStats
+          if (!hasReferenceEvents && !hasSocialStats) return null
+          return (
+            <section className="bg-pl-stage">
+              <BandReferenceEvents band={normalizedBand} compactBottom={both} />
+              {both && <div className="border-t border-white/10" />}
+              <BandSocialIndex band={normalizedBand} compactTop={both} />
+            </section>
+          )
+        })()}
+        <BandGallery band={normalizedBand} />
+        <BandWeddingModule band={normalizedBand} />
+        <BandContactSection band={normalizedBand} websiteUrl={websiteUrl} />
+      </article>
 
       {/* 1. Band-Kern */}
       <section style={{ marginTop: '2rem' }}>
