@@ -34,3 +34,23 @@ export async function getBandFromSupabase(slug: string) {
 
   return { data, error }
 }
+
+export async function getAllBandsFromSupabase() {
+  const { data, error } = await supabase
+    .from('bands')
+    .select(`
+      id,
+      name,
+      slug,
+      status,
+      band_profiles ( short_description ),
+      locations ( city_name, landkreis, regierungsbezirk ),
+      media_assets ( url, alt_text, role, sort_order, width, height ),
+      band_event_types ( sort_order, event_types ( name, slug ) ),
+      band_band_types ( is_primary, sort_order, band_types ( name, slug ) )
+    `)
+    .eq('status', 'active')
+    .order('name', { ascending: true })
+
+  return { data, error }
+}

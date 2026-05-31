@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getBandBySlug, getBands } from '@/lib/airtable/queries';
+import { getBandFromSupabase, getAllBandsFromSupabase } from '@/lib/supabase/queries';
+import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import { generateBandJsonLd } from '@/lib/seo/jsonLd';
 import { getSimilarBands } from '@/lib/bands/similarBands';
 import BandCard from '@/components/BandCard';
@@ -16,7 +17,7 @@ import { BandContactSection } from '@/components/band/BandContactSection';
 import { HeroCTA } from '@/components/band/HeroCTA';
 import { BandVideoSection } from '@/components/band/BandVideoSection';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -60,8 +61,9 @@ function getYouTubeEmbedUrl(url?: string): string | null {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const band = await getBandBySlug(slug);
-  if (!band) return {};
+  const { data } = await getBandFromSupabase(slug);
+  if (!data) return {};
+  const band = normalizeBandFromSupabase(data);
   return {
     title: band.name,
     description:
@@ -76,9 +78,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function BandPage({ params }: PageProps) {
   const { slug } = await params;
 
-  const [maybeBand, allBands] = await Promise.all([getBandBySlug(slug), getBands()]);
-  if (!maybeBand) notFound();
-  const band = maybeBand;
+  const [{ data, error }, { data: allBandsData }] = await Promise.all([
+    getBandFromSupabase(slug),
+    getAllBandsFromSupabase(),
+  ]);
+  if (error || !data) notFound();
+  const band = normalizeBandFromSupabase(data);
+  const allBands = (allBandsData ?? []).map(normalizeBandFromSupabase);
 
   const jsonLd = generateBandJsonLd(band);
   const websiteUrl = safeUrl(band.websiteUrl);
