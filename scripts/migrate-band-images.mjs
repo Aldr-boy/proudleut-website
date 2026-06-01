@@ -123,6 +123,15 @@ function extFrom(att) {
   return 'jpg'
 }
 
+// Leitet den korrekten Content-Type aus MIME-Type oder (als Fallback) aus der
+// Dateiendung ab – verhindert, dass WebP-Dateien als image/jpeg registriert werden.
+function mimeFrom(att) {
+  if (att.type) return att.type.toLowerCase().split(';')[0].trim()
+  const ext = extFrom(att)
+  const map = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' }
+  return map[ext] ?? 'image/octet-stream'
+}
+
 function fmtBytes(b) {
   if (!b) return '?'
   if (b < 1024)    return `${b} B`
@@ -396,7 +405,7 @@ async function processBand(record) {
 
     const { error: upErr } = await supabase.storage
       .from(BUCKET)
-      .upload(storagePath, buffer, { contentType: att.type ?? 'image/jpeg', upsert: true })
+      .upload(storagePath, buffer, { contentType: mimeFrom(att), upsert: true })
     if (upErr) {
       console.error(`  ✗ ${fileName}: Upload fehlgeschlagen – ${upErr.message}`)
       stats.errors++
@@ -447,7 +456,7 @@ async function processBand(record) {
 
     const { error: upErr } = await supabase.storage
       .from(BUCKET)
-      .upload(storagePath, buffer, { contentType: att.type ?? 'image/jpeg', upsert: true })
+      .upload(storagePath, buffer, { contentType: mimeFrom(att), upsert: true })
     if (upErr) {
       console.error(`  ✗ ${fileName}: Upload fehlgeschlagen – ${upErr.message}`)
       stats.errors++
