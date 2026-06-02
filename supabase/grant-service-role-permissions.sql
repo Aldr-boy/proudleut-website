@@ -17,7 +17,8 @@
 --                    nie an Client weitergegeben)
 --
 -- Bewusst AUSGESCHLOSSEN:
---   • band_contacts  – enthält E-Mail und Telefon, kein öffentlicher Zugriff
+--   • band_contacts  – enthält E-Mail und Telefon; anon hat KEINEN Zugriff.
+--                      service_role erhält SELECT, INSERT, UPDATE (separates Statement unten).
 --   • plz_reference  – reine Infrastruktur-Tabelle, nicht in Frontend-Queries
 --
 -- Hintergrund:
@@ -72,6 +73,11 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
   public.reference_events
 TO service_role;
 
+-- Admin-Panel: band_contacts braucht service_role-Zugriff für /admin/bands/[id].
+-- Enthält E-Mail und Telefon – kein öffentlicher Zugriff, anon bleibt ausgeschlossen.
+-- Bewusst kein DELETE: Kontakte werden im Admin-MVP nicht gelöscht.
+GRANT SELECT, INSERT, UPDATE ON TABLE public.band_contacts TO service_role;
+
 -- Sequences für gen_random_uuid() bei INSERT ohne explizite id
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO service_role;
 
@@ -86,7 +92,7 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO service_role;
 --                              band_event_types+event_types, band_band_types+band_types
 --
 -- Explizit NICHT enthalten:
---   band_contacts  → E-Mail/Telefon der Bands, kein öffentlicher Zugriff
+--   band_contacts  → E-Mail/Telefon der Bands, kein öffentlicher Zugriff (service_role: separat geregelt)
 --   plz_reference  → rohe PLZ-Infrastruktur, nicht in Frontend-Queries
 --
 -- anon erhält AUSSCHLIESSLICH SELECT – keine Schreibrechte.
