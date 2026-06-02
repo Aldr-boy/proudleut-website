@@ -33,6 +33,7 @@ export default async function RootLayout({
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
   const isStudio = pathname.startsWith("/studio");
+  const isAdmin = pathname.startsWith("/admin");
 
   return (
     <html
@@ -43,13 +44,15 @@ export default async function RootLayout({
         className={
           isStudio
             ? "h-screen overflow-hidden"
+            : isAdmin
+            ? "min-h-screen bg-gray-50"
             : "min-h-full flex flex-col"
         }
       >
-        {!isStudio && <Header />}
+        {!isStudio && !isAdmin && <Header />}
         <main className={isStudio ? "h-screen" : "flex-1"}>{children}</main>
-        {!isStudio && <Footer />}
-        {!isStudio && <MerklisteBar />}
+        {!isStudio && !isAdmin && <Footer />}
+        {!isStudio && !isAdmin && <MerklisteBar />}
       </body>
     </html>
   );
