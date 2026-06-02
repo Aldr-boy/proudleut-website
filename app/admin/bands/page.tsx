@@ -78,9 +78,17 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
       <div className="px-6 py-6 max-w-7xl mx-auto">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Bands</h1>
-          <span className="text-sm text-gray-500">
-            {bandList.length} {bandList.length === 1 ? 'Band' : 'Bands'}
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">
+              {bandList.length} {bandList.length === 1 ? 'Band' : 'Bands'}
+            </span>
+            <a
+              href="/admin/bands/new"
+              className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
+            >
+              + Neue Band anlegen
+            </a>
+          </div>
         </div>
 
         {/* Filter bar */}
@@ -148,7 +156,14 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
                 <tbody className="divide-y divide-gray-100">
                   {bandList.map((band) => (
                     <tr key={band.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-900">{band.name}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        <a
+                          href={`/admin/bands/${band.id}`}
+                          className="hover:text-violet-700 hover:underline transition-colors"
+                        >
+                          {band.name}
+                        </a>
+                      </td>
                       <td className="px-4 py-3 text-gray-500 font-mono text-xs">{band.slug}</td>
                       <td className="px-4 py-3">
                         <span

@@ -1,0 +1,445 @@
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { createAdminClient } from '@/lib/supabase/server'
+import { updateBandAction } from './actions'
+import { logoutAction } from '@/app/admin/actions'
+
+export const dynamic = 'force-dynamic'
+export const metadata: Metadata = { title: 'Band bearbeiten' }
+
+const STATUS_OPTIONS = [
+  { value: 'new', label: 'Neu' },
+  { value: 'draft', label: 'Entwurf' },
+  { value: 'active', label: 'Aktiv' },
+  { value: 'paused', label: 'Pausiert' },
+  { value: 'archived', label: 'Archiviert' },
+]
+
+const FLEXIBILITY_OPTIONS = [
+  { value: 'unknown', label: 'Unbekannt' },
+  { value: 'fixed', label: 'Fest' },
+  { value: 'flexible', label: 'Flexibel' },
+  { value: 'modular', label: 'Modular' },
+]
+
+const PRICE_TIER_OPTIONS = [
+  { value: '', label: '–' },
+  { value: 'budget', label: 'Budget' },
+  { value: 'mid', label: 'Mittelklasse' },
+  { value: 'premium', label: 'Premium' },
+  { value: 'on_request', label: 'Auf Anfrage' },
+]
+
+type BandContact = {
+  id: string
+  contact_name: string | null
+  email: string | null
+  phone: string | null
+  contact_role: string | null
+  is_public: boolean
+}
+
+type BandDetail = {
+  id: string
+  name: string
+  slug: string
+  status: string
+  is_published: boolean
+  lineup_flexibility: string
+  default_member_count: number | null
+  website_url: string | null
+  locations: { city_name: string }[] | null
+  band_profiles: {
+    short_description: string | null
+    main_text: string | null
+    slogan: string | null
+    meta_description: string | null
+    price_range: string | null
+    price_tier: string | null
+  }[] | null
+  band_contacts: BandContact[]
+}
+
+type SearchParams = Promise<{
+  saved?: string
+  created?: string
+  e_name?: string
+  e_slug?: string
+  e_status?: string
+  e_lineup_flexibility?: string
+  e_default_member_count?: string
+  e_website_url?: string
+  e_short_description?: string
+  e_slogan?: string
+  e_meta_description?: string
+  e_price_tier?: string
+  e_form?: string
+}>
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null
+  return <p className="mt-1 text-xs text-red-600">{msg}</p>
+}
+
+export default async function AdminBandDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: SearchParams
+}) {
+  const { id } = await params
+  const sp = await searchParams
+
+  const client = createAdminClient()
+
+  const { data, error } = await client
+    .from('bands')
+    .select(`
+      id, name, slug, status, is_published,
+      lineup_flexibility, default_member_count, website_url,
+      locations(city_name),
+      band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier),
+      band_contacts(id, contact_name, email, phone, contact_role, is_public)
+    `)
+    .eq('id', id)
+    .single()
+
+  if (error || !data) notFound()
+
+  const band = data as unknown as BandDetail
+  const profile = band.band_profiles?.[0] ?? null
+  const contacts = band.band_contacts ?? []
+  const location = band.locations?.[0] ?? null
+
+  const showSuccess = !!sp.saved || !!sp.created
+  const hasFormError = !!sp.e_form
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+        <span className="font-semibold text-gray-800 text-sm">proudleut Admin</span>
+        <form action={logoutAction}>
+          <button type="submit" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            Abmelden
+          </button>
+        </form>
+      </header>
+
+      <div className="px-6 py-6 max-w-3xl mx-auto">
+        {/* Breadcrumb + title */}
+        <div className="mb-6">
+          <a href="/admin/bands" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            ← Bands
+          </a>
+          <h1 className="text-2xl font-semibold text-gray-900 mt-2">{band.name}</h1>
+          <p className="text-sm text-gray-400 font-mono mt-0.5">{band.slug}</p>
+        </div>
+
+        {/* Success banner */}
+        {showSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-5 text-green-700 text-sm">
+            {sp.created ? 'Band wurde angelegt.' : 'Änderungen gespeichert.'}
+          </div>
+        )}
+
+        {/* Form error */}
+        {hasFormError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-5 text-red-700 text-sm">
+            {sp.e_form}
+          </div>
+        )}
+
+        {/* Read-only: Standort */}
+        {location && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+            <h2 className="text-sm font-medium text-gray-700 mb-3">Standort (read-only)</h2>
+            <p className="text-sm text-gray-800">{location.city_name}</p>
+          </div>
+        )}
+
+        {/* Read-only: Kontakte */}
+        {contacts.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+            <h2 className="text-sm font-medium text-gray-700 mb-3">
+              Kontakte (read-only, vertraulich)
+            </h2>
+            <div className="space-y-3">
+              {contacts.map((c) => (
+                <div key={c.id} className="text-sm border-l-2 border-gray-200 pl-3">
+                  {c.contact_name && <p className="font-medium text-gray-800">{c.contact_name}</p>}
+                  {c.contact_role && (
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">{c.contact_role}</p>
+                  )}
+                  {c.email && <p className="text-gray-600">{c.email}</p>}
+                  {c.phone && <p className="text-gray-600">{c.phone}</p>}
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {c.is_public ? 'Öffentlich sichtbar' : 'Nicht öffentlich'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Edit form */}
+        <form action={updateBandAction} className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
+          <input type="hidden" name="id" value={band.id} />
+
+          {/* Section: Kerndaten */}
+          <fieldset>
+            <legend className="text-base font-semibold text-gray-900 mb-4">Kerndaten</legend>
+            <div className="space-y-4">
+              {/* Name */}
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Bandname <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  defaultValue={band.name}
+                  maxLength={200}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <FieldError msg={sp.e_name} />
+              </div>
+
+              {/* Slug */}
+              <div>
+                <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
+                  Slug <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="slug"
+                  name="slug"
+                  type="text"
+                  defaultValue={band.slug}
+                  pattern="[a-z0-9-]+"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <FieldError msg={sp.e_slug} />
+              </div>
+
+              {/* Status + is_published */}
+              <div className="flex flex-wrap gap-4">
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    id="status"
+                    name="status"
+                    defaultValue={band.status}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    {STATUS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <FieldError msg={sp.e_status} />
+                </div>
+
+                <div className="flex items-end gap-2 pb-0.5">
+                  <input
+                    id="is_published"
+                    name="is_published"
+                    type="checkbox"
+                    value="1"
+                    defaultChecked={band.is_published}
+                    className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                  />
+                  <label htmlFor="is_published" className="text-sm text-gray-700">
+                    Veröffentlicht
+                  </label>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Section: Besetzung */}
+          <fieldset className="border-t border-gray-100 pt-5">
+            <legend className="text-base font-semibold text-gray-900 mb-4">Besetzung</legend>
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label htmlFor="lineup_flexibility" className="block text-sm font-medium text-gray-700 mb-1">
+                  Besetzungsflexibilität
+                </label>
+                <select
+                  id="lineup_flexibility"
+                  name="lineup_flexibility"
+                  defaultValue={band.lineup_flexibility}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  {FLEXIBILITY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <FieldError msg={sp.e_lineup_flexibility} />
+              </div>
+
+              <div>
+                <label htmlFor="default_member_count" className="block text-sm font-medium text-gray-700 mb-1">
+                  Standardgröße (Personen)
+                </label>
+                <input
+                  id="default_member_count"
+                  name="default_member_count"
+                  type="number"
+                  min={1}
+                  max={30}
+                  defaultValue={band.default_member_count ?? ''}
+                  placeholder="–"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <FieldError msg={sp.e_default_member_count} />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Section: Links */}
+          <fieldset className="border-t border-gray-100 pt-5">
+            <legend className="text-base font-semibold text-gray-900 mb-4">Links</legend>
+            <div>
+              <label htmlFor="website_url" className="block text-sm font-medium text-gray-700 mb-1">
+                Website
+              </label>
+              <input
+                id="website_url"
+                name="website_url"
+                type="url"
+                defaultValue={band.website_url ?? ''}
+                placeholder="https://"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              />
+              <FieldError msg={sp.e_website_url} />
+            </div>
+          </fieldset>
+
+          {/* Section: Profil */}
+          <fieldset className="border-t border-gray-100 pt-5">
+            <legend className="text-base font-semibold text-gray-900 mb-4">Profil</legend>
+            <div className="space-y-4">
+              {/* Slogan */}
+              <div>
+                <label htmlFor="slogan" className="block text-sm font-medium text-gray-700 mb-1">
+                  Slogan
+                  <span className="ml-1 text-xs text-gray-400 font-normal">max. 200 Zeichen</span>
+                </label>
+                <input
+                  id="slogan"
+                  name="slogan"
+                  type="text"
+                  defaultValue={profile?.slogan ?? ''}
+                  maxLength={200}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <FieldError msg={sp.e_slogan} />
+              </div>
+
+              {/* Short description */}
+              <div>
+                <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-1">
+                  Kurzbeschreibung
+                  <span className="ml-1 text-xs text-gray-400 font-normal">max. 300 Zeichen</span>
+                </label>
+                <textarea
+                  id="short_description"
+                  name="short_description"
+                  defaultValue={profile?.short_description ?? ''}
+                  maxLength={300}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                />
+                <FieldError msg={sp.e_short_description} />
+              </div>
+
+              {/* Meta description */}
+              <div>
+                <label htmlFor="meta_description" className="block text-sm font-medium text-gray-700 mb-1">
+                  Meta-Beschreibung (SEO)
+                  <span className="ml-1 text-xs text-gray-400 font-normal">max. 160 Zeichen</span>
+                </label>
+                <textarea
+                  id="meta_description"
+                  name="meta_description"
+                  defaultValue={profile?.meta_description ?? ''}
+                  maxLength={160}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                />
+                <FieldError msg={sp.e_meta_description} />
+              </div>
+
+              {/* Price tier */}
+              <div>
+                <label htmlFor="price_tier" className="block text-sm font-medium text-gray-700 mb-1">
+                  Preis-Tier
+                </label>
+                <select
+                  id="price_tier"
+                  name="price_tier"
+                  defaultValue={profile?.price_tier ?? ''}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  {PRICE_TIER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <FieldError msg={sp.e_price_tier} />
+              </div>
+
+              {/* Price range */}
+              <div>
+                <label htmlFor="price_range" className="block text-sm font-medium text-gray-700 mb-1">
+                  Preisspanne (Freitext)
+                </label>
+                <input
+                  id="price_range"
+                  name="price_range"
+                  type="text"
+                  defaultValue={profile?.price_range ?? ''}
+                  placeholder="z. B. ab 2.500 €"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Main text */}
+              <div>
+                <label htmlFor="main_text" className="block text-sm font-medium text-gray-700 mb-1">
+                  Haupttext
+                </label>
+                <textarea
+                  id="main_text"
+                  name="main_text"
+                  defaultValue={profile?.main_text ?? ''}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Submit */}
+          <div className="border-t border-gray-100 pt-5 flex gap-3">
+            <button
+              type="submit"
+              className="px-5 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
+            >
+              Speichern
+            </button>
+            <a
+              href="/admin/bands"
+              className="px-5 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+            >
+              Zurück zur Liste
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
