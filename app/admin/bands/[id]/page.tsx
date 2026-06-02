@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
-import { updateBandAction } from './actions'
+import { updateBandAction, createContactAction, updateContactAction } from './actions'
 import { logoutAction } from '@/app/admin/actions'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +30,27 @@ const PRICE_TIER_OPTIONS = [
   { value: 'on_request', label: 'Auf Anfrage' },
 ]
 
+const CONTACT_ROLE_OPTIONS = [
+  { value: '', label: '– keine Rolle –' },
+  { value: 'management', label: 'Management' },
+  { value: 'booking', label: 'Booking' },
+  { value: 'band_direct', label: 'Band direkt' },
+  { value: 'technik', label: 'Technik' },
+  { value: 'press', label: 'Presse' },
+]
+
+const CONTACT_ERROR_MESSAGES: Record<string, string> = {
+  missing_fields: 'Mindestens Name, E-Mail oder Telefon muss befüllt sein.',
+  too_long: 'Ein Feld überschreitet die maximale Zeichenanzahl.',
+  invalid_role: 'Ungültige Rolle.',
+  invalid_email: 'Bitte eine gültige E-Mail-Adresse eingeben.',
+  duplicate_role: 'Diese Rolle ist für diese Band bereits vergeben.',
+  primary_conflict: 'Es gibt bereits einen primären Anfragekontakt.',
+  check_failed: 'Ungültiger Wert (Datenbankprüfung fehlgeschlagen).',
+  invalid_contact: 'Kontakt nicht gefunden oder nicht dieser Band zugeordnet.',
+  db_error: 'Datenbankfehler – bitte erneut versuchen.',
+}
+
 type BandContact = {
   id: string
   contact_name: string | null
@@ -37,6 +58,9 @@ type BandContact = {
   phone: string | null
   contact_role: string | null
   is_public: boolean
+  is_primary_inquiry: boolean
+  created_at: string
+  updated_at: string
 }
 
 type BandDetail = {
@@ -74,11 +98,22 @@ type SearchParams = Promise<{
   e_meta_description?: string
   e_price_tier?: string
   e_form?: string
+  contact_created?: string
+  contact_saved?: string
+  contact_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null
   return <p className="mt-1 text-xs text-red-600">{msg}</p>
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 export default async function AdminBandDetailPage({
@@ -100,7 +135,7 @@ export default async function AdminBandDetailPage({
       lineup_flexibility, default_member_count, website_url,
       locations(city_name),
       band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier),
-      band_contacts(id, contact_name, email, phone, contact_role, is_public)
+      band_contacts(id, contact_name, email, phone, contact_role, is_public, is_primary_inquiry, created_at, updated_at)
     `)
     .eq('id', id)
     .single()
@@ -109,11 +144,16 @@ export default async function AdminBandDetailPage({
 
   const band = data as unknown as BandDetail
   const profile = band.band_profiles?.[0] ?? null
-  const contacts = band.band_contacts ?? []
+  const contacts = (band.band_contacts ?? []).sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  )
   const location = band.locations?.[0] ?? null
 
   const showSuccess = !!sp.saved || !!sp.created
   const hasFormError = !!sp.e_form
+  const contactErrorMsg = sp.contact_error
+    ? (CONTACT_ERROR_MESSAGES[sp.contact_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -136,14 +176,14 @@ export default async function AdminBandDetailPage({
           <p className="text-sm text-gray-400 font-mono mt-0.5">{band.slug}</p>
         </div>
 
-        {/* Success banner */}
+        {/* Band success banner */}
         {showSuccess && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-5 text-green-700 text-sm">
             {sp.created ? 'Band wurde angelegt.' : 'Änderungen gespeichert.'}
           </div>
         )}
 
-        {/* Form error */}
+        {/* Band form error */}
         {hasFormError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-5 text-red-700 text-sm">
             {sp.e_form}
@@ -158,29 +198,290 @@ export default async function AdminBandDetailPage({
           </div>
         )}
 
-        {/* Read-only: Kontakte */}
-        {contacts.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
-            <h2 className="text-sm font-medium text-gray-700 mb-3">
-              Kontakte (read-only, vertraulich)
-            </h2>
-            <div className="space-y-3">
+        {/* ─── Kontakte ─────────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Kontakte</h2>
+
+          {/* Contact success/error banner */}
+          {sp.contact_created && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-green-700 text-sm">
+              Kontakt wurde angelegt.
+            </div>
+          )}
+          {sp.contact_saved && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-green-700 text-sm">
+              Kontakt gespeichert.
+            </div>
+          )}
+          {contactErrorMsg && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-700 text-sm">
+              {contactErrorMsg}
+            </div>
+          )}
+
+          {/* Existing contacts */}
+          {contacts.length === 0 ? (
+            <p className="text-sm text-gray-400 mb-4">Noch keine Kontakte vorhanden.</p>
+          ) : (
+            <div className="space-y-4 mb-6">
               {contacts.map((c) => (
-                <div key={c.id} className="text-sm border-l-2 border-gray-200 pl-3">
-                  {c.contact_name && <p className="font-medium text-gray-800">{c.contact_name}</p>}
-                  {c.contact_role && (
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">{c.contact_role}</p>
-                  )}
-                  {c.email && <p className="text-gray-600">{c.email}</p>}
-                  {c.phone && <p className="text-gray-600">{c.phone}</p>}
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {c.is_public ? 'Öffentlich sichtbar' : 'Nicht öffentlich'}
-                  </p>
+                <div key={c.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                  {/* Contact header */}
+                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-800">
+                        {c.contact_name ?? <span className="text-gray-400 italic">Kein Name</span>}
+                      </span>
+                      {c.contact_role && (
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">
+                          {c.contact_role}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 text-xs">
+                      {c.is_primary_inquiry && (
+                        <span className="text-violet-700 font-medium">Primärkontakt</span>
+                      )}
+                      {c.is_public && (
+                        <span className="text-gray-500">öffentlich</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Edit form */}
+                  <form action={updateContactAction} className="p-4 space-y-3">
+                    <input type="hidden" name="contact_id" value={c.id} />
+                    <input type="hidden" name="band_id" value={band.id} />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Name */}
+                      <div>
+                        <label
+                          htmlFor={`cn_${c.id}`}
+                          className="block text-xs font-medium text-gray-600 mb-1"
+                        >
+                          Name
+                        </label>
+                        <input
+                          id={`cn_${c.id}`}
+                          name="contact_name"
+                          type="text"
+                          defaultValue={c.contact_name ?? ''}
+                          maxLength={200}
+                          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Rolle */}
+                      <div>
+                        <label
+                          htmlFor={`cr_${c.id}`}
+                          className="block text-xs font-medium text-gray-600 mb-1"
+                        >
+                          Rolle
+                        </label>
+                        <select
+                          id={`cr_${c.id}`}
+                          name="contact_role"
+                          defaultValue={c.contact_role ?? ''}
+                          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        >
+                          {CONTACT_ROLE_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* E-Mail */}
+                      <div>
+                        <label
+                          htmlFor={`em_${c.id}`}
+                          className="block text-xs font-medium text-gray-600 mb-1"
+                        >
+                          E-Mail
+                        </label>
+                        <input
+                          id={`em_${c.id}`}
+                          name="email"
+                          type="text"
+                          defaultValue={c.email ?? ''}
+                          maxLength={254}
+                          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Telefon */}
+                      <div>
+                        <label
+                          htmlFor={`ph_${c.id}`}
+                          className="block text-xs font-medium text-gray-600 mb-1"
+                        >
+                          Telefon
+                        </label>
+                        <input
+                          id={`ph_${c.id}`}
+                          name="phone"
+                          type="text"
+                          defaultValue={c.phone ?? ''}
+                          maxLength={80}
+                          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Checkboxes */}
+                    <div className="flex gap-5">
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          id={`pub_${c.id}`}
+                          name="is_public"
+                          type="checkbox"
+                          value="1"
+                          defaultChecked={c.is_public}
+                          className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        />
+                        Öffentlich
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          id={`pri_${c.id}`}
+                          name="is_primary_inquiry"
+                          type="checkbox"
+                          value="1"
+                          defaultChecked={c.is_primary_inquiry}
+                          className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        />
+                        Primärer Anfragekontakt
+                      </label>
+                    </div>
+
+                    {/* Timestamps + submit */}
+                    <div className="flex items-center justify-between pt-1">
+                      <p className="text-xs text-gray-400">
+                        Angelegt: {formatDate(c.created_at)}
+                        {c.updated_at !== c.created_at && (
+                          <> · Geändert: {formatDate(c.updated_at)}</>
+                        )}
+                      </p>
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
+                      >
+                        Speichern
+                      </button>
+                    </div>
+                  </form>
                 </div>
               ))}
             </div>
+          )}
+
+          {/* New contact form */}
+          <div className="border-t border-gray-100 pt-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Neuen Kontakt anlegen</h3>
+            <form action={createContactAction} className="space-y-3">
+              <input type="hidden" name="band_id" value={band.id} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Name */}
+                <div>
+                  <label htmlFor="new_contact_name" className="block text-xs font-medium text-gray-600 mb-1">
+                    Name
+                  </label>
+                  <input
+                    id="new_contact_name"
+                    name="contact_name"
+                    type="text"
+                    maxLength={200}
+                    placeholder="z. B. Max Mustermann"
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Rolle */}
+                <div>
+                  <label htmlFor="new_contact_role" className="block text-xs font-medium text-gray-600 mb-1">
+                    Rolle
+                  </label>
+                  <select
+                    id="new_contact_role"
+                    name="contact_role"
+                    defaultValue=""
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    {CONTACT_ROLE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* E-Mail */}
+                <div>
+                  <label htmlFor="new_email" className="block text-xs font-medium text-gray-600 mb-1">
+                    E-Mail
+                  </label>
+                  <input
+                    id="new_email"
+                    name="email"
+                    type="text"
+                    maxLength={254}
+                    placeholder="kontakt@beispiel.de"
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Telefon */}
+                <div>
+                  <label htmlFor="new_phone" className="block text-xs font-medium text-gray-600 mb-1">
+                    Telefon
+                  </label>
+                  <input
+                    id="new_phone"
+                    name="phone"
+                    type="text"
+                    maxLength={80}
+                    placeholder="+49 89 …"
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Checkboxes */}
+              <div className="flex gap-5">
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    id="new_is_public"
+                    name="is_public"
+                    type="checkbox"
+                    value="1"
+                    className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                  />
+                  Öffentlich
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    id="new_is_primary_inquiry"
+                    name="is_primary_inquiry"
+                    type="checkbox"
+                    value="1"
+                    className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                  />
+                  Primärer Anfragekontakt
+                </label>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
+                >
+                  Kontakt anlegen
+                </button>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+        {/* ─── Ende Kontakte ─────────────────────────── */}
 
         {/* Edit form */}
         <form action={updateBandAction} className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
@@ -202,7 +503,7 @@ export default async function AdminBandDetailPage({
                   defaultValue={band.name}
                   maxLength={200}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
                 <FieldError msg={sp.e_name} />
               </div>
@@ -219,7 +520,7 @@ export default async function AdminBandDetailPage({
                   defaultValue={band.slug}
                   pattern="[a-z0-9-]+"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
                 <FieldError msg={sp.e_slug} />
               </div>
@@ -293,7 +594,7 @@ export default async function AdminBandDetailPage({
                   max={30}
                   defaultValue={band.default_member_count ?? ''}
                   placeholder="–"
-                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
                 <FieldError msg={sp.e_default_member_count} />
               </div>
@@ -313,7 +614,7 @@ export default async function AdminBandDetailPage({
                 type="url"
                 defaultValue={band.website_url ?? ''}
                 placeholder="https://"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
               <FieldError msg={sp.e_website_url} />
             </div>
@@ -335,7 +636,7 @@ export default async function AdminBandDetailPage({
                   type="text"
                   defaultValue={profile?.slogan ?? ''}
                   maxLength={200}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
                 <FieldError msg={sp.e_slogan} />
               </div>
@@ -352,7 +653,7 @@ export default async function AdminBandDetailPage({
                   defaultValue={profile?.short_description ?? ''}
                   maxLength={300}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                 />
                 <FieldError msg={sp.e_short_description} />
               </div>
@@ -369,7 +670,7 @@ export default async function AdminBandDetailPage({
                   defaultValue={profile?.meta_description ?? ''}
                   maxLength={160}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                 />
                 <FieldError msg={sp.e_meta_description} />
               </div>
@@ -403,7 +704,7 @@ export default async function AdminBandDetailPage({
                   type="text"
                   defaultValue={profile?.price_range ?? ''}
                   placeholder="z. B. ab 2.500 €"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
               </div>
 
@@ -417,7 +718,7 @@ export default async function AdminBandDetailPage({
                   name="main_text"
                   defaultValue={profile?.main_text ?? ''}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y"
                 />
               </div>
             </div>

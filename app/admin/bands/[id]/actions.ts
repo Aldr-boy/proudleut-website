@@ -10,6 +10,10 @@ function nullIfEmpty(val: string): string | null {
   return val === '' ? null : val
 }
 
+// ─────────────────────────────────────────
+// Band validation (Sprint 2, unchanged)
+// ─────────────────────────────────────────
+
 function validateEditBand(data: {
   name: string
   slug: string
@@ -132,4 +136,196 @@ export async function updateBandAction(formData: FormData): Promise<never> {
   }
 
   redirect(`/admin/bands/${id}?saved=1`)
+}
+
+// ─────────────────────────────────────────
+// Contact helpers (Sprint 3)
+// ─────────────────────────────────────────
+
+const VALID_CONTACT_ROLES = ['management', 'booking', 'band_direct', 'technik', 'press'] as const
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+type ContactErrorCode =
+  | 'missing_fields'
+  | 'too_long'
+  | 'invalid_role'
+  | 'invalid_email'
+  | 'duplicate_role'
+  | 'primary_conflict'
+  | 'check_failed'
+  | 'invalid_contact'
+  | 'db_error'
+
+function validateContact(data: {
+  contact_name: string
+  email: string
+  phone: string
+  contact_role: string
+}): ContactErrorCode | null {
+  if (!data.contact_name && !data.email && !data.phone) return 'missing_fields'
+  if (data.contact_name.length > 200) return 'too_long'
+  if (data.phone.length > 80) return 'too_long'
+  if (data.email.length > 254) return 'too_long'
+  if (data.email && !EMAIL_REGEX.test(data.email)) return 'invalid_email'
+  if (data.contact_role && !(VALID_CONTACT_ROLES as readonly string[]).includes(data.contact_role)) {
+    return 'invalid_role'
+  }
+  return null
+}
+
+function pgContactErrorCode(error: { code?: string; message?: string }): ContactErrorCode {
+  if (error.code === '23505') {
+    if (error.message?.includes('idx_band_contacts_unique_role')) return 'duplicate_role'
+    if (error.message?.includes('idx_band_contacts_one_primary_per_band')) return 'primary_conflict'
+    // Constraint name not identifiable → neutral fallback
+    return 'duplicate_role'
+  }
+  if (error.code === '23514') return 'check_failed'
+  return 'db_error'
+}
+
+// ─────────────────────────────────────────
+// createContactAction (Sprint 3)
+// ─────────────────────────────────────────
+
+export async function createContactAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  const contact_name = str(formData, 'contact_name')
+  const email = str(formData, 'email')
+  const phone = str(formData, 'phone')
+  const contact_role = str(formData, 'contact_role')
+  const is_public = formData.get('is_public') === '1'
+  const is_primary_inquiry = formData.get('is_primary_inquiry') === '1'
+
+  const client = createAdminClient()
+
+  // Band-Existenzprüfung
+  const { data: band } = await client
+    .from('bands')
+    .select('id')
+    .eq('id', band_id)
+    .maybeSingle()
+  if (!band) redirect(`/admin/bands?contact_error=invalid_contact`)
+
+  // Feldvalidierung
+  const validationError = validateContact({ contact_name, email, phone, contact_role })
+  if (validationError) redirect(`/admin/bands/${band_id}?contact_error=${validationError}`)
+
+  // Rollenkonflikt-Vorabprüfung (vor jedem Schreibvorgang)
+  if (contact_role) {
+    const { data: roleConflict } = await client
+      .from('band_contacts')
+      .select('id')
+      .eq('band_id', band_id)
+      .eq('contact_role', contact_role)
+      .maybeSingle()
+    if (roleConflict) redirect(`/admin/bands/${band_id}?contact_error=duplicate_role`)
+  }
+
+  const payload = {
+    band_id,
+    contact_name: nullIfEmpty(contact_name),
+    email: nullIfEmpty(email),
+    phone: nullIfEmpty(phone),
+    contact_role: nullIfEmpty(contact_role),
+    is_public,
+  }
+
+  if (is_primary_inquiry) {
+    // Schritt 1: Andere Primärkontakte der Band clearen
+    const { error: clearError } = await client
+      .from('band_contacts')
+      .update({ is_primary_inquiry: false })
+      .eq('band_id', band_id)
+    if (clearError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(clearError)}`)
+
+    // Schritt 2: Zielkontakt anlegen mit is_primary_inquiry = true
+    const { error: insertError } = await client
+      .from('band_contacts')
+      .insert({ ...payload, is_primary_inquiry: true })
+    if (insertError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(insertError)}`)
+  } else {
+    const { error: insertError } = await client
+      .from('band_contacts')
+      .insert({ ...payload, is_primary_inquiry: false })
+    if (insertError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(insertError)}`)
+  }
+
+  redirect(`/admin/bands/${band_id}?contact_created=1`)
+}
+
+// ─────────────────────────────────────────
+// updateContactAction (Sprint 3)
+// ─────────────────────────────────────────
+
+export async function updateContactAction(formData: FormData): Promise<never> {
+  const contact_id = str(formData, 'contact_id')
+  const band_id = str(formData, 'band_id')
+  const contact_name = str(formData, 'contact_name')
+  const email = str(formData, 'email')
+  const phone = str(formData, 'phone')
+  const contact_role = str(formData, 'contact_role')
+  const is_public = formData.get('is_public') === '1'
+  const is_primary_inquiry = formData.get('is_primary_inquiry') === '1'
+
+  const client = createAdminClient()
+
+  // Ownership-Prüfung: Kontakt laden und band_id aus DB gegen Form-Wert prüfen
+  const { data: existingContact } = await client
+    .from('band_contacts')
+    .select('band_id')
+    .eq('id', contact_id)
+    .maybeSingle()
+  if (!existingContact || existingContact.band_id !== band_id) {
+    redirect(`/admin/bands/${band_id}?contact_error=invalid_contact`)
+  }
+
+  // Feldvalidierung
+  const validationError = validateContact({ contact_name, email, phone, contact_role })
+  if (validationError) redirect(`/admin/bands/${band_id}?contact_error=${validationError}`)
+
+  // Rollenkonflikt-Vorabprüfung (vor jedem Schreibvorgang)
+  if (contact_role) {
+    const { data: roleConflict } = await client
+      .from('band_contacts')
+      .select('id')
+      .eq('band_id', band_id)
+      .eq('contact_role', contact_role)
+      .neq('id', contact_id)
+      .maybeSingle()
+    if (roleConflict) redirect(`/admin/bands/${band_id}?contact_error=duplicate_role`)
+  }
+
+  const payload = {
+    contact_name: nullIfEmpty(contact_name),
+    email: nullIfEmpty(email),
+    phone: nullIfEmpty(phone),
+    contact_role: nullIfEmpty(contact_role),
+    is_public,
+  }
+
+  if (is_primary_inquiry) {
+    // Schritt 1: Andere Kontakte der Band auf false setzen
+    const { error: clearError } = await client
+      .from('band_contacts')
+      .update({ is_primary_inquiry: false })
+      .eq('band_id', band_id)
+      .neq('id', contact_id)
+    if (clearError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(clearError)}`)
+
+    // Schritt 2: Zielkontakt aktualisieren mit is_primary_inquiry = true
+    const { error: updateError } = await client
+      .from('band_contacts')
+      .update({ ...payload, is_primary_inquiry: true })
+      .eq('id', contact_id)
+    if (updateError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(updateError)}`)
+  } else {
+    const { error: updateError } = await client
+      .from('band_contacts')
+      .update({ ...payload, is_primary_inquiry: false })
+      .eq('id', contact_id)
+    if (updateError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(updateError)}`)
+  }
+
+  redirect(`/admin/bands/${band_id}?contact_saved=1`)
 }
