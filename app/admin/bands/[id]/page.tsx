@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
-import { updateBandAction, createContactAction, updateContactAction } from './actions'
+import { updateBandAction, createContactAction, updateContactAction, updateBandEventTypesAction } from './actions'
 import { logoutAction } from '@/app/admin/actions'
 import { DeleteContactButton } from './DeleteContactButton'
 
@@ -39,6 +39,23 @@ const CONTACT_ROLE_OPTIONS = [
   { value: 'technik', label: 'Technik' },
   { value: 'press', label: 'Presse' },
 ]
+
+const EVENT_TYPES_ERROR_MESSAGES: Record<string, string> = {
+  invalid_band:       'Band nicht gefunden.',
+  invalid_event_type: 'Ungültige Event-Type-ID – bitte Seite neu laden.',
+  db_error:           'Datenbankfehler – bitte erneut versuchen.',
+}
+
+type ActiveEventType = {
+  id: string
+  name: string
+  sort_order: number
+}
+
+type AssignedEventTypeRow = {
+  event_type_id: string
+  event_types: { name: string; status: string } | null
+}
 
 const CONTACT_ERROR_MESSAGES: Record<string, string> = {
   missing_fields: 'Mindestens Name, E-Mail oder Telefon muss befüllt sein.',
@@ -103,6 +120,8 @@ type SearchParams = Promise<{
   contact_saved?: string
   contact_deleted?: string
   contact_error?: string
+  event_types_saved?: string
+  event_types_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -151,10 +170,35 @@ export default async function AdminBandDetailPage({
   )
   const location = band.locations?.[0] ?? null
 
+  // Event-Types – admin-spezifische Reads (getrennt von den öffentlichen queries.ts)
+  const [
+    { data: allActiveEventTypesRaw },
+    { data: assignedEventTypesRaw },
+  ] = await Promise.all([
+    client
+      .from('event_types')
+      .select('id, name, sort_order')
+      .eq('status', 'active')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
+    client
+      .from('band_event_types')
+      .select('event_type_id, event_types(name, status)')
+      .eq('band_id', id),
+  ])
+
+  const allActiveEventTypes = (allActiveEventTypesRaw ?? []) as ActiveEventType[]
+  const assignedRows = (assignedEventTypesRaw ?? []) as unknown as AssignedEventTypeRow[]
+  const assignedIds = new Set(assignedRows.map(r => r.event_type_id))
+  const inactiveAssigned = assignedRows.filter(r => r.event_types?.status !== 'active')
+
   const showSuccess = !!sp.saved || !!sp.created
   const hasFormError = !!sp.e_form
   const contactErrorMsg = sp.contact_error
     ? (CONTACT_ERROR_MESSAGES[sp.contact_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const eventTypesErrorMsg = sp.event_types_error
+    ? (EVENT_TYPES_ERROR_MESSAGES[sp.event_types_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -199,6 +243,82 @@ export default async function AdminBandDetailPage({
             <p className="text-sm text-gray-800">{location.city_name}</p>
           </div>
         )}
+
+        {/* ─── Event-Types ──────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Event-Types</h2>
+
+          {sp.event_types_saved && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-green-700 text-sm">
+              Zuordnungen gespeichert.
+            </div>
+          )}
+          {eventTypesErrorMsg && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-700 text-sm">
+              {eventTypesErrorMsg}
+            </div>
+          )}
+
+          <form action={updateBandEventTypesAction}>
+            <input type="hidden" name="band_id" value={band.id} />
+
+            {allActiveEventTypes.length === 0 && inactiveAssigned.length === 0 ? (
+              <p className="text-sm text-gray-400 mb-4">Keine aktiven Event-Types vorhanden.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mb-4">
+                {allActiveEventTypes.map((et) => (
+                  <label
+                    key={et.id}
+                    className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      name="event_type_id"
+                      value={et.id}
+                      defaultChecked={assignedIds.has(et.id)}
+                      className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                    />
+                    {et.name}
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {inactiveAssigned.length > 0 && (
+              <div className="border-t border-gray-100 pt-4 mb-4">
+                <p className="text-xs font-medium text-gray-500 mb-2">
+                  Inaktiv – bereits zugeordnet
+                </p>
+                <div className="space-y-2">
+                  {inactiveAssigned.map((r) => (
+                    <label
+                      key={r.event_type_id}
+                      className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        name="event_type_id"
+                        value={r.event_type_id}
+                        defaultChecked
+                        className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                      />
+                      {r.event_types?.name ?? r.event_type_id}
+                      <span className="text-xs text-amber-600 font-medium">inaktiv</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
+            >
+              Speichern
+            </button>
+          </form>
+        </div>
+        {/* ─── Ende Event-Types ────────────────────── */}
 
         {/* ─── Kontakte ─────────────────────────────── */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">

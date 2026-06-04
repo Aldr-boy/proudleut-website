@@ -359,3 +359,77 @@ export async function deleteContactAction(formData: FormData): Promise<never> {
 
   redirect(`/admin/bands/${band_id}?contact_deleted=1`)
 }
+
+// ─────────────────────────────────────────
+// updateBandEventTypesAction (Sprint 4A)
+// ─────────────────────────────────────────
+
+export async function updateBandEventTypesAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  const selected_ids = (formData.getAll('event_type_id') as string[])
+    .map(v => v.trim())
+    .filter(Boolean)
+
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  // Band-Existenzprüfung
+  const { data: band } = await client
+    .from('bands')
+    .select('id')
+    .eq('id', band_id)
+    .maybeSingle()
+  if (!band) redirect(`/admin/bands?event_types_error=invalid_band`)
+
+  // Aktuelle Zuordnungen der Band lesen
+  const { data: currentData, error: currentError } = await client
+    .from('band_event_types')
+    .select('event_type_id')
+    .eq('band_id', band_id)
+  if (currentError) redirect(`/admin/bands/${band_id}?event_types_error=db_error`)
+
+  const current_ids = new Set(
+    (currentData ?? []).map(r => (r as { event_type_id: string }).event_type_id),
+  )
+
+  // Eingabe validieren: alle gewählten IDs müssen aktiv oder bereits zugeordnet sein
+  if (selected_ids.length > 0) {
+    const { data: activeData, error: activeError } = await client
+      .from('event_types')
+      .select('id')
+      .eq('status', 'active')
+    if (activeError) redirect(`/admin/bands/${band_id}?event_types_error=db_error`)
+
+    const active_ids = new Set((activeData ?? []).map(t => (t as { id: string }).id))
+    const allowed_ids = new Set([...active_ids, ...current_ids])
+    if (selected_ids.some(id => !allowed_ids.has(id))) {
+      redirect(`/admin/bands/${band_id}?event_types_error=invalid_event_type`)
+    }
+  }
+
+  // Differenz berechnen
+  const target_ids = new Set(selected_ids)
+  const to_add = selected_ids.filter(id => !current_ids.has(id))
+  const to_remove = [...current_ids].filter(id => !target_ids.has(id))
+
+  // INSERT neue Zuordnungen
+  if (to_add.length > 0) {
+    const { error: insertError } = await client
+      .from('band_event_types')
+      .insert(to_add.map(event_type_id => ({ band_id, event_type_id, sort_order: 0 })))
+    if (insertError) redirect(`/admin/bands/${band_id}?event_types_error=db_error`)
+  }
+
+  // DELETE entfernte Zuordnungen – doppelt abgesichert via band_id + event_type_id
+  if (to_remove.length > 0) {
+    const { error: deleteError } = await client
+      .from('band_event_types')
+      .delete()
+      .eq('band_id', band_id)
+      .in('event_type_id', to_remove)
+    if (deleteError) redirect(`/admin/bands/${band_id}?event_types_error=db_error`)
+  }
+
+  redirect(`/admin/bands/${band_id}?event_types_saved=1`)
+}
