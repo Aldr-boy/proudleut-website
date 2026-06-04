@@ -329,3 +329,33 @@ export async function updateContactAction(formData: FormData): Promise<never> {
 
   redirect(`/admin/bands/${band_id}?contact_saved=1`)
 }
+
+// ─────────────────────────────────────────
+// deleteContactAction (Sprint 3 Stabilisierung)
+// ─────────────────────────────────────────
+
+export async function deleteContactAction(formData: FormData): Promise<never> {
+  const contact_id = str(formData, 'contact_id')
+  const band_id = str(formData, 'band_id')
+
+  const client = createAdminClient()
+
+  const { data: existingContact } = await client
+    .from('band_contacts')
+    .select('band_id')
+    .eq('id', contact_id)
+    .maybeSingle()
+  if (!existingContact || existingContact.band_id !== band_id) {
+    redirect(`/admin/bands/${band_id}?contact_error=invalid_contact`)
+  }
+
+  const { error } = await client
+    .from('band_contacts')
+    .delete()
+    .eq('id', contact_id)
+    .eq('band_id', band_id)
+
+  if (error) redirect(`/admin/bands/${band_id}?contact_error=db_error`)
+
+  redirect(`/admin/bands/${band_id}?contact_deleted=1`)
+}

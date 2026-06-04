@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { updateBandAction, createContactAction, updateContactAction } from './actions'
 import { logoutAction } from '@/app/admin/actions'
+import { DeleteContactButton } from './DeleteContactButton'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Band bearbeiten' }
@@ -100,6 +101,7 @@ type SearchParams = Promise<{
   e_form?: string
   contact_created?: string
   contact_saved?: string
+  contact_deleted?: string
   contact_error?: string
 }>
 
@@ -213,6 +215,11 @@ export default async function AdminBandDetailPage({
               Kontakt gespeichert.
             </div>
           )}
+          {sp.contact_deleted && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-green-700 text-sm">
+              Kontakt gelöscht.
+            </div>
+          )}
           {contactErrorMsg && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-700 text-sm">
               {contactErrorMsg}
@@ -238,13 +245,14 @@ export default async function AdminBandDetailPage({
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-2 text-xs">
+                    <div className="flex items-center gap-3 text-xs">
                       {c.is_primary_inquiry && (
                         <span className="text-violet-700 font-medium">Primärkontakt</span>
                       )}
                       {c.is_public && (
                         <span className="text-gray-500">öffentlich</span>
                       )}
+                      <DeleteContactButton contactId={c.id} bandId={band.id} />
                     </div>
                   </div>
 

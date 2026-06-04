@@ -75,8 +75,9 @@ TO service_role;
 
 -- Admin-Panel: band_contacts braucht service_role-Zugriff für /admin/bands/[id].
 -- Enthält E-Mail und Telefon – kein öffentlicher Zugriff, anon bleibt ausgeschlossen.
--- Bewusst kein DELETE: Kontakte werden im Admin-MVP nicht gelöscht.
-GRANT SELECT, INSERT, UPDATE ON TABLE public.band_contacts TO service_role;
+-- HINWEIS: Dieses Statement muss nach Ergänzung auch in Supabase Studio ausgeführt werden:
+--   GRANT DELETE ON TABLE public.band_contacts TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.band_contacts TO service_role;
 
 -- Sequences für gen_random_uuid() bei INSERT ohne explizite id
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO service_role;

@@ -15,7 +15,7 @@ CREATE TABLE bands (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL CHECK (char_length(name) <= 200),
   slug text NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9-]+$'),
-  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('active', 'draft', 'paused', 'archived')),
+  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('new', 'active', 'draft', 'paused', 'archived')),
   is_published boolean NOT NULL DEFAULT false,
   lineup_flexibility text NOT NULL DEFAULT 'unknown' CHECK (lineup_flexibility IN ('fixed', 'flexible', 'modular', 'unknown')),
   default_member_count integer CHECK (default_member_count >= 1 AND default_member_count <= 30),
