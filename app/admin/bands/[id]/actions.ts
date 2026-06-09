@@ -433,3 +433,103 @@ export async function updateBandEventTypesAction(formData: FormData): Promise<ne
 
   redirect(`/admin/bands/${band_id}?event_types_saved=1`)
 }
+
+// ─────────────────────────────────────────
+// updateBandBandTypesAction (Sprint 5)
+// ─────────────────────────────────────────
+
+export async function updateBandBandTypesAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  const primary_band_type_id = str(formData, 'primary_band_type_id')
+  const secondary_ids = (formData.getAll('secondary_band_type_id') as string[])
+    .map(v => v.trim())
+    .filter(Boolean)
+
+  if (!band_id) redirect('/admin/bands')
+
+  if (!primary_band_type_id) {
+    redirect(`/admin/bands/${band_id}?band_types_error=missing_primary`)
+  }
+
+  if (secondary_ids.includes(primary_band_type_id)) {
+    redirect(`/admin/bands/${band_id}?band_types_error=primary_in_secondary`)
+  }
+
+  const client = createAdminClient()
+
+  // Band-Existenzprüfung
+  const { data: band } = await client
+    .from('bands')
+    .select('id')
+    .eq('id', band_id)
+    .maybeSingle()
+  if (!band) redirect(`/admin/bands?band_types_error=invalid_band`)
+
+  // Alle übergebenen IDs gegen aktive band_types validieren
+  const { data: activeData, error: activeError } = await client
+    .from('band_types')
+    .select('id')
+    .eq('status', 'active')
+  if (activeError) redirect(`/admin/bands/${band_id}?band_types_error=db_error`)
+
+  const active_ids = new Set((activeData ?? []).map(t => (t as { id: string }).id))
+  const all_submitted_ids = [primary_band_type_id, ...secondary_ids]
+  if (all_submitted_ids.some(id => !active_ids.has(id))) {
+    redirect(`/admin/bands/${band_id}?band_types_error=invalid_band_type`)
+  }
+
+  // Aktuellen Stand lesen
+  const { data: currentData, error: currentError } = await client
+    .from('band_band_types')
+    .select('band_type_id, is_primary')
+    .eq('band_id', band_id)
+  if (currentError) redirect(`/admin/bands/${band_id}?band_types_error=db_error`)
+
+  const current = (currentData ?? []) as { band_type_id: string; is_primary: boolean }[]
+  const currentIds = new Set(current.map(r => r.band_type_id))
+
+  // Schritt 1: Alte Primärzeile(n) zurücksetzen – MUSS vor Schritt 2 laufen
+  const { error: clearError } = await client
+    .from('band_band_types')
+    .update({ is_primary: false })
+    .eq('band_id', band_id)
+    .eq('is_primary', true)
+  if (clearError) redirect(`/admin/bands/${band_id}?band_types_error=db_error`)
+
+  // Schritt 2: Neue Primärzeile setzen
+  const { error: primaryError } = await client
+    .from('band_band_types')
+    .upsert(
+      { band_id, band_type_id: primary_band_type_id, is_primary: true, sort_order: 0 },
+      { onConflict: 'band_id,band_type_id' },
+    )
+  if (primaryError) redirect(`/admin/bands/${band_id}?band_types_error=db_error`)
+
+  // Schritt 3: Sekundär-Diff
+  const target_secondary = new Set(secondary_ids)
+
+  const to_add = secondary_ids.filter(id => !currentIds.has(id))
+
+  // Primärzeile explizit ausschließen – darf nie gelöscht werden
+  const to_remove = current
+    .filter(r => r.band_type_id !== primary_band_type_id && !target_secondary.has(r.band_type_id))
+    .map(r => r.band_type_id)
+
+  if (to_add.length > 0) {
+    const { error: insertError } = await client
+      .from('band_band_types')
+      .insert(to_add.map(band_type_id => ({ band_id, band_type_id, is_primary: false, sort_order: 0 })))
+    if (insertError) redirect(`/admin/bands/${band_id}?band_types_error=db_error`)
+  }
+
+  if (to_remove.length > 0) {
+    const { error: deleteError } = await client
+      .from('band_band_types')
+      .delete()
+      .eq('band_id', band_id)
+      .in('band_type_id', to_remove)
+    if (deleteError) redirect(`/admin/bands/${band_id}?band_types_error=db_error`)
+  }
+
+  redirect(`/admin/bands/${band_id}?band_types_saved=1`)
+}

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
-import { updateBandAction, createContactAction, updateContactAction, updateBandEventTypesAction } from './actions'
+import { updateBandAction, createContactAction, updateContactAction, updateBandEventTypesAction, updateBandBandTypesAction } from './actions'
 import { logoutAction } from '@/app/admin/actions'
 import { DeleteContactButton } from './DeleteContactButton'
 
@@ -46,6 +46,14 @@ const EVENT_TYPES_ERROR_MESSAGES: Record<string, string> = {
   db_error:           'Datenbankfehler – bitte erneut versuchen.',
 }
 
+const BAND_TYPES_ERROR_MESSAGES: Record<string, string> = {
+  invalid_band:         'Band nicht gefunden.',
+  missing_primary:      'Bitte eine primäre Bandart auswählen.',
+  primary_in_secondary: 'Die primäre Bandart darf nicht auch als sekundär gewählt sein.',
+  invalid_band_type:    'Ungültige Bandart-ID – bitte Seite neu laden.',
+  db_error:             'Datenbankfehler – bitte erneut versuchen.',
+}
+
 type ActiveEventType = {
   id: string
   name: string
@@ -55,6 +63,17 @@ type ActiveEventType = {
 type AssignedEventTypeRow = {
   event_type_id: string
   event_types: { name: string; status: string } | null
+}
+
+type ActiveBandType = {
+  id: string
+  name: string
+  sort_order: number
+}
+
+type AssignedBandTypeRow = {
+  band_type_id: string
+  is_primary: boolean
 }
 
 const CONTACT_ERROR_MESSAGES: Record<string, string> = {
@@ -122,6 +141,8 @@ type SearchParams = Promise<{
   contact_error?: string
   event_types_saved?: string
   event_types_error?: string
+  band_types_saved?: string
+  band_types_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -174,6 +195,8 @@ export default async function AdminBandDetailPage({
   const [
     { data: allActiveEventTypesRaw },
     { data: assignedEventTypesRaw },
+    { data: allActiveBandTypesRaw },
+    { data: assignedBandTypesRaw },
   ] = await Promise.all([
     client
       .from('event_types')
@@ -185,12 +208,29 @@ export default async function AdminBandDetailPage({
       .from('band_event_types')
       .select('event_type_id, event_types(name, status)')
       .eq('band_id', id),
+    client
+      .from('band_types')
+      .select('id, name, sort_order')
+      .eq('status', 'active')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true }),
+    client
+      .from('band_band_types')
+      .select('band_type_id, is_primary')
+      .eq('band_id', id),
   ])
 
   const allActiveEventTypes = (allActiveEventTypesRaw ?? []) as ActiveEventType[]
   const assignedRows = (assignedEventTypesRaw ?? []) as unknown as AssignedEventTypeRow[]
   const assignedIds = new Set(assignedRows.map(r => r.event_type_id))
   const inactiveAssigned = assignedRows.filter(r => r.event_types?.status !== 'active')
+
+  const allActiveBandTypes = (allActiveBandTypesRaw ?? []) as ActiveBandType[]
+  const assignedBandTypeRows = (assignedBandTypesRaw ?? []) as AssignedBandTypeRow[]
+  const primaryBandTypeRow = assignedBandTypeRows.find(r => r.is_primary) ?? null
+  const secondaryBandTypeIds = new Set(
+    assignedBandTypeRows.filter(r => !r.is_primary).map(r => r.band_type_id)
+  )
 
   const showSuccess = !!sp.saved || !!sp.created
   const hasFormError = !!sp.e_form
@@ -199,6 +239,9 @@ export default async function AdminBandDetailPage({
     : null
   const eventTypesErrorMsg = sp.event_types_error
     ? (EVENT_TYPES_ERROR_MESSAGES[sp.event_types_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const bandTypesErrorMsg = sp.band_types_error
+    ? (BAND_TYPES_ERROR_MESSAGES[sp.band_types_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -319,6 +362,95 @@ export default async function AdminBandDetailPage({
           </form>
         </div>
         {/* ─── Ende Event-Types ────────────────────── */}
+
+        {/* ─── Bandart ────────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Bandart</h2>
+
+          {sp.band_types_saved && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-green-700 text-sm">
+              Zuordnungen gespeichert.
+            </div>
+          )}
+          {bandTypesErrorMsg && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-700 text-sm">
+              {bandTypesErrorMsg}
+            </div>
+          )}
+
+          <form action={updateBandBandTypesAction}>
+            <input type="hidden" name="band_id" value={band.id} />
+
+            {!primaryBandTypeRow && (
+              <p className="text-sm text-amber-600 font-medium mb-3">
+                Noch nicht zugeordnet — bitte eine primäre Bandart auswählen.
+              </p>
+            )}
+
+            {/* Primäre Bandart */}
+            <div className="mb-4">
+              <label
+                htmlFor="primary_band_type_id"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Primäre Bandart <span className="text-red-500">*</span>
+              </label>
+              {allActiveBandTypes.length === 0 ? (
+                <p className="text-sm text-gray-400">Keine aktiven Bandarten vorhanden.</p>
+              ) : (
+                <select
+                  id="primary_band_type_id"
+                  name="primary_band_type_id"
+                  defaultValue={primaryBandTypeRow?.band_type_id ?? ''}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  <option value="">– auswählen –</option>
+                  {allActiveBandTypes.map((bt) => (
+                    <option key={bt.id} value={bt.id}>{bt.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Sekundäre Bandarten */}
+            {allActiveBandTypes.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 mb-1">
+                  Sekundäre Bandarten{' '}
+                  <span className="text-xs text-gray-400 font-normal">(optional)</span>
+                </p>
+                <p className="text-xs text-gray-400 mb-2">
+                  Die primäre Bandart bitte nicht zusätzlich als sekundäre Bandart auswählen.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                  {allActiveBandTypes.map((bt) => (
+                    <label
+                      key={bt.id}
+                      className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        name="secondary_band_type_id"
+                        value={bt.id}
+                        defaultChecked={secondaryBandTypeIds.has(bt.id)}
+                        className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                      />
+                      {bt.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
+            >
+              Speichern
+            </button>
+          </form>
+        </div>
+        {/* ─── Ende Bandart ───────────────────────── */}
 
         {/* ─── Kontakte ─────────────────────────────── */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
