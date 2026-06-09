@@ -69,7 +69,7 @@ export default async function NewBandPage({ searchParams }: { searchParams: Sear
               defaultValue={sp.name ?? ''}
               maxLength={200}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             />
             {sp.e_name && <p className="mt-1 text-xs text-red-600">{sp.e_name}</p>}
           </div>
@@ -87,7 +87,7 @@ export default async function NewBandPage({ searchParams }: { searchParams: Sear
               pattern="[a-z0-9-]+"
               required
               placeholder="z. B. meine-band"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             />
             <p className="mt-0.5 text-xs text-gray-400">Nur Kleinbuchstaben, Zahlen und Bindestriche</p>
             {sp.e_slug && <p className="mt-1 text-xs text-red-600">{sp.e_slug}</p>}
