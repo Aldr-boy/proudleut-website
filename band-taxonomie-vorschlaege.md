@@ -450,3 +450,44 @@ _Sortiert: niedrige Konfidenz zuerst._
 | Offene Punkte | Bands ohne Profiltext haben niedrige Konfidenz. Airtable-Typen Konzert, Backgroundmusic, Vocal Band, Classic Rock Band, Metal Band, Kirchenband sind nicht direkt in Airtable-Map — werden via Text-Signals erkannt. |
 
 _Dieser Bericht ist ein Vorschlag. Alle Zuordnungen menschlich prüfen und freigeben._
+
+---
+
+## 9. Neue Vorschlagswerte / Taxonomie-Erweiterungen
+
+### Neuer vorgeschlagener Wert: Konzert-Act
+
+**Bezeichnung:** Konzert-Act
+
+**Bewusste Bezeichnungswahl:** Der Begriff „konzertant" taucht im vorliegenden Dokument bereits informell als Sekundär-Tag auf (Harmonic Brass, May Vibes). Er wird bewusst nicht als eigenständiger Taxonomie-Wert ausgebaut, weil er zu fachlich klingt und leicht in Richtung Klassik oder Blasmusik missverstanden werden kann. „Konzert-Act" ist die bevorzugte, klarere Bezeichnung für den beschriebenen Format-/Auftrittsmodus.
+
+**Verhältnis zu `docs/analysebericht-sprint5-bandart.md`:** Dieser Vorschlag ergänzt die dort festgehaltene bewusste Nicht-Seeding-Entscheidung zum Wert „Konzert". „Konzert-Act" vermeidet die dort genannte Kollision mit dem gleichnamigen `event_type`, weil das Suffix den Format-Charakter explizit macht.
+
+**Definition:**
+„Konzert-Act" beschreibt Bands oder Künstler:innen, die abendfüllend oder programmatisch auf der Bühne stehen, mit eigenem Repertoire, klarer Live-Show und Zuhör-/Konzertcharakter. Der Wert ist für Acts gedacht, die nicht primär als Hintergrundmusik, Tanzband, Cover-Partyband oder Festzelt-Unterhaltung funktionieren.
+
+**Abgrenzung:**
+
+- Nicht „Festzeltband", wenn der typische Volksfest-/Dult-/Bierzelt-Kontext fehlt.
+- Nicht „Partyband", wenn die Band nicht primär Tanzfläche/Dienstleisterlogik bedient.
+- Nicht „Rock- & Coverband", wenn eigenes Repertoire und keine Cover-/Partyband-Logik im Vordergrund stehen.
+- Nicht „Akustikband" bzw. „Akustik- & Singer-Songwriter", wenn Bandgröße, Energie und Bühnenformat deutlich größer/elektrischer sind.
+
+**Dokumentierter Hinweis:**
+„Konzert-Act" ist streng genommen kein Genre, sondern ein Format-/Auftrittsmodus. Der Wert wird vorerst pragmatisch als Sekundär-Bandart geführt. Falls später weitere Format-Werte wie Tanz-Act, Ambiente-Act oder Bühnenprogramm entstehen, sollte eine eigene Achse „Format/Auftrittsmodus" geprüft werden.
+
+**Offene Kuration — bestehende konzertant-Vorkommen:**
+Die zwei bestehenden informellen `konzertant`-Einträge in der Vorschlagstabelle (Abschnitt 2) sollen bei nächster Kuration auf „Konzert-Act" umgestellt werden:
+
+- **Harmonic Brass** (Zeile Sekundär-Tags: „Brass / Blechbläser, konzertant")
+- **May Vibes** (Zeile Sekundär-Tags: „konzertant")
+
+---
+
+### Konkretes Beispiel: Tir Nan Og
+
+- **Primäre Bandart:** Irish Folk
+- **Sekundäre Bandart:** Konzert-Act
+- **Moods / Klingt nach:** energiegeladen, mitreißend, erdig
+- **Nicht verwenden:** Festzeltband, Partyband, Rock- & Coverband, Akustikband, Akustik- & Singer-Songwriter
+- **Hinweis:** „festival-tauglich" bitte nicht als Mood verwenden, da es kein Klang-/Stimmungswert ist, sondern Anlass-/Formatinformation.
