@@ -192,15 +192,20 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     return main.length > 200 ? `${main.slice(0, 197)}…` : main
   })()
 
-  // weddingInfo: not in Supabase yet — stable empty object (same shape as Airtable adapter)
   const weddingInfo: WeddingInfo = {
-    bandSize:           undefined,
-    constellation:      undefined,
-    kidnappingBride:    null,
-    feeRange:           undefined,
-    moderation:         null,
-    possiblePlaytimes:  undefined,
-    weddingDescription: undefined,
+    bandSize: typeof r.default_member_count === 'number'
+      ? String(r.default_member_count)
+      : undefined,
+    constellation:      str(profile.wedding_constellation),
+    kidnappingBride:    profile.wedding_kidnapping_bride === true  ? true
+                      : profile.wedding_kidnapping_bride === false ? false
+                      : null,
+    feeRange:           str(profile.wedding_fee_range),
+    moderation:         profile.wedding_moderation === true  ? true
+                      : profile.wedding_moderation === false ? false
+                      : null,
+    possiblePlaytimes:  str(profile.wedding_possible_playtimes),
+    weddingDescription: str(profile.wedding_description),
   }
 
   return {
