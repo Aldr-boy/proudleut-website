@@ -194,7 +194,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
 
   const weddingInfo: WeddingInfo = {
     bandSize: typeof r.default_member_count === 'number'
-      ? String(r.default_member_count)
+      ? `${r.default_member_count} ${r.default_member_count === 1 ? 'Person' : 'Personen'}`
       : undefined,
     constellation:      str(profile.wedding_constellation),
     kidnappingBride:    profile.wedding_kidnapping_bride === true  ? true
