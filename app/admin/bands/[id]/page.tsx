@@ -31,6 +31,12 @@ const PRICE_TIER_OPTIONS = [
   { value: 'on_request', label: 'Auf Anfrage' },
 ]
 
+const NULLABLE_BOOLEAN_OPTIONS = [
+  { value: '', label: '–' },
+  { value: 'true', label: 'Ja' },
+  { value: 'false', label: 'Nein' },
+]
+
 const CONTACT_ROLE_OPTIONS = [
   { value: '', label: '– keine Rolle –' },
   { value: 'management', label: 'Management' },
@@ -109,7 +115,7 @@ type BandDetail = {
   lineup_flexibility: string
   default_member_count: number | null
   website_url: string | null
-  locations: { city_name: string }[] | null
+  locations: { city_name: string } | null
   band_profiles: {
     short_description: string | null
     main_text: string | null
@@ -117,7 +123,13 @@ type BandDetail = {
     meta_description: string | null
     price_range: string | null
     price_tier: string | null
-  }[] | null
+    wedding_description: string | null
+    wedding_possible_playtimes: string | null
+    wedding_constellation: string | null
+    wedding_fee_range: string | null
+    wedding_kidnapping_bride: boolean | null
+    wedding_moderation: boolean | null
+  } | null
   band_contacts: BandContact[]
 }
 
@@ -176,7 +188,7 @@ export default async function AdminBandDetailPage({
       id, name, slug, status, is_published,
       lineup_flexibility, default_member_count, website_url,
       locations(city_name),
-      band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier),
+      band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier, wedding_description, wedding_possible_playtimes, wedding_constellation, wedding_fee_range, wedding_kidnapping_bride, wedding_moderation),
       band_contacts(id, contact_name, email, phone, contact_role, is_public, is_primary_inquiry, created_at, updated_at)
     `)
     .eq('id', id)
@@ -185,11 +197,11 @@ export default async function AdminBandDetailPage({
   if (error || !data) notFound()
 
   const band = data as unknown as BandDetail
-  const profile = band.band_profiles?.[0] ?? null
+  const profile = band.band_profiles ?? null
   const contacts = (band.band_contacts ?? []).sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )
-  const location = band.locations?.[0] ?? null
+  const location = band.locations ?? null
 
   // Event-Types – admin-spezifische Reads (getrennt von den öffentlichen queries.ts)
   const [
@@ -887,7 +899,7 @@ export default async function AdminBandDetailPage({
               {/* Slogan */}
               <div>
                 <label htmlFor="slogan" className="block text-sm font-medium text-gray-700 mb-1">
-                  Slogan
+                  Slogan / Original-Claim der Band
                   <span className="ml-1 text-xs text-gray-400 font-normal">max. 200 Zeichen</span>
                 </label>
                 <input
@@ -898,13 +910,14 @@ export default async function AdminBandDetailPage({
                   maxLength={200}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
+                <p className="mt-1 text-xs text-gray-400">Optional. Nur nutzen, wenn die Band einen eigenen prägnanten Spruch oder Claim hat.</p>
                 <FieldError msg={sp.e_slogan} />
               </div>
 
               {/* Short description */}
               <div>
                 <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Kurzbeschreibung
+                  Hero-Zeile / Kurzbeschreibung
                   <span className="ml-1 text-xs text-gray-400 font-normal">max. 300 Zeichen</span>
                 </label>
                 <textarea
@@ -915,6 +928,7 @@ export default async function AdminBandDetailPage({
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
                 />
+                <p className="mt-1 text-xs text-gray-400">Öffentliche Zeile unter dem Bandnamen. Kann ein kurzer Beschreibungssatz oder ein starker Claim sein.</p>
                 <FieldError msg={sp.e_short_description} />
               </div>
 
@@ -980,6 +994,120 @@ export default async function AdminBandDetailPage({
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-y"
                 />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Section: Hochzeit & Ablauf */}
+          <fieldset className="border-t border-gray-100 pt-5">
+            <legend className="text-base font-semibold text-gray-900 mb-4">Hochzeit &amp; Ablauf</legend>
+            <div className="space-y-4">
+              {/* Hochzeits-Claim */}
+              <div>
+                <label htmlFor="wedding_description" className="block text-sm font-medium text-gray-700 mb-1">
+                  Hochzeits-Claim
+                  <span className="ml-1 text-xs text-gray-400 font-normal">max. 100 Zeichen</span>
+                </label>
+                <input
+                  id="wedding_description"
+                  name="wedding_description"
+                  type="text"
+                  defaultValue={profile?.wedding_description ?? ''}
+                  maxLength={100}
+                  placeholder="z. B. authentisch – spontan – mitreißend"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <p className="mt-1 text-xs text-gray-400">Kurzer Claim für den Hochzeitsbereich.</p>
+              </div>
+
+              {/* Mögliche Spieldauer */}
+              <div>
+                <label htmlFor="wedding_possible_playtimes" className="block text-sm font-medium text-gray-700 mb-1">
+                  Mögliche Spieldauer
+                </label>
+                <input
+                  id="wedding_possible_playtimes"
+                  name="wedding_possible_playtimes"
+                  type="text"
+                  defaultValue={profile?.wedding_possible_playtimes ?? ''}
+                  placeholder="z. B. ganzer Hochzeitstag oder Party am Abend"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Besetzungsvarianten */}
+              <div>
+                <label htmlFor="wedding_constellation" className="block text-sm font-medium text-gray-700 mb-1">
+                  Konstellation bei Hochzeiten
+                </label>
+                <input
+                  id="wedding_constellation"
+                  name="wedding_constellation"
+                  type="text"
+                  defaultValue={profile?.wedding_constellation ?? ''}
+                  placeholder="z. B. Duo | Trio | Quartett"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <p className="mt-1 text-xs text-gray-400">Optionales Pflegefeld. Nicht identisch mit der Standardgröße der Band.</p>
+              </div>
+
+              {/* Gagenniveau */}
+              <div>
+                <label htmlFor="wedding_fee_range" className="block text-sm font-medium text-gray-700 mb-1">
+                  Gagenniveau
+                </label>
+                <input
+                  id="wedding_fee_range"
+                  name="wedding_fee_range"
+                  type="text"
+                  defaultValue={profile?.wedding_fee_range ?? ''}
+                  placeholder="z. B. Gage über 3.000 €"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <p className="mt-1 text-xs text-gray-400">Internes Pflegefeld – aktuell noch nicht öffentlich sichtbar.</p>
+              </div>
+
+              {/* Brautentführung + Moderation */}
+              <div className="flex flex-wrap gap-4">
+                <div>
+                  <label htmlFor="wedding_kidnapping_bride" className="block text-sm font-medium text-gray-700 mb-1">
+                    Brautentführung
+                  </label>
+                  <select
+                    id="wedding_kidnapping_bride"
+                    name="wedding_kidnapping_bride"
+                    defaultValue={
+                      profile?.wedding_kidnapping_bride == null
+                        ? ''
+                        : String(profile.wedding_kidnapping_bride)
+                    }
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    {NULLABLE_BOOLEAN_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="wedding_moderation" className="block text-sm font-medium text-gray-700 mb-1">
+                    Moderation
+                  </label>
+                  <select
+                    id="wedding_moderation"
+                    name="wedding_moderation"
+                    defaultValue={
+                      profile?.wedding_moderation == null
+                        ? ''
+                        : String(profile.wedding_moderation)
+                    }
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    {NULLABLE_BOOLEAN_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </fieldset>

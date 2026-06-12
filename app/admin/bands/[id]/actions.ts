@@ -10,6 +10,13 @@ function nullIfEmpty(val: string): string | null {
   return val === '' ? null : val
 }
 
+function nullableBoolean(fd: FormData, key: string): boolean | null {
+  const v = str(fd, key)
+  if (v === 'true') return true
+  if (v === 'false') return false
+  return null
+}
+
 // ─────────────────────────────────────────
 // Band validation (Sprint 2, unchanged)
 // ─────────────────────────────────────────
@@ -76,8 +83,14 @@ export async function updateBandAction(formData: FormData): Promise<never> {
     main_text: str(formData, 'main_text'),
     price_range: str(formData, 'price_range'),
     price_tier: str(formData, 'price_tier'),
+    wedding_description: str(formData, 'wedding_description'),
+    wedding_possible_playtimes: str(formData, 'wedding_possible_playtimes'),
+    wedding_constellation: str(formData, 'wedding_constellation'),
+    wedding_fee_range: str(formData, 'wedding_fee_range'),
   }
   const is_published = formData.get('is_published') === '1'
+  const wedding_kidnapping_bride = nullableBoolean(formData, 'wedding_kidnapping_bride')
+  const wedding_moderation = nullableBoolean(formData, 'wedding_moderation')
 
   const errors = validateEditBand(data)
 
@@ -125,6 +138,12 @@ export async function updateBandAction(formData: FormData): Promise<never> {
         main_text: nullIfEmpty(data.main_text),
         price_range: nullIfEmpty(data.price_range),
         price_tier: nullIfEmpty(data.price_tier),
+        wedding_description: nullIfEmpty(data.wedding_description),
+        wedding_possible_playtimes: nullIfEmpty(data.wedding_possible_playtimes),
+        wedding_constellation: nullIfEmpty(data.wedding_constellation),
+        wedding_fee_range: nullIfEmpty(data.wedding_fee_range),
+        wedding_kidnapping_bride,
+        wedding_moderation,
       },
       { onConflict: 'band_id' },
     )
