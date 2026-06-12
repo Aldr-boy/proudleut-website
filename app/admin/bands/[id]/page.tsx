@@ -952,7 +952,7 @@ export default async function AdminBandDetailPage({
               {/* Price tier */}
               <div>
                 <label htmlFor="price_tier" className="block text-sm font-medium text-gray-700 mb-1">
-                  Preis-Tier
+                  Allgemeines Preis-Tier
                 </label>
                 <select
                   id="price_tier"
@@ -964,13 +964,14 @@ export default async function AdminBandDetailPage({
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
+                <p className="mt-1 text-xs text-gray-400">Optional. Nur nutzen, wenn ein belastbarer allgemeiner Preisrahmen unabhängig vom Anlass bekannt ist. Sonst leer lassen.</p>
                 <FieldError msg={sp.e_price_tier} />
               </div>
 
               {/* Price range */}
               <div>
                 <label htmlFor="price_range" className="block text-sm font-medium text-gray-700 mb-1">
-                  Preisspanne (Freitext)
+                  Allgemeine Preisspanne (Freitext)
                 </label>
                 <input
                   id="price_range"
@@ -980,6 +981,7 @@ export default async function AdminBandDetailPage({
                   placeholder="z. B. ab 2.500 €"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
+                <p className="mt-1 text-xs text-gray-400">Optionaler allgemeiner Richtwert. Nicht für Hochzeitspreise verwenden.</p>
               </div>
 
               {/* Main text */}
@@ -1054,7 +1056,7 @@ export default async function AdminBandDetailPage({
               {/* Gagenniveau */}
               <div>
                 <label htmlFor="wedding_fee_range" className="block text-sm font-medium text-gray-700 mb-1">
-                  Gagenniveau
+                  Interner Richtwert Hochzeit
                 </label>
                 <input
                   id="wedding_fee_range"
@@ -1064,7 +1066,7 @@ export default async function AdminBandDetailPage({
                   placeholder="z. B. Gage über 3.000 €"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
-                <p className="mt-1 text-xs text-gray-400">Internes Pflegefeld – aktuell noch nicht öffentlich sichtbar.</p>
+                <p className="mt-1 text-xs text-gray-400">Grober interner Richtwert für Hochzeitsanfragen. Keine verbindliche Gage. Im neuen proudleut aktuell nicht öffentlich ausgespielt.</p>
               </div>
 
               {/* Brautentführung + Moderation */}
