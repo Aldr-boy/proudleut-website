@@ -185,11 +185,16 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     manual3: str((relations[2]?.target_band as Row)?.name),
   }
 
-  // shortDescription: short_description → truncated main_text
-  const shortDescription = str(profile.short_description) ?? (() => {
+  // shortDescription: short_description → slogan → truncated main_text (markdown stripped)
+  const shortDescription = str(profile.short_description) ?? str(profile.slogan) ?? (() => {
     const main = str(profile.main_text)
     if (!main) return undefined
-    return main.length > 200 ? `${main.slice(0, 197)}…` : main
+    const stripped = main
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/^#{1,6}\s+/gm, '')
+      .trim()
+    return stripped.length > 200 ? `${stripped.slice(0, 197)}…` : stripped
   })()
 
   const weddingInfo: WeddingInfo = {
