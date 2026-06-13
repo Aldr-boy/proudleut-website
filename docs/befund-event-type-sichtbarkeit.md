@@ -1,6 +1,6 @@
 # Architekturbefund: Öffentliche Sichtbarkeit von Event-Types
 
-**Stand:** 2026-06-13  
+**Stand:** 2026-06-13 (Update: Schärfung Chip-Link-Mechanik + Supabase-Slug-Check)  
 **Status:** Read-only — keine Codeänderung, kein Commit, kein Push  
 **Geprüfte Dateien:**  
 - `lib/categories.ts`  
@@ -11,6 +11,8 @@
 - `components/bands/BandExplorer.tsx`  
 - `app/band/[slug]/page.tsx`  
 - `components/band/BandTagsSection.tsx`  
+- `components/band/HeroCTA.tsx`  
+- Supabase `event_types` — read-only Abfrage (alle Slugs, alle Status `active`)  
 
 ---
 
@@ -99,12 +101,80 @@ Enthält Airtable-`event_canon`-Strings (normalisierte Bezeichnungen aus der Ver
 | Kontext | Wirksam? | Begründung |
 |---|---|---|
 | **Admin** | **Ja** | `.eq('status', 'active')` — neue Typen erscheinen automatisch als auswählbare Checkboxen |
-| **Banddetailseite `/band/[slug]`** | **Teilweise** | Chip erscheint unter „Spielt bei", sobald eine Band über `band_event_types` zugeordnet ist. Link zum Chip (`/veranstaltung/[neuer-slug]`) führt aber in 404, solange kein entsprechender Eintrag in `CATEGORIES` existiert |
+| **Banddetailseite `/band/[slug]`** | **Teilweise** | Chip erscheint unter „Spielt bei", sobald eine Band über `band_event_types` zugeordnet ist. Nach Code- und Datenbefund ist konkret ableitbar, dass der Chip-Link auf `/veranstaltung/[neuer-slug]` zeigen würde und dort aktuell keine Route existiert (siehe Abschnitt 4a). Kein Browser-/HTTP-Test wurde durchgeführt — die Einschätzung basiert auf Codepfad-Analyse und Datenbefund. |
 | **Finder `/bands`** | **Nein** | `BandExplorer` zeigt nur `CATEGORIES` aus `lib/categories.ts`. Supabase event_types werden nicht ausgewertet |
 | **Kategorie-Seiten `/veranstaltung/[slug]`** | **Nein** | Statische Generierung aus `CATEGORIES`; Bandfilterung über Airtable. Supabase-Insert erzeugt weder Route noch Bandtreffer |
 | **SEO / Landingpages** | **Nein** | Keine eigenständigen SEO-Seiten für Event-Types außerhalb der 5 CATEGORIES-Seiten vorhanden |
 
 **Fazit: Ein reiner Supabase-Insert in `event_types` erzeugt allein keine öffentlich sichtbare Kategorie auf proudleut.com.**
+
+---
+
+## 4a. Chip-Link-Mechanik und Slug-Alignment
+
+### Wie der Chip-Link gebaut wird
+
+**Codepfad (direkt aus Quellcode abgeleitet, kein Mapping, kein Fallback):**
+
+`lib/supabase/queries.ts` fragt `band_event_types ( sort_order, event_types ( name, slug ) )` ab.  
+`lib/supabase/normalizeBand.ts` baut daraus:
+
+```typescript
+const categorySlugs = rawEventTypes
+  .map(et => str((et.event_types as Row)?.slug))
+  .filter((s): s is string => s !== undefined)
+```
+
+`components/band/BandTagsSection.tsx` baut den Link so:
+
+```tsx
+const slug = band.categorySlugs?.[i];
+return slug ? (
+  <Link href={`/veranstaltung/${slug}`}>…</Link>
+) : (
+  <span>…</span>
+);
+```
+
+**Ergebnis:** Der Chip-Link ist eine direkte 1:1-Übernahme des Supabase-`event_type.slug`-Wertes als URL-Pfad. Es gibt **kein Mapping, keinen Filter und keinen Fallback** zwischen Supabase-Slug und CATEGORIES-Slugs. Wenn der Slug in `CATEGORIES` existiert, funktioniert der Link. Wenn nicht, zeigt er auf eine nicht vorhandene Route — nach Code- und Datenbefund aktuell wahrscheinlich ein 404 (Next.js `notFound()`), nicht durch Browser-Test bestätigt.
+
+`HeroCTA` empfängt `eventTypes` (String-Array ohne Slugs) nur für den Kontakt-Modal — baut keine `/veranstaltung/`-Links.
+
+### Welche CATEGORIES-Slugs aktuell gültige öffentliche Routen sind
+
+Die 5 CATEGORIES-Slugs und ob sie in Supabase `event_types` existieren (read-only Abfrage, 2026-06-13):
+
+| CATEGORIES-Slug | Route existiert | In Supabase `event_types`? | Supabase-Name |
+|---|---|---|---|
+| `hochzeit` | Ja | **Ja** | Hochzeit |
+| `festzelt` | Ja | **Ja** | Festzelt |
+| `firmenfeier` | Ja | **Nein** | — (Supabase hat `firmenfeier-business-event`) |
+| `geburtstag` | Ja | **Nein** | — |
+| `gala` | Ja | **Nein** | — |
+
+**Befund:** Nur `hochzeit` und `festzelt` haben aktuell einen Supabase-`event_type`-Slug, der 1:1 einem CATEGORIES-Slug entspricht. Die anderen 3 (`firmenfeier`, `geburtstag`, `gala`) sind als Routing-Slugs gültig, existieren aber nicht in Supabase — d.h. Chips für diese Kategorien würden bei Supabase-zugeordneten Bändern gar nicht als Link erscheinen (kein `slug`-Wert → `<span>` statt `<Link>`).
+
+### Pre-existentes Slug-Misalignment
+
+Von 38 aktiven Supabase-`event_types` haben **36 keinen CATEGORIES-Match**. Darunter Slugs wie `empfang`, `ball`, `bankett`, `volksfest`, `kirchweih`, `dult`, `fasching`, `beerdigung`, `geistliche-anlaesse` usw. Bands, die diesen Typen zugeordnet sind, haben Chips, deren Links nach Code- und Datenbefund auf nicht existente Routen zeigen würden.
+
+Das 404-Risiko ist damit **kein neues Problem der vier geplanten Typen**, sondern eine pre-existente systemische Eigenschaft: Supabase-Slugs und CATEGORIES-Slugs sind weitgehend entkoppelt und wurden bislang nicht synchronisiert.
+
+### Würden bestehende funktionierende Chips durch Option A unverändert bleiben?
+
+**Ja.** Option A (neuer Eintrag in `lib/categories.ts`) fügt einen neuen `CategoryConfig` hinzu, ohne bestehende Einträge zu verändern. Die beiden aktuell funktionierenden Chip-Slugs `hochzeit` und `festzelt` blieben unberührt. Option A birgt kein Regressionsrisiko für bestehende Chips.
+
+### Wo könnte `isPublicCategorySlug()` abgeleitet werden?
+
+`lib/categories.ts` exportiert bereits `getCategoryBySlug(slug: string): CategoryConfig | undefined`. Eine Prüfung der Form:
+
+```typescript
+const isPublicSlug = getCategoryBySlug(slug) !== undefined;
+```
+
+würde equivalent eine `isPublicCategorySlug()`-Funktion abbilden — ohne neue Taxonomie- oder Mapping-Logik einzuführen. `BandTagsSection` könnte diesen Check verwenden, um einen Chip-Link nur dann zu rendern, wenn die Route auch existiert, und andernfalls auf `<span>` zurückzufallen. Das wäre eine defensive Absicherung, keine inhaltliche Änderung.
+
+*Option C (Oberkategorie-Linking) bleibt bewusst außerhalb dieses Blocks.*
 
 ---
 
@@ -259,13 +329,13 @@ Hero-Bild und Subtitle pro Kategorie können in Sanity gepflegt werden (`fetchEv
 | Vernissage | **Ja — Gala & Empfang** (bereits in `airtableEventTypes`) | Nein | Gala & Empfang |
 | Club | Nein | Nein | Kein passender Rahmen |
 
-**Sonderfall Vernissage:** Bands mit Airtable-`event_canon = "Vernissage"` erscheinen bereits auf `/veranstaltung/gala`. Ein Supabase-Insert würde Admin-Verfügbarkeit und einen Chip auf Banddetailseiten erzeugen — der Chip-Link würde jedoch auf `/veranstaltung/vernissage` zeigen (404), nicht auf `/veranstaltung/gala`. Hier besteht ein potenzieller Widerspruch zwischen Supabase-Slug und bestehendem Airtable-Mapping, der vor der Umsetzung geklärt werden sollte.
+**Sonderfall Vernissage:** Bands mit Airtable-`event_canon = "Vernissage"` erscheinen bereits auf `/veranstaltung/gala`. Ein Supabase-Insert mit Slug `vernissage` würde Admin-Verfügbarkeit und einen Chip auf Banddetailseiten erzeugen — der Chip-Link würde nach Code- und Datenbefund auf `/veranstaltung/vernissage` zeigen, wo aktuell keine Route existiert. (Kein Browser-Test durchgeführt — Einschätzung basiert auf Codepfad-Analyse und Supabase-Slug-Abfrage.) Hier besteht ein konkreter ableitbarer Widerspruch zwischen Supabase-Slug und bestehendem Airtable-Mapping, der vor der Umsetzung geklärt werden sollte.
 
 ---
 
 ## Offene Fragen
 
-1. **Slug-Alignment Supabase ↔ CATEGORIES:** Sollen neue Supabase-Slugs (`kinder-und-familienevent`, `vernissage`, etc.) künftig 1:1 als CATEGORIES-Slugs dienen? Oder gibt es separate Slugs für Supabase und für Kategorie-Routen?
+1. **Slug-Alignment Supabase ↔ CATEGORIES:** Sollen neue Supabase-Slugs (`kinder-und-familienevent`, `vernissage`, etc.) künftig 1:1 als CATEGORIES-Slugs dienen? Oder gibt es separate Slugs für Supabase und für Kategorie-Routen? — Grundsatzfrage, die auch das pre-existente Misalignment betrifft (36/38 Supabase-Slugs ohne CATEGORIES-Match, `firmenfeier-business-event` statt `firmenfeier` etc.).
 
 2. **Vernissage — doppeltes Mapping:** Ist Vernissage als Unterpunkt von Gala & Empfang korrekt und gewollt? Oder soll es eine eigene Kategorie bekommen? Wenn ja, müsste der Gala-Eintrag in `categories.ts` bereinigt werden.
 
@@ -280,8 +350,6 @@ Hero-Bild und Subtitle pro Kategorie können in Sanity gepflegt werden (`fetchEv
 ## Bestätigung
 
 - Keine Codeänderungen durchgeführt
-- Keine Supabase-Schreiboperationen
-- Kein INSERT / UPDATE / DELETE
-- Kein Commit
+- Supabase: ausschließlich read-only (`SELECT` via Service Role Key), kein INSERT / UPDATE / DELETE
 - Kein Push
-- Temporäre Skripte: keine angelegt
+- Temporäre Skripte: angelegt und nach Ausführung gelöscht (`scripts/_tmp_slug_check.mjs`)
