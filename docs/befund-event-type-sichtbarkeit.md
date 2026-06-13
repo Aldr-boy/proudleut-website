@@ -136,7 +136,9 @@ return slug ? (
 );
 ```
 
-**Ergebnis:** Der Chip-Link ist eine direkte 1:1-Übernahme des Supabase-`event_type.slug`-Wertes als URL-Pfad. Es gibt **kein Mapping, keinen Filter und keinen Fallback** zwischen Supabase-Slug und CATEGORIES-Slugs. Wenn der Slug in `CATEGORIES` existiert, funktioniert der Link. Wenn nicht, zeigt er auf eine nicht vorhandene Route — nach Code- und Datenbefund aktuell wahrscheinlich ein 404 (Next.js `notFound()`), nicht durch Browser-Test bestätigt.
+**Ergebnis:** Der Chip-Link ist eine direkte 1:1-Übernahme des Supabase-`event_type.slug`-Wertes als URL-Pfad. Es gibt **kein Mapping, keinen Filter und keinen Fallback** zwischen Supabase-Slug und CATEGORIES-Slugs. Wenn der Slug in `CATEGORIES` existiert, funktioniert der Link. Wenn nicht, zeigt er auf eine nicht vorhandene Route — ein Browser-Test hat dies bestätigt (Festzelt und Hochzeit funktionieren, andere Slugs erzeugen 404).
+
+> **Korrektur (Code-Fix 2026-06-13):** Die frühere Annahme, Chips ohne passenden CATEGORIES-Slug würden als `<span>` erscheinen, war falsch. Der `<span>`-Zweig war unter normalen DB-Bedingungen toter Code: da `event_type.slug` durch `NOT NULL`-Constraint immer truthy ist, wurde die Bedingung `slug ?` stets als `true` ausgewertet, und alle Chips wurden als `<Link>` gerendert. Nach dem Code-Fix (`slug && getCategoryBySlug(slug) ?`) rendert `BandTagsSection` Chips ohne gültigen CATEGORIES-Slug künftig sichtbar, aber unverlinkt als `<span>`.
 
 `HeroCTA` empfängt `eventTypes` (String-Array ohne Slugs) nur für den Kontakt-Modal — baut keine `/veranstaltung/`-Links.
 
