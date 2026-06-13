@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Band } from '@/lib/types/band';
 import { formatLocation } from '@/lib/utils/formatLocation';
+import { getCategoryBySlug } from '@/lib/categories';
 
 type Props = {
   band: Band;
@@ -117,7 +118,7 @@ export function BandTagsSection({ band }: Props) {
                 <div className="flex flex-wrap gap-2">
                   {band.eventTypes.map((et, i) => {
                     const slug = band.categorySlugs?.[i];
-                    return slug ? (
+                    return slug && getCategoryBySlug(slug) ? (
                       <Link
                         key={et}
                         href={`/veranstaltung/${slug}`}
