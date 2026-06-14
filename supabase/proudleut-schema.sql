@@ -155,7 +155,8 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+   SET search_path = 'public';
 
 CREATE TRIGGER trg_locations_geo_point
   BEFORE INSERT OR UPDATE OF latitude, longitude ON locations
@@ -340,7 +341,8 @@ BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+   SET search_path = '';
 
 -- Trigger für alle Tabellen mit updated_at
 DO $$
