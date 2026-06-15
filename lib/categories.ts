@@ -86,6 +86,39 @@ export const CATEGORIES: CategoryConfig[] = [
       'Livebands für Galas und Empfänge – stilvoll, professionell und auf den Punkt.',
     airtableEventTypes: ['Empfang', 'Ball', 'Bankett', 'Ehrenabende', 'Vernissage'],
   },
+  {
+    title: 'Fasching',
+    slug: 'fasching',
+    h1Title: 'Bands für Fasching & Faschingsbälle',
+    description:
+      'Livebands für Faschingsbälle, Inthronisationen und die fünfte Jahreszeit – Stimmung für Saal, Bühne und Tanzfläche.',
+    seoTitle: 'Faschingsbands & Bands für Faschingsbälle – proudleut.com',
+    seoDescription:
+      'Livebands für Fasching, Faschingsbälle, Karneval und Inthronisationen in Bayern finden – passende Bands für die fünfte Jahreszeit entdecken.',
+    airtableEventTypes: ['Fasching'],
+  },
+  {
+    title: 'Weihnachtsfeier',
+    slug: 'weihnachtsfeier',
+    h1Title: 'Bands für Weihnachtsfeiern & Jahresabschluss',
+    description:
+      'Livemusik für Weihnachtsfeiern und Jahresabschlüsse – von festlich-leise bis ausgelassen.',
+    seoTitle: 'Bands für Weihnachtsfeiern – proudleut.com',
+    seoDescription:
+      'Livebands für Weihnachtsfeiern, Jahresabschlussfeiern und festliche Winterabende in Bayern – stimmungsvoll und passgenau für euren Anlass.',
+    airtableEventTypes: ['Weihnachtsfeier'],
+  },
+  {
+    title: 'Festival',
+    slug: 'festival',
+    h1Title: 'Bands für Festivals & Open Airs',
+    description:
+      'Livebands für Festivals, Open Airs und besondere Bühnenmomente – Energie, die bis in die letzte Reihe trägt.',
+    seoTitle: 'Festivalbands & Bands für Open Airs – proudleut.com',
+    seoDescription:
+      'Livebands für Festivals und Open-Air-Bühnen in Bayern finden – vom kleinen Kulturfestival bis zum großen Line-up.',
+    airtableEventTypes: ['Festival'],
+  },
 ];
 
 export function bandMatchesCategory(band: Band, category: CategoryConfig): boolean {
