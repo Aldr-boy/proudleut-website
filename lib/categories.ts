@@ -53,7 +53,6 @@ export const CATEGORIES: CategoryConfig[] = [
       'Livebands für Firmenfeiern, Galas und Business Events – professionell, hochwertig und passgenau.',
     airtableEventTypes: [
       'Firmenfeier & Business Event',
-      'Weihnachtsfeier',
       'Sommerfest',
       'Award-Show',
       'Abschlussfeier',
