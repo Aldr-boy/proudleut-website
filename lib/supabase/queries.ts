@@ -44,8 +44,8 @@ export async function getAllBandsFromSupabase() {
       slug,
       status,
       band_profiles ( short_description ),
-      locations ( city_name, landkreis, regierungsbezirk ),
-      media_assets ( url, alt_text, role, sort_order, width, height ),
+      locations ( city_name, landkreis, regierungsbezirk, plz, latitude, longitude ),
+      media_assets ( url, alt_text, role, sort_order ),
       band_event_types ( sort_order, event_types ( name, slug ) ),
       band_band_types ( is_primary, sort_order, band_types ( name, slug ) )
     `)
