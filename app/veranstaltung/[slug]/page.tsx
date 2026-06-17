@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getBands } from '@/lib/airtable/queries';
-import { CATEGORIES, bandMatchesCategory, getCategoryBySlug, getRelatedCategories } from '@/lib/categories';
+import { getAllBandsFromSupabase } from '@/lib/supabase/queries';
+import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
+import { CATEGORIES, bandMatchesCategorySB, getCategoryBySlug, getRelatedCategories } from '@/lib/categories';
 import BandGrid from '@/components/homepage/BandGrid';
 import { fetchEventCategoryHero } from '@/sanity/lib/fetchEventCategoryHero';
 import { urlFor } from '@/sanity/lib/image';
@@ -33,12 +34,14 @@ export default async function VeranstaltungPage({ params }: Props) {
   const category = getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const [allBands, heroData] = await Promise.all([
-    getBands(),
+  const [bandsResult, heroData] = await Promise.all([
+    getAllBandsFromSupabase(),
     fetchEventCategoryHero(slug),
   ]);
+  if (bandsResult.error) throw bandsResult.error;
+  const allBands = (bandsResult.data ?? []).map(normalizeBandFromSupabase);
 
-  const bands = allBands.filter((b) => bandMatchesCategory(b, category));
+  const bands = allBands.filter((b) => bandMatchesCategorySB(b, category));
   const related = getRelatedCategories(slug);
 
   const h1 = category.h1Title ?? category.title;
