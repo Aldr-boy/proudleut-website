@@ -8,6 +8,7 @@ export type CategoryConfig = {
   seoTitle?: string;
   seoDescription?: string;
   airtableEventTypes: string[];
+  supabaseEventTypeSlugs?: string[];
 };
 
 export const CATEGORIES: CategoryConfig[] = [
@@ -20,6 +21,7 @@ export const CATEGORIES: CategoryConfig[] = [
     seoDescription:
       'Finde die passende Liveband für deine Hochzeit – persönlich, direkt und mit starken Bands.',
     airtableEventTypes: ['Hochzeit'],
+    supabaseEventTypeSlugs: ['hochzeit'],
   },
   {
     title: 'Festzelt & Volksfest',
@@ -41,6 +43,16 @@ export const CATEGORIES: CategoryConfig[] = [
       'Zoigl',
       'Grottenfest',
     ],
+    supabaseEventTypeSlugs: [
+      'festzelt',
+      'stadt-und-buergerfest',
+      'bierfest',
+      'brauereifest',
+      'buergerfest',
+      'biergarten',
+      'wirtshausmusi',
+      'fruehschoppen',
+    ],
   },
   {
     title: 'Firmenfeier & Business Event',
@@ -56,6 +68,12 @@ export const CATEGORIES: CategoryConfig[] = [
       'Sommerfest',
       'Award-Show',
       'Abschlussfeier',
+    ],
+    // Sommerfest bewusst nicht gemappt – redaktionelle Entscheidung, späterer Prüfblock
+    supabaseEventTypeSlugs: [
+      'firmenfeier-business-event',
+      'award-show',
+      'abschlussfeier',
     ],
   },
   {
@@ -74,6 +92,14 @@ export const CATEGORIES: CategoryConfig[] = [
       'Taufe',
       'Familiennachmittage',
     ],
+    // Familiennachmittage kein Supabase-Slug – bewusste Auslassung
+    supabaseEventTypeSlugs: [
+      'geburtstagsfeier',
+      'private-feiern',
+      'exklusive-privatfeiern',
+      'jubilaeum',
+      'taufe',
+    ],
   },
   {
     title: 'Gala & Empfang',
@@ -84,6 +110,7 @@ export const CATEGORIES: CategoryConfig[] = [
     seoDescription:
       'Livebands für Galas und Empfänge – stilvoll, professionell und auf den Punkt.',
     airtableEventTypes: ['Empfang', 'Ball', 'Bankett', 'Ehrenabende', 'Vernissage'],
+    supabaseEventTypeSlugs: ['empfang', 'ball', 'bankett', 'ehrenabende', 'vernissage'],
   },
   {
     title: 'Fasching',
@@ -95,6 +122,7 @@ export const CATEGORIES: CategoryConfig[] = [
     seoDescription:
       'Livebands für Fasching, Faschingsbälle, Karneval und Inthronisationen in Bayern finden – passende Bands für die fünfte Jahreszeit entdecken.',
     airtableEventTypes: ['Fasching'],
+    supabaseEventTypeSlugs: ['fasching'],
   },
   {
     title: 'Weihnachtsfeier',
@@ -106,6 +134,7 @@ export const CATEGORIES: CategoryConfig[] = [
     seoDescription:
       'Livebands für Weihnachtsfeiern, Jahresabschlussfeiern und festliche Winterabende in Bayern – stimmungsvoll und passgenau für euren Anlass.',
     airtableEventTypes: ['Weihnachtsfeier'],
+    supabaseEventTypeSlugs: ['weihnachtsfeier'],
   },
   {
     title: 'Festival',
@@ -117,12 +146,25 @@ export const CATEGORIES: CategoryConfig[] = [
     seoDescription:
       'Livebands für Festivals und Open-Air-Bühnen in Bayern finden – vom kleinen Kulturfestival bis zum großen Line-up.',
     airtableEventTypes: ['Festival'],
+    supabaseEventTypeSlugs: ['festival'],
   },
 ];
 
 export function bandMatchesCategory(band: Band, category: CategoryConfig): boolean {
   return band.eventTypes.some((et) =>
     category.airtableEventTypes.includes(et.trim())
+  );
+}
+
+export function bandMatchesCategorySB(
+  band: Pick<Band, 'categorySlugs'>,
+  category: CategoryConfig
+): boolean {
+  if (!category.supabaseEventTypeSlugs?.length) return false;
+  return (
+    band.categorySlugs?.some((slug) =>
+      category.supabaseEventTypeSlugs?.includes(slug)
+    ) ?? false
   );
 }
 
