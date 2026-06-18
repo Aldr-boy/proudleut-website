@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Band } from '@/lib/types/band';
-import { CATEGORIES, bandMatchesCategory } from '@/lib/categories';
+import { CATEGORIES, bandMatchesCategorySB } from '@/lib/categories';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import BandCard from '@/components/BandCard';
 import BandCardSkeleton from '@/components/BandCardSkeleton';
@@ -225,7 +225,7 @@ export default function BandExplorer({ bands, regions }: Props) {
 
     if (selectedCategory) {
       const cat = CATEGORIES.find((c) => c.slug === selectedCategory);
-      if (!cat || !bandMatchesCategory(band, cat)) return false;
+      if (!cat || !bandMatchesCategorySB(band, cat)) return false;
     }
 
     if (selectedRegion) {

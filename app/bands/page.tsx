@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { getBands } from '@/lib/airtable/queries';
+import { getAllBandsFromSupabase } from '@/lib/supabase/queries';
+import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import BandExplorer from '@/components/bands/BandExplorer';
 import BandsHero from '@/components/bands/BandsHero';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
@@ -15,10 +16,14 @@ export const metadata: Metadata = {
 };
 
 export default async function BandsPage() {
-  const [bands, featuredSlides] = await Promise.all([
-    getBands(),
+  const [bandsResult, featuredSlides] = await Promise.all([
+    getAllBandsFromSupabase(),
     fetchBandsPageFeaturedSlider(),
   ]);
+  if (bandsResult.error) {
+    throw bandsResult.error;
+  }
+  const bands = (bandsResult.data ?? []).map(normalizeBandFromSupabase);
   const activeBands = bands.filter((band) => band.status === 'active');
 
   const regions = REGION_ORDER.filter((r) =>
