@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { MerklisteBar } from "@/components/band/MerklisteBar";
+import GridOverlay from "@/components/dev/GridOverlay";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,6 +54,7 @@ export default async function RootLayout({
         <main className={isStudio ? "h-screen" : "flex-1"}>{children}</main>
         {!isStudio && !isAdmin && <Footer />}
         {!isStudio && !isAdmin && <MerklisteBar />}
+        {process.env.NODE_ENV === 'development' && !isStudio && !isAdmin && <GridOverlay />}
       </body>
     </html>
   );
