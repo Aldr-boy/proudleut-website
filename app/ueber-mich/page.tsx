@@ -36,7 +36,7 @@ export default async function UeberMichPage() {
     <main>
       {/* Hero */}
       <section className="bg-pl-stage py-16 md:py-24 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
             <div className="order-2 md:order-1">
               <p className="text-pl-accent-light text-sm font-medium tracking-wider uppercase mb-5">
@@ -69,7 +69,7 @@ export default async function UeberMichPage() {
 
       {/* Warum proudleut? */}
       <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[900px]">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-10">Warum proudleut?</h2>
             <div className="divide-y divide-pl-soft">
@@ -102,7 +102,7 @@ export default async function UeberMichPage() {
 
       {/* Was ich mache */}
       <section className="bg-pl-paper py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[820px]">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-8">Was ich mache</h2>
             <div className="space-y-5">
@@ -122,7 +122,7 @@ export default async function UeberMichPage() {
 
       {/* Wie ich arbeite */}
       <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-12">Wie ich arbeite</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <div>
@@ -155,7 +155,7 @@ export default async function UeberMichPage() {
 
       {/* Bands, die ich aktiv betreue */}
       <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[960px]">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
               Bands, die ich aktiv betreue
@@ -195,7 +195,7 @@ export default async function UeberMichPage() {
 
       {/* CTA */}
       <section className="bg-pl-stage py-16 md:py-24 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[760px] mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
               Klingt das interessant?
