@@ -156,39 +156,37 @@ export default async function UeberMichPage() {
       {/* Bands, die ich aktiv betreue */}
       <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
         <div className="pl-container-shell">
-          <div className="max-w-[960px]">
-            <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
-              Bands, die ich aktiv betreue
-            </h2>
-            <p className="text-pl-on-stage-muted leading-relaxed mb-10">
-              Neben proudleut bin ich selbst im Booking und Management aktiv. Dadurch kenne ich
-              beide Seiten: was Veranstalter brauchen – und wie es auf Bandseite wirklich läuft.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {MGMT_BANDS.map(({ name, sub }) => {
-                const band = findBand(allBands, name);
-                if (band) {
-                  return (
-                    <Link
-                      key={name}
-                      href={`/band/${band.slug}`}
-                      className="rounded-xl bg-pl-stage-elevated border border-pl-stage px-5 py-4 hover:border-pl-accent-light motion-safe:transition-colors group"
-                    >
-                      <p className="text-pl-on-stage font-semibold group-hover:text-pl-accent-light motion-safe:transition-colors">
-                        {name}
-                      </p>
-                      <p className="text-pl-on-stage-muted text-sm mt-1">{sub}</p>
-                    </Link>
-                  );
-                }
+          <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
+            Bands, die ich aktiv betreue
+          </h2>
+          <p className="text-pl-on-stage-muted leading-relaxed mb-10">
+            Neben proudleut bin ich selbst im Booking und Management aktiv. Dadurch kenne ich
+            beide Seiten: was Veranstalter brauchen – und wie es auf Bandseite wirklich läuft.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {MGMT_BANDS.map(({ name, sub }) => {
+              const band = findBand(allBands, name);
+              if (band) {
                 return (
-                  <div key={name} className="rounded-xl bg-pl-stage-elevated border border-pl-stage px-5 py-4">
-                    <p className="text-pl-on-stage font-semibold">{name}</p>
+                  <Link
+                    key={name}
+                    href={`/band/${band.slug}`}
+                    className="rounded-xl bg-pl-stage-elevated border border-pl-stage px-5 py-4 hover:border-pl-accent-light motion-safe:transition-colors group"
+                  >
+                    <p className="text-pl-on-stage font-semibold group-hover:text-pl-accent-light motion-safe:transition-colors">
+                      {name}
+                    </p>
                     <p className="text-pl-on-stage-muted text-sm mt-1">{sub}</p>
-                  </div>
+                  </Link>
                 );
-              })}
-            </div>
+              }
+              return (
+                <div key={name} className="rounded-xl bg-pl-stage-elevated border border-pl-stage px-5 py-4">
+                  <p className="text-pl-on-stage font-semibold">{name}</p>
+                  <p className="text-pl-on-stage-muted text-sm mt-1">{sub}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
