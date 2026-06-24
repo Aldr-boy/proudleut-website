@@ -119,7 +119,7 @@ export default function FuerBandsPage() {
 
       {/* 2 — Was proudleut ist */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] gap-10 lg:gap-16 items-start">
 
             {/* Linke Spalte: Editorial-Text */}
@@ -182,7 +182,7 @@ export default function FuerBandsPage() {
 
       {/* 2.5 — Profil-Mockup */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
 
             {/* Links (Mobile) / Rechts (Desktop): Einleitung + Nutzenpunkte */}
@@ -356,7 +356,7 @@ export default function FuerBandsPage() {
 
       {/* 3 — Was in eurem Profil sichtbar wird */}
       <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[820px] mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
               Was in eurem Profil sichtbar wird
@@ -438,7 +438,7 @@ export default function FuerBandsPage() {
 
       {/* 4 — Was nutzt dir proudleut wirklich? */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[820px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-6">
             Was nutzt dir proudleut wirklich?
@@ -487,7 +487,7 @@ export default function FuerBandsPage() {
 
       {/* 5 — Wie es läuft */}
       <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[820px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-10">
             Wie es läuft
@@ -518,7 +518,7 @@ export default function FuerBandsPage() {
 
       {/* 6 — FAQ */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[900px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-8">
             Häufige Fragen
@@ -547,7 +547,7 @@ export default function FuerBandsPage() {
 
       {/* 7 — Kontakt */}
       <section id="kontakt" className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
-        <div className="max-w-[1140px] mx-auto">
+        <div className="pl-container-shell">
           <div className="max-w-[820px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-6">
             Klingt das interessant?
