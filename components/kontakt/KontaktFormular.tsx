@@ -136,7 +136,7 @@ export default function KontaktFormular() {
 
       {/* ── Formular + Persönlicher Kontaktblock ──────────── */}
       <section className="bg-pl-canvas py-16 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12 items-start">
+        <div className="pl-container-shell grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12 items-start">
 
           {/* Formular */}
           <div>
