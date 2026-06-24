@@ -23,7 +23,7 @@ export default async function HomePage() {
 
       {/* Band grid – 9 zufällige Homepage-ready Bands */}
       <section id="bands" className="bg-pl-paper py-16 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="pl-container-shell">
           <h2 className="text-2xl font-bold text-pl-text mb-8">Livebands entdecken</h2>
           {homepagePool.length === 0 ? (
             <p className="text-pl-text-muted">Keine Bands gefunden.</p>
