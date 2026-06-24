@@ -519,7 +519,7 @@ export default function FuerBandsPage() {
       {/* 6 — FAQ */}
       <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
         <div className="pl-container-shell">
-          <div className="max-w-[900px]">
+          <div className="max-w-[820px]">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-8">
             Häufige Fragen
           </h2>
