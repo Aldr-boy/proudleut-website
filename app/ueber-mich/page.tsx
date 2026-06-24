@@ -70,7 +70,7 @@ export default async function UeberMichPage() {
       {/* Warum proudleut? */}
       <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
         <div className="pl-container-shell">
-          <div className="max-w-[900px]">
+          <div className="max-w-[820px]">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-10">Warum proudleut?</h2>
             <div className="divide-y divide-pl-soft">
               <div className="py-6 sm:grid sm:grid-cols-[220px_1fr] sm:gap-10 sm:items-start">
