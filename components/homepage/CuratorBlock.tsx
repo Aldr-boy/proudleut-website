@@ -3,7 +3,7 @@ import Image from 'next/image';
 export default function CuratorBlock() {
   return (
     <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="pl-container-shell">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
           {/* Text – links auf Desktop, darunter auf Mobile */}
           <div className="order-2 md:order-1">

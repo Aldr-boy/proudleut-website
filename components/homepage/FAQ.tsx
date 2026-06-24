@@ -3,7 +3,7 @@ import { faqGroups } from '@/lib/content/faqs';
 export default function FAQ() {
   return (
     <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="pl-container-shell">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-12 md:gap-16">
 
           {/* Intro-Spalte */}

@@ -4,7 +4,7 @@ import { testimonials } from '@/lib/content/testimonials';
 export default function Testimonials() {
   return (
     <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="pl-container-shell">
         <div className="mb-12 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-4">
             Was andere über proudleut sagen

@@ -6,7 +6,7 @@ export default function ReferenzEvents() {
   return (
     <section className="bg-pl-stage relative overflow-hidden py-20 md:py-28 px-4 sm:px-6">
       <div className="absolute inset-0 bg-pl-gradient-spotlight pointer-events-none" />
-      <div className="relative z-10 max-w-6xl mx-auto">
+      <div className="relative z-10 pl-container-shell">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-3">
             So klingt&apos;s, wenn alles passt

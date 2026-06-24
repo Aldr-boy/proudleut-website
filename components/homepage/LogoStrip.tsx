@@ -5,7 +5,7 @@ import { bandLogos } from '@/lib/homepage/bandLogos';
 export default function LogoStrip() {
   return (
     <section className="bg-pl-paper pt-10 pb-12 md:pt-14 md:pb-16 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto text-center">
+      <div className="pl-container-shell text-center">
         <h2 className="text-lg font-medium text-pl-text mb-1">
           Bands mit eigener Handschrift
         </h2>
