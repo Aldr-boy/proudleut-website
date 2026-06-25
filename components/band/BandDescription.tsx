@@ -9,8 +9,8 @@ export function BandDescription({ band }: Props) {
   if (!band.description) return null;
 
   return (
-    <section className="bg-pl-canvas py-12 md:py-16">
-      <div className="max-w-[820px] mx-auto px-4 sm:px-6">
+    <section className="bg-pl-canvas py-12 md:py-16 px-4 sm:px-6">
+      <div className="max-w-[820px] mx-auto">
         <h2 className="text-xl md:text-2xl font-bold text-pl-text mb-6">
           Über {band.name}
         </h2>
