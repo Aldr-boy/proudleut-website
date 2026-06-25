@@ -125,8 +125,8 @@ export default async function BandPage({ params }: PageProps) {
 
       {/* Ähnliche Bands */}
       {similarBands.length > 0 ? (
-        <section className="bg-pl-canvas border-t border-pl-soft py-12 md:py-16">
-          <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
+        <section className="bg-pl-canvas border-t border-pl-soft py-12 md:py-16 px-4 sm:px-6">
+          <div className="pl-container-shell">
             <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">
               Ähnliche Bands
             </p>
