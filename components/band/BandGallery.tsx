@@ -12,8 +12,8 @@ export function BandGallery({ band }: Props) {
   const showOverlay = extraCount > 0;
 
   return (
-    <section className="bg-pl-canvas py-12 md:py-16">
-      <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
+    <section className="bg-pl-canvas py-12 md:py-16 px-4 sm:px-6">
+      <div className="pl-container-shell">
         <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">
           Bühnenmomente
         </p>
