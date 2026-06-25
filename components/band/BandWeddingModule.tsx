@@ -27,8 +27,8 @@ export function BandWeddingModule({ band }: Props) {
   const hasCards = decisionCards.length > 0;
 
   return (
-    <section className="bg-pl-paper py-12 md:py-16 border-t border-pl-soft">
-      <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
+    <section className="bg-pl-paper py-12 md:py-16 border-t border-pl-soft px-4 sm:px-6">
+      <div className="pl-container-shell">
         <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">
           Hochzeit
         </p>
