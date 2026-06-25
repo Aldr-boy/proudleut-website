@@ -46,8 +46,8 @@ export function BandTagsSection({ band }: Props) {
   }
 
   return (
-    <section className="bg-pl-canvas py-12 md:py-16 border-b border-pl-soft">
-      <div className="max-w-[1140px] mx-auto px-4 sm:px-6 space-y-8">
+    <section className="bg-pl-canvas py-12 md:py-16 border-b border-pl-soft px-4 sm:px-6">
+      <div className="pl-container-shell space-y-8">
 
         {/* Klingt nach + Musikalisch verortet */}
         {(hasKlingtNach || hasMusikalischVerortet) && (
