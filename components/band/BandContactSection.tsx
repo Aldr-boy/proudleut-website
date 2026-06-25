@@ -68,8 +68,8 @@ export function BandContactSection({ band, websiteUrl }: Props) {
   const hasLinks = links.length > 0;
 
   return (
-    <section className="bg-pl-paper border-t border-pl-soft py-12 md:py-16">
-      <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
+    <section className="bg-pl-paper border-t border-pl-soft py-12 md:py-16 px-4 sm:px-6">
+      <div className="pl-container-shell">
         <div className={`grid grid-cols-1 gap-10 ${hasLinks ? 'md:grid-cols-2 md:gap-16' : ''}`}>
 
           {/* Linke Spalte: Mehr von [Band] – nur wenn Links vorhanden */}
