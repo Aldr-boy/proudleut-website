@@ -7,8 +7,8 @@ export function BandVideoSection({ embedUrl, bandName }: Props) {
   if (!embedUrl) return null;
 
   return (
-    <section className="bg-pl-canvas py-8 md:py-10">
-      <div className="max-w-[820px] mx-auto px-4 sm:px-6">
+    <section className="bg-pl-canvas py-8 md:py-10 px-4 sm:px-6">
+      <div className="max-w-[820px] mx-auto">
         <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-pl-stage">
           <iframe
             src={embedUrl}
