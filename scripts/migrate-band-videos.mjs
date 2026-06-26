@@ -1,22 +1,27 @@
 /**
  * migrate-band-videos.mjs
  *
- * DRY-RUN-ONLY Analyse: Airtable "YouTube Video Link" → Supabase "videos" (platform='youtube').
+ * Migrationsscript: Airtable "YouTube Video Link" → Supabase "videos" (platform='youtube').
  *
- * Dieses Script schreibt NIEMALS in die Datenbank.
- * Kein --write-Modus vorhanden. Ausschließlich read-only Audit + Plan-Ausgabe.
+ * Standard: Dry-Run (kein Schreiben).
+ * Write-Modus: erfordert explizit BEIDE Flags gleichzeitig:
+ *   --write UND --confirm-delete-insert-video-migration
  *
  * Ausführen:
  *   node scripts/migrate-band-videos.mjs
  *   node scripts/migrate-band-videos.mjs --slug=donnaweda
+ *   node scripts/migrate-band-videos.mjs --write --confirm-delete-insert-video-migration
  *
  * Datenquellen:
  *   Airtable-Feld "YouTube Video Link"  → videos.url  (Embed-Video)
  *   Nicht: "Social - YouTube"           → social_profiles (Kanal-Link, bereits migriert)
  *
- * Geplante spätere Write-Strategie (NICHT in diesem Script):
+ * Write-Strategie (nur bei doppeltem Flag + bestandenem Pre-Flight):
  *   Kein Upsert (kein bestätigter UNIQUE-Constraint auf videos(band_id, platform)).
  *   Kontrolliertes DELETE + INSERT pro band_id + platform = 'youtube'.
+ *   Kein globaler DELETE. Kein DELETE nur nach platform. Scope: band_id + platform = 'youtube'.
+ *   Keine Transaktion über den gesamten Lauf (PostgREST-Limitation) — DELETE+INSERT sequenziell.
+ *   Harte Pre-Flight-Re-Count-Prüfung vor erstem Write.
  */
 
 import { readFileSync } from 'fs'
@@ -50,63 +55,116 @@ function loadEnv() {
 loadEnv()
 
 // ─── CLI FLAGS ─────────────────────────────────────────────────────────────────
+//
+// GATE 1: Doppel-Flag-Prüfung.
+//
+// Diese Prüfung steht strukturell vor jeder Stelle, an der ein Supabase-Client
+// mit Schreibmethoden (.insert, .delete, .update, .upsert) überhaupt erreichbar ist.
+// Kein Write-Call kann ohne bestandes Gate 1 + Gate 2 (Pre-Flight) erreicht werden.
 
 const args = process.argv.slice(2)
 
-// Write-Modus ist absichtlich nicht implementiert.
-if (args.includes('--write') || args.includes('--execute')) {
+const HAS_WRITE   = args.includes('--write')
+const HAS_CONFIRM = args.includes('--confirm-delete-insert-video-migration')
+
+// Einzelnes Write-Flag ohne das andere → sofort abbrechen, vor jeder Client-Erstellung
+if (HAS_WRITE && !HAS_CONFIRM) {
   console.error(`
-✗ Write mode is intentionally not implemented in this dry-run script.
+✗ --write alleine reicht nicht aus. Fehlender zweiter Flag:
+  --confirm-delete-insert-video-migration
 
-  Dieses Script ist ausschließlich ein Dry-Run-Analyse-Tool.
-  Schreiboperationen werden in einem separaten Schritt nach expliziter
-  Freigabe und Dry-Run-Review implementiert.
+  Echte DB-Writes erfordern explizit BEIDE Flags gleichzeitig:
+    node scripts/migrate-band-videos.mjs --write --confirm-delete-insert-video-migration
 
-  Erlaubt:
+  Dry-Run (kein Flag):
     node scripts/migrate-band-videos.mjs
-    node scripts/migrate-band-videos.mjs --slug=donnaweda
+`)
+  process.exit(1)
+}
+
+if (HAS_CONFIRM && !HAS_WRITE) {
+  console.error(`
+✗ --confirm-delete-insert-video-migration alleine reicht nicht aus. Fehlender zweiter Flag:
+  --write
+
+  Echte DB-Writes erfordern explizit BEIDE Flags gleichzeitig:
+    node scripts/migrate-band-videos.mjs --write --confirm-delete-insert-video-migration
+
+  Dry-Run (kein Flag):
+    node scripts/migrate-band-videos.mjs
 `)
   process.exit(1)
 }
 
 // Unbekannte Flags abfangen
-const KNOWN_FLAGS = new Set(['--slug'])
+const KNOWN_FLAGS = new Set([
+  '--slug',
+  '--write',
+  '--confirm-delete-insert-video-migration',
+])
 const unknownFlags = args.filter(a => {
   if (a.startsWith('--slug=')) return false
   return !KNOWN_FLAGS.has(a)
 })
 if (unknownFlags.length > 0) {
   console.error(`✗ Unbekannte Flags: ${unknownFlags.join(', ')}`)
-  console.error(`  Nur --slug=<slug> ist erlaubt.`)
+  console.error(`  Erlaubte Flags: --slug=<slug>, --write, --confirm-delete-insert-video-migration`)
   process.exit(1)
 }
 
 const slugArg = args.find(a => a.startsWith('--slug='))?.split('=')[1] ?? null
 
+// WRITE_MODE ist nur true, wenn BEIDE Flags gleichzeitig gesetzt sind (Gate 1 bestanden)
+const WRITE_MODE = HAS_WRITE && HAS_CONFIRM
+
+// --slug ist im Write-Modus verboten (Pre-Flight würde sowieso fehlschlagen, aber explizit besser)
+if (WRITE_MODE && slugArg) {
+  console.error(`
+✗ --slug ist im Write-Modus nicht erlaubt.
+
+  Der Write-Modus migriert immer alle Bands (Pre-Flight prüft Gesamtzahlen).
+  --slug kann nur im Dry-Run verwendet werden.
+`)
+  process.exit(1)
+}
+
 // ─── ENV VARS ─────────────────────────────────────────────────────────────────
 
-const AIRTABLE_TOKEN = process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN
-const AIRTABLE_BASE  = process.env.AIRTABLE_BASE_ID
-const SUPABASE_URL   = process.env.NEXT_PUBLIC_SUPABASE_URL
-const ANON_KEY       = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const BANDS_TABLE    = process.env.AIRTABLE_BANDS_TABLE_NAME ?? 'Bands'
+const AIRTABLE_TOKEN  = process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN
+const AIRTABLE_BASE   = process.env.AIRTABLE_BASE_ID
+const SUPABASE_URL    = process.env.NEXT_PUBLIC_SUPABASE_URL
+const ANON_KEY        = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const SERVICE_KEY     = process.env.SUPABASE_SERVICE_ROLE_KEY
+const BANDS_TABLE     = process.env.AIRTABLE_BANDS_TABLE_NAME ?? 'Bands'
 
 const missing = []
 if (!AIRTABLE_TOKEN) missing.push('AIRTABLE_PERSONAL_ACCESS_TOKEN')
 if (!AIRTABLE_BASE)  missing.push('AIRTABLE_BASE_ID')
 if (!SUPABASE_URL)   missing.push('NEXT_PUBLIC_SUPABASE_URL')
 if (!ANON_KEY)       missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+if (WRITE_MODE && !SERVICE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY (erforderlich für Write-Modus)')
 
 if (missing.length > 0) {
   console.error(`✗ Fehlende Env-Variablen: ${missing.join(', ')}`)
   process.exit(1)
 }
 
-// ─── SUPABASE CLIENT (read-only, anon key) ────────────────────────────────────
+// ─── SUPABASE CLIENTS ─────────────────────────────────────────────────────────
+//
+// supabase       — anon key, ausschließlich read-only (SELECT)
+// supabaseService — service role, nur erstellt wenn WRITE_MODE === true
+//                   d.h. nur nach bestandenem Gate 1
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
+
+// Service-Role-Client: nur instanziiert wenn Write-Modus aktiv (beide Flags bestanden)
+const supabaseService = WRITE_MODE
+  ? createClient(SUPABASE_URL, SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null
 
 // ─── YOUTUBE-URL-VALIDIERUNG ──────────────────────────────────────────────────
 //
@@ -221,7 +279,7 @@ async function loadSupabaseData() {
 
   const bandsBySlug = new Map((bandsRes.data ?? []).map(b => [b.slug, b]))
 
-  // Index: band_id → alle youtube-Video-Rows
+  // Index: band_id → alle Video-Rows dieser Band
   const videosByBandId = new Map()
   for (const v of (videosRes.data ?? [])) {
     if (!videosByBandId.has(v.band_id)) videosByBandId.set(v.band_id, [])
@@ -237,46 +295,14 @@ async function loadSupabaseData() {
   }
 }
 
-// ─── MAIN ─────────────────────────────────────────────────────────────────────
+// ─── MIGRATIONSPLAN BERECHNEN ─────────────────────────────────────────────────
+//
+// Pure function: nimmt geladene Daten, gibt stats + report zurück.
+// Wird im Dry-Run und als Pre-Flight-Re-Count im Write-Modus verwendet.
 
-;(async () => {
-  const DLINE = '═'.repeat(66)
-  const LINE  = '─'.repeat(66)
-
-  console.log(`\n${DLINE}`)
-  console.log(`  migrate-band-videos.mjs  [DRY RUN – read-only]`)
-  if (slugArg) console.log(`  Slug-Filter: ${slugArg}`)
-  console.log(`  Validierung identisch mit Laufzeit-Funktion getYouTubeEmbedUrl(),`)
-  console.log(`  Stand Zeile 37 in app/band/[slug]/page.tsx`)
-  console.log(DLINE)
-
-  // ── Daten laden ────────────────────────────────────────────────────────────
-  console.log('\nLade Airtable + Supabase-Daten …')
-
-  const [airtableRecords, sbData] = await Promise.all([
-    fetchAirtableBands(),
-    loadSupabaseData(),
-  ])
-
+function buildMigrationPlan(records, sbData) {
   const { bandsBySlug, videosByBandId, totalBands, totalVideos, allVideos } = sbData
 
-  console.log(`  Airtable aktive Bands:          ${airtableRecords.length}`)
-  console.log(`  Supabase-Bands gesamt:          ${totalBands}`)
-  console.log(`  Supabase videos-Rows gesamt:    ${totalVideos}`)
-
-  // ── Slug-Filter ────────────────────────────────────────────────────────────
-  let records = airtableRecords
-  if (slugArg) {
-    records = records.filter(r =>
-      r.fields['Slug']?.trim()?.toLowerCase() === slugArg.toLowerCase()
-    )
-    if (records.length === 0) {
-      console.error(`\n✗ Keine aktive Band mit Slug "${slugArg}" in Airtable gefunden`)
-      process.exit(1)
-    }
-  }
-
-  // ── Statistiken ────────────────────────────────────────────────────────────
   const stats = {
     airtableTotal:           records.length,
     airtableWithVideoLink:   0,
@@ -296,8 +322,8 @@ async function loadSupabaseData() {
   }
 
   const report = {
-    plannedInserts:       [],  // { bandName, slug, url, embedUrl }
-    plannedReplaces:      [],  // { bandName, slug, oldUrl, newUrl, embedUrl, isDonnaweda }
+    plannedInserts:       [],  // { bandName, slug, bandId, url, embedUrl }
+    plannedReplaces:      [],  // { bandName, slug, bandId, oldUrl, newUrl, embedUrl, isDonnaweda, isPlaceholder }
     invalidUrls:          [],  // { bandName, slug, url, reason }
     unmatched:            [],  // { airtableName, slug }
     allSbYouTubeRows:     [],  // { bandName, slug, url, isValid }
@@ -306,7 +332,7 @@ async function loadSupabaseData() {
     donnawedaDetail:      null,
   }
 
-  // ── Supabase youtube-Rows vorauswerten ────────────────────────────────────
+  // Supabase youtube-Rows vorauswerten
   for (const v of allVideos) {
     if (v.platform !== 'youtube') continue
     stats.supabaseYouTubeRows++
@@ -318,13 +344,12 @@ async function loadSupabaseData() {
     report.allSbYouTubeRows.push({ bandName, slug: bandSlug, url: v.url, isValid })
   }
 
-  // ── Pro-Band-Analyse ───────────────────────────────────────────────────────
+  // Pro-Band-Analyse
   for (const record of records) {
     const f        = record.fields
     const bandName = f['Bandname']?.trim() ?? '(kein Name)'
     const slug     = f['Slug']?.trim()?.toLowerCase() ?? ''
 
-    // ── Slug-Match ─────────────────────────────────────────────────────────
     const supaBand = slug ? bandsBySlug.get(slug) : null
     if (!supaBand) {
       stats.unmatched++
@@ -333,7 +358,6 @@ async function loadSupabaseData() {
     }
     stats.matched++
 
-    // ── YouTube Video Link auslesen ────────────────────────────────────────
     // Ausschließlich "YouTube Video Link" — NICHT "Social - YouTube"
     const ytVideoLink = f['YouTube Video Link']?.trim() ?? ''
 
@@ -364,12 +388,10 @@ async function loadSupabaseData() {
 
     stats.airtableWithVideoLink++
 
-    // ── URL-Validierung (identisch mit Laufzeit-Funktion) ─────────────────
     const embedUrl = getYouTubeEmbedUrl(ytVideoLink)
 
     if (!embedUrl) {
       stats.airtableInvalidUrl++
-      // Extrahiere Klartext-Grund
       let reason = 'Ungültige YouTube-URL oder Video-ID ≠ 11 Zeichen'
       try {
         const u = new URL(ytVideoLink)
@@ -387,47 +409,50 @@ async function loadSupabaseData() {
 
     stats.airtableValidUrl++
 
-    // ── Bestehende Supabase-YouTube-Row prüfen ────────────────────────────
     const sbVideos   = videosByBandId.get(supaBand.id) ?? []
     const sbYtVideos = sbVideos.filter(v => v.platform === 'youtube')
 
     const isDonnaweda = slug === 'donnaweda'
 
     if (sbYtVideos.length === 0) {
-      // ── PLANNED INSERT ────────────────────────────────────────────────
       stats.plannedInsert++
-      report.plannedInserts.push({ bandName, slug, url: ytVideoLink, embedUrl })
+      report.plannedInserts.push({
+        bandName, slug, bandId: supaBand.id, url: ytVideoLink, embedUrl,
+      })
     } else {
-      // ── PLANNED REPLACE ───────────────────────────────────────────────
-      // Spätere Strategie: DELETE WHERE band_id=X AND platform='youtube', dann INSERT
       stats.plannedReplace++
       const existing = sbYtVideos[0]
       const detail = {
         bandName,
         slug,
-        oldUrl:      existing.url,
-        newUrl:      ytVideoLink,
+        bandId:        supaBand.id,
+        oldUrl:        existing.url,
+        newUrl:        ytVideoLink,
         embedUrl,
         isDonnaweda,
-        oldIsValid:  getYouTubeEmbedUrl(existing.url) !== null,
+        oldIsValid:    getYouTubeEmbedUrl(existing.url) !== null,
         isPlaceholder: isPlaceholderUrl(existing.url),
       }
       report.plannedReplaces.push(detail)
 
-      // Donnaweda-Sonderfall explizit dokumentieren
       if (isDonnaweda) {
         report.donnawedaDetail = {
-          supabasePlaceholderUrl: existing.url,
+          supabasePlaceholderUrl:   existing.url,
           supabasePlaceholderValid: getYouTubeEmbedUrl(existing.url) !== null,
-          airtableSourceUrl: ytVideoLink,
-          airtableEmbedUrl:  embedUrl,
+          airtableSourceUrl:        ytVideoLink,
+          airtableEmbedUrl:         embedUrl,
           action: 'PLANNED REPLACE – DELETE placeholder, INSERT Airtable-URL',
         }
       }
     }
   }
 
-  // ── ZUSAMMENFASSUNG ───────────────────────────────────────────────────────
+  return { stats, report }
+}
+
+// ─── DRY-RUN-REPORT DRUCKEN ───────────────────────────────────────────────────
+
+function printDryRunReport(stats, report, totalBands, totalVideos, LINE, DLINE) {
   console.log(`\n${DLINE}`)
   console.log(`  Zusammenfassung  [DRY RUN – kein Schreiben]`)
   console.log(DLINE)
@@ -447,15 +472,12 @@ async function loadSupabaseData() {
   console.log(`    YouTube-Rows gesamt:            ${stats.supabaseYouTubeRows}`)
   console.log(`    Ungültige YouTube-Rows:         ${stats.supabaseInvalidRows}`)
   console.log(``)
-  console.log(`  PLAN (spätere Write-Strategie: DELETE+INSERT, kein Upsert)`)
+  console.log(`  PLAN (Write-Strategie: DELETE+INSERT, kein Upsert)`)
   console.log(`    Planned Inserts:                ${stats.plannedInsert}`)
   console.log(`    Planned Replaces:               ${stats.plannedReplace}`)
   console.log(`    Cleanup Candidates:             ${stats.cleanupCandidates}`)
   console.log(`    Existing rows without source:   ${stats.existingWithoutSource}`)
 
-  // ── DETAILREPORTS ─────────────────────────────────────────────────────────
-
-  // Alle bestehenden Supabase-YouTube-Rows
   if (report.allSbYouTubeRows.length > 0) {
     console.log(`\n${LINE}`)
     console.log(`  Bestehende Supabase-YouTube-Rows (gesamt)`)
@@ -467,7 +489,6 @@ async function loadSupabaseData() {
     }
   }
 
-  // Donnaweda-Sonderfall
   if (report.donnawedaDetail) {
     console.log(`\n${LINE}`)
     console.log(`  SONDERFALL: Donnaweda (Placeholder-Bereinigung)`)
@@ -480,7 +501,6 @@ async function loadSupabaseData() {
     console.log(`  Geplante Aktion:                ${d.action}`)
   }
 
-  // Planned Inserts (erste 10)
   if (report.plannedInserts.length > 0) {
     console.log(`\n${LINE}`)
     console.log(`  Planned Inserts (erste 10 von ${report.plannedInserts.length})`)
@@ -495,7 +515,6 @@ async function loadSupabaseData() {
     }
   }
 
-  // Planned Replaces (erste 10)
   if (report.plannedReplaces.length > 0) {
     console.log(`\n${LINE}`)
     console.log(`  Planned Replaces (erste 10 von ${report.plannedReplaces.length})`)
@@ -512,7 +531,6 @@ async function loadSupabaseData() {
     }
   }
 
-  // Ungültige Airtable-URLs (alle)
   if (report.invalidUrls.length > 0) {
     console.log(`\n${LINE}`)
     console.log(`  Ungültige Airtable-URLs (nicht migrierbar)`)
@@ -524,7 +542,6 @@ async function loadSupabaseData() {
     }
   }
 
-  // Unmatched Bands (alle)
   if (report.unmatched.length > 0) {
     console.log(`\n${LINE}`)
     console.log(`  Kein Supabase-Slug-Match (alle)`)
@@ -534,7 +551,6 @@ async function loadSupabaseData() {
     }
   }
 
-  // Cleanup Candidates (alle)
   if (report.cleanupCandidates.length > 0) {
     console.log(`\n${LINE}`)
     console.log(`  Cleanup Candidates (Supabase-Row ungültig, Airtable-Quelle leer)`)
@@ -546,7 +562,6 @@ async function loadSupabaseData() {
     }
   }
 
-  // Existing rows without Airtable source
   if (report.existingWithoutSrc.length > 0) {
     console.log(`\n${LINE}`)
     console.log(`  Existing Supabase-Rows ohne Airtable-Quelle`)
@@ -557,16 +572,267 @@ async function loadSupabaseData() {
     }
   }
 
-  // ── ABSCHLUSS ─────────────────────────────────────────────────────────────
   console.log(`\n${DLINE}`)
   console.log(`  DRY RUN abgeschlossen — kein Schreibvorgang ausgeführt.`)
   console.log(``)
-  console.log(`  Spätere Write-Strategie: DELETE + INSERT (kein Upsert)`)
+  console.log(`  Write-Strategie: DELETE + INSERT (kein Upsert)`)
   console.log(`  Kein bestätigter UNIQUE-Constraint auf videos(band_id, platform).`)
+  console.log(`  Keine Transaktion über den Gesamtlauf (PostgREST-Limitation).`)
   console.log(``)
-  console.log(`  Nächster Schritt (nach Freigabe):`)
-  console.log(`    Ein separates migrate-band-videos-execute.mjs anlegen,`)
-  console.log(`    das diese Dry-Run-Ergebnisse als Write-Plan ausführt.`)
+  console.log(`  Write-Modus (nach Freigabe):`)
+  console.log(`    node scripts/migrate-band-videos.mjs --write --confirm-delete-insert-video-migration`)
+  console.log(DLINE)
+  console.log(``)
+}
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+
+;(async () => {
+  const DLINE = '═'.repeat(66)
+  const LINE  = '─'.repeat(66)
+
+  const modeLabel = WRITE_MODE ? 'WRITE – DB-Schreibzugriffe aktiv' : 'DRY RUN – read-only'
+  console.log(`\n${DLINE}`)
+  console.log(`  migrate-band-videos.mjs  [${modeLabel}]`)
+  if (slugArg) console.log(`  Slug-Filter: ${slugArg}`)
+  console.log(`  Validierung identisch mit Laufzeit-Funktion getYouTubeEmbedUrl(),`)
+  console.log(`  Stand Zeile 37 in app/band/[slug]/page.tsx`)
+  console.log(DLINE)
+
+  // ── Daten laden ────────────────────────────────────────────────────────────
+  console.log('\nLade Airtable + Supabase-Daten …')
+
+  const [airtableRecords, sbData] = await Promise.all([
+    fetchAirtableBands(),
+    loadSupabaseData(),
+  ])
+
+  const { totalBands, totalVideos } = sbData
+
+  console.log(`  Airtable aktive Bands:          ${airtableRecords.length}`)
+  console.log(`  Supabase-Bands gesamt:          ${totalBands}`)
+  console.log(`  Supabase videos-Rows gesamt:    ${totalVideos}`)
+
+  // ── Slug-Filter (nur Dry-Run) ───────────────────────────────────────────────
+  let records = airtableRecords
+  if (slugArg) {
+    records = records.filter(r =>
+      r.fields['Slug']?.trim()?.toLowerCase() === slugArg.toLowerCase()
+    )
+    if (records.length === 0) {
+      console.error(`\n✗ Keine aktive Band mit Slug "${slugArg}" in Airtable gefunden`)
+      process.exit(1)
+    }
+  }
+
+  // ── Migrationsplan berechnen ────────────────────────────────────────────────
+  const { stats, report } = buildMigrationPlan(records, sbData)
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // DRY-RUN-PFAD: kein Write-Code erreichbar ab hier
+  // ══════════════════════════════════════════════════════════════════════════════
+  if (!WRITE_MODE) {
+    printDryRunReport(stats, report, totalBands, totalVideos, LINE, DLINE)
+    return
+    // ← Script endet hier im Dry-Run. Kein Supabase-Write-Code wird jemals erreicht.
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // WRITE-PFAD
+  //
+  // Nur erreichbar wenn WRITE_MODE === true
+  // = Gate 1 bestanden (beide Flags: --write + --confirm-delete-insert-video-migration)
+  //
+  // GATE 2: Pre-Flight-Re-Count
+  // Harte Prüfung der Migrationszahlen unmittelbar vor dem ersten Write.
+  // Bei jeder Abweichung: sofort abbrechen, nichts schreiben.
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  console.log(`\n${LINE}`)
+  console.log(`  PRE-FLIGHT RE-COUNT (Gate 2) – Prüfe Migrationszahlen vor erstem Write …`)
+  console.log(LINE)
+
+  // Erwartete Zahlen (fixiert durch Dry-Run-Freigabe)
+  const EXPECTED = {
+    airtableTotal:         142,
+    airtableWithVideoLink: 101,
+    airtableValidUrl:       98,
+    airtableInvalidUrl:      3,
+    matched:               142,
+    unmatched:               0,
+    plannedInsert:          97,
+    plannedReplace:          1,
+  }
+  const EXPECTED_REPLACE_SLUG    = 'donnaweda'
+  const EXPECTED_REPLACE_OLD_URL = 'https://www.youtube.com/watch?v=donnaweda-oberkoelitz'
+  const EXPECTED_REPLACE_NEW_URL = 'https://www.youtube.com/watch?v=Kb4G0sWa68Y'
+
+  const deviations = []
+
+  for (const [key, expected] of Object.entries(EXPECTED)) {
+    const actual = stats[key]
+    if (actual !== expected) {
+      deviations.push(`  ✗ ${key}: erwartet ${expected}, ist ${actual}`)
+    }
+  }
+
+  // Planned Replace muss Donnaweda sein
+  const replace0 = report.plannedReplaces[0]
+  if (!replace0 || replace0.slug !== EXPECTED_REPLACE_SLUG) {
+    deviations.push(
+      `  ✗ plannedReplaces[0].slug: erwartet "${EXPECTED_REPLACE_SLUG}", ist "${replace0?.slug ?? 'undefined'}"`
+    )
+  }
+  if (!replace0 || replace0.oldUrl !== EXPECTED_REPLACE_OLD_URL) {
+    deviations.push(
+      `  ✗ plannedReplaces[0].oldUrl: erwartet "${EXPECTED_REPLACE_OLD_URL}", ist "${replace0?.oldUrl ?? 'undefined'}"`
+    )
+  }
+  if (!replace0 || replace0.newUrl !== EXPECTED_REPLACE_NEW_URL) {
+    deviations.push(
+      `  ✗ plannedReplaces[0].newUrl: erwartet "${EXPECTED_REPLACE_NEW_URL}", ist "${replace0?.newUrl ?? 'undefined'}"`
+    )
+  }
+
+  if (deviations.length > 0) {
+    console.error(`\n✗ PRE-FLIGHT FEHLGESCHLAGEN – ${deviations.length} Abweichung(en) von erwarteten Zahlen:`)
+    console.error(deviations.join('\n'))
+    console.error(`\n  Keine DB-Writes wurden ausgeführt. Bitte Abweichung prüfen.`)
+    console.error(`  Ursache kann z.B. ein zwischenzeitliches Airtable-Edit sein.`)
+    process.exit(1)
+  }
+
+  console.log(`  ✓ Alle 10 Pre-Flight-Checks bestanden:`)
+  console.log(`    airtableTotal=142, airtableWithVideoLink=101, airtableValidUrl=98`)
+  console.log(`    airtableInvalidUrl=3, matched=142, unmatched=0`)
+  console.log(`    plannedInsert=97, plannedReplace=1, Replace=Donnaweda ✓`)
+
+  // ── Sicherheitsausgabe vor erstem Write ────────────────────────────────────
+  console.log(`\n${DLINE}`)
+  console.log(`  WRITE-MODUS – ACHTUNG: Echte DB-Schreibzugriffe folgen`)
+  console.log(DLINE)
+  console.log(``)
+  console.log(`  Gate 1 (Doppel-Flag):    ✓ --write + --confirm-delete-insert-video-migration`)
+  console.log(`  Gate 2 (Pre-Flight):      ✓ alle Zahlen stimmen`)
+  console.log(``)
+  console.log(`  Geplante Operationen:`)
+  console.log(`    Planned Inserts:         ${stats.plannedInsert}   (neue videos-Rows)`)
+  console.log(`    Planned Replaces:        ${stats.plannedReplace}   (DELETE alt + INSERT neu)`)
+  console.log(`    Ungültige URLs:          ${stats.airtableInvalidUrl}   (werden übersprungen)`)
+  console.log(``)
+  console.log(`  Scope der DELETEs:`)
+  console.log(`    Tabelle:   videos`)
+  console.log(`    Filter:    band_id = <konkrete ID> AND platform = 'youtube'`)
+  console.log(`    Kein globaler DELETE. Kein DELETE nur nach platform.`)
+  console.log(`    Kein DELETE für andere Plattformen, media_assets oder social_profiles.`)
+  console.log(``)
+  console.log(`  Strategie: DELETE + INSERT sequenziell pro Band (kein Upsert, keine Transaktion).`)
+  console.log(`  PostgREST bietet keine Transaktion über den Gesamtlauf.`)
+  console.log(`  Pre-Flight-Prüfung reduziert Risiko, ersetzt aber keine Transaktion.`)
+  console.log(``)
+  console.log(`  Donnaweda-Sonderfall:`)
+  console.log(`    DELETE: https://www.youtube.com/watch?v=donnaweda-oberkoelitz`)
+  console.log(`    INSERT: https://www.youtube.com/watch?v=Kb4G0sWa68Y`)
+  console.log(DLINE)
+
+  // ── Write-Schleife ─────────────────────────────────────────────────────────
+  //
+  // Reihenfolge: Replaces zuerst (Donnaweda), dann Inserts.
+  // Ungültige URLs sind nicht in den Listen — werden niemals geschrieben.
+  //
+  // Jeder Schreibzugriff auf supabaseService erst hier — nach Gate 1 + Gate 2.
+
+  const allOps = [
+    ...report.plannedReplaces,  // 1 (Donnaweda)
+    ...report.plannedInserts,   // 97
+  ]
+
+  let successCount  = 0
+  let skippedCount  = 0
+
+  console.log(`\nStarte Migration (${allOps.length} Operationen) …\n`)
+
+  for (const op of allOps) {
+    const { bandName, slug, bandId, newUrl, url, isPlaceholder } = op
+    const writeUrl = newUrl ?? url  // Replace hat newUrl, Insert hat url
+
+    // Doppelcheck: nur gültige URLs schreiben (redundant, aber defensiv)
+    if (!getYouTubeEmbedUrl(writeUrl)) {
+      console.warn(`  ⚠ ÜBERSPRUNGEN (ungültige URL): ${bandName} (${slug}) – ${writeUrl}`)
+      skippedCount++
+      continue
+    }
+
+    const isReplace = Boolean(newUrl)
+    const opLabel   = isReplace ? `REPLACE${isPlaceholder ? ' [Placeholder]' : ''}` : 'INSERT'
+
+    // 1. DELETE – ausschließlich band_id + platform = 'youtube'
+    if (isReplace) {
+      console.log(`  ↻ ${opLabel}: ${bandName} (${slug})`)
+      console.log(`    DELETE WHERE band_id=${bandId} AND platform='youtube' …`)
+
+      const { error: delErr } = await supabaseService
+        .from('videos')
+        .delete()
+        .eq('band_id', bandId)
+        .eq('platform', 'youtube')
+
+      if (delErr) {
+        console.error(`\n✗ FEHLER bei DELETE – ${bandName} (${slug})`)
+        console.error(`  Fehler: ${delErr.message}`)
+        console.error(`  Bisher erfolgreich: ${successCount} von ${allOps.length}`)
+        console.error(`  Offene Bänder: ${allOps.length - successCount - 1}`)
+        console.error(`  DELETE fehlgeschlagen, INSERT nicht ausgeführt.`)
+        console.error(`  Keine weiteren Writes. Bitte Datenbank-Zustand prüfen.`)
+        process.exit(1)
+      }
+
+      console.log(`    ✓ DELETE ok`)
+    } else {
+      console.log(`  + ${opLabel}: ${bandName} (${slug})`)
+    }
+
+    // 2. INSERT – eine Row: band_id, platform = 'youtube', url, sort_order = 1
+    console.log(`    INSERT band_id=${bandId}, platform='youtube', sort_order=1 …`)
+
+    const { error: insErr } = await supabaseService
+      .from('videos')
+      .insert({
+        band_id:    bandId,
+        platform:   'youtube',
+        url:        writeUrl,
+        sort_order: 1,
+      })
+
+    if (insErr) {
+      const deleteStatus = isReplace
+        ? 'DELETE bereits ausgeführt (alte Row entfernt)'
+        : 'Kein vorheriges DELETE (war Insert-Only-Operation)'
+      console.error(`\n✗ FEHLER bei INSERT – ${bandName} (${slug})`)
+      console.error(`  Fehler: ${insErr.message}`)
+      console.error(`  ${deleteStatus}`)
+      console.error(`  Bisher erfolgreich: ${successCount} von ${allOps.length}`)
+      console.error(`  Offene Bänder: ${allOps.length - successCount - 1}`)
+      console.error(`  Keine weiteren Writes. Bitte Datenbank-Zustand prüfen.`)
+      process.exit(1)
+    }
+
+    console.log(`    ✓ INSERT ok`)
+    successCount++
+  }
+
+  // ── Abschluss-Report ───────────────────────────────────────────────────────
+  console.log(`\n${DLINE}`)
+  console.log(`  WRITE-MIGRATION ABGESCHLOSSEN`)
+  console.log(DLINE)
+  console.log(``)
+  console.log(`  Erfolgreich:    ${successCount} von ${allOps.length} Operationen`)
+  console.log(`  Übersprungen:   ${skippedCount} (ungültige URLs)`)
+  console.log(`  Ungültige URLs (nicht migriert): ${stats.airtableInvalidUrl}`)
+  console.log(`    - 5toBeat, des Brassd scho!, Die Lausbuba`)
+  console.log(``)
+  console.log(`  Strategie: DELETE + INSERT sequenziell (kein Upsert, keine Transaktion)`)
+  console.log(`  Scope: Tabelle videos, platform = 'youtube', je band_id`)
   console.log(DLINE)
   console.log(``)
 })()
