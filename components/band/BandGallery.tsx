@@ -22,7 +22,7 @@ export function BandGallery({ band }: Props) {
         </h2>
 
         {/* Mobile: erstes Bild oben, Rest 2-col */}
-        <div className="md:hidden space-y-3">
+        <div className="md:hidden space-y-4">
           <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden">
             <Image
               src={displayed[0].url}
@@ -33,7 +33,7 @@ export function BandGallery({ band }: Props) {
             />
           </div>
           {sideImages.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {sideImages.map((img, i) => {
                 const isLast = i === sideImages.length - 1;
                 return (
@@ -60,7 +60,7 @@ export function BandGallery({ band }: Props) {
         </div>
 
         {/* Desktop: editorial grid */}
-        <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr] md:grid-rows-2 gap-3 md:h-[440px]">
+        <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr] md:grid-rows-2 gap-4 md:h-[440px]">
           {/* Großes Bild links, überspannt beide Zeilen */}
           <div className="row-span-2 relative rounded-xl overflow-hidden">
             <Image
