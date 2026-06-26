@@ -63,7 +63,7 @@ export default async function VeranstaltungPage({ params }: Props) {
             sizes="100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-          <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="relative z-10 pl-container-shell">
             <Link
               href="/bands"
               className="text-white/50 text-sm hover:text-white/80 motion-safe:transition-colors mb-6 inline-block"
@@ -78,7 +78,7 @@ export default async function VeranstaltungPage({ params }: Props) {
         </section>
       ) : (
         <section className="bg-pl-bg py-16 px-4 sm:px-6">
-          <div className="max-w-6xl mx-auto">
+          <div className="pl-container-shell">
             <Link
               href="/bands"
               className="text-pl-text-muted text-sm hover:text-pl-text motion-safe:transition-colors mb-6 inline-block"
@@ -95,7 +95,7 @@ export default async function VeranstaltungPage({ params }: Props) {
 
       {/* Grid oder Empty State */}
       <section className="bg-pl-canvas py-16 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="pl-container-shell">
           {bands.length === 0 ? (
             <div className="py-12">
               <p className="text-pl-text-muted text-lg mb-2">
@@ -133,7 +133,7 @@ export default async function VeranstaltungPage({ params }: Props) {
       {/* Verwandte Kategorien – immer sichtbar */}
       {related.length > 0 && (
         <section className="py-12 px-4 sm:px-6 border-t border-white/5">
-          <div className="max-w-6xl mx-auto">
+          <div className="pl-container-shell">
             <h2 className="text-base font-semibold text-pl-text mb-4">
               Weitere Anlässe entdecken
             </h2>
