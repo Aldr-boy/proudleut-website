@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
-import { updateBandAction, createContactAction, updateContactAction, updateBandEventTypesAction, updateBandBandTypesAction } from './actions'
+import { updateBandAction, createContactAction, updateContactAction, updateBandEventTypesAction, updateBandBandTypesAction, updateBandVideoAction } from './actions'
 import { logoutAction } from '@/app/admin/actions'
 import { DeleteContactButton } from './DeleteContactButton'
 
@@ -50,6 +50,12 @@ const EVENT_TYPES_ERROR_MESSAGES: Record<string, string> = {
   invalid_band:       'Band nicht gefunden.',
   invalid_event_type: 'Ungültige Event-Type-ID – bitte Seite neu laden.',
   db_error:           'Datenbankfehler – bitte erneut versuchen.',
+}
+
+const VIDEO_ERROR_MESSAGES: Record<string, string> = {
+  invalid_url: 'Ungültiger YouTube-Link. Bitte einen konkreten Video-Link eingeben (z. B. youtube.com/watch?v=…).',
+  db_error: 'Datenbankfehler – bitte erneut versuchen.',
+  load_failed: 'Fehler beim Laden – bitte Seite neu laden, bevor du das Feld bearbeitest.',
 }
 
 const BAND_TYPES_ERROR_MESSAGES: Record<string, string> = {
@@ -155,6 +161,8 @@ type SearchParams = Promise<{
   event_types_error?: string
   band_types_saved?: string
   band_types_error?: string
+  video_saved?: string
+  video_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -244,6 +252,16 @@ export default async function AdminBandDetailPage({
     assignedBandTypeRows.filter(r => !r.is_primary).map(r => r.band_type_id)
   )
 
+  const { data: videoRow, error: videoLoadError } = await client
+    .from('videos')
+    .select('url')
+    .eq('band_id', id)
+    .eq('platform', 'youtube')
+    .maybeSingle()
+
+  const videoLoaded = !videoLoadError
+  const existingVideoUrl = videoRow?.url ?? ''
+
   const showSuccess = !!sp.saved || !!sp.created
   const hasFormError = !!sp.e_form
   const contactErrorMsg = sp.contact_error
@@ -254,6 +272,9 @@ export default async function AdminBandDetailPage({
     : null
   const bandTypesErrorMsg = sp.band_types_error
     ? (BAND_TYPES_ERROR_MESSAGES[sp.band_types_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const videoErrorMsg = sp.video_error
+    ? (VIDEO_ERROR_MESSAGES[sp.video_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -754,6 +775,61 @@ export default async function AdminBandDetailPage({
           </div>
         </div>
         {/* ─── Ende Kontakte ─────────────────────────── */}
+
+        {/* ─── Video ────────────────────────────────── */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Video</h2>
+
+          {sp.video_saved && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-green-700 text-sm">
+              Gespeichert.
+            </div>
+          )}
+          {videoErrorMsg && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-700 text-sm">
+              {videoErrorMsg}
+            </div>
+          )}
+          {!videoLoaded && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-amber-700 text-sm">
+              Fehler beim Laden des Video-Links. Zum Schutz vor Datenverlust kann das Feld nicht gespeichert werden. Bitte Seite neu laden.
+            </div>
+          )}
+
+          <form action={updateBandVideoAction}>
+            <input type="hidden" name="band_id" value={band.id} />
+            {videoLoaded && <input type="hidden" name="video_loaded" value="1" />}
+
+            <div>
+              <label htmlFor="youtube_url" className="block text-sm font-medium text-gray-700 mb-1">
+                YouTube Video Link
+              </label>
+              <input
+                id="youtube_url"
+                name="youtube_url"
+                type="url"
+                defaultValue={existingVideoUrl}
+                placeholder="https://www.youtube.com/watch?v=…"
+                disabled={!videoLoaded}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Konkreter YouTube-Video-Link für die Banddetailseite. Bitte keinen Kanal- oder Playlist-Link eintragen.
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <button
+                type="submit"
+                disabled={!videoLoaded}
+                className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Speichern
+              </button>
+            </div>
+          </form>
+        </div>
+        {/* ─── Ende Video ─────────────────────────────── */}
 
         {/* Edit form */}
         <form action={updateBandAction} className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">

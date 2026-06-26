@@ -1,6 +1,7 @@
 'use server'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getYouTubeEmbedUrl } from '@/lib/youtube'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -551,4 +552,54 @@ export async function updateBandBandTypesAction(formData: FormData): Promise<nev
   }
 
   redirect(`/admin/bands/${band_id}?band_types_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// updateBandVideoAction
+// ─────────────────────────────────────────
+
+export async function updateBandVideoAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  // Datenverlust-Schutz: Sentinel ist nur vorhanden wenn das Video-Query beim
+  // Seitenaufruf erfolgreich war. Fehlt er, brechen wir ab statt leer zu schreiben.
+  const videoLoadedSentinel = formData.get('video_loaded')
+  if (videoLoadedSentinel === null) {
+    redirect(`/admin/bands/${band_id}?video_error=load_failed`)
+  }
+
+  const rawUrl = str(formData, 'youtube_url')
+  const client = createAdminClient()
+
+  if (!rawUrl) {
+    // Leerfeld → bestehende YouTube-Row dieser Band löschen (kein Touch anderer Rows)
+    const { error } = await client
+      .from('videos')
+      .delete()
+      .eq('band_id', band_id)
+      .eq('platform', 'youtube')
+    if (error) redirect(`/admin/bands/${band_id}?video_error=db_error`)
+    redirect(`/admin/bands/${band_id}?video_saved=1`)
+  }
+
+  // URL validieren
+  if (!getYouTubeEmbedUrl(rawUrl)) {
+    redirect(`/admin/bands/${band_id}?video_error=invalid_url`)
+  }
+
+  // DELETE + INSERT (kein upsert – kein bestätigter UNIQUE-Constraint auf videos(band_id, platform))
+  const { error: deleteError } = await client
+    .from('videos')
+    .delete()
+    .eq('band_id', band_id)
+    .eq('platform', 'youtube')
+  if (deleteError) redirect(`/admin/bands/${band_id}?video_error=db_error`)
+
+  const { error: insertError } = await client
+    .from('videos')
+    .insert({ band_id, platform: 'youtube', url: rawUrl, sort_order: 1 })
+  if (insertError) redirect(`/admin/bands/${band_id}?video_error=db_error`)
+
+  redirect(`/admin/bands/${band_id}?video_saved=1`)
 }
