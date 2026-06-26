@@ -53,8 +53,8 @@ export function BandSocialIndex({ band, compactTop }: Props) {
   if (cards.length === 0) return null;
 
   return (
-    <div className={compactTop ? 'pt-8 pb-12 md:pb-14' : 'py-12 md:py-14'}>
-      <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
+    <div className={`${compactTop ? 'pt-8 pb-12 md:pb-14' : 'py-12 md:py-14'} px-4 sm:px-6`}>
+      <div className="pl-container-shell">
         <p
           className="text-xs font-semibold uppercase tracking-wider mb-2"
           style={{ color: 'rgba(196,168,216,0.5)' }}

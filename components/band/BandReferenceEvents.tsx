@@ -18,8 +18,8 @@ export function BandReferenceEvents({ band, compactBottom }: Props) {
   const hasMore = band.referenceEvents.length > INITIAL_COUNT;
 
   return (
-    <div className={compactBottom ? 'pt-12 md:pt-16 pb-8' : 'py-12 md:py-16'}>
-      <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
+    <div className={`${compactBottom ? 'pt-12 md:pt-16 pb-8' : 'py-12 md:py-16'} px-4 sm:px-6`}>
+      <div className="pl-container-shell">
         <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-2">
           Referenz-Events
         </p>
