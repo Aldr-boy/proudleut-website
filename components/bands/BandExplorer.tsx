@@ -18,7 +18,7 @@ let plzCoordsCache: Record<string, [number, number]> | null = null;
 
 async function loadPlzCoords(): Promise<Record<string, [number, number]>> {
   if (plzCoordsCache) return plzCoordsCache;
-  const res = await fetch('/data/plz-coords-de.json');
+  const res = await fetch('/data/plz-coords.json');
   plzCoordsCache = (await res.json()) as Record<string, [number, number]>;
   return plzCoordsCache;
 }
@@ -71,7 +71,7 @@ function buildUrl(params: {
   return qs ? `/bands?${qs}` : '/bands';
 }
 
-const PLZ_RE = /^\d{5}$/;
+const PLZ_RE = /^\d{4,5}$/;
 const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
 type OpenPanel = 'anlass' | 'region' | 'bandtyp' | null;
