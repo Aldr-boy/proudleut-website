@@ -603,3 +603,87 @@ export async function updateBandVideoAction(formData: FormData): Promise<never> 
 
   redirect(`/admin/bands/${band_id}?video_saved=1`)
 }
+
+// ─────────────────────────────────────────
+// updateLocationAction (Variante A-safe)
+// Erlaubt nur UPDATE bestehender, exklusiver Locations.
+// Kein INSERT, kein Clone, kein Umhängen von home_location_id.
+// geo_point wird niemals geschrieben — Trigger trg_locations_geo_point übernimmt das.
+// ─────────────────────────────────────────
+
+export async function updateLocationAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  // home_location_id immer frisch aus DB lesen — nie aus hidden form field vertrauen
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('home_location_id')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?location_error=invalid_band`)
+
+  const home_location_id = bandRow.home_location_id as string | null
+  if (!home_location_id) redirect(`/admin/bands/${band_id}?location_error=no_location`)
+
+  // Eingabe validieren
+  const plzRaw = str(formData, 'plz')
+  const city_name = str(formData, 'city_name')
+  const latStr = str(formData, 'latitude')
+  const lonStr = str(formData, 'longitude')
+
+  if (plzRaw !== '' && !/^\d{4,5}$/.test(plzRaw)) {
+    redirect(`/admin/bands/${band_id}?location_error=invalid_plz`)
+  }
+  if (!city_name || city_name.length > 200) {
+    redirect(`/admin/bands/${band_id}?location_error=invalid_city`)
+  }
+
+  // latitude und longitude müssen gemeinsam gesetzt oder gemeinsam leer sein
+  const hasLat = latStr !== ''
+  const hasLon = lonStr !== ''
+  if (hasLat !== hasLon) {
+    redirect(`/admin/bands/${band_id}?location_error=invalid_coordinates`)
+  }
+
+  let latitude: number | null = null
+  let longitude: number | null = null
+  if (hasLat && hasLon) {
+    latitude = parseFloat(latStr)
+    longitude = parseFloat(lonStr)
+    if (!isFinite(latitude) || !isFinite(longitude)) {
+      redirect(`/admin/bands/${band_id}?location_error=invalid_coordinates`)
+    }
+  }
+
+  // Exklusivitätsprüfung: wie viele Bands nutzen dieselbe home_location_id?
+  const { count: usageCount, error: countError } = await client
+    .from('bands')
+    .select('*', { count: 'exact', head: true })
+    .eq('home_location_id', home_location_id)
+
+  if (countError || usageCount === null) {
+    redirect(`/admin/bands/${band_id}?location_error=db_error`)
+  }
+  if (usageCount !== 1) {
+    redirect(`/admin/bands/${band_id}?location_error=shared_location`)
+  }
+
+  // UPDATE — nur erlaubte Felder, geo_point niemals in payload
+  const { error: updateError } = await client
+    .from('locations')
+    .update({
+      plz: plzRaw || null,
+      city_name,
+      latitude,
+      longitude,
+    })
+    .eq('id', home_location_id)
+
+  if (updateError) redirect(`/admin/bands/${band_id}?location_error=db_error`)
+
+  redirect(`/admin/bands/${band_id}?location_saved=1`)
+}

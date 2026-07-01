@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { updateBandAction, createContactAction, updateContactAction, updateBandEventTypesAction, updateBandBandTypesAction, updateBandVideoAction } from './actions'
 import { logoutAction } from '@/app/admin/actions'
 import { DeleteContactButton } from './DeleteContactButton'
+import { LocationEditSection } from './LocationEditSection'
+import type { LocationData } from './LocationEditSection'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Band bearbeiten' }
@@ -56,6 +58,16 @@ const VIDEO_ERROR_MESSAGES: Record<string, string> = {
   invalid_url: 'Ungültiger YouTube-Link. Bitte einen konkreten Video-Link eingeben (z. B. youtube.com/watch?v=…).',
   db_error: 'Datenbankfehler – bitte erneut versuchen.',
   load_failed: 'Fehler beim Laden – bitte Seite neu laden, bevor du das Feld bearbeitest.',
+}
+
+const LOCATION_ERROR_MESSAGES: Record<string, string> = {
+  no_location:          'Für diese Band ist noch keine Home-Location verknüpft. Dieser Admin kann aktuell nur bestehende, exklusive Standorte bearbeiten.',
+  invalid_band:         'Band nicht gefunden.',
+  shared_location:      'Diese Location wird von mehreren Bands genutzt. Änderungen sind in dieser Band-Maske gesperrt.',
+  invalid_plz:          'PLZ muss 4 oder 5 Ziffern haben.',
+  invalid_city:         'Ort/Stadt darf nicht leer sein.',
+  invalid_coordinates:  'Latitude und Longitude müssen gültige Zahlen sein und gemeinsam gesetzt oder gemeinsam leer sein.',
+  db_error:             'Datenbankfehler – bitte erneut versuchen.',
 }
 
 const BAND_TYPES_ERROR_MESSAGES: Record<string, string> = {
@@ -121,7 +133,8 @@ type BandDetail = {
   lineup_flexibility: string
   default_member_count: number | null
   website_url: string | null
-  locations: { city_name: string } | null
+  home_location_id: string | null
+  locations: LocationData | null
   band_profiles: {
     short_description: string | null
     main_text: string | null
@@ -163,6 +176,8 @@ type SearchParams = Promise<{
   band_types_error?: string
   video_saved?: string
   video_error?: string
+  location_saved?: string
+  location_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -195,7 +210,8 @@ export default async function AdminBandDetailPage({
     .select(`
       id, name, slug, status, is_published,
       lineup_flexibility, default_member_count, website_url,
-      locations(city_name),
+      home_location_id,
+      locations(id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude, geo_point),
       band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier, wedding_description, wedding_possible_playtimes, wedding_constellation, wedding_fee_range, wedding_kidnapping_bride, wedding_moderation),
       band_contacts(id, contact_name, email, phone, contact_role, is_public, is_primary_inquiry, created_at, updated_at)
     `)
@@ -262,6 +278,15 @@ export default async function AdminBandDetailPage({
   const videoLoaded = !videoLoadError
   const existingVideoUrl = videoRow?.url ?? ''
 
+  let locationUsageCount = 0
+  if (band.home_location_id) {
+    const { count } = await client
+      .from('bands')
+      .select('*', { count: 'exact', head: true })
+      .eq('home_location_id', band.home_location_id)
+    locationUsageCount = count ?? 0
+  }
+
   const showSuccess = !!sp.saved || !!sp.created
   const hasFormError = !!sp.e_form
   const contactErrorMsg = sp.contact_error
@@ -275,6 +300,9 @@ export default async function AdminBandDetailPage({
     : null
   const videoErrorMsg = sp.video_error
     ? (VIDEO_ERROR_MESSAGES[sp.video_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const locationErrorMsg = sp.location_error
+    ? (LOCATION_ERROR_MESSAGES[sp.location_error] ?? 'Standort konnte nicht gespeichert werden.')
     : null
 
   return (
@@ -312,13 +340,14 @@ export default async function AdminBandDetailPage({
           </div>
         )}
 
-        {/* Read-only: Standort */}
-        {location && (
-          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
-            <h2 className="text-sm font-medium text-gray-700 mb-3">Standort (read-only)</h2>
-            <p className="text-sm text-gray-800">{location.city_name}</p>
-          </div>
-        )}
+        {/* Standort bearbeiten */}
+        <LocationEditSection
+          bandId={band.id}
+          location={location}
+          locationUsageCount={locationUsageCount}
+          successMsg={sp.location_saved ? 'Standort gespeichert.' : undefined}
+          errorMsg={locationErrorMsg ?? undefined}
+        />
 
         {/* ─── Event-Types ──────────────────────────── */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
