@@ -737,28 +737,35 @@ export async function searchLocationsAction(query: string): Promise<LocationSear
   const rows = data ?? []
   if (rows.length === 0) return { ok: true, results: [] }
 
-  // band_count pro Treffer – read-only Count-Query je Zeile (max. 20, unkritisch für Admin-Traffic)
-  const results: LocationSearchResult[] = await Promise.all(
-    rows.map(async (loc) => {
-      const { count } = await client
-        .from('bands')
-        .select('*', { count: 'exact', head: true })
-        .eq('home_location_id', loc.id)
+  // band_count für alle Treffer gebündelt ermitteln (1 Query statt bis zu 20 Einzel-Counts)
+  const locationIds = rows.map((loc) => loc.id as string)
+  const { data: usageRows, error: usageError } = await client
+    .from('bands')
+    .select('home_location_id')
+    .in('home_location_id', locationIds)
 
-      return {
-        id: loc.id as string,
-        plz: loc.plz as string | null,
-        city_name: loc.city_name as string,
-        landkreis: loc.landkreis as string | null,
-        regierungsbezirk: loc.regierungsbezirk as string | null,
-        bundesland: loc.bundesland as string | null,
-        country: loc.country as string | null,
-        country_code: loc.country_code as string | null,
-        geo_complete: loc.latitude != null && loc.longitude != null && loc.geo_point != null,
-        band_count: count ?? 0,
-      }
-    }),
-  )
+  if (usageError) return { ok: false, error: 'db_error' }
+
+  const countByLocationId = new Map<string, number>()
+  for (const row of usageRows ?? []) {
+    const locId = row.home_location_id as string | null
+    if (!locId) continue
+    countByLocationId.set(locId, (countByLocationId.get(locId) ?? 0) + 1)
+  }
+
+  // Reihenfolge von rows bleibt unverändert – Map liefert nur die Zusatzwerte
+  const results: LocationSearchResult[] = rows.map((loc) => ({
+    id: loc.id as string,
+    plz: loc.plz as string | null,
+    city_name: loc.city_name as string,
+    landkreis: loc.landkreis as string | null,
+    regierungsbezirk: loc.regierungsbezirk as string | null,
+    bundesland: loc.bundesland as string | null,
+    country: loc.country as string | null,
+    country_code: loc.country_code as string | null,
+    geo_complete: loc.latitude != null && loc.longitude != null && loc.geo_point != null,
+    band_count: countByLocationId.get(loc.id as string) ?? 0,
+  }))
 
   return { ok: true, results }
 }
