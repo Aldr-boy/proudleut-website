@@ -687,3 +687,136 @@ export async function updateLocationAction(formData: FormData): Promise<never> {
 
   redirect(`/admin/bands/${band_id}?location_saved=1`)
 }
+
+// ─────────────────────────────────────────
+// searchLocationsAction (Home-Location wechseln — Suche)
+// Reiner Read gegen public.locations. Gibt Treffer direkt zurück
+// (kein redirect) — bewusste Abweichung vom sonstigen Actions-Muster,
+// weil eine Trefferliste (bis zu 20 Zeilen) über Redirect/searchParams
+// zu serialisieren unnötig fragil wäre. plz-coords.json wird hier
+// NICHT verwendet — das ist die Frontend-Suchquelle für /bands, nicht
+// die DB-Wahrheit.
+// ─────────────────────────────────────────
+
+export type LocationSearchResult = {
+  id: string
+  plz: string | null
+  city_name: string
+  landkreis: string | null
+  regierungsbezirk: string | null
+  bundesland: string | null
+  country: string | null
+  country_code: string | null
+  geo_complete: boolean
+  band_count: number
+}
+
+export type LocationSearchOutcome =
+  | { ok: true; results: LocationSearchResult[] }
+  | { ok: false; error: 'empty_query' | 'db_error' }
+
+export async function searchLocationsAction(query: string): Promise<LocationSearchOutcome> {
+  const trimmed = query.trim()
+  if (!trimmed) return { ok: false, error: 'empty_query' }
+
+  const client = createAdminClient()
+  const isPlzLike = /^\d{4,5}$/.test(trimmed)
+
+  let dbQuery = client
+    .from('locations')
+    .select('id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude, geo_point')
+    .limit(20)
+
+  dbQuery = isPlzLike
+    ? dbQuery.eq('plz', trimmed)
+    : dbQuery.ilike('city_name', `%${trimmed}%`)
+
+  const { data, error } = await dbQuery
+  if (error) return { ok: false, error: 'db_error' }
+
+  const rows = data ?? []
+  if (rows.length === 0) return { ok: true, results: [] }
+
+  // band_count pro Treffer – read-only Count-Query je Zeile (max. 20, unkritisch für Admin-Traffic)
+  const results: LocationSearchResult[] = await Promise.all(
+    rows.map(async (loc) => {
+      const { count } = await client
+        .from('bands')
+        .select('*', { count: 'exact', head: true })
+        .eq('home_location_id', loc.id)
+
+      return {
+        id: loc.id as string,
+        plz: loc.plz as string | null,
+        city_name: loc.city_name as string,
+        landkreis: loc.landkreis as string | null,
+        regierungsbezirk: loc.regierungsbezirk as string | null,
+        bundesland: loc.bundesland as string | null,
+        country: loc.country as string | null,
+        country_code: loc.country_code as string | null,
+        geo_complete: loc.latitude != null && loc.longitude != null && loc.geo_point != null,
+        band_count: count ?? 0,
+      }
+    }),
+  )
+
+  return { ok: true, results }
+}
+
+// ─────────────────────────────────────────
+// reassignLocationAction (Home-Location wechseln — Write)
+// Einziges geschriebenes Feld: bands.home_location_id.
+// Kein Insert/Update an locations, kein geo_point-Write, kein
+// updated_at im Payload (Trigger trg_bands_updated_at übernimmt das,
+// per SQL Editor verifiziert). Kein Exklusivitäts-Gate nötig, da der
+// Write nur eine Zeile in bands betrifft, keine geteilte locations-Zeile.
+// ─────────────────────────────────────────
+
+export async function reassignLocationAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  const new_location_id = str(formData, 'new_location_id')
+
+  if (!band_id) redirect('/admin/bands')
+  if (!new_location_id) {
+    redirect(`/admin/bands/${band_id}?location_reassign_error=missing_target`)
+  }
+
+  const client = createAdminClient()
+
+  // home_location_id immer frisch aus DB lesen — nie aus hidden form field vertrauen
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('home_location_id')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?location_reassign_error=band_not_found`)
+
+  const current_location_id = bandRow.home_location_id as string | null
+
+  // No-Op-Guard: Ziel ist bereits die aktuelle Home-Location
+  if (current_location_id === new_location_id) {
+    redirect(`/admin/bands/${band_id}?location_reassign_error=same_location`)
+  }
+
+  // Existenzprüfung der Ziel-Location
+  const { data: targetLocation } = await client
+    .from('locations')
+    .select('id')
+    .eq('id', new_location_id)
+    .maybeSingle()
+
+  if (!targetLocation) {
+    redirect(`/admin/bands/${band_id}?location_reassign_error=location_not_found`)
+  }
+
+  // Einziger Write: nur home_location_id, kein Touch an locations
+  const { error: updateError } = await client
+    .from('bands')
+    .update({ home_location_id: new_location_id })
+    .eq('id', band_id)
+
+  if (updateError) redirect(`/admin/bands/${band_id}?location_reassign_error=db_error`)
+
+  redirect(`/admin/bands/${band_id}?location_reassign_saved=1`)
+}

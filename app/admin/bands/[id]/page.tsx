@@ -6,6 +6,7 @@ import { logoutAction } from '@/app/admin/actions'
 import { DeleteContactButton } from './DeleteContactButton'
 import { LocationEditSection } from './LocationEditSection'
 import type { LocationData } from './LocationEditSection'
+import { LocationReassignSection } from './LocationReassignSection'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Band bearbeiten' }
@@ -68,6 +69,14 @@ const LOCATION_ERROR_MESSAGES: Record<string, string> = {
   invalid_city:         'Ort/Stadt darf nicht leer sein.',
   invalid_coordinates:  'Latitude und Longitude müssen gültige Zahlen sein und gemeinsam gesetzt oder gemeinsam leer sein.',
   db_error:             'Datenbankfehler – bitte erneut versuchen.',
+}
+
+const LOCATION_REASSIGN_ERROR_MESSAGES: Record<string, string> = {
+  missing_target:     'Bitte eine Ziel-Location auswählen.',
+  band_not_found:     'Band nicht gefunden.',
+  same_location:      'Diese Location ist bereits die aktuelle Home-Location dieser Band.',
+  location_not_found: 'Ziel-Location nicht gefunden.',
+  db_error:           'Datenbankfehler – bitte erneut versuchen.',
 }
 
 const BAND_TYPES_ERROR_MESSAGES: Record<string, string> = {
@@ -178,6 +187,8 @@ type SearchParams = Promise<{
   video_error?: string
   location_saved?: string
   location_error?: string
+  location_reassign_saved?: string
+  location_reassign_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -304,6 +315,9 @@ export default async function AdminBandDetailPage({
   const locationErrorMsg = sp.location_error
     ? (LOCATION_ERROR_MESSAGES[sp.location_error] ?? 'Standort konnte nicht gespeichert werden.')
     : null
+  const locationReassignErrorMsg = sp.location_reassign_error
+    ? (LOCATION_REASSIGN_ERROR_MESSAGES[sp.location_reassign_error] ?? 'Home-Location konnte nicht gewechselt werden.')
+    : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -347,6 +361,15 @@ export default async function AdminBandDetailPage({
           locationUsageCount={locationUsageCount}
           successMsg={sp.location_saved ? 'Standort gespeichert.' : undefined}
           errorMsg={locationErrorMsg ?? undefined}
+        />
+
+        {/* Home-Location wechseln */}
+        <LocationReassignSection
+          bandId={band.id}
+          currentLocation={location}
+          currentLocationUsageCount={locationUsageCount}
+          successMsg={sp.location_reassign_saved ? 'Home-Location gewechselt.' : undefined}
+          errorMsg={locationReassignErrorMsg ?? undefined}
         />
 
         {/* ─── Event-Types ──────────────────────────── */}
