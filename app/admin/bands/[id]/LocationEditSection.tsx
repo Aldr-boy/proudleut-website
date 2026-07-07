@@ -1,6 +1,52 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { updateLocationAction } from './actions'
+
+// Ab dieser Distanz gelten PLZ-Lookup-Koordinaten und eingetragene
+// Koordinaten als auffällig auseinanderliegend (reine UI-Warnung, kein Blocker).
+const PLZ_COORD_MISMATCH_THRESHOLD_KM = 15
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function toNumOrNull(v: string): number | null {
+  if (v.trim() === '') return null
+  const n = parseFloat(v)
+  return isFinite(n) ? n : null
+}
+
+// Modulweiter Cache für /data/plz-coords.json — einmalig laden, danach
+// aus dem Cache bedienen. Eigenständiges Pendant zu loadPlzCoords() aus
+// BandExplorer.tsx (dort nicht exportiert, hier bewusst nicht importiert).
+type PlzCoords = Record<string, [number, number]>
+
+let plzCoordsCache: PlzCoords | null = null
+let plzCoordsPromise: Promise<PlzCoords> | null = null
+
+function loadPlzCoords(): Promise<PlzCoords> {
+  if (plzCoordsCache) return Promise.resolve(plzCoordsCache)
+  if (!plzCoordsPromise) {
+    plzCoordsPromise = fetch('/data/plz-coords.json')
+      .then((res) => res.json())
+      .then((data: PlzCoords) => {
+        plzCoordsCache = data
+        return data
+      })
+      .catch((err) => {
+        // Bei Fehlschlag Promise zurücksetzen, damit ein späterer Versuch erneut lädt
+        plzCoordsPromise = null
+        throw err
+      })
+  }
+  return plzCoordsPromise
+}
 
 export type LocationData = {
   id: string
@@ -47,8 +93,7 @@ export function LocationEditSection({
       return
     }
     try {
-      const res = await fetch('/data/plz-coords.json')
-      const data = (await res.json()) as Record<string, [number, number]>
+      const data = await loadPlzCoords()
       const coords = data[trimmed]
       if (!coords) {
         setLookupMsg('PLZ nicht im Lookup gefunden. Koordinaten bitte manuell eintragen.')
@@ -91,6 +136,7 @@ export function LocationEditSection({
       ) : (
         <>
           <GeoStatusBadge geoComplete={geoComplete} />
+          <PlzCoordMismatchWarning plz={plz} latitude={toNumOrNull(lat)} longitude={toNumOrNull(lon)} />
 
           <form action={updateLocationAction}>
             <input type="hidden" name="band_id" value={bandId} />
@@ -226,6 +272,50 @@ function GeoStatusBadge({ geoComplete }: { geoComplete: boolean }) {
   )
 }
 
+function PlzCoordMismatchWarning({
+  plz,
+  latitude,
+  longitude,
+}: {
+  plz: string | null
+  latitude: number | null
+  longitude: number | null
+}) {
+  const [distanceKm, setDistanceKm] = useState<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const trimmedPlz = plz?.trim() ?? ''
+
+    if (!/^\d{4,5}$/.test(trimmedPlz) || latitude == null || longitude == null) {
+      setDistanceKm(null)
+      return
+    }
+
+    loadPlzCoords()
+      .then((data) => {
+        if (cancelled) return
+        const expected = data[trimmedPlz]
+        setDistanceKm(expected ? haversineKm(expected[0], expected[1], latitude, longitude) : null)
+      })
+      .catch(() => {
+        if (!cancelled) setDistanceKm(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [plz, latitude, longitude])
+
+  if (distanceKm == null || distanceKm <= PLZ_COORD_MISMATCH_THRESHOLD_KM) return null
+
+  return (
+    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+      ⚠ PLZ {plz} und die eingetragenen Koordinaten liegen ca. {Math.round(distanceKm)} km auseinander — bitte prüfen, ob sie zusammenpassen.
+    </p>
+  )
+}
+
 function LocationReadOnlyFields({
   location,
   geoComplete,
@@ -236,6 +326,7 @@ function LocationReadOnlyFields({
   return (
     <div>
       <GeoStatusBadge geoComplete={geoComplete} />
+      <PlzCoordMismatchWarning plz={location.plz} latitude={location.latitude} longitude={location.longitude} />
       <dl className="space-y-1 text-xs text-gray-700">
         {location.plz && (
           <div className="flex gap-2">
