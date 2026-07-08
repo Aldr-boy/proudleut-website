@@ -5,7 +5,17 @@ export async function getBandFromSupabase(slug: string) {
     .from('bands')
     .select(`
       *,
-      band_profiles (*),
+      band_profiles (
+        short_description,
+        main_text,
+        slogan,
+        meta_description,
+        wedding_description,
+        wedding_possible_playtimes,
+        wedding_constellation,
+        wedding_kidnapping_bride,
+        wedding_moderation
+      ),
       locations (*),
       media_assets (*),
       videos (*),
@@ -21,7 +31,6 @@ export async function getBandFromSupabase(slug: string) {
       band_relations!band_relations_source_band_id_fkey (
         relation_type,
         rank,
-        reason,
         target_band:bands!band_relations_target_band_id_fkey (
           id,
           name,
@@ -30,6 +39,7 @@ export async function getBandFromSupabase(slug: string) {
       )
     `)
     .eq('slug', slug)
+    .eq('status', 'active')
     .single()
 
   return { data, error }

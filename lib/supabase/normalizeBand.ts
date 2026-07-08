@@ -205,13 +205,17 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     kidnappingBride:    profile.wedding_kidnapping_bride === true  ? true
                       : profile.wedding_kidnapping_bride === false ? false
                       : null,
-    feeRange:           str(profile.wedding_fee_range),
     moderation:         profile.wedding_moderation === true  ? true
                       : profile.wedding_moderation === false ? false
                       : null,
     possiblePlaytimes:  str(profile.wedding_possible_playtimes),
     weddingDescription: str(profile.wedding_description),
   }
+  // wedding_fee_range ist ein interner Admin-Richtwert und wird in der
+  // öffentlichen Query bewusst nicht mehr geladen — RLS-Sicherheitsgrenze,
+  // siehe lib/supabase/queries.ts. feeRange bleibt im WeddingInfo-Typ,
+  // da der separate Airtable-Pfad (app/page.tsx, app/ueber-mich/page.tsx)
+  // ihn weiterhin setzt.
 
   return {
     id:   String(r.id ?? ''),
