@@ -25,18 +25,19 @@
 -- diesen Grant nicht entscheidungsrelevant.
 --
 -- Erweiterung 10.07.2026 (Codex-Review-Fund, P2, akzeptiert):
--- Die REVOKE-Zeile unten ist eine Sollzustand-Deklaration, kein
--- Live-Fix. Production wurde am 10.07.2026 verifiziert: service_role
--- hat INSERT/UPDATE/DELETE bereits = false auf band_relations, die
--- Zeile ist dort ein No-op. Sie dokumentiert nur explizit im Repo,
--- was der einzig legale Zugriffspfad ist -- fuer den Fall, dass dieses
--- Script je gegen eine neue/andere Umgebung ausgefuehrt wird. Anlass:
--- zwei Alt-Scripts (setup-grants-and-seed.sql,
--- grant-service-role-permissions-v2.sql) vergaben dort noch volle
--- Schreibrechte, im Widerspruch zum RPC-only-Schreibmodell -- siehe
--- deren jeweilige Kommentare fuer den Fix. Diese Erweiterung selbst
--- wurde noch nicht (erneut) ausgefuehrt -- Re-Execute folgt erst nach
--- expliziter Freigabe.
+-- Die REVOKE-Zeile unten ist eine Sollzustand-Deklaration. Sie
+-- dokumentiert explizit im Repo, was der einzig legale Zugriffspfad
+-- ist -- fuer den Fall, dass dieses Script je gegen eine neue/andere
+-- Umgebung ausgefuehrt wird. Anlass: zwei Alt-Scripts
+-- (setup-grants-and-seed.sql, grant-service-role-permissions-v2.sql)
+-- vergaben dort noch volle Schreibrechte, im Widerspruch zum
+-- RPC-only-Schreibmodell -- siehe deren jeweilige Kommentare fuer den
+-- Fix.
+--
+-- ERNEUT AUSGEFUEHRT: Production / Supabase SQL Editor, 10.07.2026
+-- VERIFIZIERT: service_role SELECT=true, INSERT/UPDATE/DELETE=false
+-- VERIFIZIERT: anon SELECT nur auf source_band_id, target_band_id,
+-- relation_type und rank
 -- ============================================================
 
 -- Sollzustand-Deklaration (idempotent, in Production bereits No-op):
