@@ -171,7 +171,10 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     .filter(re => re.eventName.length > 0)
 
   // Similar bands (band_relations, max 3, sorted by rank)
+  // Nur kuratierte relation_type='similar' -- 'alternative'/'often_together'/
+  // 'same_sound_world' sind keine "gefaellt mir"-Empfehlungen.
   const relations = asArr(r.band_relations as Row[] | null)
+    .filter(rel => rel.relation_type === 'similar')
     .sort((a, b) => {
       const aR = typeof a.rank === 'number' ? a.rank : Infinity
       const bR = typeof b.rank === 'number' ? b.rank : Infinity
