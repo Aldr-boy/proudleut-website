@@ -827,3 +827,67 @@ export async function reassignLocationAction(formData: FormData): Promise<never>
 
   redirect(`/admin/bands/${band_id}?location_reassign_saved=1`)
 }
+
+// ─────────────────────────────────────────
+// updateSimilarBandsAction (RPC public.set_similar_bands)
+// Schreibt ausschliesslich ueber die SECURITY DEFINER RPC -- service_role
+// hat bewusst KEINE INSERT/UPDATE/DELETE-Table-Grants auf band_relations.
+// Duplikat-/Selbstreferenz-/Max-3-/Status-Pruefung laeuft atomar in der
+// RPC; diese Action mapped nur die resultierenden PL-Fehlercodes auf
+// stabile String-Codes fuer die Fehlermeldungs-Map in page.tsx.
+// ─────────────────────────────────────────
+
+const SIMILAR_ERRCODE_TO_SLUG: Record<string, string> = {
+  PL001: 'similar_source_not_found',
+  PL002: 'similar_target_not_found',
+  PL003: 'similar_target_not_active',
+  PL004: 'similar_self_reference',
+  PL005: 'similar_too_many_targets',
+  PL006: 'similar_duplicate_target',
+  PL007: 'similar_targets_required',
+  PL008: 'similar_null_target',
+}
+
+const SIMILAR_MESSAGE_SLUGS = new Set(Object.values(SIMILAR_ERRCODE_TO_SLUG))
+
+// Primaer ueber error.code (PL-ERRCODE), error.message (Slug) nur als
+// Fallback, danach genereller db_error-Fallback.
+function similarErrorCode(error: { code?: string | null; message?: string | null }): string {
+  if (error.code && SIMILAR_ERRCODE_TO_SLUG[error.code]) return SIMILAR_ERRCODE_TO_SLUG[error.code]
+  if (error.message && SIMILAR_MESSAGE_SLUGS.has(error.message)) return error.message
+  return 'db_error'
+}
+
+export async function updateSimilarBandsAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  // band_id ist nur Lookup-Key -- Band frisch aus der DB lesen, nie aus
+  // dem Hidden Field selbst fuer die RPC vertrauen
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?similar_error=similar_source_not_found`)
+
+  // Slot-Werte -- leere Slots herausfiltern, Reihenfolge = Rank-Reihenfolge.
+  // Kompaktierung passiert hier; die RPC kompaktiert selbst nicht nach.
+  const p_target_band_ids = [
+    str(formData, 'slot_1'),
+    str(formData, 'slot_2'),
+    str(formData, 'slot_3'),
+  ].filter((v) => v !== '')
+
+  const { error } = await client.rpc('set_similar_bands', {
+    p_source_band_id: bandRow.id,
+    p_target_band_ids,
+  })
+
+  if (error) redirect(`/admin/bands/${bandRow.id}?similar_error=${similarErrorCode(error)}`)
+
+  redirect(`/admin/bands/${bandRow.id}?similar_saved=1`)
+}

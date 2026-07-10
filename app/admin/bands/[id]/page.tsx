@@ -7,6 +7,8 @@ import { DeleteContactButton } from './DeleteContactButton'
 import { LocationEditSection } from './LocationEditSection'
 import type { LocationData } from './LocationEditSection'
 import { LocationReassignSection } from './LocationReassignSection'
+import { SimilarBandsSection } from './SimilarBandsSection'
+import type { SimilarBandSlotData } from './SimilarBandsSection'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Band bearbeiten' }
@@ -77,6 +79,18 @@ const LOCATION_REASSIGN_ERROR_MESSAGES: Record<string, string> = {
   same_location:      'Diese Location ist bereits die aktuelle Home-Location dieser Band.',
   location_not_found: 'Ziel-Location nicht gefunden.',
   db_error:           'Datenbankfehler – bitte erneut versuchen.',
+}
+
+const SIMILAR_ERROR_MESSAGES: Record<string, string> = {
+  similar_source_not_found:    'Band nicht gefunden.',
+  similar_target_not_found:    'Eine ausgewählte Band existiert nicht mehr – bitte Seite neu laden.',
+  similar_target_not_active:   'Eine ausgewählte Band ist nicht aktiv/veröffentlicht und kann nicht empfohlen werden.',
+  similar_self_reference:      'Eine Band kann sich nicht selbst als ähnlich empfehlen.',
+  similar_too_many_targets:    'Maximal 3 ähnliche Bands möglich.',
+  similar_duplicate_target:    'Dieselbe Band wurde mehrfach ausgewählt.',
+  similar_targets_required:    'Unerwarteter Fehler beim Speichern – bitte Seite neu laden und erneut versuchen.',
+  similar_null_target:         'Unerwarteter Fehler beim Speichern – bitte Seite neu laden und erneut versuchen.',
+  db_error:                    'Datenbankfehler – bitte erneut versuchen.',
 }
 
 const BAND_TYPES_ERROR_MESSAGES: Record<string, string> = {
@@ -189,6 +203,8 @@ type SearchParams = Promise<{
   location_error?: string
   location_reassign_saved?: string
   location_reassign_error?: string
+  similar_saved?: string
+  similar_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -289,6 +305,50 @@ export default async function AdminBandDetailPage({
   const videoLoaded = !videoLoadError
   const existingVideoUrl = videoRow?.url ?? ''
 
+  // Aehnliche Bands: bestehende similar-Relations (Target inkl. Name/Slug,
+  // rank, reason) + Kandidatenliste (aktiv+veroeffentlicht, aktuelle Band
+  // ausgeschlossen). Target-FK wird explizit aliasiert, da band_relations
+  // zwei FKs auf bands hat (Source + Target) -- ohne Alias waere der Embed
+  // fuer PostgREST mehrdeutig.
+  const [
+    { data: similarRelationsRaw },
+    { data: candidateBandsRaw },
+  ] = await Promise.all([
+    client
+      .from('band_relations')
+      .select('rank, reason, target:bands!band_relations_target_band_id_fkey(id, name, slug)')
+      .eq('source_band_id', id)
+      .eq('relation_type', 'similar')
+      .order('rank', { ascending: true }),
+    client
+      .from('bands')
+      .select('id, name')
+      .eq('status', 'active')
+      .eq('is_published', true)
+      .neq('id', id)
+      .order('name', { ascending: true }),
+  ])
+
+  type SimilarRelationRow = {
+    rank: number | null
+    reason: string | null
+    target: { id: string; name: string; slug: string } | null
+  }
+
+  const similarRelations = (similarRelationsRaw ?? []) as unknown as SimilarRelationRow[]
+  const similarSlots: (SimilarBandSlotData | null)[] = [null, null, null]
+  for (const rel of similarRelations) {
+    if (rel.target && rel.rank !== null && rel.rank >= 1 && rel.rank <= 3) {
+      similarSlots[rel.rank - 1] = {
+        targetBandId: rel.target.id,
+        targetName: rel.target.name,
+        reason: rel.reason,
+      }
+    }
+  }
+
+  const candidateBands = (candidateBandsRaw ?? []) as { id: string; name: string }[]
+
   let locationUsageCount = 0
   if (band.home_location_id) {
     const { count } = await client
@@ -317,6 +377,9 @@ export default async function AdminBandDetailPage({
     : null
   const locationReassignErrorMsg = sp.location_reassign_error
     ? (LOCATION_REASSIGN_ERROR_MESSAGES[sp.location_reassign_error] ?? 'Home-Location konnte nicht gewechselt werden.')
+    : null
+  const similarErrorMsg = sp.similar_error
+    ? (SIMILAR_ERROR_MESSAGES[sp.similar_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -882,6 +945,15 @@ export default async function AdminBandDetailPage({
           </form>
         </div>
         {/* ─── Ende Video ─────────────────────────────── */}
+
+        {/* Aehnliche Bands pflegen */}
+        <SimilarBandsSection
+          bandId={band.id}
+          slots={similarSlots}
+          candidates={candidateBands}
+          successMsg={sp.similar_saved ? 'Ähnliche Bands gespeichert.' : undefined}
+          errorMsg={similarErrorMsg ?? undefined}
+        />
 
         {/* Edit form */}
         <form action={updateBandAction} className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
