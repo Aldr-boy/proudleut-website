@@ -72,7 +72,12 @@ ON TABLE public.band_repertoire_styles TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE
 ON TABLE public.band_services TO service_role;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
+-- band_relations: SELECT-only fuer service_role, kein direktes Schreiben.
+-- Schreibpfad ausschliesslich ueber die SECURITY DEFINER Funktion
+-- public.set_similar_bands() -- siehe supabase/fn_set_similar_bands.sql
+-- und supabase/band_relations_admin_read_grant.sql (Codex-Review-Fund,
+-- 10.07.2026, RPC-only-Schreibmodell).
+GRANT SELECT
 ON TABLE public.band_relations TO service_role;
 
 GRANT SELECT, INSERT, UPDATE, DELETE
@@ -113,7 +118,20 @@ GRANT SELECT ON TABLE public.band_lineups TO anon;
 GRANT SELECT ON TABLE public.lineups TO anon;
 GRANT SELECT ON TABLE public.band_services TO anon;
 GRANT SELECT ON TABLE public.services TO anon;
-GRANT SELECT ON TABLE public.band_relations TO anon;
+-- Public Read ist bewusst spaltenbegrenzt -- nur diese vier Spalten,
+-- konsistent mit dem live verifizierten Least-Privilege-Modell.
+-- reason/id/is_manual/confidence_score/Timestamps bleiben oeffentlich
+-- unsichtbar.
+REVOKE SELECT ON TABLE public.band_relations FROM anon;
+
+GRANT SELECT (
+  source_band_id,
+  target_band_id,
+  relation_type,
+  rank
+)
+ON public.band_relations
+TO anon;
 
 
 -- ── SCHRITT 3: Verifikation ───────────────────────────────────────────────────
