@@ -1,0 +1,28 @@
+-- ============================================================
+-- band_relations_admin_read_grant.sql
+--
+-- AUSGEFUEHRT: Production / Supabase SQL Editor, 10.07.2026
+-- VERIFIZIERT: service_role SELECT=true, INSERT/UPDATE/DELETE=false
+-- Nicht erneut ausfuehren ohne bewusste Entscheidung -- dieses Script
+-- bleibt nur als versioniertes Zugriffsmuster im Repo.
+--
+-- Zweck: service_role konnte public.band_relations urspruenglich nicht lesen
+-- (live bestaetigt: 403 permission denied fuer SELECT ueber
+-- createAdminClient()). Dieser Grant behebt ausschliesslich das
+-- Lesen -- fuer Admin "Aehnliche Bands pflegen".
+--
+-- Sprint: Admin "Aehnliche Bands pflegen" (Vorstufe/Zugriffsfix)
+-- Datum des Entwurfs: 10.07.2026
+--
+-- Bewusst NUR SELECT. Schreiben laeuft ausschliesslich ueber die
+-- separate SECURITY DEFINER Funktion public.set_similar_bands()
+-- (siehe supabase/fn_set_similar_bands.sql) -- service_role bekommt
+-- hier explizit KEIN INSERT/UPDATE/DELETE auf die Tabelle. Damit kann
+-- der service_role-Pfad band_relations lesen, aber nicht frei
+-- schreiben -- jede Aenderung muss durch die validierende Funktion.
+--
+-- Kein RLS-Bezug: service_role hat BYPASSRLS, Policies sind fuer
+-- diesen Grant nicht entscheidungsrelevant.
+-- ============================================================
+
+grant select on public.band_relations to service_role;
