@@ -310,34 +310,43 @@ export default async function AdminBandDetailPage({
   // ausgeschlossen). Target-FK wird explizit aliasiert, da band_relations
   // zwei FKs auf bands hat (Source + Target) -- ohne Alias waere der Embed
   // fuer PostgREST mehrdeutig.
+  type SimilarRelationRow = {
+    rank: number | null
+    reason: string | null
+    target: { id: string; name: string; slug: string } | null
+  }
+  type CandidateBandRow = { id: string; name: string }
+
   const [
-    { data: similarRelationsRaw },
-    { data: candidateBandsRaw },
+    { data: similarRelationsRaw, error: similarRelationsError },
+    { data: candidateBandsRaw, error: candidateBandsError },
   ] = await Promise.all([
     client
       .from('band_relations')
       .select('rank, reason, target:bands!band_relations_target_band_id_fkey(id, name, slug)')
       .eq('source_band_id', id)
       .eq('relation_type', 'similar')
-      .order('rank', { ascending: true }),
+      .order('rank', { ascending: true })
+      .returns<SimilarRelationRow[]>(),
     client
       .from('bands')
       .select('id, name')
       .eq('status', 'active')
       .eq('is_published', true)
       .neq('id', id)
-      .order('name', { ascending: true }),
+      .order('name', { ascending: true })
+      .returns<CandidateBandRow[]>(),
   ])
 
-  type SimilarRelationRow = {
-    rank: number | null
-    reason: string | null
-    target: { id: string; name: string; slug: string } | null
-  }
+  // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
+  // Kandidatenliste) behandelt werden -- sonst wuerde ein Speichern nach
+  // einem 403/Query-Fehler per leerem Array die bestehende Kuration
+  // loeschen. Bei Fehler rendert SimilarBandsSection nur einen
+  // Fehlerzustand, kein Formular, kein Submit.
+  const similarBandsLoadError = !!similarRelationsError || !!candidateBandsError
 
-  const similarRelations = (similarRelationsRaw ?? []) as unknown as SimilarRelationRow[]
   const similarSlots: (SimilarBandSlotData | null)[] = [null, null, null]
-  for (const rel of similarRelations) {
+  for (const rel of similarRelationsRaw ?? []) {
     if (rel.target && rel.rank !== null && rel.rank >= 1 && rel.rank <= 3) {
       similarSlots[rel.rank - 1] = {
         targetBandId: rel.target.id,
@@ -347,7 +356,7 @@ export default async function AdminBandDetailPage({
     }
   }
 
-  const candidateBands = (candidateBandsRaw ?? []) as { id: string; name: string }[]
+  const candidateBands = candidateBandsRaw ?? []
 
   let locationUsageCount = 0
   if (band.home_location_id) {
@@ -951,6 +960,7 @@ export default async function AdminBandDetailPage({
           bandId={band.id}
           slots={similarSlots}
           candidates={candidateBands}
+          loadError={similarBandsLoadError}
           successMsg={sp.similar_saved ? 'Ähnliche Bands gespeichert.' : undefined}
           errorMsg={similarErrorMsg ?? undefined}
         />

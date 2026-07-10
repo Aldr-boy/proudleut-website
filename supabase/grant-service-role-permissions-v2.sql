@@ -76,7 +76,12 @@ ON TABLE public.band_services TO service_role;
 -- Schreibpfad ausschliesslich ueber die SECURITY DEFINER Funktion
 -- public.set_similar_bands() -- siehe supabase/fn_set_similar_bands.sql
 -- und supabase/band_relations_admin_read_grant.sql (Codex-Review-Fund,
--- 10.07.2026, RPC-only-Schreibmodell).
+-- 10.07.2026, RPC-only-Schreibmodell). Explizites REVOKE noetig, da ein
+-- GRANT allein keine Altrechte aus frueheren Skriptversionen entzieht --
+-- Sollzustand-Deklaration, wie in band_relations_admin_read_grant.sql.
+REVOKE INSERT, UPDATE, DELETE
+ON TABLE public.band_relations FROM service_role;
+
 GRANT SELECT
 ON TABLE public.band_relations TO service_role;
 

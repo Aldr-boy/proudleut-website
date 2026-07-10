@@ -19,6 +19,7 @@ export function SimilarBandsSection({
   bandId,
   slots,
   candidates,
+  loadError,
   successMsg,
   errorMsg,
 }: {
@@ -26,6 +27,10 @@ export function SimilarBandsSection({
   // Laenge 3, Index = rank - 1, null = Slot leer
   slots: (SimilarBandSlotData | null)[]
   candidates: SimilarBandCandidate[]
+  // true, wenn das Laden der Relations- oder Kandidaten-Query fehlgeschlagen
+  // ist -- dann NICHT als leere Slots werten, sondern Formular komplett
+  // ausblenden (fail closed, kein Speichern moeglich auf Basis unvollstaendiger Daten).
+  loadError?: boolean
   successMsg?: string
   errorMsg?: string
 }) {
@@ -61,61 +66,69 @@ export function SimilarBandsSection({
         </div>
       )}
 
-      {isEmpty && (
-        <p className="text-sm text-gray-400 mb-4">Noch keine ähnlichen Bands gepflegt.</p>
-      )}
+      {loadError ? (
+        <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+          Ähnliche Bands konnten nicht geladen werden — bitte Seite neu laden.
+        </p>
+      ) : (
+        <>
+          {isEmpty && (
+            <p className="text-sm text-gray-400 mb-4">Noch keine ähnlichen Bands gepflegt.</p>
+          )}
 
-      <form action={updateSimilarBandsAction} className="space-y-4">
-        <input type="hidden" name="band_id" value={bandId} />
+          <form action={updateSimilarBandsAction} className="space-y-4">
+            <input type="hidden" name="band_id" value={bandId} />
 
-        {[0, 1, 2].map((index) => {
-          const slot = slots[index]
-          const currentValue = selected[index]
-          // Der kuratorische Hinweis gehoert zum urspruenglich gespeicherten
-          // Paar -- verschwindet, sobald der Slot clientseitig auf ein
-          // anderes Target (oder leer) geaendert wird.
-          const showReason = !!slot?.reason && currentValue === slot.targetBandId
-          const otherSelected = selected.filter((_, i) => i !== index)
+            {[0, 1, 2].map((index) => {
+              const slot = slots[index]
+              const currentValue = selected[index]
+              // Der kuratorische Hinweis gehoert zum urspruenglich gespeicherten
+              // Paar -- verschwindet, sobald der Slot clientseitig auf ein
+              // anderes Target (oder leer) geaendert wird.
+              const showReason = !!slot?.reason && currentValue === slot.targetBandId
+              const otherSelected = selected.filter((_, i) => i !== index)
 
-          return (
-            <div key={index}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rang {index + 1}
-              </label>
-              <select
-                name={`slot_${index + 1}`}
-                value={currentValue}
-                onChange={(e) => handleChange(index, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              return (
+                <div key={index}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rang {index + 1}
+                  </label>
+                  <select
+                    name={`slot_${index + 1}`}
+                    value={currentValue}
+                    onChange={(e) => handleChange(index, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    <option value="">— kein Eintrag —</option>
+                    {candidates.map((c) => {
+                      const takenElsewhere = c.id !== currentValue && otherSelected.includes(c.id)
+                      return (
+                        <option key={c.id} value={c.id} disabled={takenElsewhere}>
+                          {c.name}{takenElsewhere ? ' (bereits gewählt)' : ''}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {showReason && (
+                    <p className="mt-1 text-xs text-gray-400">
+                      Kuratorischer Hinweis vorhanden: {slot!.reason}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+
+            <div>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
               >
-                <option value="">— kein Eintrag —</option>
-                {candidates.map((c) => {
-                  const takenElsewhere = c.id !== currentValue && otherSelected.includes(c.id)
-                  return (
-                    <option key={c.id} value={c.id} disabled={takenElsewhere}>
-                      {c.name}{takenElsewhere ? ' (bereits gewählt)' : ''}
-                    </option>
-                  )
-                })}
-              </select>
-              {showReason && (
-                <p className="mt-1 text-xs text-gray-400">
-                  Kuratorischer Hinweis vorhanden: {slot!.reason}
-                </p>
-              )}
+                Speichern
+              </button>
             </div>
-          )
-        })}
-
-        <div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
-          >
-            Speichern
-          </button>
-        </div>
-      </form>
+          </form>
+        </>
+      )}
     </div>
   )
 }
