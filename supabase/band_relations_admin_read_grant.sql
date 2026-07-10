@@ -23,6 +23,27 @@
 --
 -- Kein RLS-Bezug: service_role hat BYPASSRLS, Policies sind fuer
 -- diesen Grant nicht entscheidungsrelevant.
+--
+-- Erweiterung 10.07.2026 (Codex-Review-Fund, P2, akzeptiert):
+-- Die REVOKE-Zeile unten ist eine Sollzustand-Deklaration, kein
+-- Live-Fix. Production wurde am 10.07.2026 verifiziert: service_role
+-- hat INSERT/UPDATE/DELETE bereits = false auf band_relations, die
+-- Zeile ist dort ein No-op. Sie dokumentiert nur explizit im Repo,
+-- was der einzig legale Zugriffspfad ist -- fuer den Fall, dass dieses
+-- Script je gegen eine neue/andere Umgebung ausgefuehrt wird. Anlass:
+-- zwei Alt-Scripts (setup-grants-and-seed.sql,
+-- grant-service-role-permissions-v2.sql) vergaben dort noch volle
+-- Schreibrechte, im Widerspruch zum RPC-only-Schreibmodell -- siehe
+-- deren jeweilige Kommentare fuer den Fix. Diese Erweiterung selbst
+-- wurde noch nicht (erneut) ausgefuehrt -- Re-Execute folgt erst nach
+-- expliziter Freigabe.
 -- ============================================================
+
+-- Sollzustand-Deklaration (idempotent, in Production bereits No-op):
+-- Schreiben auf band_relations laeuft ausschliesslich ueber die
+-- SECURITY DEFINER Funktion public.set_similar_bands() (siehe
+-- supabase/fn_set_similar_bands.sql). service_role bekommt hier
+-- bewusst KEIN INSERT/UPDATE/DELETE auf die Tabelle.
+revoke insert, update, delete on public.band_relations from service_role;
 
 grant select on public.band_relations to service_role;
