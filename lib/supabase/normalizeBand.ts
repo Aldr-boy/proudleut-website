@@ -78,18 +78,20 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     .map(et => str((et.event_types as Row)?.slug))
     .filter((s): s is string => s !== undefined)
 
-  // klingtNach = sound_worlds + moods (sound_worlds first, each by sort_order)
-  const soundWorldNames = asArr(r.band_sound_worlds as Row[] | null)
-    .sort(bySortOrder)
-    .map(sw => str((sw.sound_worlds as Row)?.name))
-    .filter((n): n is string => n !== undefined)
-
+  // klingtNach = moods, sortiert nach band_moods.sort_order (kuratierte Prioritaet);
+  // bei Gleichstand moods.sort_order, zuletzt moods.name als deterministischer Tie-Breaker
   const moodNames = asArr(r.band_moods as Row[] | null)
-    .sort(bySortOrder)
+    .sort((a, b) => {
+      const bandPriorityDiff = bySortOrder(a, b)
+      if (bandPriorityDiff !== 0) return bandPriorityDiff
+      const catalogSortDiff = bySortOrder((a.moods as Row) ?? {}, (b.moods as Row) ?? {})
+      if (catalogSortDiff !== 0) return catalogSortDiff
+      return String((a.moods as Row)?.name ?? '').localeCompare(String((b.moods as Row)?.name ?? ''))
+    })
     .map(bm => str((bm.moods as Row)?.name))
     .filter((n): n is string => n !== undefined)
 
-  const klingtNach = [...soundWorldNames, ...moodNames]
+  const klingtNach = moodNames
 
   // musikalischVerortet = repertoire_styles
   const musikalischVerortet = asArr(r.band_repertoire_styles as Row[] | null)
