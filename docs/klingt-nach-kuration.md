@@ -9,7 +9,9 @@ ergänzt, nicht überschrieben.
 - Fertig vor Runde 1 (Donnaweda + Batch 1): **15 von 141**
 - In Runde 1 final freigegeben: **29 Bands**
 - Fachlicher Zwischenstand nach Runde 1: **44 von 141**
-- Weiterhin offen nach Runde 1: **97**
+- In Runde 2 final freigegeben: **31 Bands**
+- Fachlicher Zwischenstand nach Runde 2: **75 von 141**
+- Weiterhin offen nach Runde 2: **66**
 
 Hinweis: „fachlich freigegeben" bedeutet, dass die Mood-Zuordnung
 kuratiert und dokumentiert ist. Es ist keine Aussage über einen
@@ -55,6 +57,37 @@ Nicht benötigte Mood-Spalten bleiben leer.
 | 1 | Die Ottis | Festzeltenergie | Authentisch und handgemacht | | | hoch | „Festzeltenergie pur"; „Alles live kein Playback" |
 | 1 | Die WoidRocker | Party pur | | | | hoch | „Feiern bis in die Nacht"; „Publikum mittendrin" bewusst nicht übersetzt. Kein Rockig & mitreißend — Bandname allein ist kein ausreichendes Rock-Signal (Xandi-Entscheidung, neue Präzedenzregel) |
 | 1 | Donikkl Crew | Mitsing-Faktor | Generationenverbindend | | | hoch | „Mitsingen statt zuschauen"; „ganze Familie" |
+| 2 | Edelwuid | Tanzflächen-Garantie | Festlich und ausgelassen | Emotional & berührend | | hoch | „Tanzfläche ab erster Minute"; „Mal edel mal ausgelassen"; „Emotionale Hochzeitsmomente" |
+| 2 | Ennstal Kryner | Mitsing-Faktor | Tanzflächen-Garantie | Festlich und ausgelassen | | mittel | „Mitsingen und Mittanzen"; „Gemütlich bis ausgelassen" |
+| 2 | Entprima Live | Tanzflächen-Garantie | Authentisch und handgemacht | | | mittel | „Tanzfläche..."; „Stimmung statt Showeffekte" |
+| 2 | extra … die Band! | Festzeltenergie | Tanzflächen-Garantie | | | hoch | „Bierzelt trifft Tanzfläche"; „Bayerisch & mitreißend" nicht übersetzt (kein Schmäh-Signal, „mitreißend" allein reicht nicht) |
+| 2 | Foxy Gentlemen | Tanzflächen-Garantie | Generationenverbindend | | | hoch | „Tanzflächen-Energie"; „Generationsübergreifend" |
+| 2 | Free Vocals | Emotional & berührend | Konzertant & hochwertig | | | hoch | „Gänsehaut ohne Instrumente" (wörtlich); „Stimmgewalt pur" |
+| 2 | Freunde des Brautpaares | Lagerfeuer-Atmosphäre | Authentisch und handgemacht | Herzlich & nahbar | | mittel | „Akustische Nähe statt Show"; „Freundschaft hörbar gemacht" |
+| 2 | Froschenkapelle | Festzeltenergie | Party pur | | | mittel | „Festzeltenergie mit Bläserpower" (Bläserpower nicht übersetzt); „Anarchisch gute Laune" |
+| 2 | Froschhaxn Express | Festzeltenergie | | | | hoch | „Festzeltenergie pur"; „Bayerisch & jung" nicht übersetzt (kein Schmäh-Signal); „mitreißend" allein nicht übersetzt |
+| 2 | Gary Rhos | Lagerfeuer-Atmosphäre | Konzertant & hochwertig | | | hoch | „Entspannte Gitarren-Atmosphäre"; „Smooth & instrumental" |
+| 2 | Gaudinockerl | Bayerisch & frech | Authentisch und handgemacht | | | hoch | „Bairisch frech & ehrlich" (Dialekt+Schmäh in derselben Phrase) |
+| 2 | Gaudinudln | Festzeltenergie | Generationenverbindend | | | hoch | „Festzeltenergie pur"; „Generationsübergreifend" |
+| 2 | Gentle | Rockig & mitreißend | | | | hoch | „Old-School-Rockenergie" (explizites Rock-Signal) |
+| 2 | Geraldino | Mitsing-Faktor | Generationenverbindend | | | mittel | „Kinder zum Mitmachen animieren"; „Familientauglich" |
+| 2 | GetThat! | Festzeltenergie | | | | hoch | „Bierzelt-Energie pur"; „Von Alm bis Dancefloor" nicht übersetzt (Range-Marketing) |
+| 2 | Grögötz Weißbir | Festzeltenergie | Generationenverbindend | | | hoch | „Festzeltenergie mit Heimatgefühl"; „Generationsübergreifend" |
+| 2 | Hally Gally | Festzeltenergie | Party pur | | | hoch | „Festzeltenergie"; „Mittelfränkische Partystimmung". „Publikumsnähe" wörtlich im Text, bewusst nicht übernommen (ausgeschlossener Mood) |
+| 2 | Harmonic Brass | Konzertant & hochwertig | | | | hoch | „Klassik auf Weltniveau" — alle vier Phrasen bestätigen denselben Mood, kein Ausgelassen-Signal |
+| 2 | Hatphones | Authentisch und handgemacht | | | | mittel | „Herzblut statt Hochglanz" |
+| 2 | Heartline | Party pur | | | | hoch | „Volksmusik trifft Partynacht"; „Vom Dinner bis zum Dancefloor" nicht übersetzt (Range-Marketing) |
+| 2 | Heimatfieber | Festzeltenergie | Party pur | | | hoch | „Festzeltenergie"; „Heimat trifft Party" |
+| 2 | Heimatg'fühl | Party pur | | | | hoch | „Bayerisch trifft Partynacht"; Range-Phrase „Vom Sektempfang zur Tanzfläche" nicht übersetzt |
+| 2 | Herb'n Beets | Festzeltenergie | Party pur | | | hoch | „Festzeltenergie pur"; „Vollgas von Anfang an" |
+| 2 | Hertz7 - Die Band | Tanzflächen-Garantie | Rockig & mitreißend | Authentisch und handgemacht | | mittel | „Tanzfläche bleibt nicht leer"; „Groove mit Druck" (Druck = Signalwort aus der Mood-Definition); „Spielfreude die ansteckt". „Bläser die mitreißen" nicht übersetzt (Brass-Power) |
+| 2 | Hob Nou | Festzeltenergie | Rockig & mitreißend | Generationenverbindend | | hoch | „Festzelt trifft Rockbühne"; „Jung und Alt gemeinsam" |
+| 2 | Hochzeitssängerin MIT HERZ | Lagerfeuer-Atmosphäre | Herzlich & nahbar | | | hoch | „Intime Klaviermomente"; „Persönlich statt unpersönlich" |
+| 2 | Hulzstoussboum | Mitsing-Faktor | Authentisch und handgemacht | | | mittel | „Schunkeln & Mitsingen"; „Oberpfälzer Ursprünglichkeit". „Publikum wird Teil der Band" nicht übersetzt (Publikumsnähe) |
+| 2 | James Band | Tanzflächen-Garantie | Festzeltenergie | Mitsing-Faktor | | hoch | „Tanzfläche ab der ersten Minute"; „Festzeltenergie"; „Mitsingen garantiert". „Publikumsnah" nicht übersetzt |
+| 2 | Jive | Tanzflächen-Garantie | Generationenverbindend | | | hoch | „Biergarten trifft Tanzfläche"; „Jung und Alt auf einer Tanzfläche" |
+| 2 | Kasplattnrocker | Festzeltenergie | Party pur | | | hoch | „Festzeltenergie pur"; „Partystimmung ohne Filter". Bandname „...rocker" bewusst NICHT als Rock-Signal gewertet (Präzedenzregel, konsistent mit Die WoidRocker) |
+| 2 | Katharina Kornprobst | Festzeltenergie | | | | hoch | „Bayerisches Festzelt". Kein Festlich und ausgelassen — Bogen-Lesart über den Gesamttext als allgemeine Regel abgelehnt, es bleibt bei expliziten Einzelsignalen |
 
 ---
 
@@ -81,6 +114,10 @@ in dieser zentralen Liste, bis eine gesonderte Entscheidung erfolgt.
   „Tanzlmusi" allein gilt nicht als belastbarer Nachweis für
   Tanzflächen-Garantie. Bei der Gesamtreview ggf. weitere belastbare
   Bandinformationen außerhalb des `Klingt_Nach`-Texts hinzuziehen.
+- **Hochdruck Böhmische** — Text verweist ausschließlich auf
+  ausgeschlossene bzw. Übergangs-Moods (Tradition, Brass-Power).
+  Keine Mood-Zuordnung erzwungen, als Kataloglücken-Kandidat
+  dokumentiert (siehe unten).
 
 ---
 
@@ -97,26 +134,51 @@ eine zusätzliche Mood ergibt.
   festlich, Jazz-Einschlag, junges Blasmusikgefühl. Kein Treffer im
   13er-Katalog.
 
+**Zusätzlicher Hinweis (kein eigenständiger Kataloglücken-Fall):**
+**Katharina Kornprobst** liefert mit „Kirchlich bis festlich | Feierliche
+Nähe | Bayerisches Festzelt" ein weiteres Indiz für ein wiederholt im
+Bestand auftretendes kirchlich-festliches Profil, das im aktuellen
+13er-Katalog nicht sauber abgebildet ist (vgl. Blechhilfswerks
+„Kirchlich & festlich"). Die Band selbst ist fachlich mit
+Festzeltenergie abgeschlossen (kein offener Fall) — der Hinweis dient
+ausschließlich der späteren Katalogbewertung nach Abschluss aller vier
+Runden.
+
 ---
 
 ## Verbindliche Präzedenzregeln
 
+**Grundsatz (ab Runde 2 verbindlich):** Regeländerungen dürfen
+künftig niemals still als bereits bestehende Präzedenz eingeführt
+werden. Jede neue oder geschärfte Regel muss als ausdrückliche
+Entscheidungsfrage vorgelegt und von Xandi bestätigt werden, bevor sie
+angewendet wird.
+
 Gelten ab sofort für alle weiteren Kurationsrunden:
 
-1. **Feier-Cluster-Limit:** Ohne ein eigenes unterscheidendes Signal
-   werden maximal zwei Moods aus dem Feier-Cluster (Festzeltenergie,
-   Party pur, Tanzflächen-Garantie) vergeben.
+1. **Feier-Cluster-Limit (in Runde 2 ausdrücklich freigegeben):** Zum
+   Feier-Cluster zählen ausschließlich Festzeltenergie, Party pur und
+   Tanzflächen-Garantie. Ohne ein eigenständiges unterscheidendes
+   Signal werden maximal zwei Moods aus diesem Cluster vergeben.
+   Rockig & mitreißend und Festlich und ausgelassen zählen
+   ausdrücklich **nicht** zum Feier-Cluster — sie bilden eigenständige
+   qualitative Achsen und dürfen zusätzlich zu Feier-Cluster-Moods
+   vergeben werden, sofern sie durch explizite Signale belegt sind.
 2. **Dialekt-/Schmäh-Signal über getrennte Phrasen:** Das
    Dialekt-/Bayern-Signal und das Frech-/Schmäh-Signal für Bayerisch
    & frech dürfen aus unterschiedlichen Phrasen desselben
    `Klingt_Nach`-Texts stammen, sofern beide Signale jeweils explizit
    sind. Ein bloßes „Bayerisch & stolz drauf" oder „Bayerisch &
    bodenständig" ohne irgendein explizites Frech-/Schmäh-Signal im
-   restlichen Text reicht weiterhin nicht.
+   restlichen Text reicht weiterhin nicht. Ein interpretierter
+   Gesamteindruck (z. B. ein Ton-Bogen über den gesamten Text) ersetzt
+   kein explizites Signal (in Runde 2 an Katharina Kornprobst
+   ausdrücklich bestätigt und abgegrenzt).
 3. **Bandname ist kein Nachweis:** Der Bandname allein (z. B. „Die
-   WoidRocker") gilt nicht als ausreichendes fachliches Signal für
-   eine Mood-Zuordnung (z. B. Rockig & mitreißend). Maßgeblich ist
-   ausschließlich der tatsächliche Kurationstext.
+   WoidRocker", „Kasplattnrocker") gilt nicht als ausreichendes
+   fachliches Signal für eine Mood-Zuordnung (z. B. Rockig &
+   mitreißend). Maßgeblich ist ausschließlich der tatsächliche
+   Kurationstext.
 4. **Keine Mood zum Auffüllen:** Fehlt ein belastbares zweites oder
    drittes Signal, bleibt die Band bei weniger als der Normalzahl an
    Moods (bis hin zu einem einzigen Mood) oder wird ganz
@@ -128,3 +190,16 @@ Gelten ab sofort für alle weiteren Kurationsrunden:
 
 **44 von 141** öffentlich relevanten Bands fachlich fertig kuratiert
 (15 vor Runde 1 + 29 aus Runde 1). **97** weiterhin offen.
+
+## Zwischenstand nach Runde 2
+
+**75 von 141** öffentlich relevanten Bands fachlich fertig kuratiert
+(44 nach Runde 1 + 31 aus Runde 2). **66** weiterhin offen.
+
+Bereits fachlich geprüft, aber weiterhin offen (zentrale Liste, nicht
+erneut in künftigen Runden auswählen):
+
+- Bigband STEINBACH
+- Blechhilfswerk
+- Duanix Musi
+- Hochdruck Böhmische
