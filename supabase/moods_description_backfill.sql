@@ -42,17 +42,26 @@
 -- wuerde den zweiten, laengst idempotenten Lauf faelschlich verwerfen.
 -- Die UPDATE-Klausel schreibt ohnehin nur Zeilen mit description IS
 -- NULL, ein Wiederholungslauf aendert daher 0 Zeilen und committet
--- trotzdem sauber durch.
+-- trotzdem sauber durch. Der Migrationsteil enthaelt seit dem
+-- strukturellen Fix (siehe Vermerk unten) keine Ergebnisausgabe mehr,
+-- die von Session-Temp-Tabellen abhaengt. Der konkret identifizierte
+-- Fehlerpfad nach den Guards entfaellt damit strukturell. Da die
+-- genaue Ursache des urspruenglichen 42P01-Befunds nicht abschliessend
+-- geklaert und kein erneuter vollstaendiger Testlauf erfolgt ist, ist
+-- ein vollstaendig fehlerfreies Skriptende dadurch plausibel, aber
+-- nicht praktisch nachgewiesen.
 --
 -- SQL-Editor-Hinweis: der Supabase SQL Editor zeigt bei Multi-Statement-
--- Skripten in der Regel nur das letzte Resultset an. Die komplette
--- Kontrollausgabe (Ziel-Moods + aktive Moods ohne Beschreibung + in
--- diesem Lauf tatsaechlich geaenderte Zeilen) ist deshalb bewusst in
--- EIN kombiniertes finales SELECT mit der Kennzeichnungs-Spalte
--- report_section gegossen (siehe Abschnitt 6). Da COMMIT alle
--- temporaeren Tabellen dieser Migration verwirft, dient zusaetzlich
--- eine unabhaengige Post-Commit-Verifikationsquery (separat geliefert,
--- fuer einen zweiten SQL-Editor-Tab) als massgebliches Kontrollmittel.
+-- Skripten in der Regel nur das letzte Resultset an, und Session-lokale
+-- Temp-Tabellen (ON COMMIT DROP) sind ausserhalb der erzeugenden
+-- Transaktion grundsaetzlich nicht mehr zugreifbar. Der Migrationsteil
+-- enthaelt deshalb nach der internen Abschlusspruefung (Abschnitt 6)
+-- keinen automatisch mitlaufenden Report mehr, der von _b1_expected
+-- oder _b1_updated abhaengt. Die Pruefung des aktuellen Sollzustands
+-- erfolgt ausschliesslich ueber die vollstaendig eigenstaendige,
+-- read-only Datei supabase/moods_description_backfill_verify.sql --
+-- separat im SQL Editor auszufuehren, beliebig oft wiederholbar, ohne
+-- jede Abhaengigkeit von Session-Temp-Tabellen dieser Migration.
 --
 -- Rollback: siehe auskommentierten Hinweis ganz unten -- kein
 -- automatisch ausfuehrbarer DROP COLUMN.
@@ -154,6 +163,58 @@
 --     DO-Block) gekapselt werden sollen -- dies ist nur eine
 --     Pruefoption, noch keine beschlossene Architektur.
 --   - Unabhaengige Post-Write-Verifikation bleibt fuer B2 verpflichtend.
+--     Der unten beschriebene strukturelle Fix (Report entfernen,
+--     eigenstaendige Verifikationsdatei) dient dafuer als Vorlage.
+-- ============================================================
+
+-- ============================================================
+-- STRUKTURELLER FIX NACH CODEX-REVIEW IN PR #4
+--
+-- Anlass: Codex hat berechtigt beanstandet, dass der (mittlerweile
+-- entfernte) kombinierte Abschlussreport von den Session-Temp-Tabellen
+-- _b1_expected und _b1_updated abhing. Obwohl der Report textuell vor
+-- COMMIT stand, trat beim tatsaechlichen Production-Lauf nachweislich
+-- der oben dokumentierte 42P01-Fehler auf _b1_expected auf. Ein
+-- versehentlicher vollstaendiger Wiederholungslauf haette am selben
+-- Report-Teil erneut scheitern koennen -- im Widerspruch zur
+-- Idempotenz-Zusicherung dieses Skripts.
+--
+-- Der urspruengliche Production-Lauf bleibt einschliesslich des
+-- 42P01-Befunds oben UNVERAENDERT dokumentiert -- dieser Fix behauptet
+-- NICHT rueckwirkend, dass der urspruengliche Lauf fehlerfrei gewesen
+-- sei. Es wurde KEIN erneuter vollstaendiger Production-Lauf der
+-- Migration durchgefuehrt.
+--
+-- Aenderung: der Temp-Tabellen-abhaengige Report wurde ersatzlos aus
+-- dem ausfuehrbaren Migrationsteil entfernt (vormals zwischen der
+-- internen Abschlusspruefung und COMMIT). Der Migrationsteil endet
+-- jetzt direkt nach der unveraenderten Abschlusspruefung mit COMMIT --
+-- danach folgt in dieser Datei kein ausfuehrbares SQL mehr, nur noch
+-- der bestehende manuelle Rollback-Hinweis-Kommentar.
+--
+-- Die Verifikation des aktuellen Sollzustands wurde in eine
+-- vollstaendig eigenstaendige, rein lesende Datei ausgelagert:
+-- supabase/moods_description_backfill_verify.sql -- separat im SQL
+-- Editor auszufuehren, beliebig oft wiederholbar, ohne jede
+-- Abhaengigkeit von Session-Temp-Tabellen dieser Migration.
+-- "updated_this_run" entfaellt dabei bewusst vollstaendig: eine
+-- nachtraegliche Read-only-Abfrage kann ohne separates Audit-Log nicht
+-- belastbar rekonstruieren, welche Zeilen in einem bereits
+-- abgeschlossenen historischen Lauf geaendert wurden.
+--
+-- Dieser Ansatz (Migration und Verifikation technisch trennen, keine
+-- Verifikation mehr, die von Session-Temp-Tabellen der Migration
+-- abhaengt) dient als Vorlage bzw. Praezedenzfall fuer Paket B2.
+--
+-- Verifikationslauf 18.07.2026: die ausgelagerte Read-only-
+-- Verifikationsdatei (supabase/moods_description_backfill_verify.sql)
+-- wurde erfolgreich gegen Production ausgefuehrt -- 11/11 Ziel-Moods
+-- vollstaendig passend, genau vier bewusst offene aktive Moods, keine
+-- Abweichungen. Der gemeinsame updated_at-Wert der elf Ziel-Moods ist
+-- konsistent mit dem bereits oben dokumentierten Trigger-Nachweis.
+-- Kein erneuter vollstaendiger Lauf der Migration, keine Datenbank-
+-- Writes. Der historische 42P01-Befund des urspruenglichen Laufs
+-- bleibt davon unberuehrt und weiterhin gueltig dokumentiert.
 -- ============================================================
 
 begin;
@@ -379,8 +440,13 @@ select slug, name, description, updated_at
 from updated;
 
 -- ────────────────────────────────────────────────────────────
--- 6) Abschlusspruefung (innerhalb der Transaktion) + kombinierter
---    Report in einem einzigen finalen Resultset.
+-- 6) Abschlusspruefung (innerhalb der Transaktion). Kein Report mehr
+--    an dieser Stelle -- der Migrationsteil liefert nach dieser
+--    Pruefung keine Ergebnisausgabe mehr und endet direkt mit COMMIT.
+--    Verifikation des aktuellen Sollzustands erfolgt ausschliesslich
+--    separat ueber supabase/moods_description_backfill_verify.sql
+--    (siehe STRUKTURELLER FIX-Vermerk oben) -- unabhaengig von
+--    Session-lokalen Temp-Tabellen dieser Migration.
 -- ────────────────────────────────────────────────────────────
 
 do $$
@@ -415,50 +481,6 @@ begin
     raise exception 'B1 guard: Abschlusspruefung fehlgeschlagen fuer %/11 Ziel-Mood(s): %', 11 - v_verified_count, v_bad_list;
   end if;
 end $$;
-
--- Kombinierter Report: Punkt 5 (alle 11 Ziel-Moods) + Punkt 6 (alle
--- aktiven Moods ohne Beschreibung) + tatsaechlich in DIESEM Lauf
--- geaenderte Zeilen, unterschieden ueber report_section. Erwartet
--- unter "active_without_description": publikumsnaehe, tradition,
--- brass-power, vielseitig -- kein Fehler. Jede weitere dort
--- auftauchende Zeile ist ein sichtbar auszuweisender Befund, keine
--- automatische Aenderung. "updated_this_run" zeigt beim Erstlauf 11
--- Zeilen, bei einem idempotenten Wiederholungslauf 0 Zeilen.
-select
-  'target_moods'::text as report_section,
-  m.slug,
-  m.name,
-  m.description,
-  m.status,
-  m.updated_at
-from public.moods m
-where m.slug in (select slug from _b1_expected)
-
-union all
-
-select
-  'active_without_description'::text as report_section,
-  m.slug,
-  m.name,
-  m.description,
-  m.status,
-  m.updated_at
-from public.moods m
-where m.status = 'active'
-  and m.description is null
-
-union all
-
-select
-  'updated_this_run'::text as report_section,
-  u.slug,
-  u.name,
-  u.description,
-  null::text as status,
-  u.updated_at
-from _b1_updated u
-
-order by report_section, slug;
 
 commit;
 
