@@ -59,7 +59,6 @@ export type LocationData = {
   country_code: string | null
   latitude: number | null
   longitude: number | null
-  geo_point: string | null
 }
 
 export function LocationEditSection({
@@ -83,8 +82,7 @@ export function LocationEditSection({
   // PLZ/Ort vorhanden != Koordinaten vorhanden != Radius-Suche greift
   const geoComplete =
     location?.latitude != null &&
-    location?.longitude != null &&
-    location?.geo_point != null
+    location?.longitude != null
 
   async function fillFromPlz() {
     const trimmed = plz.trim()
@@ -261,13 +259,13 @@ function GeoStatusBadge({ geoComplete }: { geoComplete: boolean }) {
   if (geoComplete) {
     return (
       <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-4">
-        ✓ Koordinaten und geo_point vorhanden — Radius-Suche kann greifen.
+        ✓ Koordinaten vorhanden — Radius-Suche kann greifen.
       </p>
     )
   }
   return (
     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
-      ⚠ PLZ/Ort vorhanden, aber Koordinaten oder geo_point fehlen. Die Band kann über Text/PLZ sichtbar sein, fällt aber ggf. aus der echten Radius-Suche.
+      ⚠ PLZ/Ort vorhanden, aber Koordinaten fehlen. Die Band kann über Text/PLZ sichtbar sein, fällt aber ggf. aus der echten Radius-Suche.
     </p>
   )
 }

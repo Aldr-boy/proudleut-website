@@ -724,7 +724,7 @@ export async function searchLocationsAction(query: string): Promise<LocationSear
 
   let dbQuery = client
     .from('locations')
-    .select('id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude, geo_point')
+    .select('id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude')
     .limit(20)
 
   dbQuery = isPlzLike
@@ -763,7 +763,7 @@ export async function searchLocationsAction(query: string): Promise<LocationSear
     bundesland: loc.bundesland as string | null,
     country: loc.country as string | null,
     country_code: loc.country_code as string | null,
-    geo_complete: loc.latitude != null && loc.longitude != null && loc.geo_point != null,
+    geo_complete: loc.latitude != null && loc.longitude != null,
     band_count: countByLocationId.get(loc.id as string) ?? 0,
   }))
 

@@ -230,6 +230,13 @@ export default async function AdminBandDetailPage({
   const { id } = await params
   const sp = await searchParams
 
+  // UUID-Guard: bands.id ist Primary Key vom Typ uuid. Ein Parameter, der
+  // keine UUID ist (z. B. versehentlich ein Slug statt der ID), wuerde
+  // sonst als Postgres-Fehler (invalid input syntax for type uuid) enden
+  // und ununterscheidbar von einem echten DB-Fehler behandelt werden.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!UUID_RE.test(id)) notFound()
+
   const client = createAdminClient()
 
   const { data, error } = await client
@@ -238,14 +245,42 @@ export default async function AdminBandDetailPage({
       id, name, slug, status, is_published,
       lineup_flexibility, default_member_count, website_url,
       home_location_id,
-      locations(id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude, geo_point),
+      locations(id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude),
       band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier, wedding_description, wedding_possible_playtimes, wedding_constellation, wedding_fee_range, wedding_kidnapping_bride, wedding_moderation),
       band_contacts(id, contact_name, email, phone, contact_role, is_public, is_primary_inquiry, created_at, updated_at)
     `)
     .eq('id', id)
     .single()
 
-  if (error || !data) notFound()
+  // Echte Query-Fehler (z. B. Rechte, kaputter Embed, DB-Ausfall) duerfen
+  // nicht als 404 erscheinen -- nur "kein Treffer" (PGRST116 von .single())
+  // ist ein echtes "nicht gefunden". Fehler zusaetzlich ins Server-Log,
+  // sichtbare Fehlerbehandlung analog zu /admin/bands.
+  if (error && error.code !== 'PGRST116') {
+    console.error('[admin/bands/[id]] Fehler beim Laden der Band:', error)
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+          <span className="font-semibold text-gray-800 text-sm">proudleut Admin</span>
+          <form action={logoutAction}>
+            <button type="submit" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              Abmelden
+            </button>
+          </form>
+        </header>
+        <div className="px-6 py-6 max-w-3xl mx-auto">
+          <a href="/admin/bands" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            ← Bands
+          </a>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4 text-red-700 text-sm">
+            Fehler beim Laden: {error.message}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!data) notFound()
 
   const band = data as unknown as BandDetail
   const profile = band.band_profiles ?? null
