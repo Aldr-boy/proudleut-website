@@ -15,6 +15,10 @@ ergänzt, nicht überschrieben.
 - In Runde 3 final freigegeben: **20 Bands**
 - Fachlicher Zwischenstand nach Runde 3: **95 von 141**
 - Weiterhin offen nach Runde 3: **46**
+- In Runde 4 final freigegeben: **39 Bands**
+- Fachlicher Zwischenstand nach Runde 4: **134 von 141**
+- Weiterhin offen nach Runde 4: **7**
+- Alle 141 Bands mindestens einmal fachlich geprüft
 
 Hinweis: „fachlich freigegeben" bedeutet, dass die Mood-Zuordnung
 kuratiert und dokumentiert ist. Es ist keine Aussage über einen
@@ -111,15 +115,55 @@ Nicht benötigte Mood-Spalten bleiben leer.
 | 3 | Waidler-Power | Festzeltenergie | Party pur | | | mittel | „Bierzeltenergie pur"; „Partymacher" |
 | 3 | X'Ploushn | Festzeltenergie | Mitsing-Faktor | Herzlich & nahbar | | mittel | „Festzelt-Energie"; „Mitsingen inklusive"; „Nahbar" |
 | 3 | zruck zu Dir! | Festzeltenergie | Rockig & mitreißend | | | hoch | „Festzeltenergie pur"; „E-Gitarre" in „Lederhosen trifft E-Gitarre" als bestätigtes Instrumenten-/Rocksignal |
+| 4 | Limited | Tanzflächen-Garantie | Rockig & mitreißend | | | hoch | „Tanzfläche von Anfang an"; „Rockige Hochzeitsnacht" (explizites Rock-Signal) |
+| 4 | Loops | Festzeltenergie | Tanzflächen-Garantie | Rockig & mitreißend | Generationenverbindend | hoch | „Festzeltenergie mit Klasse"; „Tanzflächen-Garantie" wörtlich; „rockig" in „Bayerisch & rockig"; „Generationsübergreifend". Bayerisch & frech nicht übersetzt (kein Schmäh-Signal) |
+| 4 | LPC | Tanzflächen-Garantie | | | | hoch | „Tanzfläche von Anfang an"; „Jazz bis Partymodus" als Range-Phrase nicht übersetzt |
+| 4 | Max Headroom | Mitsing-Faktor | Rockig & mitreißend | Generationenverbindend | | mittel | „Mitsingmomente inklusive"; „Rock" und „zwei Generationen" in „Rock für zwei Generationen" — zwei eigenständige Signale derselben Phrase (Präzedenzregel „Mehrere Signale in derselben Phrase") |
+| 4 | May Vibes | Tanzflächen-Garantie | | | | mittel | „tanzbar" in „Elegant und tanzbar" (Präzedenzregel „tanzbar" als direktes Signal). „Hintergrundmusik bis Partymodus" als Range-Phrase nicht übersetzt |
+| 4 | Michael Jackts Net | Festzeltenergie | Rockig & mitreißend | | | hoch | „Festzeltenergie mit Hornpower"; „Rocknächte im Freien". Bayerisch & frech nicht übersetzt (nur „Bayerische Partydichte", kein Schmäh-Signal) |
+| 4 | mix2max | Tanzflächen-Garantie | Generationenverbindend | Festzeltenergie | | mittel | „volle Tanzfläche"; „Generationenverbinder"; „Bierzelt" in „Bierzelt trifft Wohnzimmer" (Trifft-Präzedenz, „Wohnzimmer" nicht übersetzt) |
+| 4 | Mixtape | Festzeltenergie | Generationenverbindend | Mitsing-Faktor | | hoch | „Festzeltenergie"; „Generationsübergreifend"; „Mitsingmomente". Bayerisch & frech nicht übersetzt (nur „Bayerisch & modern") |
+| 4 | More Candy | Tanzflächen-Garantie | | | | mittel | „Tanzfläche" in „Tanzfläche trifft Ballade" (Trifft-Präzedenz, „Ballade" nicht übersetzt) |
+| 4 | MyfriendZ | Tanzflächen-Garantie | | | | hoch | „Tanzfläche von Anfang an". Bayerisch & frech nicht übersetzt (nur „Bayerische Verwurzelung, breites Repertoire", kein Schmäh-Signal) |
+| 4 | Nice Ties | Bayerisch & frech | | | | hoch | Dialekt „Bayerisch" (aus „Bayerisch & englisch") + Schmäh-Wort „Witz" (aus „Witz & Bühnenpräsenz"), getrennte Phrasen gemäß Präzedenzregel 2 |
+| 4 | Nick's Nice | Festzeltenergie | Rockig & mitreißend | Mitsing-Faktor | | mittel | „Bierzelt" und „Rockbühne" in „Bierzelt trifft Rockbühne" (Trifft-Präzedenz, beide Seiten anerkannt); „Mitsingen garantiert" |
+| 4 | Onesee | Festzeltenergie | Tanzflächen-Garantie | Generationenverbindend | | hoch | „Festzeltenergie"; „Tanzflächen-Garantie"; „Generationsübergreifend" wörtlich. Bayerisch & frech nicht übersetzt (nur „Bayerisch & jung") |
+| 4 | Partybox | Tanzflächen-Garantie | Party pur | | | mittel | „Tanzfläche von Anfang an"; „Partynacht" in „Schlager trifft Partynacht" (Trifft-Präzedenz, „Schlager" nicht übersetzt) |
+| 4 | Prime Time | Festzeltenergie | Tanzflächen-Garantie | | | hoch | „Festzeltenergie mit Klasse"; „Tanzfläche füllt sich" |
+| 4 | Singing Sonixx | Party pur | | | | mittel | „große Party" in „Kleine Bühne, große Party" — direktes Party-Signal trotz Kontrastform |
+| 4 | Soiz'n'Pepper | Authentisch und handgemacht | Tanzflächen-Garantie | | | mittel | „Handgemacht & direkt"; „Tanzfläche" in „Tanzfläche trifft Stilgefühl" (Trifft-Präzedenz, „Stilgefühl" nicht übersetzt) |
+| 4 | Sommerwind | Bayerisch & frech | Lagerfeuer-Atmosphäre | Tanzflächen-Garantie | | mittel | Dialekt „Bayerischer" + Schmäh-Wort „Humor" in derselben Phrase; „Unplugged-Momente im Saal"; „Tanzfläche" in „Tanzfläche trifft Stammtisch" (Trifft-Präzedenz, „Stammtisch" nicht übersetzt) |
+| 4 | Spectrum | Festzeltenergie | Herzlich & nahbar | Rockig & mitreißend | | mittel | „Festzeltenergie"; „Herzlichkeit" in „Bayerische Herzlichkeit" (nur Herzlichkeit-Anteil verwertet, kein Bayerisch-&-frech-Anspruch); „Rocknacht" in „Schlager trifft Rocknacht" (Trifft-Präzedenz) |
+| 4 | SPOTLIGHT Eventband | Tanzflächen-Garantie | Party pur | | | hoch | „Volle Tanzfläche"; „Partyenergie pur" (nahezu wörtliche Mood-Entsprechung) |
+| 4 | The Silverhammers | Generationenverbindend | Tanzflächen-Garantie | Authentisch und handgemacht | | mittel | „Generationsübergreifend" und „tanzbar" in „Generationsübergreifend tanzbar" — zwei eigenständige Signale derselben Phrase; „Handwerk statt Playback" |
+| 4 | vier-tell-four | Festzeltenergie | Tanzflächen-Garantie | | | hoch | „Festzeltgefühl im Gasthaus"; „Tanz bis Mitternacht". Bayerisch & frech nicht übersetzt (nur „Boarisch & gesellig", kein Schmäh-Signal) |
+| 4 | Whoobers | Lagerfeuer-Atmosphäre | Rockig & mitreißend | Tanzflächen-Garantie | | mittel | „Akustische Wärme zum Auftakt"; „Rockige" und „Tanzfläche" in „Rockige Tanzfläche" — zwei eigenständige Signale derselben Phrase |
+| 4 | Wiesnkönige | Festzeltenergie | Generationenverbindend | Tanzflächen-Garantie | | mittel | „Festzeltenergie" wörtlich; „Jung und Alt" und „tanzt" in „Jung und Alt tanzt" — zwei eigenständige Signale derselben Phrase |
+| 4 | Wois Bois | Bayerisch & frech | | | | hoch | Regionalsignal „Ostbayerischer" + Schmäh-Wort „Humor", getrennte Phrasen |
+| 4 | Muckasäck | Festzeltenergie | Tanzflächen-Garantie | | | mittel | „Festzelt" und „Dancefloor" in „Festzelt trifft Dancefloor" (Trifft-Präzedenz, beide Seiten anerkannt). „Blechdruck" nicht übersetzt (Brass-Power-Abgrenzung) |
+| 4 | Quetschnblech | Authentisch und handgemacht | Tanzflächen-Garantie | | | mittel | „Echte Volksmusik lebt"; „Tanzboden" in „Wirtshaus trifft Tanzboden" (Trifft-Präzedenz, „Wirtshaus" nicht übersetzt). „ungezähmt" nicht als Bayerisch-&-frech-Signal gewertet (Präzedenzregel „Abgrenzung ungezähmt") |
+| 4 | Seubersdorfer Blasmusik | Festzeltenergie | Rockig & mitreißend | | | hoch | „Bierzelt-Energie pur"; „Rock" in „Böhmisch trifft Rock" |
+| 4 | Tegernseer Tanzlmusi | Festzeltenergie | | | | hoch | „Festzeltenergie pur". Bayerisch & frech nicht übersetzt (nur „Bayerisch & stolz drauf", kein Schmäh-Signal) |
+| 4 | Urner Musi | Festzeltenergie | | | | hoch | „Festzeltenergie mit Niveau". Bayerisch & frech nicht übersetzt (gleiche Konstellation wie Tegernseer Tanzlmusi) |
+| 4 | Lebensg'fühl | Emotional & berührend | Lagerfeuer-Atmosphäre | | | hoch | „Stille Gänsehautmomente"/„Emotionale Trauungsatmosphäre"; „Innig statt laut" |
+| 4 | Saitenwind | Lagerfeuer-Atmosphäre | Emotional & berührend | | | hoch | „Akustische Intimität"; „Stille Momente, berührt" |
+| 4 | The Stereo Show | Authentisch und handgemacht | Generationenverbindend | | | hoch | „Handgemacht & ungefiltert"; „Musik durch alle Generationen" |
+| 4 | KIZZRock | Rockig & mitreißend | | | | mittel | „Rock" in „Rock mit Lacher-Garantie", gestützt durch „echter Gitarrenrock" (Musikalisch-Feld). Kinder-bezogene Signale bewusst nicht übersetzt |
+| 4 | Schlawindl | Rockig & mitreißend | | | | mittel | „Rockiger Live-Sound" (Musikalisch-Feld, unabhängig vom Kinder-Rahmen „Kinder rocken mit") |
+| 4 | Sabrina Robold | Herzlich & nahbar | Emotional & berührend | Lagerfeuer-Atmosphäre | | hoch | „Persönlich & herzlich"; „Emotionale Momente"; „Intime Atmosphäre" |
+| 4 | Steffi Heim | Herzlich & nahbar | | | | mittel | „Persönlich statt Show". „Kirchliche Wärme" bewusst nicht übersetzt (vgl. Katharina-Kornprobst-Vorsicht bei kirchlichen Phrasen) |
+| 4 | San2 and His Soul Patrol | Konzertant & hochwertig | | | | mittel | „Konzertabend mit Seele" |
+| 4 | Tir Nan Og | Tanzflächen-Garantie | | | | mittel | „tanzbar" in „Tanzbar & rau" (Präzedenzregel „tanzbar" als direktes Signal) |
 
 ---
 
 ## Fachlich geprüft, weiterhin offen
 
-Diese Bands wurden in Runde 1 inhaltlich geprüft, erhalten aber
-bewusst noch keine finale Mood-Zuordnung. Sie werden in künftigen
-Runden nicht erneut in die reguläre Auswahl gemischt, sondern bleiben
-in dieser zentralen Liste, bis eine gesonderte Entscheidung erfolgt.
+Diese Bands wurden in den jeweils genannten Runden inhaltlich geprüft,
+erhalten aber bewusst noch keine finale Mood-Zuordnung. Sie werden in
+künftigen Runden nicht erneut in die reguläre Auswahl gemischt,
+sondern bleiben in dieser zentralen Liste, bis eine gesonderte
+Entscheidung erfolgt.
 
 - **Bigband STEINBACH** — besitzt bereits Production-`band_moods`
   (Tanzflächen-Garantie, Konzertant & hochwertig, Festlich und
@@ -141,6 +185,21 @@ in dieser zentralen Liste, bis eine gesonderte Entscheidung erfolgt.
   ausgeschlossene bzw. Übergangs-Moods (Tradition, Brass-Power).
   Keine Mood-Zuordnung erzwungen, als Kataloglücken-Kandidat
   dokumentiert (siehe unten).
+- **Silk and Sound** — Runde 4 geprüft. Bisher keine belastbare
+  Zuordnung im vorhandenen 13er-Katalog. AI-Text beschreibt vor allem
+  Zurückhaltung und Atmosphäre statt Aufmerksamkeit. Keine Mood
+  erzwungen. Schlussprüfung mit zusätzlichen belegten Profildaten
+  erforderlich.
+- **Rüscherl Muse** — Runde 4 geprüft. Redaktionelles Klingt_Nach
+  vorhanden. „Tanzlmusi mit frischem Schwung" reicht nicht für
+  Tanzflächen-Garantie, konsistent mit der bestehenden
+  Duanix-Abgrenzung. Keine Mood erzwungen. Schlussprüfung mit
+  weiteren Bandinformationen erforderlich.
+- **Smooth'n'Groove** — Runde 4 geprüft. Profil beschreibt bewusst
+  dezente Hintergrundmusik und Gesprächstauglichkeit. Kein sauberer
+  Treffer im vorhandenen 13er-Katalog. Als möglicher
+  Kataloglücken-Kandidat dokumentiert (siehe unten). Keine Mood
+  erzwungen.
 
 ---
 
@@ -156,6 +215,10 @@ eine zusätzliche Mood ergibt.
 - **Blechhilfswerk** — Profil: böhmischer Blechklang, kirchlich und
   festlich, Jazz-Einschlag, junges Blasmusikgefühl. Kein Treffer im
   13er-Katalog.
+- **Smooth'n'Groove** — Profil: bewusst dezente Hintergrundmusik,
+  Gesprächstauglichkeit, Lounge-Atmosphäre ohne Party-Anspruch
+  („Gespräche bleiben möglich", „Groove ohne Lautstärke"). Kein
+  sauberer Treffer im 13er-Katalog für diese Positionierung.
 
 **Zusätzlicher Hinweis (kein eigenständiger Kataloglücken-Fall):**
 **Katharina Kornprobst** liefert mit „Kirchlich bis festlich | Feierliche
@@ -220,6 +283,38 @@ Gelten ab sofort für alle weiteren Kurationsrunden:
    „Rockgitarre" bereits ein ausdrückliches Rock-Signal (das Wort
    „Rock" selbst kommt vor) und ist daher keine Erstanwendung dieser
    neuen Regel.
+6. **Direkte Signale innerhalb einer „X trifft Y"-Phrase (in Runde 4
+   ausdrücklich bestätigt):** Mehrere Bestandteile derselben Phrase
+   dürfen jeweils einen eigenen Mood begründen, wenn jeder Bestandteil
+   für sich ein bereits anerkanntes direktes Signal enthält. Die
+   Konstruktion „X trifft Y" erzeugt nicht automatisch Moods.
+   Bestätigte direkte Signale:
+   - Bierzelt oder Festzelt → Festzeltenergie
+   - Tanzfläche, Tanzboden oder Dancefloor → Tanzflächen-Garantie
+   - Partynacht oder große Party → Party pur
+   - Rockbühne oder Rocknacht → Rockig & mitreißend
+
+   Nicht anerkannte Gegenstücke wie Wohnzimmer, Stilgefühl, Stammtisch
+   oder Ballade werden nicht automatisch übersetzt. Diese Regel gilt
+   konsistent für alle strukturgleichen Fälle, nicht nur für zuvor
+   ausdrücklich benannte Bandkarten. Dokumentierte Anwendungen aus
+   Runde 4: Nick's Nice, More Candy, Partybox, Singing Sonixx,
+   Muckasäck, mix2max, Soiz'n'Pepper, Sommerwind, Quetschnblech.
+7. **„tanzbar" als direktes Signal (in Runde 4 ausdrücklich
+   bestätigt):** Das ausdrückliche Adjektiv „tanzbar" kann Tanzflächen-
+   Garantie begründen. Bestätigte bzw. konsistent angewandte Fälle:
+   Broadway (bestehende Präzedenz aus Runde 1), May Vibes, Tir Nan Og,
+   The Silverhammers.
+8. **Mehrere Signale in derselben Phrase (in Runde 4 ausdrücklich
+   bestätigt):** Zwei oder mehr jeweils explizite Signalbestandteile
+   derselben kurzen Phrase dürfen unterschiedliche Moods begründen.
+   Anwendungen: Max Headroom („Rock für zwei Generationen"), Whoobers
+   („Rockige Tanzfläche"), Wiesnkönige („Jung und Alt tanzt"), The
+   Silverhammers („Generationsübergreifend tanzbar").
+9. **Abgrenzung „ungezähmt" (in Runde 4 ausdrücklich bestätigt):**
+   „Ungezähmt" allein gilt nicht als Frech-, Schmäh-, Humor- oder
+   Augenzwinkern-Signal für Bayerisch & frech. Anwendung: Quetschnblech
+   erhält daraus kein Bayerisch & frech.
 
 ---
 
@@ -259,3 +354,28 @@ Von den 46 weiterhin offenen Bands sind:
   - Duanix Musi
   - Hochdruck Böhmische
 - **42** bislang noch nicht fachlich geprüft.
+
+## Zwischenstand nach Runde 4
+
+**134 von 141** öffentlich relevanten Bands fachlich fertig kuratiert
+(95 nach Runde 3 + 39 aus Runde 4). **7** weiterhin offen.
+
+Runde 4 umfasst alle 42 zuvor ungeprüften Bands — damit ist die
+reguläre Erstprüfung des vollständigen Bestands abgeschlossen. Davon:
+
+- **39** Bands fachlich freigegeben, mit insgesamt **77** kuratierten
+  Mood-Zuordnungen
+- **2** Bands bewusst offen (Silk and Sound, Rüscherl Muse)
+- **1** Band als Kataloglücken-Kandidat dokumentiert (Smooth'n'Groove)
+
+Damit wurden alle 141 Bands mindestens einmal fachlich geprüft. Es
+folgt keine reguläre Kurationsrunde 5 — offen ist nur noch die
+gezielte Schlussentscheidung über sieben dokumentierte Fälle:
+
+- Bigband STEINBACH
+- Blechhilfswerk
+- Duanix Musi
+- Hochdruck Böhmische
+- Silk and Sound
+- Rüscherl Muse
+- Smooth'n'Groove
