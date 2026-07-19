@@ -54,7 +54,10 @@ dieses Feature.
 
 1. **Page lädt** `bands.home_location_id` + vollständige `locations`-Felder
    (`id, plz, city_name, landkreis, regierungsbezirk, bundesland, country,
-   country_code, latitude, longitude, geo_point`) über einen PostgREST-Join.
+   country_code, latitude, longitude`) über einen PostgREST-Join.
+   *(Nachtrag: `geo_point` wurde in Production entfernt — siehe
+   `supabase/drop-geo-point-postgis-cleanup.sql` und Commit `4a2a029`.
+   Vor dieser Korrektur war `geo_point` hier noch Teil der Query.)*
 2. **`locationUsageCount`** wird serverseitig separat ermittelt:
    ```ts
    const { count } = await client
@@ -74,10 +77,13 @@ dieses Feature.
 ### Geo-Status-Logik
 
 ```
-geoComplete = latitude != null && longitude != null && geo_point != null
+geoComplete = latitude != null && longitude != null
 ```
 Wird visuell als Badge angezeigt (`GeoStatusBadge`) — sowohl im editierbaren
-als auch im read-only Zweig.
+als auch im read-only Zweig. *(Nachtrag: Die `geo_point`-Bedingung wurde
+entfernt, nachdem die Spalte in Production gedroppt wurde — siehe
+`supabase/drop-geo-point-postgis-cleanup.sql`. Vorher enthielt die
+Bedingung zusätzlich `&& geo_point != null`.)*
 
 ### Sicherheits-Patterns, die übernommen werden sollten
 
@@ -164,7 +170,7 @@ vierstellige Überschneidungen) für den Admin erkennbar zu machen.
 | Ort | `locations.city_name` | Identifikation |
 | Landkreis / Region | `locations.landkreis`, `regierungsbezirk`, `bundesland` | Disambiguierung bei gleichem Ortsnamen |
 | Land | `locations.country` / `country_code` | Disambiguierung DE/AT bei PLZ-Kollision |
-| Geo-Status | abgeleitet: `latitude != null && longitude != null && geo_point != null` | zeigt an, ob Radius-Suche für die Ziel-Location greifen würde |
+| Geo-Status | abgeleitet: `latitude != null && longitude != null` | zeigt an, ob Radius-Suche für die Ziel-Location greifen würde |
 | `band_count` | `SELECT count(*) FROM bands WHERE home_location_id = locations.id` (pro Trefferzeile) | zeigt, ob Ziel bereits geteilt ist — rein informativ, kein Blocker |
 
 ### Ablauf
@@ -386,10 +392,13 @@ SELECT count(*) FROM bands WHERE home_location_id = :neue_location_id;
 
 -- 4. locations-Tabelle nachweislich unverändert (Diff gegen Vorher-Snapshot)
 SELECT id, plz, city_name, landkreis, regierungsbezirk, bundesland,
-       country, country_code, latitude, longitude, geo_point, updated_at
+       country, country_code, latitude, longitude, updated_at
 FROM locations WHERE id IN (:alte_location_id, :neue_location_id);
 -- erwartet: alle Felder identisch zum Vorher-Stand, insbesondere
 -- updated_at NICHT verändert (kein Trigger-Fire, da locations nicht geschrieben wurde)
+-- (Nachtrag: geo_point aus dieser SELECT-Liste entfernt -- die Spalte
+-- wurde in Production gedroppt, siehe supabase/drop-geo-point-postgis-cleanup.sql;
+-- eine Ausführung mit geo_point wuerde mit ERROR 42703 abbrechen.)
 ```
 
 ### Synthetischer Testansatz (kein echter Fall festgelegt)
