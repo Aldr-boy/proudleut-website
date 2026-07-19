@@ -12,6 +12,9 @@ ergänzt, nicht überschrieben.
 - In Runde 2 final freigegeben: **31 Bands**
 - Fachlicher Zwischenstand nach Runde 2: **75 von 141**
 - Weiterhin offen nach Runde 2: **66**
+- In Runde 3 final freigegeben: **20 Bands**
+- Fachlicher Zwischenstand nach Runde 3: **95 von 141**
+- Weiterhin offen nach Runde 3: **46**
 
 Hinweis: „fachlich freigegeben" bedeutet, dass die Mood-Zuordnung
 kuratiert und dokumentiert ist. Es ist keine Aussage über einen
@@ -88,6 +91,26 @@ Nicht benötigte Mood-Spalten bleiben leer.
 | 2 | Jive | Tanzflächen-Garantie | Generationenverbindend | | | hoch | „Biergarten trifft Tanzfläche"; „Jung und Alt auf einer Tanzfläche" |
 | 2 | Kasplattnrocker | Festzeltenergie | Party pur | | | hoch | „Festzeltenergie pur"; „Partystimmung ohne Filter". Bandname „...rocker" bewusst NICHT als Rock-Signal gewertet (Präzedenzregel, konsistent mit Die WoidRocker) |
 | 2 | Katharina Kornprobst | Festzeltenergie | | | | hoch | „Bayerisches Festzelt". Kein Festlich und ausgelassen — Bogen-Lesart über den Gesamttext als allgemeine Regel abgelehnt, es bleibt bei expliziten Einzelsignalen |
+| 3 | Königlich Bayrisches Vollgas Orchester | Festzeltenergie | | | | mittel | „Festzeltenergie pur"; „Bayerisch & stolz drauf" ohne Schmäh-Signal nicht übersetzt |
+| 3 | Let's Fetz | Authentisch und handgemacht | | | | mittel | „Musik statt Show"; „Handgemacht & live" |
+| 3 | Moosbüffel | Festzeltenergie | Authentisch und handgemacht | | | mittel | „Bierzelt-Energie pur"; „Gitarren statt Konserve". „Bayerisch durch und durch" ohne Schmäh-Signal nicht als Bayerisch & frech gewertet |
+| 3 | Mountain Crew | Festzeltenergie | Rockig & mitreißend | | | mittel | „Festzeltenergie"; „Rockgitarre" als ausdrückliches Rock-Signal. „100.000 Hände in der Luft" nicht als Party pur übersetzt |
+| 3 | Non Stop | Festzeltenergie | Tanzflächen-Garantie | | | hoch | direkte Signale; Party pur wegen Feier-Cluster-Limit gestrichen |
+| 3 | Ö'ha | Festzeltenergie | Party pur | | | mittel | „Bierzelt-Stimmung pur"; „Party" in „Tracht trifft Party" |
+| 3 | Out Of Bayern | Festzeltenergie | | | | mittel | „Festzeltenergie mit Lederhosen"; „Bayerisch & stolz drauf" ohne Schmäh-Signal nicht übersetzt |
+| 3 | Rotzlöffl | Festzeltenergie | Bayerisch & frech | | | hoch | „Bierzelt trifft Bühnenshow"; „Rotzfrech & authentisch bayerisch" |
+| 3 | Route 12 34 | Festzeltenergie | Party pur | | | mittel | „Bierzelt-Eskalation"; „feiern" in „Unter Freunden feiern" |
+| 3 | Rundumadum | Festzeltenergie | Tanzflächen-Garantie | | | hoch | beide Signale direkt im Text |
+| 3 | SaKrisch | Festzeltenergie | Party pur | | | hoch | redaktionelles Klingt_Nach; „Festzeltenergie" und „Bierzelt-Partystimmung" |
+| 3 | Sappralot | Festzeltenergie | | | | mittel | „Festzeltenergie pur"; kein Schmäh-Signal |
+| 3 | Saustoimusi | Festzeltenergie | Tanzflächen-Garantie | | | mittel | „Festzeltenergie mit Blasmusik"; „Tanzfläche in Schieflage" |
+| 3 | SIMMISAMMA | Festzeltenergie | | | | mittel | „Festzeltstimmung pur"; Range-Phrase nicht übersetzt |
+| 3 | Spitz af Knopf | Festzeltenergie | Authentisch und handgemacht | | | mittel | „Bairische Festzeltenergie" belegt Festzeltenergie; Dialektschreibweise allein genügt nicht für Bayerisch & frech; „Authentisch & ungekünstelt" |
+| 3 | Sturschädl | Festzeltenergie | Generationenverbindend | Tanzflächen-Garantie | | mittel | „Festzeltenergie pur"; „Jung und Alt"; „tanzt". „Bayerisch & ausgelassen" nicht übersetzt |
+| 3 | Urwaidler | Festzeltenergie | Rockig & mitreißend | | | hoch | „Festzeltenergie pur"; „rockige" in „Boarisch-rockige Wucht". Kein Frech-/Schmäh-Signal |
+| 3 | Waidler-Power | Festzeltenergie | Party pur | | | mittel | „Bierzeltenergie pur"; „Partymacher" |
+| 3 | X'Ploushn | Festzeltenergie | Mitsing-Faktor | Herzlich & nahbar | | mittel | „Festzelt-Energie"; „Mitsingen inklusive"; „Nahbar" |
+| 3 | zruck zu Dir! | Festzeltenergie | Rockig & mitreißend | | | hoch | „Festzeltenergie pur"; „E-Gitarre" in „Lederhosen trifft E-Gitarre" als bestätigtes Instrumenten-/Rocksignal |
 
 ---
 
@@ -183,6 +206,20 @@ Gelten ab sofort für alle weiteren Kurationsrunden:
    drittes Signal, bleibt die Band bei weniger als der Normalzahl an
    Moods (bis hin zu einem einzigen Mood) oder wird ganz
    zurückgestellt, statt eine Mood ohne Textstütze zu ergänzen.
+5. **E-Gitarren-/Rockinstrument-Signal (in Runde 3 ausdrücklich
+   bestätigt):** Ein explizites E-Gitarren- oder vergleichbares
+   Rockinstrument-Signal im tatsächlichen Kurationstext kann „Rockig &
+   mitreißend" begründen, sofern es einen energetischen Bandsound
+   beschreibt — auch wenn das Wort „rock" oder „rockig" selbst nicht
+   vorkommt. Der Bandname allein bleibt weiterhin ausdrücklich kein
+   ausreichender Nachweis.
+
+   Dokumentarische Abgrenzung: `zruck zu Dir!` ist die erste
+   bestätigte Anwendung dieser neuen Instrumenten-Präzedenz ohne das
+   Wort „rock" (Signal: „E-Gitarre"). `Mountain Crew` enthält mit
+   „Rockgitarre" bereits ein ausdrückliches Rock-Signal (das Wort
+   „Rock" selbst kommt vor) und ist daher keine Erstanwendung dieser
+   neuen Regel.
 
 ---
 
@@ -203,3 +240,22 @@ erneut in künftigen Runden auswählen):
 - Blechhilfswerk
 - Duanix Musi
 - Hochdruck Böhmische
+
+## Zwischenstand nach Runde 3
+
+**95 von 141** öffentlich relevanten Bands fachlich fertig kuratiert
+(75 nach Runde 2 + 20 aus Runde 3). **46** weiterhin offen.
+
+Runde 3 umfasst genau 20 Bands (Bandart-Cluster „bayrische-
+partybands") mit insgesamt 37 kuratierten Mood-Zuordnungen. Keine
+neue Kataloglücke entstanden, keine Änderung an der bestehenden
+Sonderfallliste.
+
+Von den 46 weiterhin offenen Bands sind:
+
+- **4** bereits fachlich geprüft und bewusst offen (unverändert):
+  - Bigband STEINBACH
+  - Blechhilfswerk
+  - Duanix Musi
+  - Hochdruck Böhmische
+- **42** bislang noch nicht fachlich geprüft.
