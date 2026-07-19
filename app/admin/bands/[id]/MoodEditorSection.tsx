@@ -1,5 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { updateBandMoodsAction } from './actions'
 import {
   sortBandMoodAssignments,
@@ -186,14 +187,14 @@ export function MoodEditorSection({
                   {!isConflict && currentValue && currentMood && hasMissingDescription(currentMood.description) && (
                     <p className="mt-1 text-xs text-amber-700 italic">
                       Für diesen Mood ist noch keine Definition hinterlegt.{' '}
-                      <a
+                      <Link
                         href="/admin/moods"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="not-italic underline hover:text-amber-900"
                       >
                         Im Mood-Katalog ergänzen ↗
-                      </a>
+                      </Link>
                     </p>
                   )}
                 </div>
@@ -232,14 +233,14 @@ export function MoodEditorSection({
               >
                 Speichern
               </button>
-              <a
+              <Link
                 href="/admin/moods"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-violet-700 hover:text-violet-900 hover:underline transition-colors"
               >
                 Mood-Katalog verwalten ↗
-              </a>
+              </Link>
             </div>
           </form>
         </>

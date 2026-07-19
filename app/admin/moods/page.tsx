@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/admin/actions'
 import { createMoodAction, updateMoodAction, archiveMoodAction, reactivateMoodAction } from './actions'
@@ -105,12 +106,12 @@ export default async function AdminMoodsPage({ searchParams }: { searchParams: S
             <h1 className="text-2xl font-semibold text-gray-900">Mood-Katalog</h1>
             <p className="text-sm text-gray-500 mt-1">„Klingt nach&#8220; – Wirkung, Atmosphäre und Haltung</p>
           </div>
-          <a
+          <Link
             href="/admin/bands"
             className="text-sm text-violet-700 hover:text-violet-900 hover:underline transition-colors"
           >
             ← Zu den Bands
-          </a>
+          </Link>
         </div>
 
         {/* Success banners */}
