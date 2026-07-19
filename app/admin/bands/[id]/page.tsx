@@ -9,6 +9,8 @@ import type { LocationData } from './LocationEditSection'
 import { LocationReassignSection } from './LocationReassignSection'
 import { SimilarBandsSection } from './SimilarBandsSection'
 import type { SimilarBandSlotData } from './SimilarBandsSection'
+import { MoodEditorSection } from './MoodEditorSection'
+import type { BandMoodAssignment, MoodCatalogEntry } from '@/lib/moods/sortAssignments'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Band bearbeiten' }
@@ -99,6 +101,17 @@ const BAND_TYPES_ERROR_MESSAGES: Record<string, string> = {
   primary_in_secondary: 'Die primäre Bandart darf nicht auch als sekundär gewählt sein.',
   invalid_band_type:    'Ungültige Bandart-ID – bitte Seite neu laden.',
   db_error:             'Datenbankfehler – bitte erneut versuchen.',
+}
+
+const MOOD_ERROR_MESSAGES: Record<string, string> = {
+  mood_band_not_found:    'Band nicht gefunden.',
+  mood_targets_required:  'Unerwarteter Fehler beim Speichern – bitte Seite neu laden und erneut versuchen.',
+  mood_too_many:          'Maximal 4 Moods möglich.',
+  mood_null_target:       'Unerwarteter Fehler beim Speichern – bitte Seite neu laden und erneut versuchen.',
+  mood_duplicate:         'Derselbe Mood wurde mehrfach ausgewählt.',
+  mood_not_found:         'Ein ausgewählter Mood existiert nicht mehr – bitte Seite neu laden.',
+  mood_not_active:        'Ein ausgewählter Mood ist nicht mehr aktiv – bitte Seite neu laden.',
+  db_error:               'Datenbankfehler – bitte erneut versuchen.',
 }
 
 type ActiveEventType = {
@@ -205,6 +218,8 @@ type SearchParams = Promise<{
   location_reassign_error?: string
   similar_saved?: string
   similar_error?: string
+  mood_saved?: string
+  mood_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -352,9 +367,23 @@ export default async function AdminBandDetailPage({
   }
   type CandidateBandRow = { id: string; name: string }
 
+  // Moods: aktiver Katalog (fuer die Auswahloptionen) + bestehende
+  // Zuordnungen dieser Band inkl. eingebettetem Mood-Objekt JEGLICHEN
+  // Status (fuer die Datenkonflikt-Erkennung bei inzwischen inaktiven
+  // Moods -- siehe MoodEditorSection). Beide Queries laufen rein
+  // lesend, keine Normalisierung, keine Schreiboperation.
+  type MoodCatalogRow = MoodCatalogEntry
+  type BandMoodRow = {
+    mood_id: string
+    sort_order: number | null
+    moods: MoodCatalogEntry | null
+  }
+
   const [
     { data: similarRelationsRaw, error: similarRelationsError },
     { data: candidateBandsRaw, error: candidateBandsError },
+    { data: moodCatalogRaw, error: moodCatalogError },
+    { data: bandMoodsRaw, error: bandMoodsError },
   ] = await Promise.all([
     client
       .from('band_relations')
@@ -371,6 +400,18 @@ export default async function AdminBandDetailPage({
       .neq('id', id)
       .order('name', { ascending: true })
       .returns<CandidateBandRow[]>(),
+    client
+      .from('moods')
+      .select('id, name, slug, description, status, sort_order')
+      .eq('status', 'active')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+      .returns<MoodCatalogRow[]>(),
+    client
+      .from('band_moods')
+      .select('mood_id, sort_order, moods(id, name, slug, description, status, sort_order)')
+      .eq('band_id', id)
+      .returns<BandMoodRow[]>(),
   ])
 
   // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
@@ -392,6 +433,18 @@ export default async function AdminBandDetailPage({
   }
 
   const candidateBands = candidateBandsRaw ?? []
+
+  // Gleiche Fail-closed-Logik wie bei Similar Bands: ein Ladefehler darf
+  // nie als "keine Zuordnungen" (leerer Zustand) interpretiert werden --
+  // MoodEditorSection rendert bei loadError=true nur einen Fehlerzustand,
+  // kein Formular, kein Submit.
+  const moodsLoadError = !!moodCatalogError || !!bandMoodsError
+  const moodCatalog: MoodCatalogEntry[] = moodCatalogRaw ?? []
+  const bandMoodAssignments: BandMoodAssignment[] = (bandMoodsRaw ?? []).map((row) => ({
+    mood_id: row.mood_id,
+    sort_order: row.sort_order ?? 0,
+    mood: row.moods,
+  }))
 
   let locationUsageCount = 0
   if (band.home_location_id) {
@@ -424,6 +477,9 @@ export default async function AdminBandDetailPage({
     : null
   const similarErrorMsg = sp.similar_error
     ? (SIMILAR_ERROR_MESSAGES[sp.similar_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const moodErrorMsg = sp.mood_error
+    ? (MOOD_ERROR_MESSAGES[sp.mood_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -643,6 +699,16 @@ export default async function AdminBandDetailPage({
           </form>
         </div>
         {/* ─── Ende Bandart ───────────────────────── */}
+
+        {/* Klingt nach (Mood-Editor) */}
+        <MoodEditorSection
+          bandId={band.id}
+          moodCatalog={moodCatalog}
+          assignments={bandMoodAssignments}
+          loadError={moodsLoadError}
+          successMsg={sp.mood_saved ? 'Moods gespeichert.' : undefined}
+          errorMsg={moodErrorMsg ?? undefined}
+        />
 
         {/* ─── Kontakte ─────────────────────────────── */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">

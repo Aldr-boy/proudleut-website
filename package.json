@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test lib/moods/sortAssignments.test.ts lib/moods/slug.test.ts lib/moods/feierCluster.test.ts lib/moods/usageCount.test.ts lib/moods/description.test.ts lib/moods/conflicts.test.ts"
   },
   "dependencies": {
     "@sanity/image-url": "^2.1.1",

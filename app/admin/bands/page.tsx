@@ -83,6 +83,12 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
               {bandList.length} {bandList.length === 1 ? 'Band' : 'Bands'}
             </span>
             <a
+              href="/admin/moods"
+              className="text-sm text-violet-700 hover:text-violet-900 hover:underline transition-colors"
+            >
+              Mood-Katalog verwalten
+            </a>
+            <a
               href="/admin/bands/new"
               className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
             >

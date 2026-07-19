@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
+import { compactRankSlots } from '@/lib/moods/sortAssignments'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -890,4 +891,71 @@ export async function updateSimilarBandsAction(formData: FormData): Promise<neve
   if (error) redirect(`/admin/bands/${bandRow.id}?similar_error=${similarErrorCode(error)}`)
 
   redirect(`/admin/bands/${bandRow.id}?similar_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// updateBandMoodsAction (RPC public.set_band_moods)
+// Schreibt ausschliesslich ueber die SECURITY DEFINER RPC -- service_role
+// hat bewusst KEINE INSERT/UPDATE/DELETE-Table-Grants auf band_moods
+// (siehe supabase/band_moods_admin_write_lockdown.sql). Maximal-4-/
+// Duplikat-/Aktiv-Pruefung laeuft atomar in der RPC; diese Action
+// mapped nur die resultierenden PL-Fehlercodes auf stabile String-Codes
+// fuer die Fehlermeldungs-Map in page.tsx.
+// ─────────────────────────────────────────
+
+const MOOD_ERRCODE_TO_SLUG: Record<string, string> = {
+  PM001: 'mood_band_not_found',
+  PM002: 'mood_targets_required',
+  PM003: 'mood_too_many',
+  PM004: 'mood_null_target',
+  PM005: 'mood_duplicate',
+  PM006: 'mood_not_found',
+  PM007: 'mood_not_active',
+}
+
+const MOOD_MESSAGE_SLUGS = new Set(Object.values(MOOD_ERRCODE_TO_SLUG))
+
+// Primaer ueber error.code (PL-ERRCODE), error.message (Slug) nur als
+// Fallback, danach genereller db_error-Fallback.
+function moodErrorCode(error: { code?: string | null; message?: string | null }): string {
+  if (error.code && MOOD_ERRCODE_TO_SLUG[error.code]) return MOOD_ERRCODE_TO_SLUG[error.code]
+  if (error.message && MOOD_MESSAGE_SLUGS.has(error.message)) return error.message
+  return 'db_error'
+}
+
+export async function updateBandMoodsAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  // band_id ist nur Lookup-Key -- Band frisch aus der DB lesen, nie aus
+  // dem Hidden Field selbst fuer die RPC vertrauen
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?mood_error=mood_band_not_found`)
+
+  // Slot-Werte -- leere Zwischenplaetze herausfiltern, Reihenfolge =
+  // Rang-Reihenfolge. Kompaktierung passiert hier (lib/moods/sortAssignments.ts);
+  // die RPC kompaktiert selbst nicht nach, sie nimmt die Array-Position
+  // als sort_order.
+  const p_mood_ids = compactRankSlots([
+    str(formData, 'slot_1') || null,
+    str(formData, 'slot_2') || null,
+    str(formData, 'slot_3') || null,
+    str(formData, 'slot_4') || null,
+  ])
+
+  const { error } = await client.rpc('set_band_moods', {
+    p_band_id: bandRow.id,
+    p_mood_ids,
+  })
+
+  if (error) redirect(`/admin/bands/${bandRow.id}?mood_error=${moodErrorCode(error)}`)
+
+  redirect(`/admin/bands/${bandRow.id}?mood_saved=1`)
 }
