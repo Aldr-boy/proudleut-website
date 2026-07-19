@@ -16,9 +16,13 @@ ergänzt, nicht überschrieben.
 - Fachlicher Zwischenstand nach Runde 3: **95 von 141**
 - Weiterhin offen nach Runde 3: **46**
 - In Runde 4 final freigegeben: **39 Bands**
-- Fachlicher Zwischenstand nach Runde 4: **134 von 141**
-- Weiterhin offen nach Runde 4: **7**
-- Alle 141 Bands mindestens einmal fachlich geprüft
+- Fachlicher Zwischenstand nach Runde 4 (vor Schlussentscheidung): **134 von 141**
+- Schlussentscheidung zu den verbliebenen 7 Fällen getroffen — siehe
+  „Abschluss der Kuration" unten
+- **Abschluss der Kuration: 141 von 141 aktive Bands fachlich geprüft
+  und entschieden**
+- Davon mit mindestens einer Mood-Zuordnung: **135**
+- Davon bewusster, begründeter Empty State: **6**
 
 Hinweis: „fachlich freigegeben" bedeutet, dass die Mood-Zuordnung
 kuratiert und dokumentiert ist. Es ist keine Aussage über einen
@@ -157,58 +161,69 @@ Nicht benötigte Mood-Spalten bleiben leer.
 
 ---
 
-## Fachlich geprüft, weiterhin offen
+## Sonderfälle (fachlich abgeschlossen)
 
-Diese Bands wurden in den jeweils genannten Runden inhaltlich geprüft,
-erhalten aber bewusst noch keine finale Mood-Zuordnung. Sie werden in
-künftigen Runden nicht erneut in die reguläre Auswahl gemischt,
-sondern bleiben in dieser zentralen Liste, bis eine gesonderte
-Entscheidung erfolgt.
+Diese sieben Bands wurden in den jeweils genannten Runden inhaltlich
+geprüft und mit der Schlussentscheidung unter „Abschluss der
+Kuration" final entschieden — sechs davon als bewusster, begründeter
+Empty State, eine (Bigband STEINBACH) mit teils bestätigten, teils
+entfernten bzw. geparkten Moods. Ein Empty State ist dabei ein
+fachlich fertiges Ergebnis, kein offener Fall. Diese Liste dokumentiert
+weiterhin die fachliche Begründung je Band und wird nicht mehr in
+künftige reguläre Kurationsrunden gemischt.
 
-- **Bigband STEINBACH** — besitzt bereits Production-`band_moods`
+- **Bigband STEINBACH** — besaß Production-`band_moods`
   (Tanzflächen-Garantie, Konzertant & hochwertig, Festlich und
-  ausgelassen, Brass-Power, `sort_order` durchgehend 0). Fachlich
-  offen: „Festlich und ausgelassen" hat im aktuellen `Klingt_Nach`
-  keine klare Textstütze; Brass-Power ist als Sonder-Mood bekannt und
-  bleibt Übergangsfall bis Paket D. Wird am Ende gemeinsam entschieden
-  (möglicher Zusammenhang mit einer späteren Repertoire- oder
-  Katalogentscheidung). Bis dahin keine Production-Änderung, keine
-  vorläufige Neusortierung.
-- **Blechhilfswerk** — kein Treffer im 13er-Katalog. Siehe
-  Kataloglücken-Kandidaten unten für das dokumentierte Profil.
+  ausgelassen, Brass-Power, `sort_order` durchgehend 0). Schluss-
+  entscheidung: Tanzflächen-Garantie und Konzertant & hochwertig
+  bleiben regulär bestätigt (textlich gestützt). „Festlich und
+  ausgelassen" hat im aktuellen `Klingt_Nach` keine Textstütze mehr
+  und wird entfernt (technischer Write vorbereitet, siehe
+  `supabase/band_moods_steinbach_festlich_ausgelassen_removal.sql`).
+  Brass-Power bleibt unverändert bestehen und ist ausschließlich für
+  Paket D geparkt (siehe unten) — kein offener Kurationsfall mehr.
+- **Blechhilfswerk** — kein Treffer im 13er-Katalog. Schluss-
+  entscheidung: bewusster Empty State, keine Mood erzwungen. Die
+  mögliche Kataloglücke ist unten als geparkte Beobachtung dokumentiert.
 - **Duanix Musi** — Text überwiegend poetisch-atmosphärisch
   („Bajuwarische Urgewalt", „Trad mit Schmiss", „Chiemgau-Energie").
   „Tanzlmusi" allein gilt nicht als belastbarer Nachweis für
-  Tanzflächen-Garantie. Bei der Gesamtreview ggf. weitere belastbare
-  Bandinformationen außerhalb des `Klingt_Nach`-Texts hinzuziehen.
+  Tanzflächen-Garantie. Schlussentscheidung: bewusster Empty State.
+  Weitere Bandinformationen sind keine Voraussetzung für diesen
+  Abschluss, ermöglichen aber ggf. eine spätere Neuprüfung (geparkt).
 - **Hochdruck Böhmische** — Text verweist ausschließlich auf
   ausgeschlossene bzw. Übergangs-Moods (Tradition, Brass-Power).
-  Keine Mood-Zuordnung erzwungen, als Kataloglücken-Kandidat
-  dokumentiert (siehe unten).
-- **Silk and Sound** — Runde 4 geprüft. Bisher keine belastbare
-  Zuordnung im vorhandenen 13er-Katalog. AI-Text beschreibt vor allem
-  Zurückhaltung und Atmosphäre statt Aufmerksamkeit. Keine Mood
-  erzwungen. Schlussprüfung mit zusätzlichen belegten Profildaten
-  erforderlich.
+  Schlussentscheidung: bewusster Empty State, keine Mood erzwungen.
+  Die Brass-Power-Erwähnung bleibt reiner Paket-D-Hinweis.
+- **Silk and Sound** — Runde 4 geprüft. Keine belastbare Zuordnung im
+  vorhandenen 13er-Katalog, AI-Text beschreibt vor allem Zurückhaltung
+  und Atmosphäre statt Aufmerksamkeit. Schlussentscheidung: bewusster
+  Empty State, keine Mood erzwungen. Mögliche strukturelle Nähe zu
+  Smooth'n'Groove unten als geparkte Beobachtung dokumentiert.
 - **Rüscherl Muse** — Runde 4 geprüft. Redaktionelles Klingt_Nach
-  vorhanden. „Tanzlmusi mit frischem Schwung" reicht nicht für
-  Tanzflächen-Garantie, konsistent mit der bestehenden
-  Duanix-Abgrenzung. Keine Mood erzwungen. Schlussprüfung mit
-  weiteren Bandinformationen erforderlich.
+  vorhanden, aber „Tanzlmusi mit frischem Schwung" reicht nicht für
+  Tanzflächen-Garantie (konsistent mit der Duanix-Abgrenzung).
+  Schlussentscheidung: bewusster Empty State. Maßgeblich bleibt das
+  redaktionelle Klingt_Nach-Feld; der umfangreichere AI-Vorschlag wird
+  nicht ersatzweise als Beweisquelle verwendet. Eine mögliche spätere
+  Überarbeitung des redaktionellen Texts ist unten als geparktes
+  Datenpflege-To-do dokumentiert.
 - **Smooth'n'Groove** — Runde 4 geprüft. Profil beschreibt bewusst
-  dezente Hintergrundmusik und Gesprächstauglichkeit. Kein sauberer
-  Treffer im vorhandenen 13er-Katalog. Als möglicher
-  Kataloglücken-Kandidat dokumentiert (siehe unten). Keine Mood
-  erzwungen.
+  dezente Hintergrundmusik und Gesprächstauglichkeit, kein sauberer
+  Treffer im vorhandenen 13er-Katalog. Schlussentscheidung: bewusster
+  Empty State, keine Mood erzwungen. Als möglicher Kataloglücken-
+  Kandidat unten geparkt dokumentiert.
 
 ---
 
 ## Kataloglücken-Kandidaten
 
 Fortlaufende Liste von Bands, deren Airtable-Text auf eine
-möglicherweise fehlende Mood im 13er-Katalog hindeutet. Erst nach
-allen vier Runden bewerten, ob sich daraus ausreichend Evidenz für
-eine zusätzliche Mood ergibt.
+möglicherweise fehlende Mood im 13er-Katalog hindeutet. Diese Liste
+ist mit Abschluss der regulären Kuration vollständig; ob sich daraus
+ausreichend Evidenz für einen zusätzlichen Mood ergibt, ist eine
+separate, geparkte Produktentscheidung und kein Bestandteil des
+aktuellen Kurationsabschlusses (siehe „Abschluss der Kuration" unten).
 
 - **Hochdruck Böhmische** — Text verweist ausschließlich auf
   ausgeschlossene bzw. Übergangs-Moods (Tradition, Brass-Power).
@@ -227,8 +242,8 @@ Bestand auftretendes kirchlich-festliches Profil, das im aktuellen
 13er-Katalog nicht sauber abgebildet ist (vgl. Blechhilfswerks
 „Kirchlich & festlich"). Die Band selbst ist fachlich mit
 Festzeltenergie abgeschlossen (kein offener Fall) — der Hinweis dient
-ausschließlich der späteren Katalogbewertung nach Abschluss aller vier
-Runden.
+ausschließlich der späteren, geparkten Katalogbewertung und ist kein
+Bestandteil des aktuellen Kurationsabschlusses.
 
 ---
 
@@ -358,7 +373,9 @@ Von den 46 weiterhin offenen Bands sind:
 ## Zwischenstand nach Runde 4
 
 **134 von 141** öffentlich relevanten Bands fachlich fertig kuratiert
-(95 nach Runde 3 + 39 aus Runde 4). **7** weiterhin offen.
+(95 nach Runde 3 + 39 aus Runde 4). **7** weiterhin offen. (Zahlen vor
+der Schlussentscheidung — siehe „Abschluss der Kuration" unten für den
+finalen Stand.)
 
 Runde 4 umfasst alle 42 zuvor ungeprüften Bands — damit ist die
 reguläre Erstprüfung des vollständigen Bestands abgeschlossen. Davon:
@@ -369,8 +386,9 @@ reguläre Erstprüfung des vollständigen Bestands abgeschlossen. Davon:
 - **1** Band als Kataloglücken-Kandidat dokumentiert (Smooth'n'Groove)
 
 Damit wurden alle 141 Bands mindestens einmal fachlich geprüft. Es
-folgt keine reguläre Kurationsrunde 5 — offen ist nur noch die
-gezielte Schlussentscheidung über sieben dokumentierte Fälle:
+folgt keine reguläre Kurationsrunde 5. Die Schlussentscheidung über
+die sieben verbliebenen Fälle wurde unmittelbar im Anschluss
+getroffen — siehe „Abschluss der Kuration" unten:
 
 - Bigband STEINBACH
 - Blechhilfswerk
@@ -379,3 +397,47 @@ gezielte Schlussentscheidung über sieben dokumentierte Fälle:
 - Silk and Sound
 - Rüscherl Muse
 - Smooth'n'Groove
+
+## Abschluss der Kuration
+
+Mit der Schlussentscheidung zu den sieben zuvor verbliebenen Fällen
+ist die reguläre „Klingt nach"-Kuration abgeschlossen.
+
+**Grundsatzentscheidung:** Ein bewusst begründeter Empty State ist ein
+fachlich fertiges Ergebnis, kein offener Fall. Die bisherige
+Steuerungszahl „fachlich fertig" (die bewusste Empty States nicht
+mitzählte) wird deshalb nicht fortgeführt.
+
+**Steuerungszahlen ab sofort:**
+
+- **141 von 141** aktiven Bands fachlich geprüft und entschieden
+- **135** Bands mit mindestens einer Mood-Zuordnung
+- **6** Bands mit bewusstem, begründetem Empty State (Blechhilfswerk,
+  Duanix Musi, Hochdruck Böhmische, Silk and Sound, Rüscherl Muse,
+  Smooth'n'Groove)
+
+Diese drei Zahlen sind getrennt zu betrachten: „fachlich entschieden"
+ist der Abschlussstatus, „mit Mood-Zuordnung" und „Empty State" sind
+das inhaltliche Ergebnis dieser Entscheidung — keines der beiden macht
+das andere unfertig. Bigband STEINBACH zählt in „fachlich entschieden"
+und in „mit Mood-Zuordnung" (zwei reguläre Moods bestätigt), aber
+nicht als Empty State.
+
+Die einzelnen Schlussentscheidungen sind oben unter „Sonderfälle
+(fachlich abgeschlossen)" je Band dokumentiert.
+
+### Geparkte Folgefragen (kein Bestandteil des aktuellen Abschlusses)
+
+Folgende Punkte sind für spätere, separate Prüfungen geparkt und
+blockieren den Abschluss der aktuellen Kuration nicht:
+
+- Paket D: Brass-Power bei Bigband STEINBACH und eine mögliche
+  spätere Gesamtbewertung dieses Sonder-Moods
+- mögliche Kataloglücke „kirchlich-festlich" (Blechhilfswerk,
+  Hochdruck Böhmische teilweise, Zusatzhinweis Katharina Kornprobst)
+- mögliche Kataloglücke „dezente/gehobene Hintergrundmusik" (Silk and
+  Sound, Smooth'n'Groove)
+- mögliche redaktionelle Textpflege des `Klingt_Nach`-Felds bei
+  Rüscherl Muse
+- mögliche spätere Neubewertung von Duanix Musi oder anderen Empty-
+  State-Bands, falls bessere redaktionelle Daten hinzukommen
