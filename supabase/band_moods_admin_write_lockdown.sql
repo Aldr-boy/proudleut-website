@@ -1,0 +1,48 @@
+-- ============================================================
+-- band_moods_admin_write_lockdown.sql
+--
+-- NOCH NICHT AUSGEFUEHRT. Nach fn_set_band_moods.sql auszufuehren
+-- (siehe Completion Report fuer die genaue Reihenfolge) -- diese Datei
+-- entzieht direkte Schreibrechte, die die vorherigen Klingt-nach-
+-- Migrationen (Batch 1, Runde 1+2, Runde 3+4, STEINBACH-Korrektur)
+-- benoetigten, jetzt aber nicht mehr, sobald der Admin-Schreibpfad
+-- ausschliesslich ueber public.set_band_moods() laeuft.
+--
+-- Sprint: Admin "Klingt nach" -- Mood-Editor
+-- Datum des Entwurfs: 20.07.2026
+--
+-- Vorbild/Muster: supabase/band_relations_admin_read_grant.sql
+-- (identisches Prinzip: Sollzustand-Deklaration, REVOKE + GRANT SELECT
+-- als expliziter, idempotenter Soll-Zustand statt Delta-Migration).
+--
+-- Bewusst NUR SELECT fuer service_role auf band_moods. Schreiben laeuft
+-- ab sofort ausschliesslich ueber die SECURITY DEFINER Funktion
+-- public.set_band_moods() (siehe supabase/fn_set_band_moods.sql).
+--
+-- Bisheriger Zustand (siehe supabase/setup-grants-and-seed.sql und
+-- supabase/grant-service-role-permissions-v2.sql): service_role hatte
+-- volles SELECT, INSERT, UPDATE, DELETE auf band_moods -- notwendig fuer
+-- die bisherigen, einmaligen guard-gesicherten Import-/Korrektur-
+-- Migrationen des Klingt-nach-Rollouts. Dieser Rollout ist
+-- abgeschlossen (141/141 fachlich entschieden, PR #11 gemergt und
+-- verifiziert) -- der laufende Admin-Betrieb braucht diese direkten
+-- Schreibrechte nicht mehr.
+--
+-- Kein RLS-Bezug: service_role hat BYPASSRLS, Policies sind fuer diesen
+-- Grant nicht entscheidungsrelevant (siehe supabase/enable-rls-app-tables.sql
+-- fuer die anon-Policies, die von diesem Lockdown unberuehrt bleiben).
+--
+-- WICHTIG -- Reihenfolge: Diese Datei darf erst NACH erfolgreicher
+-- Ausfuehrung von fn_set_band_moods.sql ausgefuehrt werden. In
+-- umgekehrter Reihenfolge waere der Mood-Editor voruebergehend komplett
+-- schreibunfaehig (weder direkte Grants noch RPC vorhanden).
+-- ============================================================
+
+-- Sollzustand-Deklaration (idempotent):
+-- Schreiben auf band_moods laeuft ausschliesslich ueber die SECURITY
+-- DEFINER Funktion public.set_band_moods() (siehe
+-- supabase/fn_set_band_moods.sql). service_role bekommt hier bewusst
+-- KEIN INSERT/UPDATE/DELETE auf die Tabelle.
+revoke insert, update, delete on public.band_moods from service_role;
+
+grant select on public.band_moods to service_role;
