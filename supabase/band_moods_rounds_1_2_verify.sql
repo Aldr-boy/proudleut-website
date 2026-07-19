@@ -9,6 +9,34 @@
 -- Abhaengigkeit.
 -- ============================================================
 
+-- ============================================================
+-- AUSFUEHRUNGS- UND VERIFIKATIONSVERMERK
+--
+-- Ausgefuehrt: 19.07.2026, durch Xandi im Supabase SQL Editor gegen
+-- Production, Role postgres, unmittelbar nach dem erfolgreichen
+-- Import (supabase/band_moods_rounds_1_2_import.sql, Ergebnis
+-- "Success. No rows returned", keine Guard-Exception, keine sonstige
+-- ERROR-Meldung).
+--
+-- Ergebnis: 82 Ergebniszeilen, saemtliche 82 mit match = true, keine
+-- unerwartete Zeile. Aufschluesselung: 60x target_band (60/60
+-- Zielbaender aus Runde 1+2 exakt korrekt, 119/119 tatsaechliche
+-- Zuordnungen), 16x existing_unchanged (Donnaweda + 14 Batch-1-
+-- Baender + Bigband STEINBACH unveraendert -- STEINBACHs vier
+-- bestehende Zuordnungen unveraendert), 3x no_assignment_expected
+-- (Blechhilfswerk, Duanix Musi, Hochdruck Boehmische weiterhin mit 0
+-- Zeilen, unveraendert offen), 1x rounds_1_2_summary (60/60, 119/119),
+-- 1x bands_with_band_moods_total (76 Baender mit mindestens einem
+-- band_moods-Eintrag), 1x steuerungszahl (75 von 141 Baender fachlich
+-- fertig).
+--
+-- Die Differenz von genau 1 zwischen 76 (Baender mit Eintrag) und 75
+-- (fachlich fertig) ist ausschliesslich Bigband STEINBACH zuzuordnen
+-- -- STEINBACH zaehlt gemaess der seit Paket C geltenden Regel
+-- weiterhin nicht als fachlich fertig, obwohl vier Zuordnungen
+-- bestehen.
+-- ============================================================
+
 with expected (band_name, band_id, mood_slug, sort_order) as (
   values
     ('5toBeat', '354e2447-41f0-487a-a46d-a2d209dc890b'::uuid, 'tanzflaechen-garantie', 1),

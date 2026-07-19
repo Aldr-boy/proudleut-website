@@ -45,6 +45,40 @@
 -- Bands -- kein universelles Fingerprint-System.
 -- ============================================================
 
+-- ============================================================
+-- AUSFUEHRUNGS- UND VERIFIKATIONSVERMERK
+--
+-- Ausgefuehrt: 19.07.2026, durch Xandi im Supabase SQL Editor gegen
+-- Production, Role postgres.
+--
+-- Import: einmal fehlerfrei ausgefuehrt. Ergebnis "Success. No rows
+-- returned". Keine Guard-Exception, keine sonstige ERROR-Meldung.
+-- Keine Wiederholung erforderlich oder erfolgt.
+--
+-- Verify (supabase/band_moods_rounds_1_2_verify.sql, separat
+-- unmittelbar danach ausgefuehrt): 82 Ergebniszeilen, saemtliche 82
+-- mit match = true, keine unerwartete Zeile. Aufschluesselung: 60x
+-- target_band (alle 60 Zielbaender aus Runde 1+2 exakt korrekt,
+-- 119 tatsaechliche Zuordnungen), 16x existing_unchanged (Donnaweda +
+-- 14 Batch-1-Baender + Bigband STEINBACH -- STEINBACHs vier
+-- bestehende Zuordnungen unveraendert), 3x no_assignment_expected
+-- (Blechhilfswerk, Duanix Musi, Hochdruck Boehmische -- weiterhin 0
+-- Zeilen, unveraendert offen), 1x rounds_1_2_summary (60/60
+-- Zielbaender, 119/119 Zuordnungen), 1x bands_with_band_moods_total
+-- (76 Baender mit mindestens einem band_moods-Eintrag), 1x
+-- steuerungszahl (75 von 141 Baender fachlich fertig).
+--
+-- Die Differenz von genau 1 zwischen 76 (Baender mit Eintrag) und 75
+-- (fachlich fertig) ist ausschliesslich Bigband STEINBACH zuzuordnen:
+-- STEINBACH besitzt weiterhin vier unveraenderte band_moods-Zeilen,
+-- zaehlt aber gemaess der seit Paket C geltenden Regel weiterhin
+-- nicht als fachlich fertig.
+--
+-- Damit ist der technische Zwischenlauf nach den Kurationsrunden 1
+-- und 2 vollstaendig und wie spezifiziert production-verifiziert
+-- abgeschlossen.
+-- ============================================================
+
 begin;
 
 do $$
