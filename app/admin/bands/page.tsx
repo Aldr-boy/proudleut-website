@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/admin/actions'
 
@@ -82,12 +83,12 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
             <span className="text-sm text-gray-500">
               {bandList.length} {bandList.length === 1 ? 'Band' : 'Bands'}
             </span>
-            <a
+            <Link
               href="/admin/moods"
               className="text-sm text-violet-700 hover:text-violet-900 hover:underline transition-colors"
             >
               Mood-Katalog verwalten
-            </a>
+            </Link>
             <a
               href="/admin/bands/new"
               className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
