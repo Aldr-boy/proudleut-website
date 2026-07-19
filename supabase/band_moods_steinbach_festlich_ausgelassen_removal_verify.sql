@@ -18,16 +18,23 @@ with expected (band_name, band_id, mood_slug, sort_order) as (
     ('Bigband STEINBACH', '236d642f-7b8d-48c0-a7cf-6e81fbac869b'::uuid, 'konzertant-hochwertig', 0),
     ('Bigband STEINBACH', '236d642f-7b8d-48c0-a7cf-6e81fbac869b'::uuid, 'brass-power', 0)
 ),
+-- expected_agg/actual_agg aggregieren jeweils die Kombination aus
+-- slug UND sort_order (nicht nur den Slug) als deterministisch nach
+-- Slug sortiertes "slug=sort_order"-Array -- exakt dasselbe NULL-
+-- sichere Muster wie die Pre-/Postcheck-Guards in
+-- band_moods_steinbach_festlich_ausgelassen_removal.sql. Dadurch
+-- fuehrt eine richtige Slug-Menge mit falschem sort_order ebenfalls
+-- zu match = false, nicht nur eine falsche oder fehlende Zuordnung.
 expected_agg as (
   select band_name, band_id,
-         array_agg(mood_slug order by mood_slug) as expected_slugs,
+         array_agg(mood_slug || '=' || sort_order::text order by mood_slug) as expected_pairs,
          count(*) as expected_count
   from expected
   group by band_name, band_id
 ),
 actual_agg as (
   select bm.band_id,
-         array_agg(m.slug order by m.slug) as actual_slugs,
+         array_agg(m.slug || '=' || bm.sort_order::text order by m.slug) as actual_pairs,
          count(*) as actual_count
   from public.band_moods bm
   join public.moods m on m.id = bm.mood_id
@@ -38,9 +45,9 @@ band_row as (
   select
     'steinbach_post_removal'::text as report_section,
     e.band_name as key,
-    array_to_string(e.expected_slugs, ',') || ' (n=' || e.expected_count || ')' as expected,
-    coalesce(array_to_string(a.actual_slugs, ','), '(keine Zeilen)') || ' (n=' || coalesce(a.actual_count, 0) || ')' as actual,
-    coalesce(a.actual_slugs = e.expected_slugs and a.actual_count = e.expected_count, false) as match
+    array_to_string(e.expected_pairs, ',') || ' (n=' || e.expected_count || ')' as expected,
+    coalesce(array_to_string(a.actual_pairs, ','), '(keine Zeilen)') || ' (n=' || coalesce(a.actual_count, 0) || ')' as actual,
+    coalesce(a.actual_pairs = e.expected_pairs and a.actual_count = e.expected_count, false) as match
   from expected_agg e
   left join actual_agg a on a.band_id = e.band_id
 ),
