@@ -172,13 +172,16 @@ fachlich fertiges Ergebnis, kein offener Fall. Diese Liste dokumentiert
 weiterhin die fachliche Begründung je Band und wird nicht mehr in
 künftige reguläre Kurationsrunden gemischt.
 
-- **Bigband STEINBACH** — besaß Production-`band_moods`
-  (Tanzflächen-Garantie, Konzertant & hochwertig, Festlich und
-  ausgelassen, Brass-Power, `sort_order` durchgehend 0). Schluss-
+- **Bigband STEINBACH** — besitzt aktuell, vor Ausführung der
+  vorbereiteten Entfernungsmigration, die Production-`band_moods`
+  Tanzflächen-Garantie, Konzertant & hochwertig, Festlich und
+  ausgelassen sowie Brass-Power (`sort_order` durchgehend 0). Schluss-
   entscheidung: Tanzflächen-Garantie und Konzertant & hochwertig
   bleiben regulär bestätigt (textlich gestützt). „Festlich und
   ausgelassen" hat im aktuellen `Klingt_Nach` keine Textstütze mehr
-  und wird entfernt (technischer Write vorbereitet, siehe
+  und ist fachlich zur Entfernung entschieden — die Entfernung ist
+  technisch vorbereitet, aber noch nicht in Production ausgeführt
+  (siehe
   `supabase/band_moods_steinbach_festlich_ausgelassen_removal.sql`).
   Brass-Power bleibt unverändert bestehen und ist ausschließlich für
   Paket D geparkt (siehe unten) — kein offener Kurationsfall mehr.
@@ -415,6 +418,15 @@ mitzählte) wird deshalb nicht fortgeführt.
 - **6** Bands mit bewusstem, begründetem Empty State (Blechhilfswerk,
   Duanix Musi, Hochdruck Böhmische, Silk and Sound, Rüscherl Muse,
   Smooth'n'Groove)
+
+Diese Zahlen beschreiben den fachlichen Kurations-Sollstand, nicht den
+vollständigen Production-Iststand. Der technische Production-Import
+der Runden 3 und 4 mit zusammen 59 Bands (20 aus Runde 3 + 39 aus
+Runde 4) sowie die vorbereitete STEINBACH-Entfernung sind separate,
+noch ausstehende Schritte und nicht Bestandteil dieses
+Dokumentationsabschlusses. Der Gesamtstand setzt sich aus 16 bereits
+vor den vier Kurationsrunden behandelten Bands, 119 Entscheidungen aus
+den Runden 1 bis 4 und 6 bewussten Empty States zusammen.
 
 Diese drei Zahlen sind getrennt zu betrachten: „fachlich entschieden"
 ist der Abschlussstatus, „mit Mood-Zuordnung" und „Empty State" sind
