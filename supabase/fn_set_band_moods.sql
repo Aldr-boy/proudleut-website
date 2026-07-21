@@ -75,6 +75,11 @@
 --   - Kein Element des Mood-Arrays ist NULL
 --   - Maximal 4 Eintraege
 --   - Keine Duplikate innerhalb des Arrays
+--   - Alle ausgewaehlten Mood-Zeilen werden in deterministischer UUID-
+--     Reihenfolge FOR SHARE gesperrt. Das serialisiert diesen Setter mit
+--     archive_mood/reactivate_mood/update_mood und verhindert den
+--     Parallelfall "als active gelesen, gleichzeitig archiviert, danach
+--     trotzdem zugeordnet".
 --   - Alle Mood-IDs existieren
 --   - Alle ausgewaehlten Moods sind status='active'
 --
@@ -172,6 +177,18 @@ begin
             detail = 'p_mood_ids contains duplicate values';
   end if;
 
+  -- ---- Ausgewaehlte Mood-Zeilen gegen parallele Statuswechsel sperren ----
+  -- FOR SHARE kollidiert mit den FOR-UPDATE-/UPDATE-Locks der Katalog-RPCs.
+  -- Die feste UUID-Reihenfolge verhindert Deadlocks bei ueberlappenden
+  -- parallelen set_band_moods-Aufrufen. Nach einem eventuellen Warten liest
+  -- die folgende Existenz-/Statuspruefung unter READ COMMITTED den dann
+  -- aktuellen, committed Zustand.
+  perform 1
+  from public.moods m
+  where m.id = any (p_mood_ids)
+  order by m.id
+  for share;
+
   -- ---- Jede Mood-ID: Existenz + active ----
   for v_mood_id in select unnest(p_mood_ids)
   loop
@@ -235,3 +252,22 @@ revoke all on function public.set_band_moods(uuid, uuid[]) from public;
 revoke all on function public.set_band_moods(uuid, uuid[]) from anon;
 revoke all on function public.set_band_moods(uuid, uuid[]) from authenticated;
 grant execute on function public.set_band_moods(uuid, uuid[]) to service_role;
+
+-- ------------------------------------------------------------
+-- MANUELLER ZWEI-SESSION-CONCURRENCY-SMOKE (nach Setup, kein Teil dieser
+-- Migration):
+--
+-- Richtung A (Setter haelt Lock, Archivierung wartet):
+--   Session 1: BEGIN; set_band_moods fuer eine Band mit unveraendertem
+--              Zielzustand aufrufen; Transaktion offen lassen.
+--   Session 2: archive_mood fuer einen der ausgewaehlten Moods aufrufen.
+--              Erwartung: wartet bis Session 1 endet; danach bei bestehender
+--              Zuordnung MC011. Beide Sessions mit ROLLBACK beenden.
+--
+-- Richtung B (Status-Lock haelt, Setter wartet):
+--   Session 1: BEGIN; SELECT id FROM public.moods WHERE id=<test-id>
+--              FOR UPDATE; Transaktion offen lassen.
+--   Session 2: set_band_moods mit diesem Mood aufrufen.
+--              Erwartung: wartet bis Session 1 endet und validiert danach
+--              den committed Status neu. Beide Sessions mit ROLLBACK beenden.
+-- ------------------------------------------------------------
