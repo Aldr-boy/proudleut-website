@@ -169,7 +169,7 @@ export default async function AdminMoodsPage({ searchParams }: { searchParams: S
                     name="name"
                     type="text"
                     required
-                    maxLength={100}
+                    maxLength={50}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
                 </div>
@@ -271,7 +271,7 @@ export default async function AdminMoodsPage({ searchParams }: { searchParams: S
                             type="text"
                             defaultValue={mood.name}
                             required
-                            maxLength={100}
+                            maxLength={50}
                             className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                           />
                         </div>
