@@ -41,12 +41,9 @@ function CloseIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-type IndicatorRect = { left: number; width: number };
-
 export default function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [indicator, setIndicator] = useState<IndicatorRect | null>(null);
 
   // Menue bei Routenwechsel schliessen -- als Render-Zeit-Anpassung statt
   // Effekt (React-Empfehlung fuer "State an eine geaenderte Prop anpassen"),
@@ -61,23 +58,38 @@ export default function Header() {
   const pillRef = useRef<HTMLElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const indicatorRef = useRef<HTMLSpanElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const firstMobileLinkRef = useRef<HTMLAnchorElement | null>(null);
 
   const activeHref = NAV_LINKS.find((l) => l.href === pathname)?.href;
 
+  // Rein dekorative DOM-Positionierung ohne React-State: die Messung
+  // schreibt transform/width/opacity direkt auf das Ref-Element. Kein
+  // Re-Render fuer eine reine Optik, kein setState in einem Effekt.
   function measureIndicator(href: string) {
     const el = linkRefs.current[href];
     const container = navRef.current;
-    if (!el || !container) return;
+    const indicatorEl = indicatorRef.current;
+    if (!el || !container || !indicatorEl) return;
     const elRect = el.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-    setIndicator({ left: elRect.left - containerRect.left, width: elRect.width });
+    indicatorEl.style.transform = `translateX(${elRect.left - containerRect.left}px)`;
+    indicatorEl.style.width = `${elRect.width}px`;
+    indicatorEl.style.opacity = '1';
+  }
+
+  function hideIndicator() {
+    const indicatorEl = indicatorRef.current;
+    if (!indicatorEl) return;
+    indicatorEl.style.transform = 'translateX(0px)';
+    indicatorEl.style.width = '0px';
+    indicatorEl.style.opacity = '0';
   }
 
   function resetIndicatorToActive() {
     if (activeHref) measureIndicator(activeHref);
-    else setIndicator(null);
+    else hideIndicator();
   }
 
   // Indikator folgt dem aktiven Link (Routenwechsel) und bleibt bei
@@ -177,13 +189,10 @@ export default function Header() {
               aria-label="Hauptnavigation"
             >
               <span
+                ref={indicatorRef}
                 aria-hidden="true"
                 className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-9 rounded-full bg-pl-accent-subtle motion-safe:transition-[transform,width,opacity] motion-safe:duration-300 motion-safe:ease-out"
-                style={
-                  indicator
-                    ? { transform: `translateX(${indicator.left}px)`, width: `${indicator.width}px`, opacity: 1 }
-                    : { transform: 'translateX(0px)', width: '0px', opacity: 0 }
-                }
+                style={{ transform: 'translateX(0px)', width: '0px', opacity: 0 }}
               />
               {NAV_LINKS.map((link) => {
                 const isActive = pathname === link.href;
@@ -220,7 +229,7 @@ export default function Header() {
             <button
               ref={menuButtonRef}
               type="button"
-              className="md:hidden shrink-0 p-2.5 rounded-full text-pl-accent active:scale-95 motion-safe:transition-transform"
+              className="md:hidden shrink-0 p-2.5 rounded-full bg-pl-accent text-pl-on-accent active:scale-95 motion-safe:transition-transform"
               aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
               aria-expanded={menuOpen}
               aria-controls={MOBILE_MENU_ID}
