@@ -51,7 +51,7 @@ export default async function RootLayout({
         }
       >
         {!isStudio && !isAdmin && <Header />}
-        <main className={isStudio ? "h-screen" : "flex-1"}>{children}</main>
+        <main id="main-content" className={isStudio ? "h-screen" : "flex-1"}>{children}</main>
         {!isStudio && !isAdmin && <Footer />}
         {!isStudio && !isAdmin && <MerklisteBar />}
         {process.env.NODE_ENV === 'development' && !isStudio && !isAdmin && <GridOverlay />}
