@@ -57,6 +57,11 @@
 
   /* ── Layout ── */
   --pl-container-width: 1140px;
+
+  /* Hoehe der schwebenden Pill-Navigation inkl. Abstand zum Viewport --
+     Fallback vor der praezisen JS-Messung in Header.tsx (ResizeObserver),
+     verfuegbar fuer scroll-margin-top an Ankerzielen. */
+  --pl-nav-height: 88px;
 }
 
 @theme inline {
@@ -111,6 +116,9 @@
 @utility bg-pl-gradient-stage     { background: var(--pl-gradient-stage);     }
 @utility bg-pl-gradient-footer    { background: var(--pl-gradient-footer);    }
 @utility bg-pl-gradient-spotlight { background: var(--pl-gradient-spotlight); }
+
+/* Scroll-Versatz fuer Ankerziele unter der schwebenden Pill-Navigation */
+@utility scroll-mt-nav { scroll-margin-top: var(--pl-nav-height); }
 
 @media (prefers-color-scheme: dark) {
   :root {

@@ -24,7 +24,7 @@ export default function Footer() {
           aria-label="Footer"
         >
           <Link href="/ueber-mich" className="hover:text-pl-on-stage motion-safe:transition-colors">
-            Über mich
+            Über Proudleut
           </Link>
           <Link href="/fuer-bands" className="hover:text-pl-on-stage motion-safe:transition-colors">
             Für Bands
