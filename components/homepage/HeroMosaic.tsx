@@ -35,17 +35,19 @@ export default function HeroMosaic() {
         style={{ background: "radial-gradient(ellipse at center, rgba(18,16,26,0.86) 0%, rgba(18,16,26,0.68) 38%, rgba(18,16,26,0.42) 70%, transparent 100%)" }}
       />
 
-      {/* Content */}
-      <div className="absolute inset-0 z-10 flex items-center justify-center px-4 sm:px-6 py-16">
+      {/* Content -- mobil oben ausgerichtet mit Abstand zur schwebenden
+          Pill-Navigation (fixed, ~12px + 56px hoch), ab md wieder wie
+          zuvor vertikal zentriert. */}
+      <div className="absolute inset-0 z-10 flex items-start justify-center md:items-center px-4 sm:px-6 pt-24 pb-10 md:py-16">
         <div className="text-center max-w-2xl">
-          <h1 className="text-3xl md:text-5xl font-bold text-pl-on-stage leading-tight mb-4">
-            Livebands entdecken –
+          <h1 className="text-3xl md:text-5xl font-bold text-pl-on-stage leading-tight mb-3 md:mb-4">
+            Livebands
             <br className="hidden sm:block" /> für dein Event
           </h1>
-          <p className="text-pl-on-stage text-lg md:text-xl mb-8 max-w-xl mx-auto">
-            Finde passende Livebands nach Anlass &amp; Stil – und kontaktiere sie direkt.
+          <p className="text-pl-on-stage text-lg md:text-xl mb-6 md:mb-8 max-w-xl mx-auto">
+            Finde passende Livebands nach Anlass &amp; Stil und kontaktiere sie direkt.
           </p>
-          <div className="flex flex-wrap justify-center gap-2 mb-10">
+          <div className="flex flex-wrap justify-center gap-2 mb-8 md:mb-10">
             {CATEGORIES.slice(0, 5).map((cat) => (
               <Link
                 key={cat.slug}
