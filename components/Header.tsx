@@ -168,11 +168,7 @@ export default function Header() {
         ref={pillRef as React.RefObject<HTMLElement>}
         className="fixed z-50 left-1/2 -translate-x-1/2 top-3 md:top-6 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-md md:w-auto md:max-w-none"
       >
-        <div
-          className={`bg-pl-paper border border-pl-soft shadow-[0_8px_30px_rgba(42,34,38,0.12)] motion-safe:transition-[border-radius] motion-safe:duration-300 ${
-            menuOpen ? 'rounded-[1.75rem] md:rounded-full' : 'rounded-full'
-          }`}
-        >
+        <div className="bg-pl-paper border border-pl-soft shadow-[0_8px_30px_rgba(42,34,38,0.12)] rounded-[1.75rem] md:rounded-full">
           <div className="h-14 md:h-16 pl-3 pr-2 md:pl-6 md:pr-2 flex items-center justify-between gap-2 md:gap-4">
             <Link
               href="/"
@@ -191,7 +187,7 @@ export default function Header() {
               <span
                 ref={indicatorRef}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-9 rounded-full bg-pl-accent-subtle motion-safe:transition-[transform,width,opacity] motion-safe:duration-300 motion-safe:ease-out"
+                className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 h-9 rounded-full bg-pl-accent/20 motion-safe:transition-[transform,width,opacity] motion-safe:duration-300 motion-safe:ease-out"
                 style={{ transform: 'translateX(0px)', width: '0px', opacity: 0 }}
               />
               {NAV_LINKS.map((link) => {
@@ -208,7 +204,9 @@ export default function Header() {
                     onFocus={() => measureIndicator(link.href)}
                     onMouseLeave={resetIndicatorToActive}
                     onBlur={resetIndicatorToActive}
-                    className="relative z-10 whitespace-nowrap px-4 py-2 rounded-full text-sm text-pl-text hover:text-pl-accent-deep motion-safe:transition-colors active:scale-95 motion-safe:transition-transform"
+                    className={`relative z-10 whitespace-nowrap px-4 py-2 rounded-full text-sm outline-none motion-safe:transition-colors active:scale-95 motion-safe:transition-transform hover:text-pl-accent-deep focus-visible:outline-none focus-visible:text-pl-accent-deep focus-visible:ring-2 focus-visible:ring-pl-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-pl-paper ${
+                      isActive ? 'text-pl-accent-deep' : 'text-pl-text'
+                    }`}
                   >
                     {link.label}
                   </Link>
@@ -251,19 +249,24 @@ export default function Header() {
           >
             <div className="overflow-hidden min-h-0">
               <nav className="flex flex-col px-4 pb-4 pt-1 gap-1" aria-label="Hauptnavigation mobil">
-                {NAV_LINKS.map((link, i) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    ref={i === 0 ? firstMobileLinkRef : undefined}
-                    aria-current={pathname === link.href ? 'page' : undefined}
-                    tabIndex={menuOpen ? undefined : -1}
-                    onClick={() => setMenuOpen(false)}
-                    className="px-3 py-2.5 rounded-xl text-pl-text text-base hover:bg-pl-accent-subtle motion-safe:transition-colors active:scale-95 motion-safe:transition-transform"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                {NAV_LINKS.map((link, i) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      ref={i === 0 ? firstMobileLinkRef : undefined}
+                      aria-current={isActive ? 'page' : undefined}
+                      tabIndex={menuOpen ? undefined : -1}
+                      onClick={() => setMenuOpen(false)}
+                      className={`px-3 py-2.5 rounded-xl text-base outline-none motion-safe:transition-colors active:scale-95 motion-safe:transition-transform hover:bg-pl-accent/20 hover:text-pl-accent-deep focus-visible:outline-none focus-visible:bg-pl-accent/20 focus-visible:text-pl-accent-deep focus-visible:ring-2 focus-visible:ring-pl-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-pl-paper ${
+                        isActive ? 'bg-pl-accent/20 text-pl-accent-deep' : 'text-pl-text'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
                 <Link
                   href={CTA.href}
                   tabIndex={menuOpen ? undefined : -1}
