@@ -11,6 +11,11 @@ import { SimilarBandsSection } from './SimilarBandsSection'
 import type { SimilarBandSlotData } from './SimilarBandsSection'
 import { MoodEditorSection } from './MoodEditorSection'
 import type { BandMoodAssignment, MoodCatalogEntry } from '@/lib/moods/sortAssignments'
+import { RepertoireStyleEditorSection } from './RepertoireStyleEditorSection'
+import type {
+  BandRepertoireStyleAssignment,
+  RepertoireStyleCatalogEntry,
+} from '@/lib/repertoireStyles/sortAssignments'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Band bearbeiten' }
@@ -112,6 +117,17 @@ const MOOD_ERROR_MESSAGES: Record<string, string> = {
   mood_not_found:         'Ein ausgewählter Mood existiert nicht mehr – bitte Seite neu laden.',
   mood_not_active:        'Ein ausgewählter Mood ist nicht mehr aktiv – bitte Seite neu laden.',
   db_error:               'Datenbankfehler – bitte erneut versuchen.',
+}
+
+const REPERTOIRE_STYLE_ERROR_MESSAGES: Record<string, string> = {
+  repertoire_band_not_found:    'Band nicht gefunden.',
+  repertoire_targets_required:  'Unerwarteter Fehler beim Speichern – bitte Seite neu laden und erneut versuchen.',
+  repertoire_too_many:          'Maximal 3 Einträge möglich.',
+  repertoire_null_target:       'Unerwarteter Fehler beim Speichern – bitte Seite neu laden und erneut versuchen.',
+  repertoire_duplicate:         'Derselbe Repertoire-Stil wurde mehrfach ausgewählt.',
+  repertoire_style_not_found:   'Ein ausgewählter Repertoire-Stil existiert nicht mehr – bitte Seite neu laden.',
+  repertoire_style_not_active:  'Ein ausgewählter Repertoire-Stil ist nicht mehr aktiv – bitte Seite neu laden.',
+  db_error:                     'Datenbankfehler – bitte erneut versuchen.',
 }
 
 type ActiveEventType = {
@@ -220,6 +236,8 @@ type SearchParams = Promise<{
   similar_error?: string
   mood_saved?: string
   mood_error?: string
+  repertoire_saved?: string
+  repertoire_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -379,11 +397,25 @@ export default async function AdminBandDetailPage({
     moods: MoodCatalogEntry | null
   }
 
+  // Repertoire-Styles ("Musikalisch verortet"): aktiver Katalog (fuer die
+  // Suchauswahl) + bestehende Zuordnungen dieser Band inkl. eingebettetem
+  // Katalogobjekt JEGLICHEN Status (fuer die Datenkonflikt-Erkennung bei
+  // inzwischen inaktiven/entfernten Eintraegen -- siehe
+  // RepertoireStyleEditorSection). Beide Queries laufen rein lesend.
+  type RepertoireStyleCatalogRow = RepertoireStyleCatalogEntry
+  type BandRepertoireStyleRow = {
+    repertoire_style_id: string
+    sort_order: number | null
+    repertoire_styles: RepertoireStyleCatalogEntry | null
+  }
+
   const [
     { data: similarRelationsRaw, error: similarRelationsError },
     { data: candidateBandsRaw, error: candidateBandsError },
     { data: moodCatalogRaw, error: moodCatalogError },
     { data: bandMoodsRaw, error: bandMoodsError },
+    { data: repertoireStyleCatalogRaw, error: repertoireStyleCatalogError },
+    { data: bandRepertoireStylesRaw, error: bandRepertoireStylesError },
   ] = await Promise.all([
     client
       .from('band_relations')
@@ -412,6 +444,18 @@ export default async function AdminBandDetailPage({
       .select('mood_id, sort_order, moods(id, name, slug, description, status, sort_order)')
       .eq('band_id', id)
       .returns<BandMoodRow[]>(),
+    client
+      .from('repertoire_styles')
+      .select('id, name, slug, description, status, sort_order')
+      .eq('status', 'active')
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+      .returns<RepertoireStyleCatalogRow[]>(),
+    client
+      .from('band_repertoire_styles')
+      .select('repertoire_style_id, sort_order, repertoire_styles(id, name, slug, description, status, sort_order)')
+      .eq('band_id', id)
+      .returns<BandRepertoireStyleRow[]>(),
   ])
 
   // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
@@ -444,6 +488,18 @@ export default async function AdminBandDetailPage({
     mood_id: row.mood_id,
     sort_order: row.sort_order ?? 0,
     mood: row.moods,
+  }))
+
+  // Gleiche Fail-closed-Logik wie bei Moods/Aehnlichen Bands: ein
+  // Ladefehler darf nie als "keine Zuordnungen" (leerer Zustand)
+  // interpretiert werden -- RepertoireStyleEditorSection rendert bei
+  // loadError=true nur einen Fehlerzustand, kein Formular, kein Submit.
+  const repertoireStylesLoadError = !!repertoireStyleCatalogError || !!bandRepertoireStylesError
+  const repertoireStyleCatalog: RepertoireStyleCatalogEntry[] = repertoireStyleCatalogRaw ?? []
+  const bandRepertoireStyleAssignments: BandRepertoireStyleAssignment[] = (bandRepertoireStylesRaw ?? []).map((row) => ({
+    repertoire_style_id: row.repertoire_style_id,
+    sort_order: row.sort_order ?? 0,
+    repertoire_style: row.repertoire_styles,
   }))
 
   let locationUsageCount = 0
@@ -480,6 +536,9 @@ export default async function AdminBandDetailPage({
     : null
   const moodErrorMsg = sp.mood_error
     ? (MOOD_ERROR_MESSAGES[sp.mood_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const repertoireErrorMsg = sp.repertoire_error
+    ? (REPERTOIRE_STYLE_ERROR_MESSAGES[sp.repertoire_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -708,6 +767,16 @@ export default async function AdminBandDetailPage({
           loadError={moodsLoadError}
           successMsg={sp.mood_saved ? 'Moods gespeichert.' : undefined}
           errorMsg={moodErrorMsg ?? undefined}
+        />
+
+        {/* Musikalisch verortet (Repertoire-Style-Editor) */}
+        <RepertoireStyleEditorSection
+          bandId={band.id}
+          catalog={repertoireStyleCatalog}
+          assignments={bandRepertoireStyleAssignments}
+          loadError={repertoireStylesLoadError}
+          successMsg={sp.repertoire_saved ? 'Musikalisch verortet gespeichert.' : undefined}
+          errorMsg={repertoireErrorMsg ?? undefined}
         />
 
         {/* ─── Kontakte ─────────────────────────────── */}

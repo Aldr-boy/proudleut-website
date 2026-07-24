@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { compactRankSlots } from '@/lib/moods/sortAssignments'
+import { compactRankSlots as compactRepertoireStyleSlots } from '@/lib/repertoireStyles/sortAssignments'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -958,4 +959,74 @@ export async function updateBandMoodsAction(formData: FormData): Promise<never> 
   if (error) redirect(`/admin/bands/${bandRow.id}?mood_error=${moodErrorCode(error)}`)
 
   redirect(`/admin/bands/${bandRow.id}?mood_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// updateBandRepertoireStylesAction (RPC public.set_band_repertoire_styles)
+// Schreibt ausschliesslich ueber die bereits live ausgerollte, bestehende
+// SECURITY DEFINER RPC public.set_band_repertoire_styles (siehe
+// supabase/fn_set_band_repertoire_styles.sql -- Production-Rollout
+// "Musikalisch verortet" abgeschlossen und verifiziert). Diese Datei wird
+// fuer den Admin-Schreibpfad unveraendert wiederverwendet, keine zweite
+// RPC. service_role hat bewusst KEINE INSERT/UPDATE/DELETE-Table-Grants
+// auf band_repertoire_styles. Maximal-3-/Duplikat-/Aktiv-Pruefung laeuft
+// atomar in der RPC; diese Action mapped nur die resultierenden
+// PL-Fehlercodes (PR001-PR007) auf stabile String-Codes fuer die
+// Fehlermeldungs-Map in page.tsx.
+// ─────────────────────────────────────────
+
+const REPERTOIRE_STYLE_ERRCODE_TO_SLUG: Record<string, string> = {
+  PR001: 'repertoire_band_not_found',
+  PR002: 'repertoire_targets_required',
+  PR003: 'repertoire_too_many',
+  PR004: 'repertoire_null_target',
+  PR005: 'repertoire_duplicate',
+  PR006: 'repertoire_style_not_found',
+  PR007: 'repertoire_style_not_active',
+}
+
+const REPERTOIRE_STYLE_MESSAGE_SLUGS = new Set(Object.values(REPERTOIRE_STYLE_ERRCODE_TO_SLUG))
+
+// Primaer ueber error.code (PL-ERRCODE), error.message (Slug) nur als
+// Fallback, danach genereller db_error-Fallback.
+function repertoireStyleErrorCode(error: { code?: string | null; message?: string | null }): string {
+  if (error.code && REPERTOIRE_STYLE_ERRCODE_TO_SLUG[error.code]) return REPERTOIRE_STYLE_ERRCODE_TO_SLUG[error.code]
+  if (error.message && REPERTOIRE_STYLE_MESSAGE_SLUGS.has(error.message)) return error.message
+  return 'db_error'
+}
+
+export async function updateBandRepertoireStylesAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  // band_id ist nur Lookup-Key -- Band frisch aus der DB lesen, nie aus
+  // dem Hidden Field selbst fuer die RPC vertrauen
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?repertoire_error=repertoire_band_not_found`)
+
+  // Rang-Werte -- leere Zwischenplaetze herausfiltern, Reihenfolge = Rang-
+  // Reihenfolge. Kompaktierung passiert hier (lib/repertoireStyles/
+  // sortAssignments.ts); die RPC kompaktiert selbst nicht nach, sie nimmt
+  // die Array-Position als sort_order.
+  const p_repertoire_style_ids = compactRepertoireStyleSlots([
+    str(formData, 'slot_1') || null,
+    str(formData, 'slot_2') || null,
+    str(formData, 'slot_3') || null,
+  ])
+
+  const { error } = await client.rpc('set_band_repertoire_styles', {
+    p_band_id: bandRow.id,
+    p_repertoire_style_ids,
+  })
+
+  if (error) redirect(`/admin/bands/${bandRow.id}?repertoire_error=${repertoireStyleErrorCode(error)}`)
+
+  redirect(`/admin/bands/${bandRow.id}?repertoire_saved=1`)
 }
