@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   hasTooManyRepertoireStyleAssignments,
   isUnresolvedRepertoireStyleConflict,
+  isUnresolvedSearchText,
   MAX_BAND_REPERTOIRE_STYLES,
 } from './conflicts.ts'
 
@@ -85,4 +86,32 @@ test('isUnresolvedRepertoireStyleConflict: keine Konfliktmeldung bei aktiven Ein
     }
     assert.equal(isUnresolvedRepertoireStyleConflict(original, 's1'), false)
   }
+})
+
+// isUnresolvedSearchText: A2-Fix -- nicht exakt aufgeloester Suchtext darf
+// niemals wie ein bewusst geleerter Rang behandelt werden (sonst wuerde
+// ein Tippfehler beim Speichern einen bestehenden Eintrag still loeschen).
+
+test('isUnresolvedSearchText: nicht aufgeloester Text blockiert (Tippfehler/kein Treffer)', () => {
+  assert.equal(isUnresolvedSearchText('Vollkomen falscher Text', '', false), true)
+})
+
+test('isUnresolvedSearchText: Teiltext (noch nicht zu Ende getippt) blockiert ebenfalls', () => {
+  assert.equal(isUnresolvedSearchText('Böhmische Bl', '', false), true)
+})
+
+test('isUnresolvedSearchText: bewusst geleerter Rang (leerer Text, keine ID) ist gueltig', () => {
+  assert.equal(isUnresolvedSearchText('', '', false), false)
+})
+
+test('isUnresolvedSearchText: nur Leerzeichen gilt wie leerer Text -- gueltig', () => {
+  assert.equal(isUnresolvedSearchText('   ', '', false), false)
+})
+
+test('isUnresolvedSearchText: exakt gewaehlter Katalogeintrag (Text + aufgeloeste ID) ist gueltig', () => {
+  assert.equal(isUnresolvedSearchText('Böhmische Blasmusik', 's1', false), false)
+})
+
+test('isUnresolvedSearchText: bereits als Bestandskonflikt erkannter Rang wird hier nicht doppelt gemeldet', () => {
+  assert.equal(isUnresolvedSearchText('Alter, nicht mehr aktiver Eintrag', '', true), false)
 })

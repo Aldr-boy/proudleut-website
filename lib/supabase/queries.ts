@@ -25,7 +25,7 @@ export async function getBandFromSupabase(slug: string) {
       band_band_types ( band_types (*) ),
       band_lineups ( lineups (*) ),
       band_moods ( sort_order, moods (*) ),
-      band_repertoire_styles ( repertoire_styles (*) ),
+      band_repertoire_styles ( sort_order, repertoire_styles (*) ),
       band_services ( services (*) ),
       band_relations!band_relations_source_band_id_fkey (
         relation_type,
