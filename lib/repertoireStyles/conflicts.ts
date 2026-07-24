@@ -39,3 +39,19 @@ export function isUnresolvedRepertoireStyleConflict(
   if (!originalIsConflict) return false
   return currentValue === original.repertoire_style_id
 }
+
+// Ein nicht leerer Suchtext, der auf keine exakt aufgeloeste aktive
+// Katalog-ID zeigt (Tippfehler, Teiltext, oder schlicht noch nicht zu
+// Ende getippt), darf niemals wie ein bewusst geleerter Rang behandelt
+// werden -- sonst wuerde Speichern einen bestehenden Eintrag still
+// entfernen. isConflict wird separat uebergeben (statt hier erneut
+// berechnet), damit ein bereits als Bestandskonflikt erkannter Rang
+// nicht zusaetzlich als "nicht aufgeloester Suchtext" gemeldet wird --
+// beide Zustaende sperren Speichern ohnehin gemeinsam.
+export function isUnresolvedSearchText(
+  searchText: string,
+  resolvedId: string,
+  isConflict: boolean,
+): boolean {
+  return searchText.trim() !== '' && resolvedId === '' && !isConflict
+}

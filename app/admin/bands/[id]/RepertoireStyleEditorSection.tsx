@@ -10,6 +10,7 @@ import {
   MAX_BAND_REPERTOIRE_STYLES,
   hasTooManyRepertoireStyleAssignments,
   isUnresolvedRepertoireStyleConflict,
+  isUnresolvedSearchText,
 } from '@/lib/repertoireStyles/conflicts'
 
 const RANK_COUNT = MAX_BAND_REPERTOIRE_STYLES
@@ -116,7 +117,22 @@ export function RepertoireStyleEditorSection({
   ).filter(Boolean).length
   const hasUnresolvedConflicts = unresolvedConflictCount > 0
 
-  const saveDisabled = hasUnresolvedConflicts || hasDuplicates
+  // Nicht leerer Suchtext, der auf keinen exakt aufgeloesten aktiven
+  // Katalogeintrag zeigt (Tippfehler, Teiltext, oder ein noch offener
+  // Datenkonflikt-Rang, der bereits ueber isUnresolvedConflict abgedeckt
+  // ist), darf niemals als "leer" gewertet werden -- sonst wuerde ein
+  // Tippfehler beim Speichern einen bestehenden Rang still loeschen.
+  // Fail-closed: Speichern bleibt gesperrt, bis der Rang entweder exakt
+  // aufgeloest oder bewusst ueber "Leeren" entfernt wurde.
+  const unresolvedTextIndexes = new Set<number>()
+  for (let i = 0; i < RANK_COUNT; i++) {
+    const original = sorted[i] ?? null
+    const isConflict = isUnresolvedRepertoireStyleConflict(original, selected[i])
+    if (isUnresolvedSearchText(searchText[i], selected[i], isConflict)) unresolvedTextIndexes.add(i)
+  }
+  const hasUnresolvedText = unresolvedTextIndexes.size > 0
+
+  const saveDisabled = hasUnresolvedConflicts || hasDuplicates || hasUnresolvedText
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
@@ -170,7 +186,7 @@ export function RepertoireStyleEditorSection({
               const isConflict = isUnresolvedRepertoireStyleConflict(original, currentValue)
               const isDuplicate = duplicateIndexes.has(index)
               const currentStyle = currentValue ? lookupById.get(currentValue) : undefined
-              const isUnresolvedText = searchText[index].trim() !== '' && !currentValue && !isConflict
+              const isUnresolvedText = unresolvedTextIndexes.has(index)
 
               return (
                 <div key={index}>
@@ -215,8 +231,10 @@ export function RepertoireStyleEditorSection({
                   )}
 
                   {!isConflict && isUnresolvedText && (
-                    <p className="mt-1 text-xs text-gray-400">
-                      Kein aktiver Katalogeintrag mit diesem Namen gefunden. Bitte aus der Vorschlagsliste auswählen.
+                    <p className="mt-1 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2 py-1.5">
+                      Kein aktiver Katalogeintrag mit diesem Namen gefunden. Bitte exakt aus der
+                      Vorschlagsliste auswählen oder den Rang über „Leeren“ bewusst entfernen —
+                      solange dieser Text stehen bleibt, kann nicht gespeichert werden.
                     </p>
                   )}
 
@@ -247,11 +265,19 @@ export function RepertoireStyleEditorSection({
               </p>
             )}
 
+            {!hasUnresolvedConflicts && hasUnresolvedText && (
+              <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                Speichern ist gesperrt, solange {unresolvedTextIndexes.size === 1 ? 'ein Rang einen' : `${unresolvedTextIndexes.size} Ränge einen`}{' '}
+                Suchtext ohne exakt aufgelösten aktiven Katalogeintrag {unresolvedTextIndexes.size === 1 ? 'enthält' : 'enthalten'}. Bitte
+                den/die betroffenen Rang/Ränge oben exakt auswählen oder über „Leeren“ entfernen.
+              </p>
+            )}
+
             <div className="flex items-center justify-between pt-1">
               <button
                 type="submit"
                 disabled={saveDisabled}
-                title={saveDisabled ? 'Solange ein Datenkonflikt oder eine doppelte Auswahl besteht, kann nicht gespeichert werden.' : undefined}
+                title={saveDisabled ? 'Solange ein Datenkonflikt, eine doppelte Auswahl oder ein nicht aufgelöster Suchtext besteht, kann nicht gespeichert werden.' : undefined}
                 className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-violet-700"
               >
                 Speichern
