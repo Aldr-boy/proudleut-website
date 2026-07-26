@@ -1,9 +1,13 @@
 'use server'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { compactRankSlots } from '@/lib/moods/sortAssignments'
 import { compactRankSlots as compactRepertoireStyleSlots } from '@/lib/repertoireStyles/sortAssignments'
+import { validateHeroImageFile } from '@/lib/bandImages/validateImageFile'
+import { buildHeroImageStoragePath, extractBandMediaStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
+import { resolvePubliclyUsedHeroRow } from '@/lib/bandImages/resolveHeroRow'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -1029,4 +1033,151 @@ export async function updateBandRepertoireStylesAction(formData: FormData): Prom
   if (error) redirect(`/admin/bands/${bandRow.id}?repertoire_error=${repertoireStyleErrorCode(error)}`)
 
   redirect(`/admin/bands/${bandRow.id}?repertoire_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// updateBandHeroImageAction
+//
+// Ersetzt ausschliesslich das Hero-Bild (media_assets.role='hero') einer
+// Band. Kein neuer Schreibweg: derselbe service_role-Server-Action-Pfad
+// wie alle anderen Admin-Mutationen in dieser Datei (createAdminClient()
+// bypasst RLS fuer Tabellen UND Storage gleichermassen -- kein direkter
+// Client-Upload, keine neue RPC, keine Supabase-Auth).
+//
+// Ablauf (siehe Analysebericht "Bandbilder pflegen"):
+//   1. Datei validieren (Groesse + tatsaechliche Datei-Signatur, nicht nur
+//      Name/MIME-Type -- lib/bandImages/validateImageFile.ts)
+//   2. Neues Objekt unter NEUEM, eindeutigem Pfad hochladen (altes Objekt
+//      bleibt zu diesem Zeitpunkt unangetastet)
+//   3. Bestehenden hero-Datensatz gezielt per id aktualisieren (nur
+//      `url`, `updated_at` wird durch den bestehenden DB-Trigger
+//      trg_media_assets_updated_at automatisch gepflegt) -- oder, falls
+//      keiner existiert, genau einen neuen anlegen. Kein Delete-then-
+//      Insert, kein pauschales Loeschen vor dem Update.
+//   4. Erst NACH erfolgreichem DB-Write wird versucht, das alte
+//      Storage-Objekt zu entfernen (best effort, nicht kritisch)
+//   5. Admin-Seite und oeffentliche Bandseite revalidieren
+//
+// Bei mehreren bestehenden hero-Zeilen (kein UNIQUE-Constraint auf
+// (band_id, role) in public.media_assets) wird ueber
+// lib/bandImages/resolveHeroRow.ts exakt die Zeile ermittelt, die das
+// oeffentliche Frontend tatsaechlich anzeigt (kleinster sort_order,
+// identisch zu lib/supabase/normalizeBand.ts). Nur bei echtem
+// sort_order-Gleichstand (nicht sicher bestimmbar, welche Zeile oeffentlich
+// verwendet wird) bricht die Action fail-closed ab, ohne zu schreiben.
+// ─────────────────────────────────────────
+
+function heroImageErrorRedirect(bandId: string, code: string): never {
+  redirect(`/admin/bands/${bandId}?hero_image_error=${code}`)
+}
+
+export async function updateBandHeroImageAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  // band_id ist nur Lookup-Key -- Band frisch aus der DB lesen
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug, name')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?hero_image_error=hero_image_band_not_found`)
+
+  // ---- 1. Datei aus dem FormData lesen ----
+  const file = formData.get('hero_image')
+  if (!(file instanceof File) || file.size === 0) {
+    heroImageErrorRedirect(bandRow.id, 'hero_image_file_required')
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const validation = validateHeroImageFile(bytes)
+  if (!validation.ok) {
+    heroImageErrorRedirect(bandRow.id, validation.errorCode)
+  }
+
+  // ---- Bestehende hero-Zeile(n) laden (jeglicher Status, fuer die
+  // Konfliktbestimmung -- media_assets kennt keinen "status" wie
+  // repertoire_styles, daher hier nur Existenz/Mehrfachbestand relevant) ----
+  const { data: existingHeroRows, error: heroLoadError } = await client
+    .from('media_assets')
+    .select('id, url, alt_text, role, sort_order, source_provider')
+    .eq('band_id', bandRow.id)
+    .eq('role', 'hero')
+
+  if (heroLoadError) heroImageErrorRedirect(bandRow.id, 'hero_image_load_failed')
+
+  const resolution = resolvePubliclyUsedHeroRow(existingHeroRows ?? [])
+  if (resolution.kind === 'ambiguous') {
+    // Mehrere hero-Zeilen mit identischem sort_order: nicht sicher
+    // bestimmbar, welche das oeffentliche Frontend zeigt. Fail-closed --
+    // kein Upload, kein Write. Struktureller Mehrfachbestand ist ein
+    // B-Punkt (Datenhygiene), kein automatisches Aufraeumen hier.
+    heroImageErrorRedirect(bandRow.id, 'hero_image_ambiguous')
+  }
+
+  // ---- 2. Upload unter neuem, eindeutigem Pfad ----
+  const uniqueSuffix = crypto.randomUUID()
+  const storagePath = buildHeroImageStoragePath(bandRow.slug, validation.ext, uniqueSuffix)
+
+  const { error: uploadError } = await client.storage
+    .from(BAND_MEDIA_BUCKET)
+    .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false })
+
+  if (uploadError) heroImageErrorRedirect(bandRow.id, 'hero_image_upload_failed')
+
+  const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
+
+  // ---- 3. Bestehende Zeile gezielt per id aktualisieren, oder genau
+  // eine neue anlegen. Kein Delete-then-Insert. ----
+  let dbError: { message: string } | null = null
+  let oldStoragePath: string | null = null
+
+  if (resolution.kind === 'resolved' && resolution.row) {
+    oldStoragePath = extractBandMediaStoragePath(resolution.row.url)
+    const { error } = await client
+      .from('media_assets')
+      .update({ url: newUrl })
+      .eq('id', resolution.row.id)
+    dbError = error
+  } else {
+    const { error } = await client.from('media_assets').insert({
+      band_id: bandRow.id,
+      url: newUrl,
+      role: 'hero',
+      alt_text: `${bandRow.name} live`,
+      source_provider: 'supabase_storage',
+      sort_order: 0,
+    })
+    dbError = error
+  }
+
+  if (dbError) {
+    // DB-Write fehlgeschlagen: bestehendes Bild bleibt referenziert. Das
+    // gerade hochgeladene, noch nicht verwendete Objekt wird best effort
+    // wieder entfernt -- ein Fehler dabei wird nur geloggt, aendert aber
+    // nichts am (weiterhin funktionierenden) alten Zustand.
+    const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
+    if (cleanupError) {
+      console.error(`[hero-image] Cleanup nach fehlgeschlagenem DB-Update nicht moeglich (${storagePath}): ${cleanupError.message}`)
+    }
+    heroImageErrorRedirect(bandRow.id, 'hero_image_db_update_failed')
+  }
+
+  // ---- 4. Altes Storage-Objekt erst jetzt entfernen (best effort) ----
+  if (oldStoragePath) {
+    const { error: deleteOldError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([oldStoragePath])
+    if (deleteOldError) {
+      console.error(`[hero-image] Altes Objekt konnte nach erfolgreichem Bildwechsel nicht geloescht werden (${oldStoragePath}): ${deleteOldError.message}`)
+    }
+  }
+
+  // ---- 5. Revalidieren: Admin-Seite (force-dynamic ohnehin immer frisch,
+  // hier zur Explizitheit) und oeffentliche Bandseite ----
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?hero_image_saved=1`)
 }
