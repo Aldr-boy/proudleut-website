@@ -8,6 +8,12 @@ import { compactRankSlots as compactRepertoireStyleSlots } from '@/lib/repertoir
 import { validateBandImageFile } from '@/lib/bandImages/validateImageFile'
 import { buildBandImageStoragePath, extractBandMediaStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
+import {
+  MAX_GALLERY_IMAGES,
+  nextGallerySortOrder,
+  renumberGallerySequentially,
+  swapGalleryOrder,
+} from '@/lib/bandImages/gallerySortOrder'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -1325,4 +1331,243 @@ export async function updateBandThumbnailAction(formData: FormData): Promise<nev
   revalidatePath('/veranstaltung/[slug]', 'page')
 
   redirect(`/admin/bands/${bandRow.id}?thumbnail_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// Galerie (media_assets.role='gallery')
+//
+// Anders als Hero/Thumbnail sind hier mehrere Zeilen pro Band normal.
+// Reihenfolge ueber sort_order; nach jedem Schreibvorgang luecken- und
+// duplikatfrei 1..n (lib/bandImages/gallerySortOrder.ts).
+//
+// Architekturentscheidung Umsortieren/Neudurchnummerieren: KEINE neue
+// RPC/SECURITY-DEFINER-Funktion. Ein Mehrzeilen-.upsert()-Aufruf des
+// Supabase-JS-Clients sendet alle betroffenen Zeilen in EINEM
+// HTTP-Request an PostgREST, das daraus ein einziges SQL-Statement
+// (INSERT ... ON CONFLICT (id) DO UPDATE) baut -- bereits ein atomares
+// DB-Statement: entweder werden alle uebergebenen Zeilen aktualisiert,
+// oder (z. B. bei einer inzwischen geloeschten Zeile) keine einzige.
+// Ein inkonsistenter Zwischenzustand (doppelte sort_order, Luecken,
+// Teil-Update) ist damit ausgeschlossen, ohne eine eigene
+// Datenbankfunktion einzufuehren -- dieselbe service_role-Verbindung
+// wie bei allen anderen Admin-Mutationen reicht aus. Fuer echte
+// Mehrzeilen-Konsistenzprobleme (z. B. Validierung ueber mehrere Zeilen
+// hinweg) waere eine RPC noetig gewesen; hier genuegt der atomare
+// Bulk-Write.
+// ─────────────────────────────────────────
+
+// band_id und role werden mitgeladen und bei jedem Bulk-upsert() (Reorder,
+// Neudurchnummerierung) unveraendert mitgefuehrt -- siehe Kommentar in
+// lib/bandImages/gallerySortOrder.ts (Postgres prueft NOT-NULL-Constraints
+// auf der vorgeschlagenen Zeile bereits vor der ON-CONFLICT-Aufloesung).
+type GalleryRow = { id: string; band_id: string; role: string; url: string; sort_order: number }
+
+async function loadGalleryRows(
+  client: ReturnType<typeof createAdminClient>,
+  bandId: string,
+): Promise<{ rows: GalleryRow[]; error: { message: string } | null }> {
+  const { data, error } = await client
+    .from('media_assets')
+    .select('id, band_id, role, url, sort_order')
+    .eq('band_id', bandId)
+    .eq('role', 'gallery')
+  return { rows: data ?? [], error }
+}
+
+function galleryErrorRedirect(bandId: string, code: string): never {
+  redirect(`/admin/bands/${bandId}?gallery_error=${code}`)
+}
+
+export async function addBandGalleryImageAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug, name')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?gallery_error=gallery_band_not_found`)
+
+  // ---- 1. Datei aus dem FormData lesen ----
+  const file = formData.get('gallery_image')
+  if (!(file instanceof File) || file.size === 0) {
+    galleryErrorRedirect(bandRow.id, 'gallery_file_required')
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const validation = validateBandImageFile(bytes)
+  if (!validation.ok) {
+    galleryErrorRedirect(bandRow.id, `gallery_${validation.errorCode}`)
+  }
+
+  const { rows: existingGalleryRows, error: galleryLoadError } = await loadGalleryRows(client, bandRow.id)
+  if (galleryLoadError) galleryErrorRedirect(bandRow.id, 'gallery_load_failed')
+
+  if (existingGalleryRows.length >= MAX_GALLERY_IMAGES) {
+    galleryErrorRedirect(bandRow.id, 'gallery_limit_reached')
+  }
+
+  // ---- 2. Upload unter neuem, eindeutigem Pfad ----
+  const uniqueSuffix = crypto.randomUUID()
+  const storagePath = buildBandImageStoragePath(bandRow.slug, 'gallery', validation.ext, uniqueSuffix)
+
+  const { error: uploadError } = await client.storage
+    .from(BAND_MEDIA_BUCKET)
+    .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false })
+
+  if (uploadError) galleryErrorRedirect(bandRow.id, 'gallery_upload_failed')
+
+  const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
+  const newSortOrder = nextGallerySortOrder(existingGalleryRows)
+
+  // ---- 3. Neue Zeile anlegen (ans Ende der Galerie) ----
+  const { error: insertError } = await client.from('media_assets').insert({
+    band_id: bandRow.id,
+    url: newUrl,
+    role: 'gallery',
+    alt_text: `${bandRow.name} live`,
+    source_provider: 'supabase_storage',
+    sort_order: newSortOrder,
+  })
+
+  if (insertError) {
+    // DB-Write fehlgeschlagen: das gerade hochgeladene, noch nicht
+    // verwendete Objekt wird best effort wieder entfernt.
+    const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
+    if (cleanupError) {
+      console.error(`[gallery-image] Cleanup nach fehlgeschlagenem DB-Insert nicht moeglich (${storagePath}): ${cleanupError.message}`)
+    }
+    galleryErrorRedirect(bandRow.id, 'gallery_db_insert_failed')
+  }
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?gallery_saved=1`)
+}
+
+export async function deleteBandGalleryImageAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  const media_asset_id = str(formData, 'media_asset_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?gallery_error=gallery_band_not_found`)
+  if (!media_asset_id) galleryErrorRedirect(bandRow.id, 'gallery_target_required')
+
+  // Zeile gezielt per id UND band_id UND role='gallery' laden -- verhindert,
+  // dass ueber ein manipuliertes Formularfeld eine fremde Zeile (andere
+  // Band, andere Rolle) getroffen wird.
+  const { data: targetRow, error: targetLoadError } = await client
+    .from('media_assets')
+    .select('id, url, sort_order')
+    .eq('id', media_asset_id)
+    .eq('band_id', bandRow.id)
+    .eq('role', 'gallery')
+    .maybeSingle()
+
+  if (targetLoadError) galleryErrorRedirect(bandRow.id, 'gallery_load_failed')
+  if (!targetRow) galleryErrorRedirect(bandRow.id, 'gallery_target_not_found')
+
+  const { error: deleteError } = await client
+    .from('media_assets')
+    .delete()
+    .eq('id', targetRow.id)
+
+  if (deleteError) galleryErrorRedirect(bandRow.id, 'gallery_db_delete_failed')
+
+  // ---- Luecken- und duplikatfreie Neudurchnummerierung der verbleibenden
+  // Zeilen -- ein einziger atomarer Bulk-upsert() (siehe Architektur-
+  // kommentar oben). Schlaegt dieser Schritt fehl, bleibt die Loeschung
+  // selbst bestehen (bereits erfolgreich abgeschlossen); es entstehen
+  // dabei bestenfalls Luecken, aber keine Duplikate -- der Fehler wird
+  // protokolliert, und das alte Storage-Objekt wird aus Vorsicht NICHT
+  // geloescht, da der Gesamtzustand dieses Laufs dann nicht mehr
+  // vollstaendig bestaetigt ist. ----
+  const { rows: remainingGalleryRows, error: remainingLoadError } = await loadGalleryRows(client, bandRow.id)
+  let renumberOk = true
+  if (remainingLoadError) {
+    renumberOk = false
+    console.error(`[gallery-image] Konnte verbleibende Galerie nach Loeschung nicht laden, Neudurchnummerierung uebersprungen: ${remainingLoadError.message}`)
+  } else if (remainingGalleryRows.length > 0) {
+    const renumbered = renumberGallerySequentially(remainingGalleryRows)
+    const { error: renumberError } = await client.from('media_assets').upsert(renumbered, { onConflict: 'id' })
+    if (renumberError) {
+      renumberOk = false
+      console.error(`[gallery-image] Neudurchnummerierung nach Loeschung fehlgeschlagen: ${renumberError.message}`)
+    }
+  }
+
+  // ---- Storage-Objekt der geloeschten Zeile erst jetzt entfernen (best
+  // effort), nur wenn die Neudurchnummerierung nachweislich sauber war ----
+  if (renumberOk) {
+    const oldStoragePath = extractBandMediaStoragePath(targetRow.url)
+    if (oldStoragePath) {
+      const { error: deleteObjectError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([oldStoragePath])
+      if (deleteObjectError) {
+        console.error(`[gallery-image] Altes Objekt konnte nach erfolgreicher Loeschung nicht entfernt werden (${oldStoragePath}): ${deleteObjectError.message}`)
+      }
+    }
+  }
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?gallery_saved=1`)
+}
+
+export async function moveBandGalleryImageAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  const media_asset_id = str(formData, 'media_asset_id')
+  const direction = str(formData, 'direction')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?gallery_error=gallery_band_not_found`)
+  if (!media_asset_id) galleryErrorRedirect(bandRow.id, 'gallery_target_required')
+  if (direction !== 'up' && direction !== 'down') galleryErrorRedirect(bandRow.id, 'gallery_invalid_direction')
+
+  const { rows: galleryRows, error: galleryLoadError } = await loadGalleryRows(client, bandRow.id)
+  if (galleryLoadError) galleryErrorRedirect(bandRow.id, 'gallery_load_failed')
+
+  const swap = swapGalleryOrder(galleryRows, media_asset_id, direction)
+  if (!swap) {
+    // Bereits am Rand der Galerie, oder die Zeile existiert nicht mehr
+    // (z. B. gleichzeitig geloescht) -- kein Fehler, einfach kein
+    // Reihenfolgenwechsel noetig/moeglich.
+    redirect(`/admin/bands/${bandRow.id}`)
+  }
+
+  // Genau EIN atomarer Bulk-upsert() fuer beide getauschten Zeilen (siehe
+  // Architekturkommentar oben) -- entweder werden beide sort_order-Werte
+  // aktualisiert, oder keiner. Ein halbfertiger Tausch (nur eine der
+  // beiden Zeilen aktualisiert) ist dadurch ausgeschlossen.
+  const { error: swapError } = await client.from('media_assets').upsert(swap, { onConflict: 'id' })
+  if (swapError) {
+    console.error(`[gallery-image] Umsortieren fehlgeschlagen (band ${bandRow.id}): ${swapError.message}`)
+    galleryErrorRedirect(bandRow.id, 'gallery_reorder_failed')
+  }
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?gallery_saved=1`)
 }
