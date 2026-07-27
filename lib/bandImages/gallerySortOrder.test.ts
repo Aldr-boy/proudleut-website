@@ -3,7 +3,6 @@ import assert from 'node:assert/strict'
 import {
   MAX_GALLERY_IMAGES,
   nextGallerySortOrder,
-  renumberGallerySequentially,
   swapGalleryOrder,
 } from './gallerySortOrder.ts'
 
@@ -28,35 +27,6 @@ test('nextGallerySortOrder: bestehende luecken-/duplikatfreie Galerie -> max + 1
 
 test('nextGallerySortOrder: robust gegen Luecken oder unsortierte Eingabe (max, nicht count)', () => {
   assert.equal(nextGallerySortOrder([{ sort_order: 5 }, { sort_order: 1 }]), 6)
-})
-
-test('renumberGallerySequentially: bereits luecken-/duplikatfrei bleibt inhaltlich gleich', () => {
-  const rows = [row('a', 1), row('b', 2), row('c', 3)]
-  assert.deepEqual(renumberGallerySequentially(rows), [row('a', 1), row('b', 2), row('c', 3)])
-})
-
-test('renumberGallerySequentially: schliesst Luecke nach Loeschen einer mittleren Zeile', () => {
-  const rows = [row('a', 1), row('c', 3), row('d', 4)]
-  assert.deepEqual(renumberGallerySequentially(rows), [row('a', 1), row('c', 2), row('d', 3)])
-})
-
-test('renumberGallerySequentially: fuehrt band_id, role und url unveraendert mit (fuer den Bulk-upsert() noetig)', () => {
-  const rows = [row('a', 1)]
-  const [result] = renumberGallerySequentially(rows)
-  assert.equal(result.band_id, BAND_ID)
-  assert.equal(result.role, ROLE)
-  assert.equal(result.url, rows[0].url)
-})
-
-test('renumberGallerySequentially: veraendert das Eingabe-Array nicht (reine Funktion)', () => {
-  const rows = [row('b', 2), row('a', 1)]
-  const copy = [...rows]
-  renumberGallerySequentially(rows)
-  assert.deepEqual(rows, copy)
-})
-
-test('renumberGallerySequentially: leere Galerie -> leeres Ergebnis', () => {
-  assert.deepEqual(renumberGallerySequentially([]), [])
 })
 
 test('swapGalleryOrder: Element in der Mitte nach oben verschieben', () => {

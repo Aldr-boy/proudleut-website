@@ -11,7 +11,6 @@ import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import {
   MAX_GALLERY_IMAGES,
   nextGallerySortOrder,
-  renumberGallerySequentially,
   swapGalleryOrder,
 } from '@/lib/bandImages/gallerySortOrder'
 
@@ -1378,6 +1377,24 @@ function galleryErrorRedirect(bandId: string, code: string): never {
   redirect(`/admin/bands/${bandId}?gallery_error=${code}`)
 }
 
+// Fehlercodes der RPC public.delete_band_gallery_image (siehe
+// supabase/fn_delete_band_gallery_image.sql) auf stabile String-Codes fuer
+// die Fehlermeldungs-Map in page.tsx mappen -- gleiches Muster wie
+// repertoireStyleErrorCode() fuer set_band_repertoire_styles.
+const GALLERY_DELETE_ERRCODE_TO_SLUG: Record<string, string> = {
+  GA001: 'gallery_target_not_found',
+  GA002: 'gallery_target_wrong_band',
+  GA003: 'gallery_target_wrong_role',
+}
+
+const GALLERY_DELETE_MESSAGE_SLUGS = new Set(Object.values(GALLERY_DELETE_ERRCODE_TO_SLUG))
+
+function galleryDeleteErrorCode(error: { code?: string | null; message?: string | null }): string {
+  if (error.code && GALLERY_DELETE_ERRCODE_TO_SLUG[error.code]) return GALLERY_DELETE_ERRCODE_TO_SLUG[error.code]
+  if (error.message && GALLERY_DELETE_MESSAGE_SLUGS.has(error.message)) return error.message
+  return 'db_error'
+}
+
 export async function addBandGalleryImageAction(formData: FormData): Promise<never> {
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
@@ -1466,53 +1483,26 @@ export async function deleteBandGalleryImageAction(formData: FormData): Promise<
   if (!bandRow) redirect(`/admin/bands?gallery_error=gallery_band_not_found`)
   if (!media_asset_id) galleryErrorRedirect(bandRow.id, 'gallery_target_required')
 
-  // Zeile gezielt per id UND band_id UND role='gallery' laden -- verhindert,
-  // dass ueber ein manipuliertes Formularfeld eine fremde Zeile (andere
-  // Band, andere Rolle) getroffen wird.
-  const { data: targetRow, error: targetLoadError } = await client
-    .from('media_assets')
-    .select('id, url, sort_order')
-    .eq('id', media_asset_id)
-    .eq('band_id', bandRow.id)
-    .eq('role', 'gallery')
-    .maybeSingle()
+  // ---- Atomare Loeschung + Neudurchnummerierung ueber die RPC
+  // delete_band_gallery_image (supabase/fn_delete_band_gallery_image.sql).
+  // Beide Schritte laufen in EINER Postgres-Transaktion innerhalb der
+  // Funktion -- kein Zwischenzustand mit Luecke in sort_order moeglich,
+  // anders als beim vorherigen Zweischritt-Ablauf ueber zwei getrennte
+  // PostgREST-Calls (separates .delete() + separates Bulk-upsert()). Die
+  // Funktion prueft selbst Existenz, Band-Zugehoerigkeit und role='gallery'
+  // (GA001-GA003) und sichert die geloeschte URL fuer den Storage-Cleanup. ----
+  const { data: rpcRows, error: rpcError } = await client.rpc('delete_band_gallery_image', {
+    p_band_id: bandRow.id,
+    p_media_asset_id: media_asset_id,
+  })
 
-  if (targetLoadError) galleryErrorRedirect(bandRow.id, 'gallery_load_failed')
-  if (!targetRow) galleryErrorRedirect(bandRow.id, 'gallery_target_not_found')
-
-  const { error: deleteError } = await client
-    .from('media_assets')
-    .delete()
-    .eq('id', targetRow.id)
-
-  if (deleteError) galleryErrorRedirect(bandRow.id, 'gallery_db_delete_failed')
-
-  // ---- Luecken- und duplikatfreie Neudurchnummerierung der verbleibenden
-  // Zeilen -- ein einziger atomarer Bulk-upsert() (siehe Architektur-
-  // kommentar oben). Schlaegt dieser Schritt fehl, bleibt die Loeschung
-  // selbst bestehen (bereits erfolgreich abgeschlossen); es entstehen
-  // dabei bestenfalls Luecken, aber keine Duplikate -- der Fehler wird
-  // protokolliert, und das alte Storage-Objekt wird aus Vorsicht NICHT
-  // geloescht, da der Gesamtzustand dieses Laufs dann nicht mehr
-  // vollstaendig bestaetigt ist. ----
-  const { rows: remainingGalleryRows, error: remainingLoadError } = await loadGalleryRows(client, bandRow.id)
-  let renumberOk = true
-  if (remainingLoadError) {
-    renumberOk = false
-    console.error(`[gallery-image] Konnte verbleibende Galerie nach Loeschung nicht laden, Neudurchnummerierung uebersprungen: ${remainingLoadError.message}`)
-  } else if (remainingGalleryRows.length > 0) {
-    const renumbered = renumberGallerySequentially(remainingGalleryRows)
-    const { error: renumberError } = await client.from('media_assets').upsert(renumbered, { onConflict: 'id' })
-    if (renumberError) {
-      renumberOk = false
-      console.error(`[gallery-image] Neudurchnummerierung nach Loeschung fehlgeschlagen: ${renumberError.message}`)
-    }
-  }
+  if (rpcError) galleryErrorRedirect(bandRow.id, galleryDeleteErrorCode(rpcError))
 
   // ---- Storage-Objekt der geloeschten Zeile erst jetzt entfernen (best
-  // effort), nur wenn die Neudurchnummerierung nachweislich sauber war ----
-  if (renumberOk) {
-    const oldStoragePath = extractBandMediaStoragePath(targetRow.url)
+  // effort) -- erst NACH erfolgreicher, atomarer DB-Aenderung ----
+  const deletedUrl = rpcRows?.[0]?.deleted_url
+  if (deletedUrl) {
+    const oldStoragePath = extractBandMediaStoragePath(deletedUrl)
     if (oldStoragePath) {
       const { error: deleteObjectError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([oldStoragePath])
       if (deleteObjectError) {
