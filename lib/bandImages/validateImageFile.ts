@@ -1,14 +1,15 @@
-// Reine, netzwerk-/dateisystemfreie Validierung von Hero-Bild-Uploads.
-// Prueft NICHT nur Dateiendung oder den vom Browser gelieferten
-// MIME-Type (beides vom Client faelschbar), sondern die tatsaechliche
-// Datei-Signatur (Magic Bytes) am Anfang des Dateiinhalts. Nur echte
-// JPEG-, PNG- oder WebP-Dateien werden akzeptiert.
+// Reine, netzwerk-/dateisystemfreie Validierung von Band-Bild-Uploads
+// (Hero, Thumbnail, ... -- rollenneutral, von allen media_assets-Editoren
+// gemeinsam genutzt). Prueft NICHT nur Dateiendung oder den vom Browser
+// gelieferten MIME-Type (beides vom Client faelschbar), sondern die
+// tatsaechliche Datei-Signatur (Magic Bytes) am Anfang des Dateiinhalts.
+// Nur echte JPEG-, PNG- oder WebP-Dateien werden akzeptiert.
 
 // Fachliche Obergrenze der Bilddatei selbst -- exakt 4 MB (Korrektur auf
 // das feste Request-Limit der Vercel-Production-Umgebung). Unabhaengig
 // vom technischen Request-Limit der Server Action (next.config.ts),
 // das aus Multipart-/FormData-Overhead-Gruenden etwas hoeher liegen muss.
-export const MAX_HERO_IMAGE_BYTES = 4 * 1024 * 1024
+export const MAX_BAND_IMAGE_BYTES = 4 * 1024 * 1024
 
 export type DetectedImageType = {
   ext: 'jpg' | 'png' | 'webp'
@@ -43,19 +44,21 @@ export function detectImageType(bytes: Uint8Array): DetectedImageType | null {
   return null
 }
 
-export type HeroImageValidationResult =
+export type BandImageValidationResult =
   | { ok: true; ext: 'jpg' | 'png' | 'webp'; contentType: string }
-  | { ok: false; errorCode: 'hero_image_empty' | 'hero_image_too_large' | 'hero_image_invalid_type' }
+  | { ok: false; errorCode: 'empty' | 'too_large' | 'invalid_type' }
 
 // Reihenfolge bewusst: leer -> Groesse -> Signatur. Jede Ablehnung liefert
-// einen stabilen, fuer die Fehlermeldungs-Map der Admin-Seite geeigneten
-// Code -- niemals wird eine Datei allein anhand von Name/MIME akzeptiert.
-export function validateHeroImageFile(bytes: Uint8Array): HeroImageValidationResult {
-  if (bytes.length === 0) return { ok: false, errorCode: 'hero_image_empty' }
-  if (bytes.length > MAX_HERO_IMAGE_BYTES) return { ok: false, errorCode: 'hero_image_too_large' }
+// einen stabilen, rollenneutralen Code -- niemals wird eine Datei allein
+// anhand von Name/MIME akzeptiert. Aufrufer (Hero-/Thumbnail-Action)
+// versehen diesen Code jeweils mit ihrem eigenen Praefix fuer die
+// Fehlermeldungs-Map der Admin-Seite (z. B. "hero_image_" + errorCode).
+export function validateBandImageFile(bytes: Uint8Array): BandImageValidationResult {
+  if (bytes.length === 0) return { ok: false, errorCode: 'empty' }
+  if (bytes.length > MAX_BAND_IMAGE_BYTES) return { ok: false, errorCode: 'too_large' }
 
   const detected = detectImageType(bytes)
-  if (!detected) return { ok: false, errorCode: 'hero_image_invalid_type' }
+  if (!detected) return { ok: false, errorCode: 'invalid_type' }
 
   return { ok: true, ext: detected.ext, contentType: detected.contentType }
 }

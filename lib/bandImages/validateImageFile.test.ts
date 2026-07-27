@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { detectImageType, validateHeroImageFile, MAX_HERO_IMAGE_BYTES } from './validateImageFile.ts'
+import { detectImageType, validateBandImageFile, MAX_BAND_IMAGE_BYTES } from './validateImageFile.ts'
 
 const JPEG_HEADER = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
 const PNG_HEADER = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
@@ -42,63 +42,63 @@ test('detectImageType: falsche Dateiendung mit ungueltigem Inhalt (Text als "bil
   assert.equal(detectImageType(fakeText), null)
 })
 
-test('MAX_HERO_IMAGE_BYTES ist exakt 4 MB', () => {
-  assert.equal(MAX_HERO_IMAGE_BYTES, 4 * 1024 * 1024)
+test('MAX_BAND_IMAGE_BYTES ist exakt 4 MB', () => {
+  assert.equal(MAX_BAND_IMAGE_BYTES, 4 * 1024 * 1024)
 })
 
-test('validateHeroImageFile: gueltiges JPEG wird akzeptiert', () => {
-  const result = validateHeroImageFile(padded(JPEG_HEADER, 100))
+test('validateBandImageFile: gueltiges JPEG wird akzeptiert', () => {
+  const result = validateBandImageFile(padded(JPEG_HEADER, 100))
   assert.equal(result.ok, true)
   assert.equal(result.ok && result.ext, 'jpg')
 })
 
-test('validateHeroImageFile: gueltiges PNG wird akzeptiert', () => {
-  const result = validateHeroImageFile(padded(PNG_HEADER, 100))
+test('validateBandImageFile: gueltiges PNG wird akzeptiert', () => {
+  const result = validateBandImageFile(padded(PNG_HEADER, 100))
   assert.equal(result.ok, true)
   assert.equal(result.ok && result.ext, 'png')
 })
 
-test('validateHeroImageFile: gueltiges WebP wird akzeptiert', () => {
-  const result = validateHeroImageFile(padded(WEBP_HEADER, 100))
+test('validateBandImageFile: gueltiges WebP wird akzeptiert', () => {
+  const result = validateBandImageFile(padded(WEBP_HEADER, 100))
   assert.equal(result.ok, true)
   assert.equal(result.ok && result.ext, 'webp')
 })
 
-test('validateHeroImageFile: leere Datei wird abgelehnt', () => {
-  const result = validateHeroImageFile(new Uint8Array(0))
+test('validateBandImageFile: leere Datei wird abgelehnt', () => {
+  const result = validateBandImageFile(new Uint8Array(0))
   assert.equal(result.ok, false)
-  assert.equal(!result.ok && result.errorCode, 'hero_image_empty')
+  assert.equal(!result.ok && result.errorCode, 'empty')
 })
 
-test('validateHeroImageFile: Datei knapp unter 4 MB wird akzeptiert', () => {
-  const justUnder = padded(JPEG_HEADER, MAX_HERO_IMAGE_BYTES - 1)
-  const result = validateHeroImageFile(justUnder)
+test('validateBandImageFile: Datei knapp unter 4 MB wird akzeptiert', () => {
+  const justUnder = padded(JPEG_HEADER, MAX_BAND_IMAGE_BYTES - 1)
+  const result = validateBandImageFile(justUnder)
   assert.equal(result.ok, true)
 })
 
-test('validateHeroImageFile: Datei mit exakt 4 MB wird noch akzeptiert (Grenzwert inklusive)', () => {
-  const exact = padded(JPEG_HEADER, MAX_HERO_IMAGE_BYTES)
-  const result = validateHeroImageFile(exact)
+test('validateBandImageFile: Datei mit exakt 4 MB wird noch akzeptiert (Grenzwert inklusive)', () => {
+  const exact = padded(JPEG_HEADER, MAX_BAND_IMAGE_BYTES)
+  const result = validateBandImageFile(exact)
   assert.equal(result.ok, true)
 })
 
-test('validateHeroImageFile: Datei knapp ueber 4 MB wird abgelehnt', () => {
-  const justOver = padded(JPEG_HEADER, MAX_HERO_IMAGE_BYTES + 1)
-  const result = validateHeroImageFile(justOver)
+test('validateBandImageFile: Datei knapp ueber 4 MB wird abgelehnt', () => {
+  const justOver = padded(JPEG_HEADER, MAX_BAND_IMAGE_BYTES + 1)
+  const result = validateBandImageFile(justOver)
   assert.equal(result.ok, false)
-  assert.equal(!result.ok && result.errorCode, 'hero_image_too_large')
+  assert.equal(!result.ok && result.errorCode, 'too_large')
 })
 
-test('validateHeroImageFile: nicht erlaubter Dateityp (z. B. GIF-Signatur) wird abgelehnt', () => {
+test('validateBandImageFile: nicht erlaubter Dateityp (z. B. GIF-Signatur) wird abgelehnt', () => {
   const gifHeader = Uint8Array.from([0x47, 0x49, 0x46, 0x38, 0x39, 0x61])
-  const result = validateHeroImageFile(padded(gifHeader, 100))
+  const result = validateBandImageFile(padded(gifHeader, 100))
   assert.equal(result.ok, false)
-  assert.equal(!result.ok && result.errorCode, 'hero_image_invalid_type')
+  assert.equal(!result.ok && result.errorCode, 'invalid_type')
 })
 
-test('validateHeroImageFile: Textdatei mit vorgetaeuschter .jpg-Endung (nur ueber Dateinamen, nicht hier gepueft) wird ueber Inhalt abgelehnt', () => {
+test('validateBandImageFile: Textdatei mit vorgetaeuschter .jpg-Endung (nur ueber Dateinamen, nicht hier gepueft) wird ueber Inhalt abgelehnt', () => {
   const fakeText = new TextEncoder().encode('kein-echtes-bild-nur-text-mit-jpg-endung-vorgetaeuscht')
-  const result = validateHeroImageFile(fakeText)
+  const result = validateBandImageFile(fakeText)
   assert.equal(result.ok, false)
-  assert.equal(!result.ok && result.errorCode, 'hero_image_invalid_type')
+  assert.equal(!result.ok && result.errorCode, 'invalid_type')
 })

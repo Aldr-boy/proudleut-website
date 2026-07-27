@@ -5,9 +5,9 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { compactRankSlots } from '@/lib/moods/sortAssignments'
 import { compactRankSlots as compactRepertoireStyleSlots } from '@/lib/repertoireStyles/sortAssignments'
-import { validateHeroImageFile } from '@/lib/bandImages/validateImageFile'
-import { buildHeroImageStoragePath, extractBandMediaStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
-import { resolvePubliclyUsedHeroRow } from '@/lib/bandImages/resolveHeroRow'
+import { validateBandImageFile } from '@/lib/bandImages/validateImageFile'
+import { buildBandImageStoragePath, extractBandMediaStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
+import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -1060,7 +1060,7 @@ export async function updateBandRepertoireStylesAction(formData: FormData): Prom
 //
 // Bei mehreren bestehenden hero-Zeilen (kein UNIQUE-Constraint auf
 // (band_id, role) in public.media_assets) wird ueber
-// lib/bandImages/resolveHeroRow.ts exakt die Zeile ermittelt, die das
+// lib/bandImages/resolveMediaRow.ts exakt die Zeile ermittelt, die das
 // oeffentliche Frontend tatsaechlich anzeigt (kleinster sort_order,
 // identisch zu lib/supabase/normalizeBand.ts). Nur bei echtem
 // sort_order-Gleichstand (nicht sicher bestimmbar, welche Zeile oeffentlich
@@ -1093,9 +1093,9 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
-  const validation = validateHeroImageFile(bytes)
+  const validation = validateBandImageFile(bytes)
   if (!validation.ok) {
-    heroImageErrorRedirect(bandRow.id, validation.errorCode)
+    heroImageErrorRedirect(bandRow.id, `hero_image_${validation.errorCode}`)
   }
 
   // ---- Bestehende hero-Zeile(n) laden (jeglicher Status, fuer die
@@ -1109,7 +1109,7 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
 
   if (heroLoadError) heroImageErrorRedirect(bandRow.id, 'hero_image_load_failed')
 
-  const resolution = resolvePubliclyUsedHeroRow(existingHeroRows ?? [])
+  const resolution = resolvePubliclyUsedMediaRow(existingHeroRows ?? [])
   if (resolution.kind === 'ambiguous') {
     // Mehrere hero-Zeilen mit identischem sort_order: nicht sicher
     // bestimmbar, welche das oeffentliche Frontend zeigt. Fail-closed --
@@ -1120,7 +1120,7 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
 
   // ---- 2. Upload unter neuem, eindeutigem Pfad ----
   const uniqueSuffix = crypto.randomUUID()
-  const storagePath = buildHeroImageStoragePath(bandRow.slug, validation.ext, uniqueSuffix)
+  const storagePath = buildBandImageStoragePath(bandRow.slug, 'hero', validation.ext, uniqueSuffix)
 
   const { error: uploadError } = await client.storage
     .from(BAND_MEDIA_BUCKET)
@@ -1180,4 +1180,149 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
   revalidatePath(`/band/${bandRow.slug}`)
 
   redirect(`/admin/bands/${bandRow.id}?hero_image_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// updateBandThumbnailAction
+//
+// Ersetzt ausschliesslich das Thumbnail (media_assets.role='thumbnail')
+// einer Band -- das eigenstaendig gepflegte Bild fuer Band-Cards. Ein
+// Hero-Wechsel aendert dieses Bild nicht und umgekehrt (beide Editoren
+// laden/aktualisieren jeweils nur ihre eigene role-Zeile).
+//
+// Gleicher Ablauf und dieselben rollenneutralen lib/bandImages-Module wie
+// beim Hero-Upload (validateBandImageFile, buildBandImageStoragePath,
+// resolvePubliclyUsedMediaRow, extractBandMediaStoragePath) -- keine
+// zweite Validierungs- oder Konfliktaufloesungslogik. Kein neuer
+// Schreibweg: derselbe service_role-Server-Action-Pfad wie alle anderen
+// Admin-Mutationen (createAdminClient()).
+//
+// Revalidierung unterscheidet sich bewusst vom Hero-Pfad: BandCard
+// (components/BandCard.tsx) zeigt `thumbnailImage ?? heroImage` und wird
+// auf /bands (BandExplorer) und /veranstaltung/[slug] (BandGrid, ISR mit
+// generateStaticParams) gerendert -- beide lesen ueber
+// getAllBandsFromSupabase() media_assets inkl. role. /band/[slug] selbst
+// ist `force-dynamic` (immer frisch, kein Cache zum Invalidieren) und
+// zeigt das Thumbnail dieser Band nirgends direkt (nur als interner
+// heroImage-Fallback, falls kein Hero existiert -- durch force-dynamic
+// ohnehin ohne revalidatePath sofort aktuell). Homepage und
+// /ueber-mich beziehen Banddaten weiterhin aus Airtable, nicht aus
+// media_assets, und werden daher bewusst nicht revalidiert.
+// ─────────────────────────────────────────
+
+function thumbnailErrorRedirect(bandId: string, code: string): never {
+  redirect(`/admin/bands/${bandId}?thumbnail_error=${code}`)
+}
+
+export async function updateBandThumbnailAction(formData: FormData): Promise<never> {
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug, name')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?thumbnail_error=thumbnail_band_not_found`)
+
+  // ---- 1. Datei aus dem FormData lesen ----
+  const file = formData.get('thumbnail_image')
+  if (!(file instanceof File) || file.size === 0) {
+    thumbnailErrorRedirect(bandRow.id, 'thumbnail_file_required')
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const validation = validateBandImageFile(bytes)
+  if (!validation.ok) {
+    thumbnailErrorRedirect(bandRow.id, `thumbnail_${validation.errorCode}`)
+  }
+
+  // ---- Bestehende thumbnail-Zeile(n) laden ----
+  const { data: existingThumbnailRows, error: thumbnailLoadError } = await client
+    .from('media_assets')
+    .select('id, url, alt_text, role, sort_order, source_provider')
+    .eq('band_id', bandRow.id)
+    .eq('role', 'thumbnail')
+
+  if (thumbnailLoadError) thumbnailErrorRedirect(bandRow.id, 'thumbnail_load_failed')
+
+  const resolution = resolvePubliclyUsedMediaRow(existingThumbnailRows ?? [])
+  if (resolution.kind === 'ambiguous') {
+    // Mehrere thumbnail-Zeilen mit identischem sort_order: nicht sicher
+    // bestimmbar, welche das oeffentliche Frontend zeigt. Fail-closed --
+    // kein Upload, kein Write. Struktureller Mehrfachbestand ist ein
+    // B-Punkt (Datenhygiene), kein automatisches Aufraeumen hier.
+    thumbnailErrorRedirect(bandRow.id, 'thumbnail_ambiguous')
+  }
+
+  // ---- 2. Upload unter neuem, eindeutigem Pfad ----
+  const uniqueSuffix = crypto.randomUUID()
+  const storagePath = buildBandImageStoragePath(bandRow.slug, 'thumbnail', validation.ext, uniqueSuffix)
+
+  const { error: uploadError } = await client.storage
+    .from(BAND_MEDIA_BUCKET)
+    .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false })
+
+  if (uploadError) thumbnailErrorRedirect(bandRow.id, 'thumbnail_upload_failed')
+
+  const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
+
+  // ---- 3. Bestehende Zeile gezielt per id aktualisieren, oder genau
+  // eine neue anlegen. Kein Delete-then-Insert. ----
+  let dbError: { message: string } | null = null
+  let oldStoragePath: string | null = null
+
+  if (resolution.kind === 'resolved' && resolution.row) {
+    oldStoragePath = extractBandMediaStoragePath(resolution.row.url)
+    const { error } = await client
+      .from('media_assets')
+      .update({ url: newUrl })
+      .eq('id', resolution.row.id)
+    dbError = error
+  } else {
+    const { error } = await client.from('media_assets').insert({
+      band_id: bandRow.id,
+      url: newUrl,
+      role: 'thumbnail',
+      alt_text: `${bandRow.name} live`,
+      source_provider: 'supabase_storage',
+      sort_order: 0,
+    })
+    dbError = error
+  }
+
+  if (dbError) {
+    // DB-Write fehlgeschlagen: bestehendes Bild bleibt referenziert. Das
+    // gerade hochgeladene, noch nicht verwendete Objekt wird best effort
+    // wieder entfernt -- ein Fehler dabei wird nur geloggt, aendert aber
+    // nichts am (weiterhin funktionierenden) alten Zustand.
+    const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
+    if (cleanupError) {
+      console.error(`[thumbnail-image] Cleanup nach fehlgeschlagenem DB-Update nicht moeglich (${storagePath}): ${cleanupError.message}`)
+    }
+    thumbnailErrorRedirect(bandRow.id, 'thumbnail_db_update_failed')
+  }
+
+  // ---- 4. Altes Storage-Objekt erst jetzt entfernen (best effort) ----
+  if (oldStoragePath) {
+    const { error: deleteOldError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([oldStoragePath])
+    if (deleteOldError) {
+      console.error(`[thumbnail-image] Altes Objekt konnte nach erfolgreichem Bildwechsel nicht geloescht werden (${oldStoragePath}): ${deleteOldError.message}`)
+    }
+  }
+
+  // ---- 5. Revalidieren: Admin-Seite, sowie konkret die Seiten, auf
+  // denen BandCard das Thumbnail tatsaechlich rendert (/bands und die
+  // Kategorie-Seiten unter /veranstaltung/[slug]). /band/[slug] ist
+  // force-dynamic (kein Cache) und zeigt hier nicht das eigene
+  // Thumbnail, daher bewusst nicht Teil dieser Liste -- siehe
+  // Funktions-Kommentar oben. ----
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath('/bands')
+  revalidatePath('/veranstaltung/[slug]', 'page')
+
+  redirect(`/admin/bands/${bandRow.id}?thumbnail_saved=1`)
 }
