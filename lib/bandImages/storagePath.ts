@@ -3,13 +3,13 @@
 
 export const BAND_MEDIA_BUCKET = 'band-media'
 
-// Baut den Storage-Objektpfad fuer ein neu hochgeladenes Hero-Bild. Jeder
-// Upload bekommt einen neuen, eindeutigen Suffix, damit sich die
-// resultierende oeffentliche URL von der vorherigen unterscheidet --
-// Browser-, CDN- und next/image-Caches uebernehmen sonst ein veraltetes
-// Bild unter identischer URL weiter.
-export function buildHeroImageStoragePath(slug: string, ext: string, uniqueSuffix: string): string {
-  return `${slug}/hero-${uniqueSuffix}.${ext}`
+// Baut den Storage-Objektpfad fuer ein neu hochgeladenes Band-Bild
+// (Hero, Thumbnail, ...). Jeder Upload bekommt einen neuen, eindeutigen
+// Suffix, damit sich die resultierende oeffentliche URL von der
+// vorherigen unterscheidet -- Browser-, CDN- und next/image-Caches
+// uebernehmen sonst ein veraltetes Bild unter identischer URL weiter.
+export function buildBandImageStoragePath(slug: string, role: string, ext: string, uniqueSuffix: string): string {
+  return `${slug}/${role}-${uniqueSuffix}.${ext}`
 }
 
 // Extrahiert den Storage-Objektpfad (relativ zum Bucket) aus einer

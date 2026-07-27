@@ -1,14 +1,20 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildHeroImageStoragePath, extractBandMediaStoragePath } from './storagePath.ts'
+import { buildBandImageStoragePath, extractBandMediaStoragePath } from './storagePath.ts'
 
-test('buildHeroImageStoragePath: baut slug/hero-<suffix>.<ext>', () => {
-  assert.equal(buildHeroImageStoragePath('donnaweda', 'webp', 'abc123'), 'donnaweda/hero-abc123.webp')
+test('buildBandImageStoragePath: baut slug/<role>-<suffix>.<ext>', () => {
+  assert.equal(buildBandImageStoragePath('donnaweda', 'hero', 'webp', 'abc123'), 'donnaweda/hero-abc123.webp')
 })
 
-test('buildHeroImageStoragePath: zwei Aufrufe mit unterschiedlichem Suffix erzeugen unterschiedliche Pfade', () => {
-  const a = buildHeroImageStoragePath('donnaweda', 'webp', 'suffix-1')
-  const b = buildHeroImageStoragePath('donnaweda', 'webp', 'suffix-2')
+test('buildBandImageStoragePath: unterschiedliche Rollen erzeugen unterschiedliche Pfade fuer dieselbe Band', () => {
+  const hero = buildBandImageStoragePath('donnaweda', 'hero', 'webp', 'abc123')
+  const thumbnail = buildBandImageStoragePath('donnaweda', 'thumbnail', 'webp', 'abc123')
+  assert.notEqual(hero, thumbnail)
+})
+
+test('buildBandImageStoragePath: zwei Aufrufe mit unterschiedlichem Suffix erzeugen unterschiedliche Pfade', () => {
+  const a = buildBandImageStoragePath('donnaweda', 'hero', 'webp', 'suffix-1')
+  const b = buildBandImageStoragePath('donnaweda', 'hero', 'webp', 'suffix-2')
   assert.notEqual(a, b)
 })
 

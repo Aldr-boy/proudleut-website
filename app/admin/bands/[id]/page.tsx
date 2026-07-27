@@ -13,7 +13,8 @@ import { MoodEditorSection } from './MoodEditorSection'
 import type { BandMoodAssignment, MoodCatalogEntry } from '@/lib/moods/sortAssignments'
 import { RepertoireStyleEditorSection } from './RepertoireStyleEditorSection'
 import { HeroImageEditorSection } from './HeroImageEditorSection'
-import { resolvePubliclyUsedHeroRow } from '@/lib/bandImages/resolveHeroRow'
+import { ThumbnailEditorSection } from './ThumbnailEditorSection'
+import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import type {
   BandRepertoireStyleAssignment,
   RepertoireStyleCatalogEntry,
@@ -145,6 +146,19 @@ const HERO_IMAGE_ERROR_MESSAGES: Record<string, string> = {
   db_error:                    'Datenbankfehler – bitte erneut versuchen.',
 }
 
+const THUMBNAIL_ERROR_MESSAGES: Record<string, string> = {
+  thumbnail_band_not_found:   'Band nicht gefunden.',
+  thumbnail_file_required:    'Bitte eine Bilddatei auswählen.',
+  thumbnail_empty:            'Die ausgewählte Datei ist leer.',
+  thumbnail_too_large:        'Die Datei ist größer als 4 MB.',
+  thumbnail_invalid_type:     'Nur JPEG-, PNG- oder WebP-Dateien sind erlaubt.',
+  thumbnail_load_failed:      'Bestehendes Thumbnail konnte nicht geladen werden – bitte Seite neu laden.',
+  thumbnail_ambiguous:        'Datenkonflikt: Für diese Band sind mehrere Thumbnails ohne eindeutige Reihenfolge hinterlegt. Bitte außerhalb dieses Editors klären.',
+  thumbnail_upload_failed:    'Upload fehlgeschlagen – bitte erneut versuchen.',
+  thumbnail_db_update_failed: 'Bild wurde hochgeladen, aber die Zuordnung konnte nicht gespeichert werden – bitte erneut versuchen.',
+  db_error:                   'Datenbankfehler – bitte erneut versuchen.',
+}
+
 type ActiveEventType = {
   id: string
   name: string
@@ -255,6 +269,8 @@ type SearchParams = Promise<{
   repertoire_error?: string
   hero_image_saved?: string
   hero_image_error?: string
+  thumbnail_saved?: string
+  thumbnail_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -426,10 +442,11 @@ export default async function AdminBandDetailPage({
     repertoire_styles: RepertoireStyleCatalogEntry | null
   }
 
-  // Hero-Bild: alle media_assets-Zeilen mit role='hero' dieser Band laden
-  // (kein UNIQUE-Constraint auf (band_id, role) -- siehe
-  // HeroImageEditorSection/resolveHeroRow fuer die Konfliktbestimmung).
-  type HeroMediaAssetRow = {
+  // Hero-Bild und Thumbnail: alle media_assets-Zeilen der jeweiligen Rolle
+  // dieser Band laden (kein UNIQUE-Constraint auf (band_id, role) --
+  // siehe HeroImageEditorSection/ThumbnailEditorSection/resolveMediaRow
+  // fuer die Konfliktbestimmung).
+  type MediaAssetRow = {
     id: string
     url: string
     alt_text: string | null
@@ -446,6 +463,7 @@ export default async function AdminBandDetailPage({
     { data: repertoireStyleCatalogRaw, error: repertoireStyleCatalogError },
     { data: bandRepertoireStylesRaw, error: bandRepertoireStylesError },
     { data: heroMediaAssetsRaw, error: heroMediaAssetsError },
+    { data: thumbnailMediaAssetsRaw, error: thumbnailMediaAssetsError },
   ] = await Promise.all([
     client
       .from('band_relations')
@@ -491,7 +509,13 @@ export default async function AdminBandDetailPage({
       .select('id, url, alt_text, role, sort_order, source_provider')
       .eq('band_id', id)
       .eq('role', 'hero')
-      .returns<HeroMediaAssetRow[]>(),
+      .returns<MediaAssetRow[]>(),
+    client
+      .from('media_assets')
+      .select('id, url, alt_text, role, sort_order, source_provider')
+      .eq('band_id', id)
+      .eq('role', 'thumbnail')
+      .returns<MediaAssetRow[]>(),
   ])
 
   // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
@@ -539,14 +563,22 @@ export default async function AdminBandDetailPage({
   }))
 
   // Hero-Bild fuer die Anzeige: dieselbe Konfliktaufloesung wie im
-  // Schreibpfad (lib/bandImages/resolveHeroRow.ts) -- zeigt exakt die
+  // Schreibpfad (lib/bandImages/resolveMediaRow.ts) -- zeigt exakt die
   // Zeile, die das oeffentliche Frontend tatsaechlich anzeigen wuerde.
   // Bei echtem sort_order-Gleichstand (ambiguous) wird defensiv kein Bild
   // angezeigt, statt zu raten.
   const heroImageLoadError = !!heroMediaAssetsError
-  const heroRowResolution = resolvePubliclyUsedHeroRow(heroMediaAssetsRaw ?? [])
+  const heroRowResolution = resolvePubliclyUsedMediaRow(heroMediaAssetsRaw ?? [])
   const currentHeroImage = heroRowResolution.kind === 'resolved'
     ? { url: heroRowResolution.row.url, alt: heroRowResolution.row.alt_text ?? `${band.name} live` }
+    : null
+
+  // Thumbnail fuer die Anzeige: eigenstaendige Konfliktaufloesung, unabhaengig
+  // vom Hero-Bild (dieselbe rollenneutrale Logik, andere media_assets-Zeilen).
+  const thumbnailLoadError = !!thumbnailMediaAssetsError
+  const thumbnailRowResolution = resolvePubliclyUsedMediaRow(thumbnailMediaAssetsRaw ?? [])
+  const currentThumbnailImage = thumbnailRowResolution.kind === 'resolved'
+    ? { url: thumbnailRowResolution.row.url, alt: thumbnailRowResolution.row.alt_text ?? `${band.name} live` }
     : null
 
   let locationUsageCount = 0
@@ -589,6 +621,9 @@ export default async function AdminBandDetailPage({
     : null
   const heroImageErrorMsg = sp.hero_image_error
     ? (HERO_IMAGE_ERROR_MESSAGES[sp.hero_image_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const thumbnailErrorMsg = sp.thumbnail_error
+    ? (THUMBNAIL_ERROR_MESSAGES[sp.thumbnail_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -836,6 +871,15 @@ export default async function AdminBandDetailPage({
           loadError={heroImageLoadError}
           successMsg={sp.hero_image_saved ? 'Hero-Bild gespeichert.' : undefined}
           errorMsg={heroImageErrorMsg ?? undefined}
+        />
+
+        {/* Thumbnail (Admin-Anzeige + Ersatz, eigenstaendig vom Hero-Bild) */}
+        <ThumbnailEditorSection
+          bandId={band.id}
+          thumbnailImage={currentThumbnailImage}
+          loadError={thumbnailLoadError}
+          successMsg={sp.thumbnail_saved ? 'Thumbnail gespeichert.' : undefined}
+          errorMsg={thumbnailErrorMsg ?? undefined}
         />
 
         {/* ─── Kontakte ─────────────────────────────── */}
