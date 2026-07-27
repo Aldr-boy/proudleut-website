@@ -14,6 +14,8 @@ import type { BandMoodAssignment, MoodCatalogEntry } from '@/lib/moods/sortAssig
 import { RepertoireStyleEditorSection } from './RepertoireStyleEditorSection'
 import { HeroImageEditorSection } from './HeroImageEditorSection'
 import { ThumbnailEditorSection } from './ThumbnailEditorSection'
+import { GalleryEditorSection } from './GalleryEditorSection'
+import type { GalleryImageData } from './GalleryEditorSection'
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import type {
   BandRepertoireStyleAssignment,
@@ -159,6 +161,24 @@ const THUMBNAIL_ERROR_MESSAGES: Record<string, string> = {
   db_error:                   'Datenbankfehler – bitte erneut versuchen.',
 }
 
+const GALLERY_ERROR_MESSAGES: Record<string, string> = {
+  gallery_band_not_found:    'Band nicht gefunden.',
+  gallery_file_required:     'Bitte eine Bilddatei auswählen.',
+  gallery_empty:             'Die ausgewählte Datei ist leer.',
+  gallery_too_large:         'Die Datei ist größer als 4 MB.',
+  gallery_invalid_type:      'Nur JPEG-, PNG- oder WebP-Dateien sind erlaubt.',
+  gallery_load_failed:       'Galerie konnte nicht geladen werden – bitte Seite neu laden.',
+  gallery_limit_reached:     'Maximale Anzahl von 10 Galeriebildern erreicht. Bitte zuerst ein bestehendes Bild löschen.',
+  gallery_upload_failed:     'Upload fehlgeschlagen – bitte erneut versuchen.',
+  gallery_db_insert_failed:  'Bild wurde hochgeladen, aber die Zuordnung konnte nicht gespeichert werden – bitte erneut versuchen.',
+  gallery_target_required:   'Kein Galeriebild ausgewählt.',
+  gallery_target_not_found:  'Dieses Galeriebild wurde nicht gefunden – bitte Seite neu laden.',
+  gallery_db_delete_failed:  'Löschen fehlgeschlagen – bitte erneut versuchen.',
+  gallery_invalid_direction: 'Unbekannte Verschieben-Aktion.',
+  gallery_reorder_failed:    'Umsortieren fehlgeschlagen – bitte erneut versuchen.',
+  db_error:                  'Datenbankfehler – bitte erneut versuchen.',
+}
+
 type ActiveEventType = {
   id: string
   name: string
@@ -271,6 +291,8 @@ type SearchParams = Promise<{
   hero_image_error?: string
   thumbnail_saved?: string
   thumbnail_error?: string
+  gallery_saved?: string
+  gallery_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -464,6 +486,7 @@ export default async function AdminBandDetailPage({
     { data: bandRepertoireStylesRaw, error: bandRepertoireStylesError },
     { data: heroMediaAssetsRaw, error: heroMediaAssetsError },
     { data: thumbnailMediaAssetsRaw, error: thumbnailMediaAssetsError },
+    { data: galleryMediaAssetsRaw, error: galleryMediaAssetsError },
   ] = await Promise.all([
     client
       .from('band_relations')
@@ -515,6 +538,13 @@ export default async function AdminBandDetailPage({
       .select('id, url, alt_text, role, sort_order, source_provider')
       .eq('band_id', id)
       .eq('role', 'thumbnail')
+      .returns<MediaAssetRow[]>(),
+    client
+      .from('media_assets')
+      .select('id, url, alt_text, role, sort_order, source_provider')
+      .eq('band_id', id)
+      .eq('role', 'gallery')
+      .order('sort_order', { ascending: true })
       .returns<MediaAssetRow[]>(),
   ])
 
@@ -581,6 +611,16 @@ export default async function AdminBandDetailPage({
     ? { url: thumbnailRowResolution.row.url, alt: thumbnailRowResolution.row.alt_text ?? `${band.name} live` }
     : null
 
+  // Galerie: anders als Hero/Thumbnail sind hier mehrere Zeilen normal --
+  // keine Konfliktaufloesung noetig, nur ein Ladefehler darf nicht
+  // stillschweigend als "leere Galerie" behandelt werden.
+  const galleryLoadError = !!galleryMediaAssetsError
+  const galleryImages: GalleryImageData[] = (galleryMediaAssetsRaw ?? []).map((row) => ({
+    id: row.id,
+    url: row.url,
+    alt: row.alt_text ?? `${band.name} live`,
+  }))
+
   let locationUsageCount = 0
   if (band.home_location_id) {
     const { count } = await client
@@ -624,6 +664,9 @@ export default async function AdminBandDetailPage({
     : null
   const thumbnailErrorMsg = sp.thumbnail_error
     ? (THUMBNAIL_ERROR_MESSAGES[sp.thumbnail_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const galleryErrorMsg = sp.gallery_error
+    ? (GALLERY_ERROR_MESSAGES[sp.gallery_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -880,6 +923,15 @@ export default async function AdminBandDetailPage({
           loadError={thumbnailLoadError}
           successMsg={sp.thumbnail_saved ? 'Thumbnail gespeichert.' : undefined}
           errorMsg={thumbnailErrorMsg ?? undefined}
+        />
+
+        {/* Galerie (Bühnenmomente): anzeigen, hinzufuegen, loeschen, umsortieren */}
+        <GalleryEditorSection
+          bandId={band.id}
+          images={galleryImages}
+          loadError={galleryLoadError}
+          successMsg={sp.gallery_saved ? 'Galerie gespeichert.' : undefined}
+          errorMsg={galleryErrorMsg ?? undefined}
         />
 
         {/* ─── Kontakte ─────────────────────────────── */}
