@@ -4,10 +4,11 @@
 // Datei-Signatur (Magic Bytes) am Anfang des Dateiinhalts. Nur echte
 // JPEG-, PNG- oder WebP-Dateien werden akzeptiert.
 
-// Fachliche Obergrenze der Bilddatei selbst -- exakt 10 MB. Unabhaengig
+// Fachliche Obergrenze der Bilddatei selbst -- exakt 4 MB (Korrektur auf
+// das feste Request-Limit der Vercel-Production-Umgebung). Unabhaengig
 // vom technischen Request-Limit der Server Action (next.config.ts),
 // das aus Multipart-/FormData-Overhead-Gruenden etwas hoeher liegen muss.
-export const MAX_HERO_IMAGE_BYTES = 10 * 1024 * 1024
+export const MAX_HERO_IMAGE_BYTES = 4 * 1024 * 1024
 
 export type DetectedImageType = {
   ext: 'jpg' | 'png' | 'webp'
