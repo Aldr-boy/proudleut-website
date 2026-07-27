@@ -1,15 +1,17 @@
 // Reine sort_order-Hilfslogik fuer die Galerie (media_assets, role='gallery').
 // Mehrere Zeilen pro Band sind hier normal (anders als bei Hero/Thumbnail).
-// Kein Netzwerk-/DB-Zugriff -- die aufrufende Server Action fuehrt die
-// zurueckgelieferten Zeilen als EINEN atomaren PostgREST-Bulk-upsert()
-// aus (ein HTTP-Request, ein SQL-Statement, dadurch bereits atomar --
-// siehe Begruendung im Abschlussbericht). Dadurch bleibt kein
-// inkonsistenter Zwischenzustand (doppelte sort_order, Luecken,
-// Teil-Update) moeglich, ohne dass dafuer eine eigene
-// RPC/SECURITY-DEFINER-Funktion noetig waere.
+// Kein Netzwerk-/DB-Zugriff.
 //
-// Wichtig fuer den Bulk-upsert(): PostgreSQL prueft NOT-NULL-Constraints
-// auf der vorgeschlagenen Zeile bereits WAEHREND der Zeilenkonstruktion --
+// Neudurchnummerierung nach dem Loeschen eines Galeriebilds laeuft NICHT
+// hier, sondern innerhalb der Postgres-Funktion
+// public.delete_band_gallery_image (supabase/fn_delete_band_gallery_image.sql)
+// -- Loeschung und Neudurchnummerierung muessen in EINER Transaktion
+// erfolgen, was zwei getrennte PostgREST-Calls von hier aus nicht
+// garantieren koennen (siehe Kommentar in der SQL-Datei).
+//
+// Reorder (swapGalleryOrder) bleibt weiterhin ein einzelner atomarer
+// PostgREST-Bulk-upsert(): PostgreSQL prueft NOT-NULL-Constraints auf der
+// vorgeschlagenen Zeile bereits WAEHREND der Zeilenkonstruktion --
 // unabhaengig davon, ob am Ende ueber ON CONFLICT DO UPDATE tatsaechlich
 // eingefuegt oder aktualisiert wird (empirisch gegen die echte DB
 // verifiziert). Ein upsert() mit nur {id, sort_order} scheitert deshalb
@@ -30,17 +32,6 @@ export type GallerySortRow = { id: string; band_id: string; role: string; url: s
 export function nextGallerySortOrder(rows: { sort_order: number }[]): number {
   if (rows.length === 0) return 1
   return Math.max(...rows.map((r) => r.sort_order)) + 1
-}
-
-// Liefert die Zielwerte fuer eine luecken- und duplikatfreie
-// Neudurchnummerierung 1..n, sortiert nach der aktuellen sort_order
-// (stabil bei Gleichstand). Reine Ableitung -- schreibt nichts.
-export function renumberGallerySequentially<T extends GallerySortRow>(
-  rows: T[],
-): GallerySortRow[] {
-  return [...rows]
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((row, index) => ({ id: row.id, band_id: row.band_id, role: row.role, url: row.url, sort_order: index + 1 }))
 }
 
 export type SwapDirection = 'up' | 'down'
