@@ -42,8 +42,8 @@ test('detectImageType: falsche Dateiendung mit ungueltigem Inhalt (Text als "bil
   assert.equal(detectImageType(fakeText), null)
 })
 
-test('MAX_HERO_IMAGE_BYTES ist exakt 10 MB', () => {
-  assert.equal(MAX_HERO_IMAGE_BYTES, 10 * 1024 * 1024)
+test('MAX_HERO_IMAGE_BYTES ist exakt 4 MB', () => {
+  assert.equal(MAX_HERO_IMAGE_BYTES, 4 * 1024 * 1024)
 })
 
 test('validateHeroImageFile: gueltiges JPEG wird akzeptiert', () => {
@@ -70,17 +70,23 @@ test('validateHeroImageFile: leere Datei wird abgelehnt', () => {
   assert.equal(!result.ok && result.errorCode, 'hero_image_empty')
 })
 
-test('validateHeroImageFile: Datei ueber 10 MB wird abgelehnt', () => {
-  const oversized = padded(JPEG_HEADER, MAX_HERO_IMAGE_BYTES + 1)
-  const result = validateHeroImageFile(oversized)
-  assert.equal(result.ok, false)
-  assert.equal(!result.ok && result.errorCode, 'hero_image_too_large')
+test('validateHeroImageFile: Datei knapp unter 4 MB wird akzeptiert', () => {
+  const justUnder = padded(JPEG_HEADER, MAX_HERO_IMAGE_BYTES - 1)
+  const result = validateHeroImageFile(justUnder)
+  assert.equal(result.ok, true)
 })
 
-test('validateHeroImageFile: Datei mit exakt 10 MB wird noch akzeptiert (Grenzwert inklusive)', () => {
+test('validateHeroImageFile: Datei mit exakt 4 MB wird noch akzeptiert (Grenzwert inklusive)', () => {
   const exact = padded(JPEG_HEADER, MAX_HERO_IMAGE_BYTES)
   const result = validateHeroImageFile(exact)
   assert.equal(result.ok, true)
+})
+
+test('validateHeroImageFile: Datei knapp ueber 4 MB wird abgelehnt', () => {
+  const justOver = padded(JPEG_HEADER, MAX_HERO_IMAGE_BYTES + 1)
+  const result = validateHeroImageFile(justOver)
+  assert.equal(result.ok, false)
+  assert.equal(!result.ok && result.errorCode, 'hero_image_too_large')
 })
 
 test('validateHeroImageFile: nicht erlaubter Dateityp (z. B. GIF-Signatur) wird abgelehnt', () => {

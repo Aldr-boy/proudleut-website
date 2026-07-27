@@ -121,7 +121,7 @@ export function HeroImageEditorSection({
             className="block w-full text-sm text-gray-700 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border file:border-gray-300 file:bg-white file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-50"
           />
           <p className="mt-1 text-xs text-gray-400">
-            Erlaubte Formate: JPEG, PNG, WebP. Maximale Dateigröße: 10 MB.
+            Erlaubte Formate: JPEG, PNG, WebP. Maximale Dateigröße: 4 MB.
           </p>
         </div>
 

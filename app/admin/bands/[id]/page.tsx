@@ -136,7 +136,7 @@ const HERO_IMAGE_ERROR_MESSAGES: Record<string, string> = {
   hero_image_band_not_found:   'Band nicht gefunden.',
   hero_image_file_required:    'Bitte eine Bilddatei auswählen.',
   hero_image_empty:            'Die ausgewählte Datei ist leer.',
-  hero_image_too_large:        'Die Datei ist größer als 10 MB.',
+  hero_image_too_large:        'Die Datei ist größer als 4 MB.',
   hero_image_invalid_type:     'Nur JPEG-, PNG- oder WebP-Dateien sind erlaubt.',
   hero_image_load_failed:      'Bestehendes Hero-Bild konnte nicht geladen werden – bitte Seite neu laden.',
   hero_image_ambiguous:        'Datenkonflikt: Für diese Band sind mehrere Hero-Bilder ohne eindeutige Reihenfolge hinterlegt. Bitte außerhalb dieses Editors klären.',
