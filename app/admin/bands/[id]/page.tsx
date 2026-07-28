@@ -167,16 +167,13 @@ const GALLERY_ERROR_MESSAGES: Record<string, string> = {
   gallery_empty:             'Die ausgewählte Datei ist leer.',
   gallery_too_large:         'Die Datei ist größer als 4 MB.',
   gallery_invalid_type:      'Nur JPEG-, PNG- oder WebP-Dateien sind erlaubt.',
-  gallery_load_failed:       'Galerie konnte nicht geladen werden – bitte Seite neu laden.',
   gallery_limit_reached:     'Maximale Anzahl von 10 Galeriebildern erreicht. Bitte zuerst ein bestehendes Bild löschen.',
   gallery_upload_failed:     'Upload fehlgeschlagen – bitte erneut versuchen.',
-  gallery_db_insert_failed:  'Bild wurde hochgeladen, aber die Zuordnung konnte nicht gespeichert werden – bitte erneut versuchen.',
   gallery_target_required:   'Kein Galeriebild ausgewählt.',
   gallery_target_not_found:  'Dieses Galeriebild wurde nicht gefunden – bitte Seite neu laden.',
   gallery_target_wrong_band: 'Dieses Galeriebild gehört nicht zu dieser Band – bitte Seite neu laden.',
   gallery_target_wrong_role: 'Dieser Medieneintrag ist kein Galeriebild – bitte Seite neu laden.',
   gallery_invalid_direction: 'Unbekannte Verschieben-Aktion.',
-  gallery_reorder_failed:    'Umsortieren fehlgeschlagen – bitte erneut versuchen.',
   db_error:                  'Datenbankfehler – bitte erneut versuchen.',
 }
 
