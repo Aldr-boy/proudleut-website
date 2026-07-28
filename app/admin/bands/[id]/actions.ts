@@ -8,11 +8,7 @@ import { compactRankSlots as compactRepertoireStyleSlots } from '@/lib/repertoir
 import { validateBandImageFile } from '@/lib/bandImages/validateImageFile'
 import { buildBandImageStoragePath, extractBandMediaStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
-import {
-  MAX_GALLERY_IMAGES,
-  nextGallerySortOrder,
-  swapGalleryOrder,
-} from '@/lib/bandImages/gallerySortOrder'
+import { BAND_CARD_REVALIDATION_PATHS } from '@/lib/bandImages/cardRevalidation'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -1061,7 +1057,10 @@ export async function updateBandRepertoireStylesAction(formData: FormData): Prom
 //      Insert, kein pauschales Loeschen vor dem Update.
 //   4. Erst NACH erfolgreichem DB-Write wird versucht, das alte
 //      Storage-Objekt zu entfernen (best effort, nicht kritisch)
-//   5. Admin-Seite und oeffentliche Bandseite revalidieren
+//   5. Admin-Seite, oeffentliche Bandseite UND dieselben Card-Routen wie
+//      beim Thumbnail-Wechsel revalidieren (/bands, /veranstaltung/[slug])
+//      -- BandCard zeigt thumbnailImage ?? heroImage, ein Hero-Wechsel bei
+//      einer Band ohne Thumbnail wirkt also auch dort (Codex-Review PR #16)
 //
 // Bei mehreren bestehenden hero-Zeilen (kein UNIQUE-Constraint auf
 // (band_id, role) in public.media_assets) wird ueber
@@ -1180,9 +1179,13 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
   }
 
   // ---- 5. Revalidieren: Admin-Seite (force-dynamic ohnehin immer frisch,
-  // hier zur Explizitheit) und oeffentliche Bandseite ----
+  // hier zur Explizitheit), oeffentliche Bandseite, sowie dieselben
+  // Card-Routen wie beim Thumbnail-Wechsel (lib/bandImages/cardRevalidation.ts).
+  // Ohne diese Revalidierung wuerde die ISR-gecachte Card (revalidate=300)
+  // bis zu 5 Minuten das alte Hero-Bild zeigen. Keine globale Site-Invalidierung. ----
   revalidatePath(`/admin/bands/${bandRow.id}`)
   revalidatePath(`/band/${bandRow.slug}`)
+  for (const { path, type } of BAND_CARD_REVALIDATION_PATHS) revalidatePath(path, type)
 
   redirect(`/admin/bands/${bandRow.id}?hero_image_saved=1`)
 }
@@ -1319,15 +1322,13 @@ export async function updateBandThumbnailAction(formData: FormData): Promise<nev
     }
   }
 
-  // ---- 5. Revalidieren: Admin-Seite, sowie konkret die Seiten, auf
-  // denen BandCard das Thumbnail tatsaechlich rendert (/bands und die
-  // Kategorie-Seiten unter /veranstaltung/[slug]). /band/[slug] ist
-  // force-dynamic (kein Cache) und zeigt hier nicht das eigene
+  // ---- 5. Revalidieren: Admin-Seite, sowie dieselben Card-Routen wie
+  // beim Hero-Wechsel (lib/bandImages/cardRevalidation.ts). /band/[slug]
+  // ist force-dynamic (kein Cache) und zeigt hier nicht das eigene
   // Thumbnail, daher bewusst nicht Teil dieser Liste -- siehe
   // Funktions-Kommentar oben. ----
   revalidatePath(`/admin/bands/${bandRow.id}`)
-  revalidatePath('/bands')
-  revalidatePath('/veranstaltung/[slug]', 'page')
+  for (const { path, type } of BAND_CARD_REVALIDATION_PATHS) revalidatePath(path, type)
 
   redirect(`/admin/bands/${bandRow.id}?thumbnail_saved=1`)
 }
@@ -1337,61 +1338,45 @@ export async function updateBandThumbnailAction(formData: FormData): Promise<nev
 //
 // Anders als Hero/Thumbnail sind hier mehrere Zeilen pro Band normal.
 // Reihenfolge ueber sort_order; nach jedem Schreibvorgang luecken- und
-// duplikatfrei 1..n (lib/bandImages/gallerySortOrder.ts).
+// duplikatfrei 1..n.
 //
-// Architekturentscheidung Umsortieren/Neudurchnummerieren: KEINE neue
-// RPC/SECURITY-DEFINER-Funktion. Ein Mehrzeilen-.upsert()-Aufruf des
-// Supabase-JS-Clients sendet alle betroffenen Zeilen in EINEM
-// HTTP-Request an PostgREST, das daraus ein einziges SQL-Statement
-// (INSERT ... ON CONFLICT (id) DO UPDATE) baut -- bereits ein atomares
-// DB-Statement: entweder werden alle uebergebenen Zeilen aktualisiert,
-// oder (z. B. bei einer inzwischen geloeschten Zeile) keine einzige.
-// Ein inkonsistenter Zwischenzustand (doppelte sort_order, Luecken,
-// Teil-Update) ist damit ausgeschlossen, ohne eine eigene
-// Datenbankfunktion einzufuehren -- dieselbe service_role-Verbindung
-// wie bei allen anderen Admin-Mutationen reicht aus. Fuer echte
-// Mehrzeilen-Konsistenzprobleme (z. B. Validierung ueber mehrere Zeilen
-// hinweg) waere eine RPC noetig gewesen; hier genuegt der atomare
-// Bulk-Write.
+// Architektur (Codex-Review PR #16, supabase/fn_band_gallery_mutations_v2.sql):
+// Add, Delete und Reorder derselben Band laufen ausschliesslich ueber
+// drei RPCs, die jeweils zu Beginn ihrer Transaktion dieselbe
+// public.bands-Zeile per SELECT ... FOR UPDATE sperren. Dadurch
+// serialisieren sich alle drei Mutationstypen fuer dieselbe Band
+// gegeneinander (Operationen anderer Bands bleiben unabhaengig) -- ein
+// vorheriger, rein PostgREST-seitiger Ansatz (getrennte Read-then-Write-
+// Schritte fuer Add, Bulk-upsert() fuer Reorder) konnte bei parallelen
+// Aufrufen fuer dieselbe Band das Limit von 10 Bildern verletzen (Add)
+// oder eine zwischenzeitlich geloeschte Zeile per upsert() erneut
+// einfuegen (Reorder-Resurrection). Reorder verwendet serverseitig
+// ausschliesslich UPDATE auf bereits durch FOR UPDATE bestaetigte,
+// existierende Zeilen -- nie INSERT/UPSERT.
 // ─────────────────────────────────────────
-
-// band_id und role werden mitgeladen und bei jedem Bulk-upsert() (Reorder,
-// Neudurchnummerierung) unveraendert mitgefuehrt -- siehe Kommentar in
-// lib/bandImages/gallerySortOrder.ts (Postgres prueft NOT-NULL-Constraints
-// auf der vorgeschlagenen Zeile bereits vor der ON-CONFLICT-Aufloesung).
-type GalleryRow = { id: string; band_id: string; role: string; url: string; sort_order: number }
-
-async function loadGalleryRows(
-  client: ReturnType<typeof createAdminClient>,
-  bandId: string,
-): Promise<{ rows: GalleryRow[]; error: { message: string } | null }> {
-  const { data, error } = await client
-    .from('media_assets')
-    .select('id, band_id, role, url, sort_order')
-    .eq('band_id', bandId)
-    .eq('role', 'gallery')
-  return { rows: data ?? [], error }
-}
 
 function galleryErrorRedirect(bandId: string, code: string): never {
   redirect(`/admin/bands/${bandId}?gallery_error=${code}`)
 }
 
-// Fehlercodes der RPC public.delete_band_gallery_image (siehe
-// supabase/fn_delete_band_gallery_image.sql) auf stabile String-Codes fuer
+// Fehlercodes aller drei Galerie-RPCs (siehe
+// supabase/fn_band_gallery_mutations_v2.sql) auf stabile String-Codes fuer
 // die Fehlermeldungs-Map in page.tsx mappen -- gleiches Muster wie
 // repertoireStyleErrorCode() fuer set_band_repertoire_styles.
-const GALLERY_DELETE_ERRCODE_TO_SLUG: Record<string, string> = {
+const GALLERY_RPC_ERRCODE_TO_SLUG: Record<string, string> = {
   GA001: 'gallery_target_not_found',
   GA002: 'gallery_target_wrong_band',
   GA003: 'gallery_target_wrong_role',
+  GA004: 'gallery_band_not_found',
+  GA005: 'gallery_limit_reached',
+  GA006: 'gallery_invalid_direction',
 }
 
-const GALLERY_DELETE_MESSAGE_SLUGS = new Set(Object.values(GALLERY_DELETE_ERRCODE_TO_SLUG))
+const GALLERY_RPC_MESSAGE_SLUGS = new Set(Object.values(GALLERY_RPC_ERRCODE_TO_SLUG))
 
-function galleryDeleteErrorCode(error: { code?: string | null; message?: string | null }): string {
-  if (error.code && GALLERY_DELETE_ERRCODE_TO_SLUG[error.code]) return GALLERY_DELETE_ERRCODE_TO_SLUG[error.code]
-  if (error.message && GALLERY_DELETE_MESSAGE_SLUGS.has(error.message)) return error.message
+function galleryRpcErrorCode(error: { code?: string | null; message?: string | null }): string {
+  if (error.code && GALLERY_RPC_ERRCODE_TO_SLUG[error.code]) return GALLERY_RPC_ERRCODE_TO_SLUG[error.code]
+  if (error.message && GALLERY_RPC_MESSAGE_SLUGS.has(error.message)) return error.message
   return 'db_error'
 }
 
@@ -1421,13 +1406,6 @@ export async function addBandGalleryImageAction(formData: FormData): Promise<nev
     galleryErrorRedirect(bandRow.id, `gallery_${validation.errorCode}`)
   }
 
-  const { rows: existingGalleryRows, error: galleryLoadError } = await loadGalleryRows(client, bandRow.id)
-  if (galleryLoadError) galleryErrorRedirect(bandRow.id, 'gallery_load_failed')
-
-  if (existingGalleryRows.length >= MAX_GALLERY_IMAGES) {
-    galleryErrorRedirect(bandRow.id, 'gallery_limit_reached')
-  }
-
   // ---- 2. Upload unter neuem, eindeutigem Pfad ----
   const uniqueSuffix = crypto.randomUUID()
   const storagePath = buildBandImageStoragePath(bandRow.slug, 'gallery', validation.ext, uniqueSuffix)
@@ -1439,26 +1417,26 @@ export async function addBandGalleryImageAction(formData: FormData): Promise<nev
   if (uploadError) galleryErrorRedirect(bandRow.id, 'gallery_upload_failed')
 
   const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
-  const newSortOrder = nextGallerySortOrder(existingGalleryRows)
 
-  // ---- 3. Neue Zeile anlegen (ans Ende der Galerie) ----
-  const { error: insertError } = await client.from('media_assets').insert({
-    band_id: bandRow.id,
-    url: newUrl,
-    role: 'gallery',
-    alt_text: `${bandRow.name} live`,
-    source_provider: 'supabase_storage',
-    sort_order: newSortOrder,
+  // ---- 3. Atomare Add-RPC: Limitpruefung (max. 10, fachliche Autoritaet
+  // -- eine etwaige UI-Vorabpruefung ist nur Komfort), Positionsvergabe
+  // und Insert in EINER Transaktion, serialisiert per Bandzeilen-Lock
+  // gegen gleichzeitige Add/Delete/Reorder-Aufrufe derselben Band. ----
+  const { error: rpcError } = await client.rpc('add_band_gallery_image', {
+    p_band_id: bandRow.id,
+    p_url: newUrl,
+    p_alt_text: `${bandRow.name} live`,
   })
 
-  if (insertError) {
-    // DB-Write fehlgeschlagen: das gerade hochgeladene, noch nicht
-    // verwendete Objekt wird best effort wieder entfernt.
+  if (rpcError) {
+    // DB-Write fehlgeschlagen (z. B. Limit erreicht): das gerade
+    // hochgeladene, noch nicht verwendete Objekt wird best effort wieder
+    // entfernt.
     const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
     if (cleanupError) {
-      console.error(`[gallery-image] Cleanup nach fehlgeschlagenem DB-Insert nicht moeglich (${storagePath}): ${cleanupError.message}`)
+      console.error(`[gallery-image] Cleanup nach fehlgeschlagenem Add-RPC-Aufruf nicht moeglich (${storagePath}): ${cleanupError.message}`)
     }
-    galleryErrorRedirect(bandRow.id, 'gallery_db_insert_failed')
+    galleryErrorRedirect(bandRow.id, galleryRpcErrorCode(rpcError))
   }
 
   revalidatePath(`/admin/bands/${bandRow.id}`)
@@ -1484,19 +1462,20 @@ export async function deleteBandGalleryImageAction(formData: FormData): Promise<
   if (!media_asset_id) galleryErrorRedirect(bandRow.id, 'gallery_target_required')
 
   // ---- Atomare Loeschung + Neudurchnummerierung ueber die RPC
-  // delete_band_gallery_image (supabase/fn_delete_band_gallery_image.sql).
-  // Beide Schritte laufen in EINER Postgres-Transaktion innerhalb der
-  // Funktion -- kein Zwischenzustand mit Luecke in sort_order moeglich,
-  // anders als beim vorherigen Zweischritt-Ablauf ueber zwei getrennte
-  // PostgREST-Calls (separates .delete() + separates Bulk-upsert()). Die
-  // Funktion prueft selbst Existenz, Band-Zugehoerigkeit und role='gallery'
-  // (GA001-GA003) und sichert die geloeschte URL fuer den Storage-Cleanup. ----
+  // delete_band_gallery_image (supabase/fn_band_gallery_mutations_v2.sql,
+  // CREATE OR REPLACE der urspruenglich in
+  // supabase/fn_delete_band_gallery_image.sql ausgefuehrten Funktion --
+  // identische Signatur, zusaetzlich Bandzeilen-Lock zu Beginn). Beide
+  // Schritte laufen weiterhin in EINER Postgres-Transaktion innerhalb der
+  // Funktion. Die Funktion prueft selbst Bandexistenz (GA004), Zielzeilen-
+  // Existenz/Band-Zugehoerigkeit/role='gallery' (GA001-GA003) und sichert
+  // die geloeschte URL fuer den Storage-Cleanup. ----
   const { data: rpcRows, error: rpcError } = await client.rpc('delete_band_gallery_image', {
     p_band_id: bandRow.id,
     p_media_asset_id: media_asset_id,
   })
 
-  if (rpcError) galleryErrorRedirect(bandRow.id, galleryDeleteErrorCode(rpcError))
+  if (rpcError) galleryErrorRedirect(bandRow.id, galleryRpcErrorCode(rpcError))
 
   // ---- Storage-Objekt der geloeschten Zeile erst jetzt entfernen (best
   // effort) -- erst NACH erfolgreicher, atomarer DB-Aenderung ----
@@ -1535,26 +1514,22 @@ export async function moveBandGalleryImageAction(formData: FormData): Promise<ne
   if (!media_asset_id) galleryErrorRedirect(bandRow.id, 'gallery_target_required')
   if (direction !== 'up' && direction !== 'down') galleryErrorRedirect(bandRow.id, 'gallery_invalid_direction')
 
-  const { rows: galleryRows, error: galleryLoadError } = await loadGalleryRows(client, bandRow.id)
-  if (galleryLoadError) galleryErrorRedirect(bandRow.id, 'gallery_load_failed')
+  // ---- Atomare Move-RPC: sperrt Band-, Ziel- und Nachbarzeile per FOR
+  // UPDATE und tauscht ausschliesslich per UPDATE auf bereits bestaetigte,
+  // existierende Zeilen -- niemals INSERT/UPSERT (siehe
+  // supabase/fn_band_gallery_mutations_v2.sql). Eine zwischenzeitlich
+  // geloeschte Nachbarzeile kann dadurch strukturell nicht wieder
+  // eingefuegt werden. Bereits am Rand der Galerie -> die RPC liefert
+  // einen sauberen No-op (kein Fehler), kein separater Codepfad noetig.
+  // Der frueher hier verwendete Bulk-upsert() (insert-faehig) entfaellt
+  // vollstaendig. ----
+  const { error: rpcError } = await client.rpc('move_band_gallery_image', {
+    p_band_id: bandRow.id,
+    p_media_asset_id: media_asset_id,
+    p_direction: direction,
+  })
 
-  const swap = swapGalleryOrder(galleryRows, media_asset_id, direction)
-  if (!swap) {
-    // Bereits am Rand der Galerie, oder die Zeile existiert nicht mehr
-    // (z. B. gleichzeitig geloescht) -- kein Fehler, einfach kein
-    // Reihenfolgenwechsel noetig/moeglich.
-    redirect(`/admin/bands/${bandRow.id}`)
-  }
-
-  // Genau EIN atomarer Bulk-upsert() fuer beide getauschten Zeilen (siehe
-  // Architekturkommentar oben) -- entweder werden beide sort_order-Werte
-  // aktualisiert, oder keiner. Ein halbfertiger Tausch (nur eine der
-  // beiden Zeilen aktualisiert) ist dadurch ausgeschlossen.
-  const { error: swapError } = await client.from('media_assets').upsert(swap, { onConflict: 'id' })
-  if (swapError) {
-    console.error(`[gallery-image] Umsortieren fehlgeschlagen (band ${bandRow.id}): ${swapError.message}`)
-    galleryErrorRedirect(bandRow.id, 'gallery_reorder_failed')
-  }
+  if (rpcError) galleryErrorRedirect(bandRow.id, galleryRpcErrorCode(rpcError))
 
   revalidatePath(`/admin/bands/${bandRow.id}`)
   revalidatePath(`/band/${bandRow.slug}`)
