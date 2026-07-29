@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test lib/moods/sortAssignments.test.ts lib/moods/slug.test.ts lib/moods/feierCluster.test.ts lib/moods/usageCount.test.ts lib/moods/description.test.ts lib/moods/conflicts.test.ts lib/repertoireStyles/sortAssignments.test.ts lib/repertoireStyles/conflicts.test.ts lib/bandImages/validateImageFile.test.ts lib/bandImages/storagePath.test.ts lib/bandImages/resolveMediaRow.test.ts lib/bandImages/cardRevalidation.test.ts"
+    "test": "node --test lib/moods/sortAssignments.test.ts lib/moods/slug.test.ts lib/moods/feierCluster.test.ts lib/moods/usageCount.test.ts lib/moods/description.test.ts lib/moods/conflicts.test.ts lib/repertoireStyles/sortAssignments.test.ts lib/repertoireStyles/conflicts.test.ts lib/bandImages/validateImageFile.test.ts lib/bandImages/decodeImageFile.test.ts lib/bandImages/storagePath.test.ts lib/bandImages/resolveMediaRow.test.ts lib/bandImages/cardRevalidation.test.ts lib/bandImages/actionsImageValidationOrder.test.ts lib/bandImages/supabaseImageRemotePattern.test.ts"
   },
   "dependencies": {
     "@sanity/image-url": "^2.1.1",
@@ -19,6 +19,7 @@
     "react-dom": "19.2.4",
     "sanity": "^5.26.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.34.5",
     "styled-components": "^6.4.2",
     "zustand": "^5.0.13"
   },

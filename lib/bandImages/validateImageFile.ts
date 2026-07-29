@@ -1,9 +1,15 @@
-// Reine, netzwerk-/dateisystemfreie Validierung von Band-Bild-Uploads
-// (Hero, Thumbnail, ... -- rollenneutral, von allen media_assets-Editoren
-// gemeinsam genutzt). Prueft NICHT nur Dateiendung oder den vom Browser
-// gelieferten MIME-Type (beides vom Client faelschbar), sondern die
-// tatsaechliche Datei-Signatur (Magic Bytes) am Anfang des Dateiinhalts.
-// Nur echte JPEG-, PNG- oder WebP-Dateien werden akzeptiert.
+// Netzwerk-/dateisystemfreie Validierung von Band-Bild-Uploads (Hero,
+// Thumbnail, Galerie-Add -- rollenneutral, von allen media_assets-
+// Editoren gemeinsam genutzt). Prueft NICHT nur Dateiendung oder den vom
+// Browser gelieferten MIME-Type (beides vom Client faelschbar), sondern
+// die tatsaechliche Datei-Signatur (Magic Bytes) UND anschliessend, ob
+// die Datei tatsaechlich vollstaendig dekodierbar ist (siehe
+// decodeImageFile.ts) -- eine abgeschnittene oder beschaedigte Datei mit
+// gueltiger Signatur wird dadurch ebenfalls abgelehnt, bevor sie ein
+// bisher gueltiges Hero-/Thumbnail-Bild ersetzen oder in die Galerie
+// gelangen kann. Nur echte, vollstaendig lesbare JPEG-, PNG- oder
+// WebP-Dateien werden akzeptiert.
+import { decodeImageFile } from './decodeImageFile.ts'
 
 // Fachliche Obergrenze der Bilddatei selbst -- exakt 4 MB (Korrektur auf
 // das feste Request-Limit der Vercel-Production-Umgebung). Unabhaengig
@@ -46,19 +52,32 @@ export function detectImageType(bytes: Uint8Array): DetectedImageType | null {
 
 export type BandImageValidationResult =
   | { ok: true; ext: 'jpg' | 'png' | 'webp'; contentType: string }
-  | { ok: false; errorCode: 'empty' | 'too_large' | 'invalid_type' }
+  | { ok: false; errorCode: 'empty' | 'too_large' | 'invalid_type' | 'invalid_image' }
 
-// Reihenfolge bewusst: leer -> Groesse -> Signatur. Jede Ablehnung liefert
-// einen stabilen, rollenneutralen Code -- niemals wird eine Datei allein
-// anhand von Name/MIME akzeptiert. Aufrufer (Hero-/Thumbnail-Action)
-// versehen diesen Code jeweils mit ihrem eigenen Praefix fuer die
+// Reihenfolge bewusst: leer -> Groesse -> Signatur -> vollstaendiger
+// Decode. Jede Ablehnung liefert einen stabilen, rollenneutralen Code --
+// niemals wird eine Datei allein anhand von Name/MIME akzeptiert, und
+// niemals allein anhand der fuehrenden Bytes, ohne den Rest der Datei
+// tatsaechlich gelesen zu haben. Aufrufer (Hero-/Thumbnail-/Galerie-
+// Action) versehen diesen Code jeweils mit ihrem eigenen Praefix fuer die
 // Fehlermeldungs-Map der Admin-Seite (z. B. "hero_image_" + errorCode).
-export function validateBandImageFile(bytes: Uint8Array): BandImageValidationResult {
+// Async, weil der vollstaendige Decode-Schritt (sharp) asynchron ist --
+// alle drei Aufrufstellen awaiten dieses Ergebnis, bevor der Storage-
+// Upload beginnt.
+export async function validateBandImageFile(bytes: Uint8Array): Promise<BandImageValidationResult> {
   if (bytes.length === 0) return { ok: false, errorCode: 'empty' }
   if (bytes.length > MAX_BAND_IMAGE_BYTES) return { ok: false, errorCode: 'too_large' }
 
   const detected = detectImageType(bytes)
   if (!detected) return { ok: false, errorCode: 'invalid_type' }
+
+  const decoded = await decodeImageFile(bytes)
+  if (!decoded.ok) {
+    // Interner Decoder-Fehler wird geloggt, aber NIE an den Browser
+    // weitergegeben -- der Aufrufer erhaelt nur den stabilen Code.
+    console.error(`[validateBandImageFile] Datei mit gueltiger ${detected.ext}-Signatur liess sich nicht vollstaendig dekodieren: ${decoded.error}`)
+    return { ok: false, errorCode: 'invalid_image' }
+  }
 
   return { ok: true, ext: detected.ext, contentType: detected.contentType }
 }
