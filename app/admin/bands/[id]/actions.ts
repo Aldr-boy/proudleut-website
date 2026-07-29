@@ -1097,7 +1097,7 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
-  const validation = validateBandImageFile(bytes)
+  const validation = await validateBandImageFile(bytes)
   if (!validation.ok) {
     heroImageErrorRedirect(bandRow.id, `hero_image_${validation.errorCode}`)
   }
@@ -1243,7 +1243,7 @@ export async function updateBandThumbnailAction(formData: FormData): Promise<nev
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
-  const validation = validateBandImageFile(bytes)
+  const validation = await validateBandImageFile(bytes)
   if (!validation.ok) {
     thumbnailErrorRedirect(bandRow.id, `thumbnail_${validation.errorCode}`)
   }
@@ -1401,7 +1401,7 @@ export async function addBandGalleryImageAction(formData: FormData): Promise<nev
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer())
-  const validation = validateBandImageFile(bytes)
+  const validation = await validateBandImageFile(bytes)
   if (!validation.ok) {
     galleryErrorRedirect(bandRow.id, `gallery_${validation.errorCode}`)
   }

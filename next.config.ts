@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { deriveSupabaseImageRemotePattern } from "./lib/bandImages/supabaseImageRemotePattern";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -33,11 +34,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'uploads-ssl.webflow.com',
       },
-      {
-        protocol: 'https',
-        hostname: 'bfyucjjyarvqeftqqihm.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
+      // Supabase Storage: aus NEXT_PUBLIC_SUPABASE_URL abgeleitet statt
+      // fest auf einen einzelnen Produktionshost verdrahtet -- siehe
+      // lib/bandImages/supabaseImageRemotePattern.ts. Damit funktionieren
+      // Staging-/Ersatz-Projekte und lokale Supabase-Instanzen, ohne
+      // next.config.ts jedes Mal manuell anzupassen.
+      deriveSupabaseImageRemotePattern(process.env.NEXT_PUBLIC_SUPABASE_URL),
     ],
   },
   async headers() {
