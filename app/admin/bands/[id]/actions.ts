@@ -9,6 +9,7 @@ import { validateBandImageFile } from '@/lib/bandImages/validateImageFile'
 import { buildBandImageStoragePath, extractBandMediaStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import { BAND_CARD_REVALIDATION_PATHS } from '@/lib/bandImages/cardRevalidation'
+import { requireAdminSession } from '@/lib/admin/requireAdminSession'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -1076,6 +1077,8 @@ function heroImageErrorRedirect(bandId: string, code: string): never {
 }
 
 export async function updateBandHeroImageAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
@@ -1223,6 +1226,8 @@ function thumbnailErrorRedirect(bandId: string, code: string): never {
 }
 
 export async function updateBandThumbnailAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
@@ -1381,6 +1386,8 @@ function galleryRpcErrorCode(error: { code?: string | null; message?: string | n
 }
 
 export async function addBandGalleryImageAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
@@ -1446,6 +1453,8 @@ export async function addBandGalleryImageAction(formData: FormData): Promise<nev
 }
 
 export async function deleteBandGalleryImageAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   const media_asset_id = str(formData, 'media_asset_id')
   if (!band_id) redirect('/admin/bands')
@@ -1497,6 +1506,8 @@ export async function deleteBandGalleryImageAction(formData: FormData): Promise<
 }
 
 export async function moveBandGalleryImageAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   const media_asset_id = str(formData, 'media_asset_id')
   const direction = str(formData, 'direction')

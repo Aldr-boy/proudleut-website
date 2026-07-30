@@ -186,3 +186,22 @@ test('validateBandImageFile: auf ~70% abgeschnittenes WebP wird abgelehnt', asyn
   assert.equal(result.ok, false)
   assert.equal(!result.ok && result.errorCode, 'invalid_image')
 })
+
+// ============================================================
+// Pixelgrenze (Codex-Korrekturblock 4, P2): Ende-zu-Ende-Nachweis, dass
+// ein gueltiges, aber zu hoch aufgeloestes Bild ueber den vollen
+// validateBandImageFile-Pfad (nicht nur die decodeImageFile-Einheit) mit
+// dem eigenen, stabilen Fehlercode too_many_pixels abgelehnt wird.
+// ============================================================
+
+test('validateBandImageFile: gueltiges, stark komprimiertes PNG ueber 25 Megapixeln und unter 4 MB wird mit too_many_pixels abgelehnt', async () => {
+  const hugePixelPng = await sharp({ create: { width: 6000, height: 5000, channels: 3, background: { r: 15, g: 15, b: 15 } } })
+    .png({ compressionLevel: 9 })
+    .toBuffer()
+  assert.ok(hugePixelPng.length < MAX_BAND_IMAGE_BYTES, `Testdatei muss unter 4 MB bleiben, ist aber ${hugePixelPng.length} Bytes`)
+  assert.ok(6000 * 5000 > 25_000_000, 'Testbild muss ueber der Pixelgrenze liegen')
+
+  const result = await validateBandImageFile(hugePixelPng)
+  assert.equal(result.ok, false)
+  assert.equal(!result.ok && result.errorCode, 'too_many_pixels')
+})
