@@ -6,7 +6,8 @@ import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { compactRankSlots } from '@/lib/moods/sortAssignments'
 import { compactRankSlots as compactRepertoireStyleSlots } from '@/lib/repertoireStyles/sortAssignments'
 import { validateBandImageFile } from '@/lib/bandImages/validateImageFile'
-import { buildBandImageStoragePath, extractBandMediaStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
+import { buildBandImageStoragePath, BAND_MEDIA_BUCKET } from '@/lib/bandImages/storagePath'
+import { deleteBandImageIfUnreferenced } from '@/lib/bandImages/deleteBandImageIfUnreferenced'
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import { BAND_CARD_REVALIDATION_PATHS } from '@/lib/bandImages/cardRevalidation'
 import { requireAdminSession } from '@/lib/admin/requireAdminSession'
@@ -1140,10 +1141,10 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
   // ---- 3. Bestehende Zeile gezielt per id aktualisieren, oder genau
   // eine neue anlegen. Kein Delete-then-Insert. ----
   let dbError: { message: string } | null = null
-  let oldStoragePath: string | null = null
+  let oldUrl: string | null = null
 
   if (resolution.kind === 'resolved' && resolution.row) {
-    oldStoragePath = extractBandMediaStoragePath(resolution.row.url)
+    oldUrl = resolution.row.url
     const { error } = await client
       .from('media_assets')
       .update({ url: newUrl })
@@ -1173,12 +1174,11 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
     heroImageErrorRedirect(bandRow.id, 'hero_image_db_update_failed')
   }
 
-  // ---- 4. Altes Storage-Objekt erst jetzt entfernen (best effort) ----
-  if (oldStoragePath) {
-    const { error: deleteOldError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([oldStoragePath])
-    if (deleteOldError) {
-      console.error(`[hero-image] Altes Objekt konnte nach erfolgreichem Bildwechsel nicht geloescht werden (${oldStoragePath}): ${deleteOldError.message}`)
-    }
+  // ---- 4. Altes Storage-Objekt erst jetzt, nach erfolgreichem
+  // DB-Update, und nur ohne verbleibende Referenz entfernen (best effort;
+  // siehe deleteBandImageIfUnreferenced.ts) ----
+  if (oldUrl) {
+    await deleteBandImageIfUnreferenced(client, oldUrl, 'hero-image')
   }
 
   // ---- 5. Revalidieren: Admin-Seite (force-dynamic ohnehin immer frisch,
@@ -1203,7 +1203,7 @@ export async function updateBandHeroImageAction(formData: FormData): Promise<nev
 //
 // Gleicher Ablauf und dieselben rollenneutralen lib/bandImages-Module wie
 // beim Hero-Upload (validateBandImageFile, buildBandImageStoragePath,
-// resolvePubliclyUsedMediaRow, extractBandMediaStoragePath) -- keine
+// resolvePubliclyUsedMediaRow, deleteBandImageIfUnreferenced) -- keine
 // zweite Validierungs- oder Konfliktaufloesungslogik. Kein neuer
 // Schreibweg: derselbe service_role-Server-Action-Pfad wie alle anderen
 // Admin-Mutationen (createAdminClient()).
@@ -1286,10 +1286,10 @@ export async function updateBandThumbnailAction(formData: FormData): Promise<nev
   // ---- 3. Bestehende Zeile gezielt per id aktualisieren, oder genau
   // eine neue anlegen. Kein Delete-then-Insert. ----
   let dbError: { message: string } | null = null
-  let oldStoragePath: string | null = null
+  let oldUrl: string | null = null
 
   if (resolution.kind === 'resolved' && resolution.row) {
-    oldStoragePath = extractBandMediaStoragePath(resolution.row.url)
+    oldUrl = resolution.row.url
     const { error } = await client
       .from('media_assets')
       .update({ url: newUrl })
@@ -1319,12 +1319,11 @@ export async function updateBandThumbnailAction(formData: FormData): Promise<nev
     thumbnailErrorRedirect(bandRow.id, 'thumbnail_db_update_failed')
   }
 
-  // ---- 4. Altes Storage-Objekt erst jetzt entfernen (best effort) ----
-  if (oldStoragePath) {
-    const { error: deleteOldError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([oldStoragePath])
-    if (deleteOldError) {
-      console.error(`[thumbnail-image] Altes Objekt konnte nach erfolgreichem Bildwechsel nicht geloescht werden (${oldStoragePath}): ${deleteOldError.message}`)
-    }
+  // ---- 4. Altes Storage-Objekt erst jetzt, nach erfolgreichem
+  // DB-Update, und nur ohne verbleibende Referenz entfernen (best effort;
+  // siehe deleteBandImageIfUnreferenced.ts) ----
+  if (oldUrl) {
+    await deleteBandImageIfUnreferenced(client, oldUrl, 'thumbnail-image')
   }
 
   // ---- 5. Revalidieren: Admin-Seite, sowie dieselben Card-Routen wie
@@ -1486,17 +1485,12 @@ export async function deleteBandGalleryImageAction(formData: FormData): Promise<
 
   if (rpcError) galleryErrorRedirect(bandRow.id, galleryRpcErrorCode(rpcError))
 
-  // ---- Storage-Objekt der geloeschten Zeile erst jetzt entfernen (best
-  // effort) -- erst NACH erfolgreicher, atomarer DB-Aenderung ----
+  // ---- Storage-Objekt der geloeschten Zeile erst jetzt, nach
+  // erfolgreicher, atomarer DB-Aenderung, und nur ohne verbleibende
+  // Referenz entfernen (best effort; siehe deleteBandImageIfUnreferenced.ts) ----
   const deletedUrl = rpcRows?.[0]?.deleted_url
   if (deletedUrl) {
-    const oldStoragePath = extractBandMediaStoragePath(deletedUrl)
-    if (oldStoragePath) {
-      const { error: deleteObjectError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([oldStoragePath])
-      if (deleteObjectError) {
-        console.error(`[gallery-image] Altes Objekt konnte nach erfolgreicher Loeschung nicht entfernt werden (${oldStoragePath}): ${deleteObjectError.message}`)
-      }
-    }
+    await deleteBandImageIfUnreferenced(client, deletedUrl, 'gallery-image')
   }
 
   revalidatePath(`/admin/bands/${bandRow.id}`)

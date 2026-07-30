@@ -65,7 +65,7 @@ test('updateBandHeroImageAction: altes Storage-Objekt wird erst NACH dem erfolgr
   const body = extractFunctionBody('updateBandHeroImageAction')
   const dbWriteBlockIndex = body.indexOf('if (dbError)')
   assert.ok(dbWriteBlockIndex >= 0, 'kein dbError-Guard gefunden')
-  const oldDeleteIndex = body.indexOf('oldStoragePath', dbWriteBlockIndex)
+  const oldDeleteIndex = body.indexOf('oldUrl', dbWriteBlockIndex)
   assert.ok(oldDeleteIndex > dbWriteBlockIndex, 'Loeschen des alten Objekts muss erst nach der dbError-Pruefung erfolgen')
 })
 
@@ -73,7 +73,7 @@ test('updateBandThumbnailAction: altes Storage-Objekt wird erst NACH dem erfolgr
   const body = extractFunctionBody('updateBandThumbnailAction')
   const dbWriteBlockIndex = body.indexOf('if (dbError)')
   assert.ok(dbWriteBlockIndex >= 0, 'kein dbError-Guard gefunden')
-  const oldDeleteIndex = body.indexOf('oldStoragePath', dbWriteBlockIndex)
+  const oldDeleteIndex = body.indexOf('oldUrl', dbWriteBlockIndex)
   assert.ok(oldDeleteIndex > dbWriteBlockIndex, 'Loeschen des alten Objekts muss erst nach der dbError-Pruefung erfolgen')
 })
 
