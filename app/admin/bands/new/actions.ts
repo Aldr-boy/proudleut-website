@@ -1,6 +1,7 @@
 'use server'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
+import { requireAdminSession } from '@/lib/admin/requireAdminSession'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -13,6 +14,8 @@ function buildRedirect(base: string, fields: Record<string, string>, errors: Rec
 }
 
 export async function createBandAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const name = str(formData, 'name')
   const slug = str(formData, 'slug')
   const status = str(formData, 'status') || 'draft'
