@@ -77,6 +77,8 @@ function validateEditBand(data: {
 }
 
 export async function updateBandAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const id = str(formData, 'id')
   if (!id) redirect('/admin/bands')
 
@@ -218,6 +220,8 @@ function pgContactErrorCode(error: { code?: string; message?: string }): Contact
 // ─────────────────────────────────────────
 
 export async function createContactAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   const contact_name = str(formData, 'contact_name')
   const email = str(formData, 'email')
@@ -288,6 +292,8 @@ export async function createContactAction(formData: FormData): Promise<never> {
 // ─────────────────────────────────────────
 
 export async function updateContactAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const contact_id = str(formData, 'contact_id')
   const band_id = str(formData, 'band_id')
   const contact_name = str(formData, 'contact_name')
@@ -364,6 +370,8 @@ export async function updateContactAction(formData: FormData): Promise<never> {
 // ─────────────────────────────────────────
 
 export async function deleteContactAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const contact_id = str(formData, 'contact_id')
   const band_id = str(formData, 'band_id')
 
@@ -394,6 +402,8 @@ export async function deleteContactAction(formData: FormData): Promise<never> {
 // ─────────────────────────────────────────
 
 export async function updateBandEventTypesAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   const selected_ids = (formData.getAll('event_type_id') as string[])
     .map(v => v.trim())
@@ -468,6 +478,8 @@ export async function updateBandEventTypesAction(formData: FormData): Promise<ne
 // ─────────────────────────────────────────
 
 export async function updateBandBandTypesAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   const primary_band_type_id = str(formData, 'primary_band_type_id')
   const secondary_ids = (formData.getAll('secondary_band_type_id') as string[])
@@ -568,6 +580,8 @@ export async function updateBandBandTypesAction(formData: FormData): Promise<nev
 // ─────────────────────────────────────────
 
 export async function updateBandVideoAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
@@ -621,6 +635,8 @@ export async function updateBandVideoAction(formData: FormData): Promise<never> 
 // ─────────────────────────────────────────
 
 export async function updateLocationAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
@@ -725,6 +741,8 @@ export type LocationSearchOutcome =
   | { ok: false; error: 'empty_query' | 'db_error' }
 
 export async function searchLocationsAction(query: string): Promise<LocationSearchOutcome> {
+  await requireAdminSession()
+
   const trimmed = query.trim()
   if (!trimmed) return { ok: false, error: 'empty_query' }
 
@@ -789,6 +807,8 @@ export async function searchLocationsAction(query: string): Promise<LocationSear
 // ─────────────────────────────────────────
 
 export async function reassignLocationAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   const new_location_id = str(formData, 'new_location_id')
 
@@ -868,6 +888,8 @@ function similarErrorCode(error: { code?: string | null; message?: string | null
 }
 
 export async function updateSimilarBandsAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
