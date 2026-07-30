@@ -1,5 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { updateBandRepertoireStylesAction } from './actions'
 import {
   sortBandRepertoireStyleAssignments,
@@ -282,6 +283,14 @@ export function RepertoireStyleEditorSection({
               >
                 Speichern
               </button>
+              <Link
+                href="/admin/repertoire-styles"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-violet-700 hover:text-violet-900 hover:underline transition-colors"
+              >
+                Repertoire-Katalog verwalten ↗
+              </Link>
             </div>
           </form>
         </>
