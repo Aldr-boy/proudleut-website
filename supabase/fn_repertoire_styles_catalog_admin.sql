@@ -75,10 +75,56 @@
 --   RC003  repertoire_style_slug_required
 --   RC004  repertoire_style_slug_invalid
 --   RC005  repertoire_style_slug_conflict
+--   RC006  repertoire_style_name_conflict
 --   RC010  repertoire_style_not_found
 --   RC011  repertoire_style_archive_in_use
 --   RC012  repertoire_style_archive_not_active
 --   RC013  repertoire_style_reactivate_not_archived
+--
+-- Namens-Eindeutigkeit unter AKTIVEN Datensaetzen (Codex-P1-Nachtrag,
+-- RC006):
+--   Der Band-Editor (RepertoireStyleEditorSection.tsx) bildet den
+--   aktiven Katalog ueber einen name-basierten Lookup auf die ID ab
+--   (Map<name, entry>, exakter case-sensitiver String-Vergleich, kein
+--   Alias-/Aehnlichkeitsabgleich). Zwei aktive repertoire_styles-Zeilen
+--   mit identischem Namen wuerden in diesem Lookup kollidieren --
+--   welche ID tatsaechlich aufgeloest wird, waere von der Ladereihenfolge
+--   abhaengig, nicht deterministisch fachlich korrekt.
+--
+--   name und slug sind NUR zum Anlegezeitpunkt 1:1 gekoppelt (slug wird
+--   einmalig aus dem Namen abgeleitet, siehe oben). Nach mindestens
+--   einer Umbenennung ueber update_repertoire_style (das den Slug
+--   bewusst nie aendert) ist diese Kopplung aufgehoben -- die
+--   bestehende Slug-Eindeutigkeitspruefung (RC005) verhindert eine
+--   Namenskollision danach NICHT mehr zuverlaessig. Deshalb pruefen
+--   create_repertoire_style, update_repertoire_style UND
+--   reactivate_repertoire_style zusaetzlich und unabhaengig von der
+--   Slug-Pruefung, ob der resultierende Name (exakter, case-sensitiver
+--   Vergleich -- identische Semantik zum Editor-Lookup, keine
+--   unscharfe Aehnlichkeitslogik) bereits von einem ANDEREN Datensatz
+--   mit status='active' verwendet wird:
+--     - create_repertoire_style: neuer Name darf keinem aktiven
+--       Datensatz entsprechen (unabhaengig von dessen Slug).
+--     - update_repertoire_style: neuer Name darf keinem ANDEREN
+--       (id <> p_repertoire_style_id) aktiven Datensatz entsprechen --
+--       der eigene, unveraenderte Name bleibt zulaessig. Der Check
+--       greift unabhaengig vom aktuellen Status des bearbeiteten
+--       Datensatzes selbst (auch ein archivierter Datensatz kann nicht
+--       auf den Namen eines aktiven Datensatzes umbenannt werden --
+--       sonst wuerde eine spaetere Reaktivierung dieselbe Kollision
+--       erzeugen).
+--     - reactivate_repertoire_style: der (unveraenderte) Name des zu
+--       reaktivierenden Datensatzes darf keinem ANDEREN, bereits
+--       aktiven Datensatz entsprechen (kann entstehen, wenn waehrend
+--       der Archivierungsphase ein anderer Datensatz auf denselben
+--       Namen umbenannt oder neu angelegt wurde).
+--     - archive_repertoire_style: nicht betroffen (Archivieren
+--       reduziert die Menge aktiver Namen, kann nie eine neue Kollision
+--       erzeugen).
+--   Alle drei Funktionen erhalten dafuer (falls nicht ohnehin schon
+--   vorhanden) ein LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE als
+--   ersten Schritt -- identisches, bereits in create_repertoire_style
+--   etabliertes Muster --, damit die Namenspruefung race-frei bleibt.
 --
 -- Sicherheit (identisches Modell zu fn_moods_catalog_admin.sql,
 -- fn_set_similar_bands.sql und fn_set_band_moods.sql):
@@ -133,6 +179,20 @@ begin
       using errcode = 'RC001', detail = 'name must not be empty after trim';
   end if;
 
+  -- Verhindert einen neuen aktiven Datensatz mit demselben Namen wie ein
+  -- bereits bestehender aktiver Datensatz (Codex-P1) -- unabhaengig vom
+  -- Slug des bestehenden Datensatzes, siehe Dateikommentar oben. Race-frei
+  -- durch das LOCK TABLE oben in dieser Funktion.
+  if exists (
+    select 1 from public.repertoire_styles
+    where status = 'active'
+      and name = v_name
+  ) then
+    raise exception 'repertoire_style_name_conflict'
+      using errcode = 'RC006',
+            detail = format('name=%s already used by another active repertoire style', v_name);
+  end if;
+
   if v_description = '' then
     raise exception 'repertoire_style_description_required'
       using errcode = 'RC002', detail = 'description must not be empty after trim';
@@ -184,6 +244,11 @@ declare
   v_description text;
   v_row         public.repertoire_styles;
 begin
+  -- Race-frei fuer die Namens-Eindeutigkeitspruefung unten -- identisches,
+  -- bereits in create_repertoire_style etabliertes Muster (siehe
+  -- Dateikommentar oben, Abschnitt "Namens-Eindeutigkeit").
+  lock table public.repertoire_styles in share row exclusive mode;
+
   perform 1 from public.repertoire_styles where id = p_repertoire_style_id for update;
   if not found then
     raise exception 'repertoire_style_not_found'
@@ -196,6 +261,23 @@ begin
   if v_name = '' then
     raise exception 'repertoire_style_name_required'
       using errcode = 'RC001', detail = 'name must not be empty after trim';
+  end if;
+
+  -- Verhindert eine Umbenennung auf den Namen eines ANDEREN aktiven
+  -- Datensatzes (Codex-P1) -- der eigene Datensatz ist ueber id <>
+  -- ausgeschlossen, eine Umbenennung auf den unveraenderten eigenen Namen
+  -- bleibt zulaessig. Greift unabhaengig vom aktuellen Status des
+  -- bearbeiteten Datensatzes selbst -- auch ein archivierter Datensatz
+  -- kann nicht auf den Namen eines aktiven Datensatzes umbenannt werden.
+  if exists (
+    select 1 from public.repertoire_styles
+    where status = 'active'
+      and id <> p_repertoire_style_id
+      and name = v_name
+  ) then
+    raise exception 'repertoire_style_name_conflict'
+      using errcode = 'RC006',
+            detail = format('name=%s already used by another active repertoire style', v_name);
   end if;
 
   if v_description = '' then
@@ -276,9 +358,16 @@ set search_path = pg_catalog, pg_temp
 as $$
 declare
   v_current_status text;
+  v_name           text;
   v_row            public.repertoire_styles;
 begin
-  select status into v_current_status from public.repertoire_styles where id = p_repertoire_style_id for update;
+  -- Race-frei fuer die Namens-Eindeutigkeitspruefung unten -- identisches,
+  -- bereits in create_repertoire_style/update_repertoire_style
+  -- etabliertes Muster (siehe Dateikommentar oben, Abschnitt
+  -- "Namens-Eindeutigkeit").
+  lock table public.repertoire_styles in share row exclusive mode;
+
+  select status, name into v_current_status, v_name from public.repertoire_styles where id = p_repertoire_style_id for update;
   if not found then
     raise exception 'repertoire_style_not_found'
       using errcode = 'RC010', detail = format('repertoire_style_id=%s not found', p_repertoire_style_id);
@@ -288,6 +377,21 @@ begin
     raise exception 'repertoire_style_reactivate_not_archived'
       using errcode = 'RC013',
             detail = format('repertoire_style_id=%s has status=%s, expected archived', p_repertoire_style_id, v_current_status);
+  end if;
+
+  -- Verhindert, dass die Reaktivierung zwei aktive Datensaetze mit
+  -- demselben Namen erzeugt (Codex-P1) -- kann entstehen, wenn waehrend
+  -- der Archivierungsphase ein anderer Datensatz auf denselben Namen
+  -- umbenannt oder neu angelegt wurde.
+  if exists (
+    select 1 from public.repertoire_styles
+    where status = 'active'
+      and id <> p_repertoire_style_id
+      and name = v_name
+  ) then
+    raise exception 'repertoire_style_name_conflict'
+      using errcode = 'RC006',
+            detail = format('name=%s already used by another active repertoire style', v_name);
   end if;
 
   update public.repertoire_styles set status = 'active' where id = p_repertoire_style_id

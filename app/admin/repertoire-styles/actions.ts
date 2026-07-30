@@ -24,6 +24,7 @@ const REPERTOIRE_STYLES_ERRCODE_TO_SLUG: Record<string, string> = {
   RC003: 'repertoire_styles_slug_required',
   RC004: 'repertoire_styles_slug_invalid',
   RC005: 'repertoire_styles_slug_conflict',
+  RC006: 'repertoire_styles_name_conflict',
   RC010: 'repertoire_styles_not_found',
   RC011: 'repertoire_styles_archive_in_use',
   RC012: 'repertoire_styles_archive_not_active',

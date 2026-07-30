@@ -25,6 +25,7 @@ const REPERTOIRE_STYLES_ERROR_MESSAGES: Record<string, string> = {
   repertoire_styles_slug_required:            'Unerwarteter Fehler beim Speichern – bitte erneut versuchen.',
   repertoire_styles_slug_invalid:             'Unerwarteter Fehler beim Speichern – bitte erneut versuchen.',
   repertoire_styles_slug_conflict:            'Ein Repertoire-Stil mit diesem Namen (bzw. Slug) existiert bereits.',
+  repertoire_styles_name_conflict:            'Dieser Name wird bereits von einem anderen aktiven Repertoire-Stil verwendet.',
   repertoire_styles_not_found:                'Repertoire-Stil nicht gefunden – bitte Seite neu laden.',
   repertoire_styles_archive_in_use:           'Dieser Repertoire-Stil kann nicht archiviert werden, da er noch Bands zugeordnet ist.',
   repertoire_styles_archive_not_active:       'Dieser Repertoire-Stil ist nicht aktiv und kann nicht archiviert werden.',
