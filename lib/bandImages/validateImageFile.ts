@@ -52,7 +52,7 @@ export function detectImageType(bytes: Uint8Array): DetectedImageType | null {
 
 export type BandImageValidationResult =
   | { ok: true; ext: 'jpg' | 'png' | 'webp'; contentType: string }
-  | { ok: false; errorCode: 'empty' | 'too_large' | 'invalid_type' | 'invalid_image' }
+  | { ok: false; errorCode: 'empty' | 'too_large' | 'invalid_type' | 'invalid_image' | 'too_many_pixels' }
 
 // Reihenfolge bewusst: leer -> Groesse -> Signatur -> vollstaendiger
 // Decode. Jede Ablehnung liefert einen stabilen, rollenneutralen Code --
@@ -75,8 +75,11 @@ export async function validateBandImageFile(bytes: Uint8Array): Promise<BandImag
   if (!decoded.ok) {
     // Interner Decoder-Fehler wird geloggt, aber NIE an den Browser
     // weitergegeben -- der Aufrufer erhaelt nur den stabilen Code.
-    console.error(`[validateBandImageFile] Datei mit gueltiger ${detected.ext}-Signatur liess sich nicht vollstaendig dekodieren: ${decoded.error}`)
-    return { ok: false, errorCode: 'invalid_image' }
+    // too_many_pixels wird von echten Decode-/Truncation-Fehlern
+    // unterschieden (siehe decodeImageFile.ts) -- unterschiedliche
+    // Ursache, unterschiedlicher, verstaendlicherer UI-Text.
+    console.error(`[validateBandImageFile] Datei mit gueltiger ${detected.ext}-Signatur wurde abgelehnt (${decoded.reason}): ${decoded.error}`)
+    return { ok: false, errorCode: decoded.reason === 'too_many_pixels' ? 'too_many_pixels' : 'invalid_image' }
   }
 
   return { ok: true, ext: detected.ext, contentType: detected.contentType }
