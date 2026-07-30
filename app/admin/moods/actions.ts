@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { slugifyMoodName } from '@/lib/moods/slug'
 import { extractUsageCountFromDetail } from '@/lib/moods/usageCount'
+import { requireAdminSession } from '@/lib/admin/requireAdminSession'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -48,6 +49,8 @@ function redirectWithError(error: { code?: string | null; message?: string | nul
 }
 
 export async function createMoodAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const name = str(formData, 'name')
   const description = str(formData, 'description')
 
@@ -72,6 +75,8 @@ export async function createMoodAction(formData: FormData): Promise<never> {
 }
 
 export async function updateMoodAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const mood_id = str(formData, 'mood_id')
   if (!mood_id) redirect('/admin/moods')
 
@@ -92,6 +97,8 @@ export async function updateMoodAction(formData: FormData): Promise<never> {
 }
 
 export async function archiveMoodAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const mood_id = str(formData, 'mood_id')
   if (!mood_id) redirect('/admin/moods')
 
@@ -105,6 +112,8 @@ export async function archiveMoodAction(formData: FormData): Promise<never> {
 }
 
 export async function reactivateMoodAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const mood_id = str(formData, 'mood_id')
   if (!mood_id) redirect('/admin/moods')
 

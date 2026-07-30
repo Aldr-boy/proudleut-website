@@ -932,6 +932,8 @@ function moodErrorCode(error: { code?: string | null; message?: string | null })
 }
 
 export async function updateBandMoodsAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
@@ -1003,6 +1005,8 @@ function repertoireStyleErrorCode(error: { code?: string | null; message?: strin
 }
 
 export async function updateBandRepertoireStylesAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
   const band_id = str(formData, 'band_id')
   if (!band_id) redirect('/admin/bands')
 
