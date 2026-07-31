@@ -1,15 +1,18 @@
 -- ============================================================
 -- fn_repertoire_styles_catalog_admin_transaction_tests.sql
 --
--- KEIN normaler Production-Migrationsschritt. Bewusst NACH
--- fn_repertoire_styles_catalog_admin.sql und VOR dem Go-Live im Supabase
--- SQL Editor auszufuehren, um die neue Namens-Eindeutigkeitspruefung
--- (Codex-P1, RC006 repertoire_style_name_conflict) gegen echte
+-- KEIN normaler Production-Migrationsschritt. Bewusst NACH jeder
+-- (Re-)Ausfuehrung von fn_repertoire_styles_catalog_admin.sql im
+-- Supabase SQL Editor auszufuehren, um zwei Aenderungen gegen echte
 -- Production-Funktionen zu pruefen, ohne irgendetwas dauerhaft zu
--- veraendern.
+-- veraendern: die Namens-Eindeutigkeitspruefung (Codex-P1, RC006
+-- repertoire_style_name_conflict) sowie den Production-Smoke-Nachtrag
+-- "Beschreibung optional" (RC002 entfernt, nullif-Normalisierung zu
+-- NULL, Name bleibt Pflicht per RC001).
 --
 -- Voraussetzung: fn_repertoire_styles_catalog_admin.sql ist bereits
--- erfolgreich ausgefuehrt.
+-- erfolgreich ausgefuehrt (aktueller Stand inkl. Beschreibung-optional-
+-- Nachtrag).
 --
 -- Vollstaendig gekapselt in BEGIN ... ROLLBACK, identisches Muster wie
 -- supabase/admin_moods_management_transaction_tests.sql. Testdaten
@@ -191,6 +194,139 @@ begin
   end;
 end;
 $repertoire_catalog_name_conflict_tests$;
+
+-- ============================================================
+-- Production-Smoke-Nachtrag: Beschreibung optional (DoD Punkte 1-6, 13).
+-- Prueft, dass create_repertoire_style/update_repertoire_style eine
+-- leere oder nur aus Leerzeichen bestehende Beschreibung akzeptieren
+-- und kontrolliert zu NULL normalisieren, dass ein bestehender
+-- Datensatz mit description IS NULL unveraendert gespeichert werden
+-- kann, dass Name weiterhin Pflicht bleibt (RC001), dass RC002 nirgends
+-- mehr ausgeloest wird und dass band_repertoire_styles davon
+-- unberuehrt bleibt.
+-- ============================================================
+do $repertoire_catalog_description_optional_tests$
+declare
+  v_test_name_d text := 'ZZZ Transaction Test Repertoire Stil D';
+  v_test_slug_d text := 'zzz-transaction-test-repertoire-stil-d';
+  v_test_name_e text := 'ZZZ Transaction Test Repertoire Stil E';
+  v_test_slug_e text := 'zzz-transaction-test-repertoire-stil-e';
+  v_test_slug_f text := 'zzz-transaction-test-repertoire-stil-f';
+  v_style_d           public.repertoire_styles%rowtype;
+  v_style_e           public.repertoire_styles%rowtype;
+  v_style_d_after     public.repertoire_styles%rowtype;
+  v_style_e_after     public.repertoire_styles%rowtype;
+  v_assignments_before jsonb;
+  v_assignments_after  jsonb;
+begin
+  if exists (select 1 from public.repertoire_styles where slug in (v_test_slug_d, v_test_slug_e, v_test_slug_f)) then
+    raise exception 'Testvoraussetzung verletzt: mindestens einer der Test-Slugs existiert bereits im Katalog -- Description-Optional-Tests abgebrochen, bitte pruefen statt ueberschreiben.';
+  end if;
+
+  select coalesce(jsonb_agg(to_jsonb(t) order by band_id, repertoire_style_id), '[]'::jsonb)
+    into v_assignments_before
+  from public.band_repertoire_styles t;
+
+  -- ---- Test (DoD Punkt 1): create_repertoire_style mit leerer Beschreibung ('') gelingt ----
+  begin
+    v_style_d := public.create_repertoire_style(v_test_name_d, v_test_slug_d, '');
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'create_repertoire_style: leere Beschreibung wird akzeptiert und zu NULL normalisiert',
+      'status=active, description IS NULL',
+      'status=' || v_style_d.status || ', description=' || coalesce(v_style_d.description, 'NULL'),
+      v_style_d.status = 'active' and v_style_d.description is null
+    );
+  exception when others then
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'create_repertoire_style: leere Beschreibung wird akzeptiert und zu NULL normalisiert',
+      'Erfolg, description IS NULL', 'FEHLER: ' || sqlstate || ' / ' || sqlerrm, false
+    );
+  end;
+
+  -- ---- Test (DoD Punkt 2): create_repertoire_style mit nur Leerzeichen ('   ') gelingt, description wird NULL ----
+  begin
+    v_style_e := public.create_repertoire_style(v_test_name_e, v_test_slug_e, '   ');
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'create_repertoire_style: Beschreibung aus nur Leerzeichen wird zu NULL normalisiert',
+      'status=active, description IS NULL',
+      'status=' || v_style_e.status || ', description=' || coalesce(v_style_e.description, 'NULL'),
+      v_style_e.status = 'active' and v_style_e.description is null
+    );
+  exception when others then
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'create_repertoire_style: Beschreibung aus nur Leerzeichen wird zu NULL normalisiert',
+      'Erfolg, description IS NULL', 'FEHLER: ' || sqlstate || ' / ' || sqlerrm, false
+    );
+  end;
+
+  if v_style_d.id is null or v_style_e.id is null then
+    raise exception 'Setup fehlgeschlagen -- restliche Description-Optional-Tests werden uebersprungen, siehe vorherige Ergebniszeilen.';
+  end if;
+
+  -- ---- Test (DoD Punkt 3): update_repertoire_style mit description = NULL auf einem bestehenden Datensatz (bereits NULL) gelingt unveraendert ----
+  begin
+    v_style_d_after := public.update_repertoire_style(v_style_d.id, v_test_name_d, null);
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'update_repertoire_style: bestehender Datensatz ohne Beschreibung (NULL) kann unveraendert gespeichert werden',
+      'description IS NULL', 'description=' || coalesce(v_style_d_after.description, 'NULL'),
+      v_style_d_after.description is null
+    );
+  exception when others then
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'update_repertoire_style: bestehender Datensatz ohne Beschreibung (NULL) kann unveraendert gespeichert werden',
+      'Erfolg, description IS NULL', 'FEHLER: ' || sqlstate || ' / ' || sqlerrm, false
+    );
+  end;
+
+  -- ---- Test (DoD Punkt 4): update_repertoire_style mit leerer Beschreibung ('') speichert NULL ----
+  begin
+    v_style_e_after := public.update_repertoire_style(v_style_e.id, v_test_name_e, '');
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'update_repertoire_style: leere Beschreibung wird beim Speichern zu NULL normalisiert',
+      'description IS NULL', 'description=' || coalesce(v_style_e_after.description, 'NULL'),
+      v_style_e_after.description is null
+    );
+  exception when others then
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'update_repertoire_style: leere Beschreibung wird beim Speichern zu NULL normalisiert',
+      'Erfolg, description IS NULL', 'FEHLER: ' || sqlstate || ' / ' || sqlerrm, false
+    );
+  end;
+
+  -- ---- Test (DoD Punkt 5): Name bleibt Pflicht -- create_repertoire_style mit leerem Namen wird weiterhin abgelehnt (RC001), unabhaengig von der Beschreibung ----
+  begin
+    perform public.create_repertoire_style('', v_test_slug_f, 'Beschreibung vorhanden, Name fehlt.');
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'create_repertoire_style: leerer Name wird weiterhin abgelehnt, unabhaengig von der Beschreibung',
+      'RC001 / repertoire_style_name_required', 'KEIN FEHLER AUSGELOEST', false
+    );
+  exception when others then
+    insert into test_results (phase, test_name, expected, actual, passed) values (
+      'description_optional', 'create_repertoire_style: leerer Name wird weiterhin abgelehnt, unabhaengig von der Beschreibung',
+      'RC001 / repertoire_style_name_required', sqlstate || ' / ' || sqlerrm, sqlstate = 'RC001'
+    );
+  end;
+
+  -- ---- Test (DoD Punkt 6): RC002 wird in keinem Test dieser Phase ausgeloest ----
+  insert into test_results (phase, test_name, expected, actual, passed) values (
+    'description_optional', 'RC002 (repertoire_style_description_required) wird in keinem Test dieser Phase ausgeloest',
+    'kein RC002 in test_results (Phase description_optional)',
+    case when exists (select 1 from test_results where phase = 'description_optional' and actual like '%RC002%')
+         then 'RC002 gefunden' else 'kein RC002 gefunden' end,
+    not exists (select 1 from test_results where phase = 'description_optional' and actual like '%RC002%')
+  );
+
+  -- ---- Test (DoD Punkt 13): band_repertoire_styles bleibt durch diese Phase unveraendert ----
+  select coalesce(jsonb_agg(to_jsonb(t) order by band_id, repertoire_style_id), '[]'::jsonb)
+    into v_assignments_after
+  from public.band_repertoire_styles t;
+  insert into test_results (phase, test_name, expected, actual, passed) values (
+    'description_optional', 'band_repertoire_styles unveraendert nach allen Description-Optional-Tests',
+    'unveraendert', case when v_assignments_after = v_assignments_before then 'unveraendert' else 'GEAENDERT' end,
+    v_assignments_after = v_assignments_before
+  );
+end;
+$repertoire_catalog_description_optional_tests$;
 
 select * from test_results order by seq;
 

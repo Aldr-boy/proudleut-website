@@ -20,7 +20,6 @@ function str(fd: FormData, key: string): string {
 
 const REPERTOIRE_STYLES_ERRCODE_TO_SLUG: Record<string, string> = {
   RC001: 'repertoire_styles_name_required',
-  RC002: 'repertoire_styles_description_required',
   RC003: 'repertoire_styles_slug_required',
   RC004: 'repertoire_styles_slug_invalid',
   RC005: 'repertoire_styles_slug_conflict',
