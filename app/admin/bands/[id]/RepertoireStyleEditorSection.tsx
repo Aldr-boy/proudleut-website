@@ -67,6 +67,21 @@ export function RepertoireStyleEditorSection({
     return map
   }, [catalog])
 
+  // Nur fuer die Datalist-Vorschlagsliste: alphabetische Kopie nach Name
+  // (deutsche Locale), Tie-Breaker slug dann id -- ausschliesslich
+  // Anzeigereihenfolge der <option>-Elemente. lookupById/byName und alle
+  // uebrigen Ableitungen bleiben bewusst auf dem unveraenderten, per
+  // sort_order/name sortierten `catalog`-Array.
+  const alphabeticalCatalog = useMemo(() => {
+    return [...catalog].sort((a, b) => {
+      const nameCompare = a.name.localeCompare(b.name, 'de')
+      if (nameCompare !== 0) return nameCompare
+      const slugCompare = a.slug.localeCompare(b.slug, 'de')
+      if (slugCompare !== 0) return slugCompare
+      return a.id.localeCompare(b.id)
+    })
+  }, [catalog])
+
   const [selected, setSelected] = useState<string[]>(
     Array.from({ length: RANK_COUNT }, (_, i) => sorted[i]?.repertoire_style_id ?? ''),
   )
@@ -173,7 +188,7 @@ export function RepertoireStyleEditorSection({
       ) : (
         <>
           <datalist id={DATALIST_ID}>
-            {catalog.map((s) => (
+            {alphabeticalCatalog.map((s) => (
               <option key={s.id} value={s.name} />
             ))}
           </datalist>
