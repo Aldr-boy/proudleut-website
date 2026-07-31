@@ -8,8 +8,6 @@ import {
   archiveRepertoireStyleAction,
   reactivateRepertoireStyleAction,
 } from './actions'
-import { hasMissingDescription } from '@/lib/repertoireStyles/description'
-
 export const metadata: Metadata = { title: 'Repertoire-Katalog' }
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +19,6 @@ const STATUS_STYLES: Record<string, string> = {
 
 const REPERTOIRE_STYLES_ERROR_MESSAGES: Record<string, string> = {
   repertoire_styles_name_required:            'Name ist erforderlich.',
-  repertoire_styles_description_required:     'Beschreibung ist erforderlich.',
   repertoire_styles_slug_required:            'Unerwarteter Fehler beim Speichern – bitte erneut versuchen.',
   repertoire_styles_slug_invalid:             'Unerwarteter Fehler beim Speichern – bitte erneut versuchen.',
   repertoire_styles_slug_conflict:            'Ein Repertoire-Stil mit diesem Namen (bzw. Slug) existiert bereits.',
@@ -103,10 +100,16 @@ export default async function AdminRepertoireStylesPage({ searchParams }: { sear
     list.sort((a, b) => a.name.localeCompare(b.name))
   }
 
+  // Anzeige-Sortierung (Production-Smoke-Nachtrag): sort_order fliesst
+  // bewusst nicht mehr in die Kartenreihenfolge ein -- nur noch Status
+  // (active zuerst), dann alphabetisch nach Name (deutsche Locale), bei
+  // identischem Namen deterministischer Tie-Breaker ueber slug. sort_order
+  // bleibt als Datenfeld unveraendert und weiterhin sichtbar (Rang-Badge).
   const sortedStyles = [...(stylesRaw ?? [])].sort((a, b) => {
     if (a.status !== b.status) return a.status === 'active' ? -1 : 1
-    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
-    return a.name.localeCompare(b.name)
+    const nameCompare = a.name.localeCompare(b.name, 'de')
+    if (nameCompare !== 0) return nameCompare
+    return a.slug.localeCompare(b.slug, 'de')
   })
 
   const errorMsg = sp.repertoire_styles_error
@@ -203,12 +206,11 @@ export default async function AdminRepertoireStylesPage({ searchParams }: { sear
                 </div>
                 <div>
                   <label htmlFor="new_description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Beschreibung
+                    Beschreibung (optional)
                   </label>
                   <textarea
                     id="new_description"
                     name="description"
-                    required
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                   />
@@ -232,7 +234,6 @@ export default async function AdminRepertoireStylesPage({ searchParams }: { sear
                 sortedStyles.map((style) => {
                   const assignedBands = assignedBandsByStyleId.get(style.id) ?? []
                   const usageCount = assignedBands.length
-                  const missingDescription = hasMissingDescription(style.description)
                   return (
                     <div key={style.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                       <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
@@ -249,11 +250,6 @@ export default async function AdminRepertoireStylesPage({ searchParams }: { sear
                           <span className="text-xs text-gray-500">
                             {usageCount} {usageCount === 1 ? 'Zuordnung' : 'Zuordnungen'}
                           </span>
-                          {missingDescription && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                              ⚠ keine Beschreibung
-                            </span>
-                          )}
                         </div>
 
                         {style.status === 'active' ? (
@@ -329,18 +325,12 @@ export default async function AdminRepertoireStylesPage({ searchParams }: { sear
                             htmlFor={`description_${style.id}`}
                             className="block text-xs font-medium text-gray-600 mb-1"
                           >
-                            Beschreibung
+                            Beschreibung (optional)
                           </label>
-                          {missingDescription && (
-                            <p className="text-xs text-amber-700 mb-1">
-                              Für diesen Repertoire-Stil ist noch keine Beschreibung hinterlegt. Bitte ergänzen.
-                            </p>
-                          )}
                           <textarea
                             id={`description_${style.id}`}
                             name="description"
                             defaultValue={style.description ?? ''}
-                            required
                             rows={2}
                             className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
                           />

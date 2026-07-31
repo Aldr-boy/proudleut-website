@@ -71,7 +71,6 @@
 -- Fehlercodes (MESSAGE = stabiler Slug, zusaetzlich projektspezifischer
 -- ERRCODE):
 --   RC001  repertoire_style_name_required
---   RC002  repertoire_style_description_required
 --   RC003  repertoire_style_slug_required
 --   RC004  repertoire_style_slug_invalid
 --   RC005  repertoire_style_slug_conflict
@@ -80,6 +79,16 @@
 --   RC011  repertoire_style_archive_in_use
 --   RC012  repertoire_style_archive_not_active
 --   RC013  repertoire_style_reactivate_not_archived
+--
+-- Beschreibung ist optional (Production-Smoke-Nachtrag, vormals RC002
+-- repertoire_style_description_required -- entfernt): eine leere oder
+-- nur aus Leerzeichen bestehende Beschreibung wird in beiden Funktionen
+-- ueber nullif(trim(p_description), '') kontrolliert zu NULL
+-- normalisiert, statt abgelehnt zu werden. Damit lassen sich bestehende
+-- Katalogeintraege ohne Beschreibung (z. B. alle per Production-Import
+-- angelegten Eintraege, siehe musikalisch_verortet_import_v2.sql) auch
+-- nach einer reinen Namens-/Beschreibungs-Bearbeitung unveraendert ohne
+-- Beschreibung speichern. Name bleibt weiterhin Pflicht (RC001).
 --
 -- Namens-Eindeutigkeit unter AKTIVEN Datensaetzen (Codex-P1-Nachtrag,
 -- RC006):
@@ -171,7 +180,10 @@ begin
   lock table public.repertoire_styles in share row exclusive mode;
 
   v_name := coalesce(trim(p_name), '');
-  v_description := coalesce(trim(p_description), '');
+  -- Beschreibung ist optional: leer oder nur Leerzeichen wird zu NULL
+  -- normalisiert, statt eine Pflicht durchzusetzen (siehe Dateikommentar
+  -- oben).
+  v_description := nullif(trim(p_description), '');
   v_slug := coalesce(trim(p_slug), '');
 
   if v_name = '' then
@@ -191,11 +203,6 @@ begin
     raise exception 'repertoire_style_name_conflict'
       using errcode = 'RC006',
             detail = format('name=%s already used by another active repertoire style', v_name);
-  end if;
-
-  if v_description = '' then
-    raise exception 'repertoire_style_description_required'
-      using errcode = 'RC002', detail = 'description must not be empty after trim';
   end if;
 
   if v_slug = '' then
@@ -256,7 +263,11 @@ begin
   end if;
 
   v_name := coalesce(trim(p_name), '');
-  v_description := coalesce(trim(p_description), '');
+  -- Beschreibung ist optional: leer oder nur Leerzeichen wird zu NULL
+  -- normalisiert, statt eine Pflicht durchzusetzen (siehe Dateikommentar
+  -- oben) -- ein bestehender Katalogeintrag ohne Beschreibung kann so
+  -- unveraendert (z. B. nur Namensaenderung) gespeichert werden.
+  v_description := nullif(trim(p_description), '');
 
   if v_name = '' then
     raise exception 'repertoire_style_name_required'
@@ -278,11 +289,6 @@ begin
     raise exception 'repertoire_style_name_conflict'
       using errcode = 'RC006',
             detail = format('name=%s already used by another active repertoire style', v_name);
-  end if;
-
-  if v_description = '' then
-    raise exception 'repertoire_style_description_required'
-      using errcode = 'RC002', detail = 'description must not be empty after trim';
   end if;
 
   update public.repertoire_styles
