@@ -123,6 +123,7 @@ declare
   v_src_id2          uuid;
   v_src_id3          uuid;
   v_tgt_id           uuid;
+  v_name             text;
   v_slug             text;
   v_status           text;
   v_sort_order       integer;
@@ -584,10 +585,10 @@ begin
   -- Rename 1: "Charts & Klassiker gemischt" -> "Charts & Klassiker"
   -- Band: Onesee. Revert: name zurueck auf 'Charts & Klassiker gemischt'.
   -----------------------------------------------------------------
-  select id, slug, status, sort_order into strict v_src_id, v_slug, v_status, v_sort_order
+  select id, name, slug, status, sort_order into strict v_src_id, v_name, v_slug, v_status, v_sort_order
   from public.repertoire_styles where id = '36920071-d602-491f-85a1-ab8fefc7ebd6'::uuid;
-  if v_slug <> 'charts-klassiker-gemischt' or v_status <> 'active' then
-    raise exception 'Rename 1 Guard: "Charts & Klassiker gemischt" weicht ab (slug=%, status=%)', v_slug, v_status;
+  if v_name <> 'Charts & Klassiker gemischt' or v_slug <> 'charts-klassiker-gemischt' or v_status <> 'active' then
+    raise exception 'Rename 1 Guard: Ausgangszeile weicht ab (name=%, slug=%, status=%)', v_name, v_slug, v_status;
   end if;
 
   select count(*) into v_name_collisions from public.repertoire_styles where name = 'Charts & Klassiker' and id <> v_src_id;
@@ -603,10 +604,10 @@ begin
   -- Band: Die WoidRocker. Revert: name zurueck auf 'Schlager & Rock
   -- gemischt'.
   -----------------------------------------------------------------
-  select id, slug, status, sort_order into strict v_src_id, v_slug, v_status, v_sort_order
+  select id, name, slug, status, sort_order into strict v_src_id, v_name, v_slug, v_status, v_sort_order
   from public.repertoire_styles where id = '0f7e367a-680a-461a-b9c6-eceeab86e1d6'::uuid;
-  if v_slug <> 'schlager-rock-gemischt' or v_status <> 'active' then
-    raise exception 'Rename 2 Guard: "Schlager & Rock gemischt" weicht ab (slug=%, status=%)', v_slug, v_status;
+  if v_name <> 'Schlager & Rock gemischt' or v_slug <> 'schlager-rock-gemischt' or v_status <> 'active' then
+    raise exception 'Rename 2 Guard: Ausgangszeile weicht ab (name=%, slug=%, status=%)', v_name, v_slug, v_status;
   end if;
 
   select count(*) into v_name_collisions from public.repertoire_styles where name = 'Schlager & Rock' and id <> v_src_id;
@@ -622,10 +623,10 @@ begin
   -- Band: zruck zu Dir!. Revert: name zurueck auf 'Bayerisch & Rock
   -- gemischt'.
   -----------------------------------------------------------------
-  select id, slug, status, sort_order into strict v_src_id, v_slug, v_status, v_sort_order
+  select id, name, slug, status, sort_order into strict v_src_id, v_name, v_slug, v_status, v_sort_order
   from public.repertoire_styles where id = 'a8138c0e-2139-40ee-810e-eb6077e7784a'::uuid;
-  if v_slug <> 'bayerisch-rock-gemischt' or v_status <> 'active' then
-    raise exception 'Rename 3 Guard: "Bayerisch & Rock gemischt" weicht ab (slug=%, status=%)', v_slug, v_status;
+  if v_name <> 'Bayerisch & Rock gemischt' or v_slug <> 'bayerisch-rock-gemischt' or v_status <> 'active' then
+    raise exception 'Rename 3 Guard: Ausgangszeile weicht ab (name=%, slug=%, status=%)', v_name, v_slug, v_status;
   end if;
 
   select count(*) into v_name_collisions from public.repertoire_styles where name = 'Bayerisch & Rock' and id <> v_src_id;

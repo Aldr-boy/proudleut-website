@@ -112,13 +112,19 @@ double_assignment_check as (
     'A_no_double_assignment'::text as report_section,
     x.key,
     'keine Band mit Quelle und Ziel gleichzeitig'::text as expected,
-    case when count(*) = 0 then 'keine Ueberschneidung' else count(*)::text || ' Ueberschneidung(en)' end as actual,
-    count(*) = 0 as match
+    case when count(*) filter (where tgt.band_id is not null) = 0
+         then 'keine Ueberschneidung'
+         else count(*) filter (where tgt.band_id is not null)::text || ' Ueberschneidung(en)'
+    end as actual,
+    count(*) filter (where tgt.band_id is not null) = 0 as match
   from (
     values
       ('Merge1', 'a2028e17-4363-4530-a639-8dd61615d1a7'::uuid, '4089444d-19f7-4de9-9852-03172bb89266'::uuid),
       ('Merge2', '2a01cd55-cddf-4162-87df-38759881f4fe'::uuid, 'afa1967d-e581-4e41-bfb5-849a465a16ab'::uuid),
       ('Merge3', 'c19dc3fa-d633-4c37-876c-2320060fe5b1'::uuid, '2055bc75-4205-41d5-8b19-cca0664c8127'::uuid),
+      ('Merge4 Quelle A', '56ac12e6-f250-4adb-9814-cb0742dc082f'::uuid, 'aa8edbf0-04b6-41f0-8a30-4c1d9e1cf6f1'::uuid),
+      ('Merge4 Quelle B', '4a364f68-e14f-43ee-957e-9c4836e98317'::uuid, 'aa8edbf0-04b6-41f0-8a30-4c1d9e1cf6f1'::uuid),
+      ('Merge4 Quelle C', '9b23bc57-f937-458c-80b2-c871ad2659bc'::uuid, 'aa8edbf0-04b6-41f0-8a30-4c1d9e1cf6f1'::uuid),
       ('Merge5', '0a02fd63-1d3f-41cb-ba5c-f725b19b79c6'::uuid, '7e6d57e7-f348-400c-ba2e-bb735c49119d'::uuid),
       ('Merge6', 'a97585f5-bb3d-4b70-a85e-45af2ad34984'::uuid, 'fa2981cb-eef4-4e80-b3bc-0c02ec842f92'::uuid),
       ('Merge7', 'd118c3b2-41ff-4342-b831-dc96c9d46d69'::uuid, 'a74f64d5-8a2f-47aa-881c-8ad13f75c84b'::uuid),
@@ -126,7 +132,6 @@ double_assignment_check as (
   ) as x(key, src_id, tgt_id)
   left join public.band_repertoire_styles src on src.repertoire_style_id = x.src_id
   left join public.band_repertoire_styles tgt on tgt.repertoire_style_id = x.tgt_id and tgt.band_id = src.band_id
-  where src.band_id is not null and tgt.band_id is not null
   group by x.key
 ),
 rename_collision_check as (
@@ -134,8 +139,8 @@ rename_collision_check as (
     'A_rename_no_collision'::text as report_section,
     y.new_name as key,
     '0 andere Zeilen mit diesem Namen oder Slug'::text as expected,
-    count(*)::text || ' Kollision(en)' as actual,
-    count(*) = 0 as match
+    count(rs.id)::text || ' Kollision(en)' as actual,
+    count(rs.id) = 0 as match
   from (
     values
       ('Charts & Klassiker', 'charts-klassiker', '36920071-d602-491f-85a1-ab8fefc7ebd6'::uuid),
