@@ -337,11 +337,16 @@ export default function BandExplorer({ bands, regions }: Props) {
       {/* ── Finder-Bar ──────────────────────────────────────────── */}
       <div ref={barRef} className="relative mb-6">
 
-        {/* Bar: vier Segmente in einer Zeile (Desktop) / gestapelt (Mobile) */}
-        <div className="flex flex-col sm:flex-row rounded-xl border border-pl-soft bg-pl-elevated shadow-sm overflow-hidden">
+        {/* Bar: fuenf Segmente in einer Zeile (Desktop ab lg/1024px) / gestapelt
+            (Mobile bis Tablet, < 1024px). Row-Modus erst ab lg, da die vier
+            festen Segment-Mindestbreiten (180+128+172+172=652px) zusammen mit
+            der Suche bei sm/md (640-1023px) nicht mehr in die verfuegbare
+            Breite passen -- overflow-hidden hat das dann abgeschnitten statt
+            umzubrechen (Codex P1, siehe Commit-Beschreibung). */}
+        <div className="flex flex-col lg:flex-row rounded-xl border border-pl-soft bg-pl-elevated shadow-sm overflow-hidden">
 
           {/* Segment 1 – Suche */}
-          <div className="flex items-center gap-2.5 px-4 py-3.5 sm:py-4 flex-1 min-w-0 border-b border-pl-soft sm:border-b-0 focus-within:bg-black/[0.03] motion-safe:transition-colors">
+          <div className="flex items-center gap-2.5 px-4 py-3.5 lg:py-4 flex-1 min-w-0 border-b border-pl-soft lg:border-b-0 focus-within:bg-black/[0.03] motion-safe:transition-colors">
             <svg
               className="w-4 h-4 text-pl-text-hint flex-shrink-0"
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -373,7 +378,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'anlass'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'anlass' ? null : 'anlass')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[180px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[180px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
@@ -398,7 +403,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'region'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'region' ? null : 'region')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[128px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[128px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
@@ -423,7 +428,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'bandtyp'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'bandtyp' ? null : 'bandtyp')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[172px] sm:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
@@ -448,7 +453,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'mood'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'mood' ? null : 'mood')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[172px] sm:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'mood' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] lg:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'mood' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
