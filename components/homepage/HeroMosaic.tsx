@@ -65,37 +65,27 @@ export default function HeroMosaic() {
             Finde passende Livebands nach Anlass &amp; Stil und kontaktiere sie direkt.
           </p>
           <div className="mb-8 md:mb-10 space-y-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-pl-on-stage-muted text-center mb-2">
-                Nach Anlass
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {ANLASS_CHIPS.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    href={`/veranstaltung/${cat.slug}`}
-                    className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
-                  >
-                    {cat.title}
-                  </Link>
-                ))}
-              </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {ANLASS_CHIPS.map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/veranstaltung/${cat.slug}`}
+                  className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
+                >
+                  {cat.title}
+                </Link>
+              ))}
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-pl-on-stage-muted text-center mb-2">
-                Klingt nach
-              </p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {KLINGT_NACH_CHIPS.map((mood) => (
-                  <Link
-                    key={mood.slug}
-                    href={`/bands?mood=${mood.slug}`}
-                    className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
-                  >
-                    {mood.title}
-                  </Link>
-                ))}
-              </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {KLINGT_NACH_CHIPS.map((mood) => (
+                <Link
+                  key={mood.slug}
+                  href={`/bands?mood=${mood.slug}`}
+                  className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
+                >
+                  {mood.title}
+                </Link>
+              ))}
             </div>
           </div>
           <Link

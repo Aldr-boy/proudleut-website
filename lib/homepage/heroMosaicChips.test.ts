@@ -4,9 +4,10 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-// Strukturelle Regressionspruefung fuer die zwei beschrifteten
-// Startseiten-Chip-Gruppen ("Nach Anlass" / "Klingt nach") in
-// components/homepage/HeroMosaic.tsx. Identisches, bereits etabliertes
+// Strukturelle Regressionspruefung fuer die zwei Startseiten-Chip-Gruppen
+// ("Nach Anlass" / "Klingt nach", ohne sichtbare Gruppenueberschriften --
+// UI-Nachtrag) in components/homepage/HeroMosaic.tsx. Identisches, bereits
+// etabliertes
 // Muster wie lib/bands/bandExplorerMoodUrlState.test.ts -- echte
 // Quelldatei per readFileSync lesen, keine React-Testing-Infrastruktur
 // noetig, da nur auf exakte, statische href-Werte und Gruppenlabels
@@ -17,9 +18,17 @@ const sourcePath = path.join(
 )
 const source = readFileSync(sourcePath, 'utf8')
 
-test('zwei klar beschriftete Gruppen vorhanden: "Nach Anlass" und "Klingt nach"', () => {
-  assert.match(source, />\s*Nach Anlass\s*</)
-  assert.match(source, />\s*Klingt nach\s*</)
+test('Chips bleiben in zwei Reihen gruppiert, ohne sichtbare Gruppenueberschriften im Markup', () => {
+  const wrapperStart = source.indexOf('mb-8 md:mb-10 space-y-4')
+  assert.ok(wrapperStart >= 0, 'Chip-Wrapper nicht gefunden')
+  const wrapperEnd = source.indexOf('Bands entdecken', wrapperStart)
+  const wrapper = source.slice(wrapperStart, wrapperEnd)
+
+  const rowMatches = wrapper.match(/flex flex-wrap justify-center gap-2/g) ?? []
+  assert.equal(rowMatches.length, 2, 'erwartet genau zwei Chip-Reihen (Anlass, Klingt nach)')
+
+  assert.doesNotMatch(wrapper, />\s*Nach Anlass\s*</)
+  assert.doesNotMatch(wrapper, />\s*Klingt nach\s*</)
 })
 
 test('"Nach Anlass" enthaelt genau die drei festgelegten Kategorien in dieser Reihenfolge', () => {
