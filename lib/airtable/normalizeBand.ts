@@ -228,6 +228,10 @@ export function normalizeBand(
     eventTypes,
     categorySlugs,
     klingtNach: splitPipe(str(f['Klingt_Nach']) ?? str(f['AI_Klingt_Nach_Vorschlag'])),
+    // Airtable hat keine stabile Mood-Slug-Quelle (nur Freitext) -- moods
+    // bleibt hier bewusst leer, betrifft nur den Airtable-Pfad
+    // (Homepage-BandGrid), nicht /bands (Supabase-Pfad mit echten Slugs).
+    moods: [],
     musikalischVerortet: splitPipe(str(f['Musikalisch_Verortet']) ?? str(f['AI_Musikalisch_Verortet_Vorschlag'])),
     shortDescription,
     description: str(f['Main Text']),

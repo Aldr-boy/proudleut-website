@@ -1,7 +1,24 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES, type CategoryConfig } from '@/lib/categories';
 import { heroMosaicImages } from '@/lib/homepage/heroMosaicImages';
+
+// "Nach Anlass": bewusste Auswahl von drei bestehenden CATEGORIES-Eintraegen
+// in dieser Reihenfolge (Vorgabe), Zielpfad /veranstaltung/[slug] bleibt der
+// bestehende, funktionierende Anlass-Zielpfad -- keine neue Ziel-URL.
+const ANLASS_CHIP_SLUGS = ['hochzeit', 'firmenfeier', 'festzelt'];
+const ANLASS_CHIPS: CategoryConfig[] = ANLASS_CHIP_SLUGS
+  .map((slug) => CATEGORIES.find((c) => c.slug === slug))
+  .filter((c): c is CategoryConfig => c !== undefined);
+
+// "Klingt nach": bewusste Auswahl von drei aktiven Moods (siehe Preflight-
+// Analysebericht), Zielpfad direkt in den vorgefilterten Band-Explorer
+// (/bands?mood=<slug>) -- keine eigene Mood-Landingpage.
+const KLINGT_NACH_CHIPS: { title: string; slug: string }[] = [
+  { title: 'Tanzflächen-Garantie', slug: 'tanzflaechen-garantie' },
+  { title: 'Authentisch und handgemacht', slug: 'authentisch-handgemacht' },
+  { title: 'Generationenverbindend', slug: 'generationenverbindend' },
+];
 
 export default function HeroMosaic() {
   return (
@@ -47,16 +64,39 @@ export default function HeroMosaic() {
           <p className="text-pl-on-stage text-lg md:text-xl mb-6 md:mb-8 max-w-xl mx-auto">
             Finde passende Livebands nach Anlass &amp; Stil und kontaktiere sie direkt.
           </p>
-          <div className="flex flex-wrap justify-center gap-2 mb-8 md:mb-10">
-            {CATEGORIES.slice(0, 5).map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/veranstaltung/${cat.slug}`}
-                className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
-              >
-                {cat.title}
-              </Link>
-            ))}
+          <div className="mb-8 md:mb-10 space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-pl-on-stage-muted text-center mb-2">
+                Nach Anlass
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {ANLASS_CHIPS.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/veranstaltung/${cat.slug}`}
+                    className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
+                  >
+                    {cat.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-pl-on-stage-muted text-center mb-2">
+                Klingt nach
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {KLINGT_NACH_CHIPS.map((mood) => (
+                  <Link
+                    key={mood.slug}
+                    href={`/bands?mood=${mood.slug}`}
+                    className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
+                  >
+                    {mood.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
           <Link
             href="/bands"
