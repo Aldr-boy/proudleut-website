@@ -16,10 +16,12 @@
 -- Guard-Muster) und supabase/band_moods_steinbach_festlich_ausgelassen_
 -- removal.sql (exakte Vor-/Nachzustandspruefung per array_agg).
 --
--- NOCH NICHT AUSGEFUEHRT. Manuell durch Xandi im Supabase SQL Editor
--- auszufuehren, siehe zugehoerige Verify-Datei
--- supabase/repertoire_style_catalog_cleanup_verify.sql fuer Preflight
--- (vor Ausfuehrung) und Postflight (nach Ausfuehrung).
+-- ERFOLGREICH AUSGEFUEHRT gegen Production am 02.08.2026 durch Xandi im
+-- Supabase SQL Editor. Siehe Abschnitt "PRODUCTION-LAUF (erfolgreich
+-- abgeschlossen, 02.08.2026)" weiter unten fuer den vollstaendigen
+-- Preflight-/Postflight-Nachweis. Zugehoerige Verify-Datei:
+-- supabase/repertoire_style_catalog_cleanup_verify.sql (Preflight vor,
+-- Postflight nach der Ausfuehrung).
 --
 -- Ausgangsbestand (per Production-Read am Tag der Erstellung dieser
 -- Datei verifiziert): 319 aktive, 3 archivierte repertoire_styles,
@@ -85,6 +87,50 @@
 -- gesetzt werden (alle IDs stehen unten je Abschnitt); fuer die 3
 -- Umbenennungen muesste der jeweils alte Name manuell wiederhergestellt
 -- werden (ebenfalls unten je Abschnitt dokumentiert).
+-- ============================================================
+
+-- ============================================================
+-- PRODUCTION-LAUF (erfolgreich abgeschlossen, 02.08.2026)
+--
+-- Preflight (supabase/repertoire_style_catalog_cleanup_verify.sql,
+-- Abschnitt A) am 02.08.2026 gegen Production ausgefuehrt: 57
+-- Ergebniszeilen, alle 57 mit match = true. Bestaetigter
+-- Ausgangsbestand: 319 aktive, 3 archivierte, 322 repertoire_styles
+-- gesamt, 340 Zeilen in band_repertoire_styles -- exakt wie oben in
+-- diesem Dateikommentar dokumentiert.
+--
+-- Migration am 02.08.2026 gegen Production ausgefuehrt. Ergebnis im
+-- Supabase SQL Editor: "Success. No rows returned" -- der DO-Block
+-- durchlief alle Guards ohne RAISE EXCEPTION und committete
+-- erfolgreich.
+--
+-- Postflight (supabase/repertoire_style_catalog_cleanup_verify.sql,
+-- Abschnitt B) am 02.08.2026 gegen Production ausgefuehrt: 56
+-- Ergebniszeilen, alle 56 mit match = true. Bestaetigter Endbestand:
+-- 309 aktive, 13 archivierte, 322 repertoire_styles gesamt, weiterhin
+-- 340 Zeilen in band_repertoire_styles (unveraendert). Im Einzelnen
+-- bestaetigt:
+--   - alle zehn Quellzeilen archiviert (status = 'archived'), keine
+--     geloescht;
+--   - alle Quell-Zuordnungen auf die freigegebenen Zielzeilen
+--     umgehaengt, jeweils mit unveraendertem bandinternem sort_order;
+--   - keine doppelten Band-Ziel-Zuordnungen;
+--   - keine verwaisten Zeilen in band_repertoire_styles;
+--   - alle drei "gemischt"-Umbenennungen erfolgreich, id/slug/status/
+--     sort_order/description unveraendert;
+--   - alle sieben geschuetzten Referenzband-Fingerprints (2 unplugged,
+--     5toBeat, 9to5, Entprima Live, Herb'n Beets, Hob Nou, SaKrisch)
+--     vor und nach der Migration identisch;
+--   - alle ausdruecklich ausgeschlossenen Katalogbegriffe (Oktoberfest/
+--     Wiesn, Pop-Rock & Evergreens/Rock & Pop-Evergreens, Charts von
+--     60s bis heute/60er bis aktuelle Charts, Eigene Arrangements/
+--     Eigene Songs & Covers) unveraendert;
+--   - Let's Fetz ("Bayerisch bis Aktuell") unveraendert, wie oben unter
+--     "Sonderfall Let's Fetz" beschrieben.
+--
+-- Diese Migration ist damit abgeschlossen. Ein erneuter Lauf ist nicht
+-- vorgesehen und wuerde -- wie unter "ABSICHTLICH NICHT IDEMPOTENT"
+-- oben beschrieben -- an den Status-Guards kontrolliert abbrechen.
 -- ============================================================
 
 begin;
