@@ -36,6 +36,30 @@
 -- fuer den restlichen Bericht.
 -- ============================================================
 
+-- ============================================================
+-- PRODUCTION-LAUF (erfolgreich abgeschlossen, 02.08.2026)
+--
+-- Abschnitt A (Preflight) am 02.08.2026 gegen Production ausgefuehrt:
+-- 57 Ergebniszeilen, alle 57 mit match = true. Bestaetigter
+-- Ausgangsbestand: 319 aktive, 3 archivierte, 322 repertoire_styles
+-- gesamt, 340 Zeilen in band_repertoire_styles.
+--
+-- Anschliessend supabase/repertoire_style_catalog_cleanup.sql am
+-- 02.08.2026 gegen Production ausgefuehrt: "Success. No rows
+-- returned".
+--
+-- Abschnitt B (Postflight) am 02.08.2026 gegen Production ausgefuehrt:
+-- 56 Ergebniszeilen, alle 56 mit match = true. Bestaetigter Endbestand:
+-- 309 aktive, 13 archivierte, 322 repertoire_styles gesamt, weiterhin
+-- 340 Zeilen in band_repertoire_styles. Details siehe
+-- supabase/repertoire_style_catalog_cleanup.sql, Abschnitt
+-- "PRODUCTION-LAUF (erfolgreich abgeschlossen, 02.08.2026)".
+--
+-- Diese Verifikation kann bei Bedarf jederzeit erneut read-only gegen
+-- den aktuellen Production-Stand ausgefuehrt werden (Abschnitt B bleibt
+-- dauerhaft gueltig, siehe Dateikopf oben).
+-- ============================================================
+
 
 -- ============================================================
 -- ABSCHNITT A -- PREFLIGHT (vor Ausfuehrung der Migration)
