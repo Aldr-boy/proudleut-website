@@ -54,8 +54,20 @@ export default function HeroMosaic() {
 
       {/* Content -- mobil oben ausgerichtet mit Abstand zur schwebenden
           Pill-Navigation (fixed, ~12px + 56px hoch), ab md wieder wie
-          zuvor vertikal zentriert. */}
-      <div className="absolute inset-0 z-10 flex items-start justify-center md:items-center px-4 sm:px-6 pt-24 pb-10 md:py-16">
+          zuvor vertikal zentriert.
+
+          Positionierung bewusst erst ab md absolut (wie zuvor immer):
+          Bei sechs Chips in zwei umbrechenden Reihen kann der Inhalt auf
+          schmalen Smartphone-Breiten (320-390px) hoeher werden als die
+          fixe min-h-[520px] der Section. Als absolut positioniertes
+          Element haette der Inhalt dabei NICHT die Section gestreckt,
+          sondern waere von overflow-hidden am unteren Rand abgeschnitten
+          worden (Codex P1) -- v. a. der CTA "Bands entdecken". Im
+          normalen Dokumentfluss (mobil: relative) bestimmt der Inhalt
+          stattdessen selbst seine Hoehe, die Section waechst per
+          min-h-[520px] als Untergrenze automatisch mit -- robust
+          unabhaengig davon, auf wie viele Zeilen die Chips umbrechen. */}
+      <div className="relative z-10 flex items-start justify-center md:absolute md:inset-0 md:items-center px-4 sm:px-6 pt-24 pb-10 md:py-16">
         <div className="text-center max-w-2xl">
           <h1 className="text-3xl md:text-5xl font-bold text-pl-on-stage leading-tight mb-3 md:mb-4">
             Livebands
