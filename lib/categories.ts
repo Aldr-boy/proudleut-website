@@ -24,13 +24,14 @@ export const CATEGORIES: CategoryConfig[] = [
     supabaseEventTypeSlugs: ['hochzeit'],
   },
   {
-    title: 'Festzelt & Volksfest',
+    title: 'Festzelt',
     slug: 'festzelt',
-    h1Title: 'Festzeltbands & Volksfestbands',
-    description: 'Bands für Festzelt, Volksfest, Zeltfest und bayerische Feiern.',
-    seoTitle: 'Festzeltbands & Volksfestbands – proudleut.com',
+    h1Title: 'Festzeltbands für Volksfeste, Kirchweihen & Vereinsfeste',
+    description:
+      'Mitreißende Livebands fürs Festzelt – perfekt für Volksfest, Kirchweih, Dult, Jubiläum und Vereinsfest. Hier wird gefeiert, getanzt und gesungen.',
+    seoTitle: 'Festzeltbands für Volksfeste',
     seoDescription:
-      'Livebands für Festzelt, Volksfest und Zeltfest – bayerisch, fetzig und zuverlässig.',
+      'Mitreißende Livebands fürs Festzelt – perfekt für Volksfest, Kirchweih, Dult, Jubiläum und Vereinsfest. Hier wird gefeiert, getanzt und gesungen.',
     airtableEventTypes: [
       'Festzelt',
       'Stadt- und Bürgerfest',
