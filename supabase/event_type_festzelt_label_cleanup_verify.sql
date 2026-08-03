@@ -72,7 +72,7 @@ assignments_current_state as (
     'Bandzuordnungen zur unveraenderten event_type_id'::text as key,
     'event_type_id unveraendert; aktuelle Zuordnungszahl nur informativ'::text as expected,
     count(bet.band_id)::text || ' Zuordnung(en) zu event_type_id=' || e.id::text as actual,
-    et.id = e.id and et.slug = 'festzelt' as match
+    coalesce(et.id = e.id and et.slug = 'festzelt', false) as match
   from expected e
   left join public.event_types et
     on et.id = e.id
