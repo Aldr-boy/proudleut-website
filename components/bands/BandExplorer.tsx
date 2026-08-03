@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import type { Band } from '@/lib/types/band';
 import { CATEGORIES, bandMatchesCategorySB } from '@/lib/categories';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
+import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import BandCard from '@/components/BandCard';
 import BandCardSkeleton from '@/components/BandCardSkeleton';
 
@@ -61,12 +62,14 @@ function buildUrl(params: {
   region: string | null;
   suche: string;
   bandtyp: string | null;
+  mood: string | null;
 }): string {
   const p = new URLSearchParams();
   if (params.anlass) p.set('anlass', params.anlass);
   if (params.region) p.set('region', params.region.toLowerCase());
   if (params.suche) p.set('suche', params.suche);
   if (params.bandtyp) p.set('bandtyp', params.bandtyp.toLowerCase());
+  if (params.mood) p.set('mood', params.mood);
   const qs = p.toString();
   return qs ? `/bands?${qs}` : '/bands';
 }
@@ -74,7 +77,7 @@ function buildUrl(params: {
 const PLZ_RE = /^\d{4,5}$/;
 const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
-type OpenPanel = 'anlass' | 'region' | 'bandtyp' | null;
+type OpenPanel = 'anlass' | 'region' | 'bandtyp' | 'mood' | null;
 
 export default function BandExplorer({ bands, regions }: Props) {
   const searchParams = useSearchParams();
@@ -98,6 +101,11 @@ export default function BandExplorer({ bands, regions }: Props) {
       if (b.category && b.category.toLowerCase() === raw.toLowerCase()) return b.category;
     }
     return null;
+  });
+  const [selectedMood, setSelectedMood] = useState<string | null>(() => {
+    const raw = searchParams.get('mood');
+    const availableMoodSlugs = bands.flatMap((b) => b.moods.map((m) => m.slug));
+    return resolveMoodSlugParam(raw, availableMoodSlugs);
   });
   const [radiusKm, setRadiusKm] = useState<RadiusKm>(0);
   const [centerCoords, setCenterCoords] = useState<[number, number] | null>(null);
@@ -123,6 +131,22 @@ export default function BandExplorer({ bands, regions }: Props) {
     ];
   })();
 
+  // Mood-Optionen ("Klingt nach") aus den aktuell geladenen Banddaten
+  // ableiten, analog zu bandtypOptions -- kein statischer Katalog wie bei
+  // CATEGORIES, da Moods rein datengetrieben sind (siehe
+  // lib/moods/bandMoodFilter.ts).
+  const moodOptions = (() => {
+    const seen = new Map<string, string>();
+    for (const b of bands) {
+      for (const m of b.moods) {
+        if (!seen.has(m.slug)) seen.set(m.slug, m.name);
+      }
+    }
+    return Array.from(seen, ([slug, name]) => ({ slug, name })).sort((a, b) =>
+      a.name.localeCompare(b.name, 'de')
+    );
+  })();
+
   useEffect(() => {
     setShuffled(shuffle(bands));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -138,7 +162,7 @@ export default function BandExplorer({ bands, regions }: Props) {
   // Bei Filter-Änderung visibleCount zurücksetzen
   useEffect(() => {
     setVisibleCount(24);
-  }, [query, selectedCategory, selectedRegion, radiusKm, selectedBandtyp]);
+  }, [query, selectedCategory, selectedRegion, radiusKm, selectedBandtyp, selectedMood]);
 
   // PLZ erkennen → Koordinaten lazy laden
   useEffect(() => {
@@ -185,11 +209,15 @@ export default function BandExplorer({ bands, regions }: Props) {
         }
       }
     }
+    const nextMoodRaw = p.get('mood');
+    const availableMoodSlugs = bands.flatMap((b) => b.moods.map((m) => m.slug));
+    const nextMood = resolveMoodSlugParam(nextMoodRaw, availableMoodSlugs);
 
     setQuery((prev) => (prev !== nextQuery ? nextQuery : prev));
     setSelectedCategory((prev) => (prev !== nextCat ? nextCat : prev));
     setSelectedRegion((prev) => (prev !== nextReg ? nextReg : prev));
     setSelectedBandtyp((prev) => (prev !== nextBandtyp ? nextBandtyp : prev));
+    setSelectedMood((prev) => (prev !== nextMood ? nextMood : prev));
     setRadiusKm(0);
   }, [searchParamString]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -236,6 +264,8 @@ export default function BandExplorer({ bands, regions }: Props) {
       if (!band.category || band.category.toLowerCase() !== selectedBandtyp.toLowerCase()) return false;
     }
 
+    if (!bandMatchesMood(band.moods, selectedMood)) return false;
+
     if (radiusKm > 0 && centerCoords) {
       const { latitude: lat, longitude: lon } = band.location;
       if (lat == null || lon == null) return false;
@@ -261,13 +291,16 @@ export default function BandExplorer({ bands, regions }: Props) {
         })
       : filtered;
 
-  const hasFilter = Boolean(query || selectedCategory || selectedRegion || radiusKm > 0 || selectedBandtyp);
+  const hasFilter = Boolean(
+    query || selectedCategory || selectedRegion || radiusKm > 0 || selectedBandtyp || selectedMood
+  );
 
   const resetFilters = useCallback(() => {
     setQuery('');
     setSelectedCategory(null);
     setSelectedRegion(null);
     setSelectedBandtyp(null);
+    setSelectedMood(null);
     setRadiusKm(0);
     router.push('/bands', { scroll: false });
   }, [router]);
@@ -281,7 +314,7 @@ export default function BandExplorer({ bands, regions }: Props) {
     if (radiusKm > 0) {
       return `${count} ${plural} im Umkreis von ${radiusKm} km um ${query.trim()} gefunden`;
     }
-    if (selectedCategory && !query && !selectedRegion && !selectedBandtyp) {
+    if (selectedCategory && !query && !selectedRegion && !selectedBandtyp && !selectedMood) {
       const cat = CATEGORIES.find((c) => c.slug === selectedCategory);
       if (cat) return `${count} ${plural} für ${cat.title} gefunden`;
     }
@@ -304,11 +337,16 @@ export default function BandExplorer({ bands, regions }: Props) {
       {/* ── Finder-Bar ──────────────────────────────────────────── */}
       <div ref={barRef} className="relative mb-6">
 
-        {/* Bar: vier Segmente in einer Zeile (Desktop) / gestapelt (Mobile) */}
-        <div className="flex flex-col sm:flex-row rounded-xl border border-pl-soft bg-pl-elevated shadow-sm overflow-hidden">
+        {/* Bar: fuenf Segmente in einer Zeile (Desktop ab lg/1024px) / gestapelt
+            (Mobile bis Tablet, < 1024px). Row-Modus erst ab lg, da die vier
+            festen Segment-Mindestbreiten (180+128+172+172=652px) zusammen mit
+            der Suche bei sm/md (640-1023px) nicht mehr in die verfuegbare
+            Breite passen -- overflow-hidden hat das dann abgeschnitten statt
+            umzubrechen (Codex P1, siehe Commit-Beschreibung). */}
+        <div className="flex flex-col lg:flex-row rounded-xl border border-pl-soft bg-pl-elevated shadow-sm overflow-hidden">
 
           {/* Segment 1 – Suche */}
-          <div className="flex items-center gap-2.5 px-4 py-3.5 sm:py-4 flex-1 min-w-0 border-b border-pl-soft sm:border-b-0 focus-within:bg-black/[0.03] motion-safe:transition-colors">
+          <div className="flex items-center gap-2.5 px-4 py-3.5 lg:py-4 flex-1 min-w-0 border-b border-pl-soft lg:border-b-0 focus-within:bg-black/[0.03] motion-safe:transition-colors">
             <svg
               className="w-4 h-4 text-pl-text-hint flex-shrink-0"
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -324,7 +362,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                 const next = e.target.value;
                 setQuery(next);
                 router.replace(
-                  buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: next, bandtyp: selectedBandtyp }),
+                  buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: next, bandtyp: selectedBandtyp, mood: selectedMood }),
                   { scroll: false }
                 );
               }}
@@ -340,7 +378,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'anlass'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'anlass' ? null : 'anlass')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[180px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[180px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
@@ -365,7 +403,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'region'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'region' ? null : 'region')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[128px] border-b border-pl-soft sm:border-b-0 sm:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[128px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
@@ -390,7 +428,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             aria-expanded={openPanel === 'bandtyp'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'bandtyp' ? null : 'bandtyp')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 sm:py-4 text-left sm:min-w-[172px] sm:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
@@ -402,6 +440,31 @@ export default function BandExplorer({ bands, regions }: Props) {
             </div>
             <svg
               className={`w-4 h-4 flex-shrink-0 motion-safe:transition-all ${openPanel === 'bandtyp' ? 'text-pl-accent rotate-180' : 'text-pl-text-hint group-hover:text-pl-accent/70'}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Segment 5 – Klingt nach? */}
+          <button
+            type="button"
+            aria-expanded={openPanel === 'mood'}
+            aria-haspopup="listbox"
+            onClick={() => setOpenPanel(openPanel === 'mood' ? null : 'mood')}
+            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] lg:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'mood' ? 'bg-pl-accent-subtle' : ''}`}
+          >
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
+                Klingt nach
+              </p>
+              <p className={`text-sm truncate leading-snug ${selectedMood ? 'text-pl-text font-medium' : 'text-pl-text-muted'}`}>
+                {moodOptions.find((m) => m.slug === selectedMood)?.name ?? 'Egal'}
+              </p>
+            </div>
+            <svg
+              className={`w-4 h-4 flex-shrink-0 motion-safe:transition-all ${openPanel === 'mood' ? 'text-pl-accent rotate-180' : 'text-pl-text-hint group-hover:text-pl-accent/70'}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
               aria-hidden="true"
             >
@@ -431,7 +494,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                       setSelectedCategory(next);
                       setOpenPanel(null);
                       router.push(
-                        buildUrl({ anlass: next, region: selectedRegion, suche: query, bandtyp: selectedBandtyp }),
+                        buildUrl({ anlass: next, region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
                         { scroll: false }
                       );
                     }}
@@ -470,7 +533,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                       setSelectedRegion(next);
                       setOpenPanel(null);
                       router.push(
-                        buildUrl({ anlass: selectedCategory, region: next, suche: query, bandtyp: selectedBandtyp }),
+                        buildUrl({ anlass: selectedCategory, region: next, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
                         { scroll: false }
                       );
                     }}
@@ -509,7 +572,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                       setSelectedBandtyp(next);
                       setOpenPanel(null);
                       router.push(
-                        buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: query, bandtyp: next }),
+                        buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: query, bandtyp: next, mood: selectedMood }),
                         { scroll: false }
                       );
                     }}
@@ -520,6 +583,45 @@ export default function BandExplorer({ bands, regions }: Props) {
                     }`}
                   >
                     {typ}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Panel – Klingt nach */}
+        {openPanel === 'mood' && moodOptions.length > 0 && (
+          <div
+            role="listbox"
+            aria-label="Klingt nach auswählen"
+            className="absolute left-0 right-0 top-full mt-2 z-20 rounded-xl border border-pl-soft bg-pl-elevated shadow-lg p-5"
+          >
+            <div className="flex flex-wrap gap-2">
+              {moodOptions.map((mood) => {
+                const active = selectedMood === mood.slug;
+                return (
+                  <button
+                    key={mood.slug}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      const next = active ? null : mood.slug;
+                      setSelectedMood(next);
+                      setOpenPanel(null);
+                      router.push(
+                        buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: next }),
+                        { scroll: false }
+                      );
+                    }}
+                    className={`px-3.5 py-1.5 rounded-full text-sm border motion-safe:transition-colors ${
+                      active
+                        ? 'bg-pl-accent text-white border-pl-accent'
+                        : 'border-pl-soft text-pl-text-muted hover:border-pl-accent hover:text-pl-text'
+                    }`}
+                  >
+                    {mood.name}
                   </button>
                 );
               })}

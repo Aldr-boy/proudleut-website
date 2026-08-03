@@ -1,7 +1,24 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES, type CategoryConfig } from '@/lib/categories';
 import { heroMosaicImages } from '@/lib/homepage/heroMosaicImages';
+
+// "Nach Anlass": bewusste Auswahl von drei bestehenden CATEGORIES-Eintraegen
+// in dieser Reihenfolge (Vorgabe), Zielpfad /veranstaltung/[slug] bleibt der
+// bestehende, funktionierende Anlass-Zielpfad -- keine neue Ziel-URL.
+const ANLASS_CHIP_SLUGS = ['hochzeit', 'firmenfeier', 'festzelt'];
+const ANLASS_CHIPS: CategoryConfig[] = ANLASS_CHIP_SLUGS
+  .map((slug) => CATEGORIES.find((c) => c.slug === slug))
+  .filter((c): c is CategoryConfig => c !== undefined);
+
+// "Klingt nach": bewusste Auswahl von drei aktiven Moods (siehe Preflight-
+// Analysebericht), Zielpfad direkt in den vorgefilterten Band-Explorer
+// (/bands?mood=<slug>) -- keine eigene Mood-Landingpage.
+const KLINGT_NACH_CHIPS: { title: string; slug: string }[] = [
+  { title: 'Tanzflächen-Garantie', slug: 'tanzflaechen-garantie' },
+  { title: 'Authentisch und handgemacht', slug: 'authentisch-handgemacht' },
+  { title: 'Generationenverbindend', slug: 'generationenverbindend' },
+];
 
 export default function HeroMosaic() {
   return (
@@ -37,8 +54,20 @@ export default function HeroMosaic() {
 
       {/* Content -- mobil oben ausgerichtet mit Abstand zur schwebenden
           Pill-Navigation (fixed, ~12px + 56px hoch), ab md wieder wie
-          zuvor vertikal zentriert. */}
-      <div className="absolute inset-0 z-10 flex items-start justify-center md:items-center px-4 sm:px-6 pt-24 pb-10 md:py-16">
+          zuvor vertikal zentriert.
+
+          Positionierung bewusst erst ab md absolut (wie zuvor immer):
+          Bei sechs Chips in zwei umbrechenden Reihen kann der Inhalt auf
+          schmalen Smartphone-Breiten (320-390px) hoeher werden als die
+          fixe min-h-[520px] der Section. Als absolut positioniertes
+          Element haette der Inhalt dabei NICHT die Section gestreckt,
+          sondern waere von overflow-hidden am unteren Rand abgeschnitten
+          worden (Codex P1) -- v. a. der CTA "Bands entdecken". Im
+          normalen Dokumentfluss (mobil: relative) bestimmt der Inhalt
+          stattdessen selbst seine Hoehe, die Section waechst per
+          min-h-[520px] als Untergrenze automatisch mit -- robust
+          unabhaengig davon, auf wie viele Zeilen die Chips umbrechen. */}
+      <div className="relative z-10 flex items-start justify-center md:absolute md:inset-0 md:items-center px-4 sm:px-6 pt-24 pb-10 md:py-16">
         <div className="text-center max-w-2xl">
           <h1 className="text-3xl md:text-5xl font-bold text-pl-on-stage leading-tight mb-3 md:mb-4">
             Livebands
@@ -47,16 +76,29 @@ export default function HeroMosaic() {
           <p className="text-pl-on-stage text-lg md:text-xl mb-6 md:mb-8 max-w-xl mx-auto">
             Finde passende Livebands nach Anlass &amp; Stil und kontaktiere sie direkt.
           </p>
-          <div className="flex flex-wrap justify-center gap-2 mb-8 md:mb-10">
-            {CATEGORIES.slice(0, 5).map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/veranstaltung/${cat.slug}`}
-                className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
-              >
-                {cat.title}
-              </Link>
-            ))}
+          <div className="mb-8 md:mb-10 space-y-4">
+            <div className="flex flex-wrap justify-center gap-2">
+              {ANLASS_CHIPS.map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/veranstaltung/${cat.slug}`}
+                  className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
+                >
+                  {cat.title}
+                </Link>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {KLINGT_NACH_CHIPS.map((mood) => (
+                <Link
+                  key={mood.slug}
+                  href={`/bands?mood=${mood.slug}`}
+                  className="px-5 py-2.5 rounded-full text-sm border border-pl-accent-light/30 text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
+                >
+                  {mood.title}
+                </Link>
+              ))}
+            </div>
           </div>
           <Link
             href="/bands"

@@ -2,6 +2,7 @@ import type { ImageAsset } from '../types/image'
 import type {
   Band,
   BandLocation,
+  BandMood,
   ReferenceEvent,
   SimilarBandReferences,
   SocialLinks,
@@ -23,6 +24,30 @@ function str(val: unknown): string | undefined {
 
 function bySortOrder(a: Row, b: Row): number {
   return ((a.sort_order as number) ?? 0) - ((b.sort_order as number) ?? 0)
+}
+
+// Sortierung/Ableitung fuer band_moods -- identische Reihenfolge wie
+// klingtNach unten (1. band_moods.sort_order, 2. moods.sort_order,
+// 3. moods.name als deterministischer Tie-Breaker), aber als eigene,
+// exportierte Funktion, damit sie unabhaengig von der restlichen
+// Normalisierung unit-testbar ist. Ein Eintrag ohne Name ODER ohne
+// Slug wird verworfen (defensiv, moods.name/slug sind in der DB NOT
+// NULL, sollte in der Praxis nicht vorkommen).
+export function normalizeMoodAssignments(rawBandMoods: unknown): BandMood[] {
+  return asArr(rawBandMoods as Row[] | null)
+    .sort((a, b) => {
+      const bandPriorityDiff = bySortOrder(a, b)
+      if (bandPriorityDiff !== 0) return bandPriorityDiff
+      const catalogSortDiff = bySortOrder((a.moods as Row) ?? {}, (b.moods as Row) ?? {})
+      if (catalogSortDiff !== 0) return catalogSortDiff
+      return String((a.moods as Row)?.name ?? '').localeCompare(String((b.moods as Row)?.name ?? ''))
+    })
+    .map((bm) => {
+      const name = str((bm.moods as Row)?.name)
+      const slug = str((bm.moods as Row)?.slug)
+      return name && slug ? { name, slug } : undefined
+    })
+    .filter((m): m is BandMood => m !== undefined)
 }
 
 function normalizeImg(raw: Row | null | undefined, fallbackAlt: string): ImageAsset | undefined {
@@ -78,20 +103,11 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     .map(et => str((et.event_types as Row)?.slug))
     .filter((s): s is string => s !== undefined)
 
-  // klingtNach = moods, sortiert nach band_moods.sort_order (kuratierte Prioritaet);
-  // bei Gleichstand moods.sort_order, zuletzt moods.name als deterministischer Tie-Breaker
-  const moodNames = asArr(r.band_moods as Row[] | null)
-    .sort((a, b) => {
-      const bandPriorityDiff = bySortOrder(a, b)
-      if (bandPriorityDiff !== 0) return bandPriorityDiff
-      const catalogSortDiff = bySortOrder((a.moods as Row) ?? {}, (b.moods as Row) ?? {})
-      if (catalogSortDiff !== 0) return catalogSortDiff
-      return String((a.moods as Row)?.name ?? '').localeCompare(String((b.moods as Row)?.name ?? ''))
-    })
-    .map(bm => str((bm.moods as Row)?.name))
-    .filter((n): n is string => n !== undefined)
-
-  const klingtNach = moodNames
+  // klingtNach = Mood-Namen (bestehendes Verhalten unveraendert erhalten);
+  // moods = dieselben Zuordnungen als klar typisierte {name, slug}-Struktur
+  // fuer den stabilen Slug-Abgleich (z. B. /bands?mood=<slug>).
+  const moods = normalizeMoodAssignments(r.band_moods)
+  const klingtNach = moods.map(m => m.name)
 
   // musikalischVerortet = repertoire_styles
   const musikalischVerortet = asArr(r.band_repertoire_styles as Row[] | null)
@@ -235,6 +251,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     categorySlugs,
 
     klingtNach,
+    moods,
     musikalischVerortet,
 
     shortDescription,

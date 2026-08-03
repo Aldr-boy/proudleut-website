@@ -49,6 +49,15 @@ export type SimilarBandReferences = {
   manual3?: string;
 };
 
+// "Klingt nach"-Mood mit stabilem Slug fuer URL-/Filterabgleich (z. B.
+// /bands?mood=<slug>) -- klingtNach (Namen) bleibt fuer bestehende
+// Anzeige-Verbraucher unveraendert erhalten, moods ist die zusaetzliche,
+// klar typisierte Struktur fuer den Slug-Abgleich.
+export type BandMood = {
+  name: string;
+  slug: string;
+};
+
 export type Band = {
   id: string;
   name: string;
@@ -62,6 +71,7 @@ export type Band = {
   categorySlugs?: string[];
 
   klingtNach: string[];
+  moods: BandMood[];
   musikalischVerortet: string[];
 
   shortDescription?: string;
