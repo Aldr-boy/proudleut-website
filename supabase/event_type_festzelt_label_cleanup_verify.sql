@@ -17,6 +17,11 @@
 -- slug='festzelt' bereits "Festzelt" (siehe Dateikommentar der
 -- Migration). Alle Zeilen unten sollten daher schon vor einer
 -- Ausfuehrung der Migration match = true zeigen.
+--
+-- Die aktuelle Zahl der band_event_types-Zuordnungen wird nur
+-- informativ ausgegeben. Sie ist kein fixer Sollwert, weil regulaere
+-- Kuration die Anzahl jederzeit aendern darf und die Migration selbst
+-- ausschliesslich public.event_types.name aktualisiert.
 -- ============================================================
 
 with expected (key, id) as (
@@ -61,23 +66,20 @@ no_duplicate_label as (
     (select count(*) from public.event_types where name = 'Festzelt')::text || ' Zeile(n)' as actual,
     (select count(*) from public.event_types where name = 'Festzelt') = 1 as match
 ),
-assignments_preserved as (
+assignments_current_state as (
   select
-    'D_band_event_types_preserved'::text as report_section,
-    'Bandzuordnungen zu event_types.slug=festzelt'::text as key,
-    '96 Zuordnungen (Referenzwert aus Production-Preflight 03.08.2026)'::text as expected,
-    coalesce((
-      select count(*)::text
-      from public.band_event_types bet
-      join public.event_types et on et.id = bet.event_type_id
-      where et.slug = 'festzelt'
-    ), '0') || ' Zuordnung(en)' as actual,
-    (
-      select count(*)
-      from public.band_event_types bet
-      join public.event_types et on et.id = bet.event_type_id
-      where et.slug = 'festzelt'
-    ) = 96 as match
+    'D_band_event_types_current_state'::text as report_section,
+    'Bandzuordnungen zur unveraenderten event_type_id'::text as key,
+    'event_type_id unveraendert; aktuelle Zuordnungszahl nur informativ'::text as expected,
+    count(bet.band_id)::text || ' Zuordnung(en) zu event_type_id=' || e.id::text as actual,
+    et.id = e.id and et.slug = 'festzelt' as match
+  from expected e
+  left join public.event_types et
+    on et.id = e.id
+   and et.slug = 'festzelt'
+  left join public.band_event_types bet
+    on bet.event_type_id = e.id
+  group by e.id, et.id, et.slug
 )
 select * from row_state
 union all
@@ -85,5 +87,5 @@ select * from old_name_gone
 union all
 select * from no_duplicate_label
 union all
-select * from assignments_preserved
+select * from assignments_current_state
 order by report_section, key;
