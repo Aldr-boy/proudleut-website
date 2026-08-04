@@ -1,105 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { extractClientIp } from '@/lib/anfrage/clientIp';
+import { hashClientIp } from '@/lib/anfrage/rateLimit';
+import { submitAnfrage } from '@/lib/anfrage/service';
 
-type ClientPayload = {
-  bands: { slug: string; name: string }[];
-  eventtyp: string;
-  eventtyp_custom: string;
-  datum: string;
-  ort: string;
-  veranstaltungsort: string;
-  gaestezahl: string;
-  spielzeit: string;
-  nachricht: string;
-  vorname: string;
-  nachname: string;
-  email: string;
-  telefon: string;
-  firma_hidden: string;
-  website_hidden: string;
-  datenschutz: boolean;
-  openedAt: number;
-};
-
-function isValidEmail(email: string): boolean {
-  return /\S+@\S+\.\S+/.test(email);
-}
-
+// Nativer Anfrage-Endpunkt (Block L-A1): Next.js -> Supabase -> Resend ->
+// Admin-Nachweis. Ersetzt den bisherigen Make-Webhook-Forwarder. Der
+// bestehende Make/Airtable/Gmail-Weg (Webflow-Formular) laeuft unabhaengig
+// davon unveraendert weiter -- diese Route war damit nie verbunden (siehe
+// Auftrag). Die eigentliche Geschaeftslogik liegt vollstaendig in
+// lib/anfrage/service.ts (submitAnfrage) und ist unabhaengig von dieser
+// Route testbar.
 export async function POST(req: NextRequest) {
-  let payload: ClientPayload;
+  let body: unknown;
   try {
-    payload = await req.json();
+    body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
   }
 
-  // Honeypot – stille 200-Antwort damit Bots denken, die Anfrage sei erfolgreich
-  if (payload.firma_hidden || payload.website_hidden) {
-    return NextResponse.json({ ok: true });
-  }
-
-  // Zeitstempel-Check – stille 200-Antwort für Bot-Täuschung
-  if (typeof payload.openedAt === 'number' && Date.now() - payload.openedAt < 3000) {
-    return NextResponse.json({ ok: true });
-  }
-
-  if (!payload.bands || payload.bands.length < 1) {
-    return NextResponse.json({ error: 'Keine Band ausgewählt' }, { status: 400 });
-  }
-
-  if (!payload.vorname?.trim() || !payload.email?.trim()) {
-    return NextResponse.json({ error: 'Vorname und E-Mail sind Pflichtfelder' }, { status: 400 });
-  }
-
-  if (!isValidEmail(payload.email.trim())) {
-    return NextResponse.json({ error: 'Bitte gib eine gültige E-Mail-Adresse ein' }, { status: 400 });
-  }
-
-  if (payload.datenschutz !== true) {
-    return NextResponse.json({ error: 'Datenschutz-Zustimmung fehlt' }, { status: 400 });
-  }
-
-  const webhookUrl = process.env.MAKE_ANFRAGE_WEBHOOK_URL;
-  if (!webhookUrl) {
-    console.error('[api/anfrage] MAKE_ANFRAGE_WEBHOOK_URL ist nicht gesetzt');
+  const clientIp = extractClientIp(req.headers);
+  let ipHash: string;
+  try {
+    ipHash = hashClientIp(clientIp);
+  } catch (err) {
+    console.error('[api/anfrage] Rate-Limit-Konfiguration fehlt', err);
     return NextResponse.json({ error: 'Konfigurationsfehler – bitte später erneut versuchen' }, { status: 500 });
   }
 
-  const makePayload = {
-    anfrage_id: crypto.randomUUID(),
-    source: 'proudleut-next' as const,
-    timestamp: new Date().toISOString(),
-    bands: payload.bands,
-    eventtyp: payload.eventtyp,
-    eventtyp_custom: payload.eventtyp_custom,
-    datum: payload.datum,
-    ort: payload.ort,
-    veranstaltungsort: payload.veranstaltungsort,
-    gaestezahl: payload.gaestezahl,
-    spielzeit: payload.spielzeit,
-    nachricht: payload.nachricht,
-    vorname: payload.vorname.trim(),
-    nachname: payload.nachname,
-    email: payload.email.trim(),
-    telefon: payload.telefon,
-    firma_hidden: payload.firma_hidden,
-    website_hidden: payload.website_hidden,
-    datenschutz: payload.datenschutz,
-  };
+  const result = await submitAnfrage(body, { ipHash });
 
-  try {
-    const res = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(makePayload),
-    });
-    if (!res.ok) {
-      console.error('[api/anfrage] Make Webhook Fehler', res.status, await res.text());
-      return NextResponse.json({ error: 'Anfrage konnte nicht gesendet werden – bitte später erneut versuchen' }, { status: 500 });
-    }
-  } catch (err) {
-    console.error('[api/anfrage] Netzwerkfehler beim Make Webhook', err);
-    return NextResponse.json({ error: 'Anfrage konnte nicht gesendet werden – bitte später erneut versuchen' }, { status: 500 });
+  switch (result.kind) {
+    case 'bot_silent':
+      // Stille 200-Antwort, damit Bots die Anfrage faelschlich fuer
+      // erfolgreich halten (bestehendes, uebernommenes Verhalten).
+      return NextResponse.json({ ok: true });
+
+    case 'accepted':
+      // Neutrale Formulierung: suggeriert weder einen vollstaendigen
+      // Mailversand-Erfolg noch einen kompletten Fehlschlag bei
+      // Teilausfaellen. Interne Mailstatus/Empfaenger/Message-IDs werden
+      // nie an den Client ausgegeben.
+      return NextResponse.json({
+        ok: true,
+        message: 'Deine Anfrage ist eingegangen. Eine Bestätigung folgt per E-Mail.',
+      });
+
+    case 'validation_error':
+      return NextResponse.json({ error: result.message }, { status: 400 });
+
+    case 'rate_limited':
+      return NextResponse.json(
+        { error: 'Zu viele Anfragen — bitte versuche es in Kürze erneut.' },
+        { status: 429, headers: { 'Retry-After': String(result.retryAfterSeconds) } }
+      );
+
+    case 'unresolvable_band':
+      return NextResponse.json(
+        {
+          error: `Die Band „${result.bandName}" kann aktuell leider nicht angefragt werden. Bitte entferne sie aus deiner Auswahl und versuche es erneut.`,
+        },
+        { status: 400 }
+      );
+
+    case 'server_error':
+    default:
+      return NextResponse.json(
+        { error: 'Deine Anfrage konnte nicht gespeichert werden — bitte versuche es später erneut.' },
+        { status: 500 }
+      );
   }
-
-  return NextResponse.json({ ok: true });
 }
