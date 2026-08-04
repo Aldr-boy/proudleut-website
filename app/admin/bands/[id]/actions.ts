@@ -114,6 +114,24 @@ export async function updateBandAction(formData: FormData): Promise<never> {
 
   const client = createAdminClient()
 
+  // Kontaktintegritaet (Produktentscheidung 23 / DoD 25): eine Band darf
+  // nicht auf 'active' gesetzt werden, ohne einen gueltigen primaeren
+  // Anfragekontakt zu besitzen — sonst waere sie ueber das native
+  // Anfragesystem anfragbar, ohne dass eine Zustellung moeglich waere.
+  if (data.status === 'active') {
+    const { data: primaryContact } = await client
+      .from('band_contacts')
+      .select('email')
+      .eq('band_id', id)
+      .eq('is_primary_inquiry', true)
+      .maybeSingle()
+    if (!primaryContact?.email) {
+      const p = new URLSearchParams()
+      p.set('e_status', 'Aktivierung nicht möglich: kein gültiger primärer Anfragekontakt vorhanden. Bitte zuerst einen Anfragekontakt mit E-Mail hinterlegen.')
+      redirect(`/admin/bands/${id}?${p.toString()}`)
+    }
+  }
+
   const { error: bandError } = await client
     .from('bands')
     .update({
@@ -186,6 +204,8 @@ type ContactErrorCode =
   | 'check_failed'
   | 'invalid_contact'
   | 'db_error'
+  | 'primary_required_active'
+  | 'primary_email_required_active'
 
 function validateContact(data: {
   contact_name: string
@@ -308,7 +328,7 @@ export async function updateContactAction(formData: FormData): Promise<never> {
   // Ownership-Prüfung: Kontakt laden und band_id aus DB gegen Form-Wert prüfen
   const { data: existingContact } = await client
     .from('band_contacts')
-    .select('band_id')
+    .select('band_id, is_primary_inquiry')
     .eq('id', contact_id)
     .maybeSingle()
   if (!existingContact || existingContact.band_id !== band_id) {
@@ -318,6 +338,27 @@ export async function updateContactAction(formData: FormData): Promise<never> {
   // Feldvalidierung
   const validationError = validateContact({ contact_name, email, phone, contact_role })
   if (validationError) redirect(`/admin/bands/${band_id}?contact_error=${validationError}`)
+
+  // Kontaktintegritaet (Produktentscheidung 23 / DoD 25): der letzte
+  // gueltige primaere Anfragekontakt einer aktiven Band darf ueber diese
+  // Aktion weder seine Primaer-Markierung noch eine gueltige E-Mail
+  // verlieren. Ein Wechsel auf einen ANDEREN Kontakt bleibt moeglich —
+  // dieser Guard greift nur, solange genau dieser Kontakt noch primaer ist.
+  if (existingContact.is_primary_inquiry) {
+    const { data: bandRow } = await client
+      .from('bands')
+      .select('status')
+      .eq('id', band_id)
+      .maybeSingle()
+    if (bandRow?.status === 'active') {
+      if (!is_primary_inquiry) {
+        redirect(`/admin/bands/${band_id}?contact_error=primary_required_active`)
+      }
+      if (!email) {
+        redirect(`/admin/bands/${band_id}?contact_error=primary_email_required_active`)
+      }
+    }
+  }
 
   // Rollenkonflikt-Vorabprüfung (vor jedem Schreibvorgang)
   if (contact_role) {
@@ -379,11 +420,24 @@ export async function deleteContactAction(formData: FormData): Promise<never> {
 
   const { data: existingContact } = await client
     .from('band_contacts')
-    .select('band_id')
+    .select('band_id, is_primary_inquiry')
     .eq('id', contact_id)
     .maybeSingle()
   if (!existingContact || existingContact.band_id !== band_id) {
     redirect(`/admin/bands/${band_id}?contact_error=invalid_contact`)
+  }
+
+  // Kontaktintegritaet (Produktentscheidung 23 / DoD 25): der primaere
+  // Anfragekontakt einer aktiven Band darf nicht geloescht werden.
+  if (existingContact.is_primary_inquiry) {
+    const { data: bandRow } = await client
+      .from('bands')
+      .select('status')
+      .eq('id', band_id)
+      .maybeSingle()
+    if (bandRow?.status === 'active') {
+      redirect(`/admin/bands/${band_id}?contact_error=primary_required_active`)
+    }
   }
 
   const { error } = await client

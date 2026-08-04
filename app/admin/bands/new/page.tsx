@@ -12,10 +12,12 @@ type SearchParams = Promise<{
   slug?: string
   status?: string
   primary_band_type_id?: string
+  contact_email?: string
   e_name?: string
   e_slug?: string
   e_status?: string
   e_primary_band_type_id?: string
+  e_contact_email?: string
   e_form?: string
 }>
 
@@ -129,6 +131,27 @@ export default async function NewBandPage({ searchParams }: { searchParams: Sear
             {sp.e_primary_band_type_id && (
               <p className="mt-1 text-xs text-red-600">{sp.e_primary_band_type_id}</p>
             )}
+          </div>
+
+          {/* Anfrage-E-Mail */}
+          <div>
+            <label htmlFor="contact_email" className="block text-sm font-medium text-gray-700 mb-1">
+              Anfrage-E-Mail <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="contact_email"
+              name="contact_email"
+              type="email"
+              defaultValue={sp.contact_email ?? ''}
+              maxLength={254}
+              required
+              placeholder="kontakt@band-beispiel.de"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            />
+            <p className="mt-0.5 text-xs text-gray-400">
+              Wird als primärer Anfragekontakt gespeichert — hierhin gehen native Bandanfragen.
+            </p>
+            {sp.e_contact_email && <p className="mt-1 text-xs text-red-600">{sp.e_contact_email}</p>}
           </div>
 
           {/* is_published */}
