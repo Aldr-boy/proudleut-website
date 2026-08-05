@@ -61,6 +61,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Alter Webflow-Pfad -- kanonisch ist jetzt /datenschutz (Block
+      // "Impressum und Datenschutz"). Serverseitiger, permanenter Redirect
+      // (308) ohne eigene Seite/Client-Rendering fuer /datenschutzhinweise,
+      // damit hier nie eine zweite Textkopie entstehen kann.
+      {
+        source: '/datenschutzhinweise',
+        destination: '/datenschutz',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
