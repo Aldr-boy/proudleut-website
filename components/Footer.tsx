@@ -32,8 +32,11 @@ export default function Footer() {
           <Link href="#" className="hover:text-pl-on-stage motion-safe:transition-colors">
             Kontakt
           </Link>
-          <Link href="#" className="hover:text-pl-on-stage motion-safe:transition-colors">
+          <Link href="/impressum" className="hover:text-pl-on-stage motion-safe:transition-colors">
             Impressum
+          </Link>
+          <Link href="/datenschutz" className="hover:text-pl-on-stage motion-safe:transition-colors">
+            Datenschutz
           </Link>
         </nav>
         <p className="text-pl-on-stage-muted text-xs">© 2025 proudleut.com</p>

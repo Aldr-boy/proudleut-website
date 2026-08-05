@@ -160,17 +160,13 @@ nicht migriert (Produktentscheidung 20).
 
 ---
 
-## Zusätzlicher Owner-Hinweis (außerhalb der Auftrags-Checkliste, aber
-sicherheitsrelevant für die neuen Mail-Templates)
+## Erledigt: Impressum und Datenschutz (ehemals offener Owner-Hinweis)
 
 Die neuen Band- und Bestätigungs-Mails verlinken auf
 `https://proudleut.com/datenschutz` und `https://proudleut.com/impressum`
-(gleiches Muster wie das bestehende `AnfrageModal`/`KontaktFormular`, siehe
-`lib/anfrage/constants.ts`). Im Rahmen dieses Preflights wurde festgestellt,
-dass **beide Seiten aktuell nicht existieren** (kein `app/datenschutz`, kein
-`app/impressum`; der Impressum-Link im Footer ist derzeit ein Platzhalter
-`href="#"`). Das ist ein bereits vor L-A1 bestehender Zustand, keine neue
-Regression — aber vor dem öffentlichen Cutover sollten beide Seiten real
-erreichbar sein, sonst verweisen alle neuen Transaktionsmails auf 404-Seiten.
-Kein Bestandteil dieses Auftrags (Legal-Content-Erstellung), wird hier nur
-als notwendiger Vorprüfpunkt festgehalten.
+(`lib/anfrage/constants.ts`). Im Block „Impressum und Datenschutz" wurden
+beide Seiten real gebaut (`app/datenschutz/page.tsx`, `app/impressum/page.tsx`,
+vollständiger freigegebener Webflow-Rechtstext), der Footer verlinkt jetzt
+korrekt dorthin, und der alte Pfad `/datenschutzhinweise` leitet dauerhaft
+(308) auf `/datenschutz` weiter (`next.config.ts`). Kein offener Punkt mehr
+vor dem Cutover.

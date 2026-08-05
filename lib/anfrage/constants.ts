@@ -32,13 +32,13 @@ export const TEMPLATE_VERSION = 'v1';
 export const ANFRAGE_SENDER_EMAIL = 'anfrage@proudleut.com';
 export const ANFRAGE_SENDER_NAME = 'proudleut.com';
 
-// /datenschutz und ein Impressum existieren im Frontend aktuell nicht als
-// eigene Seiten (bestaetigt: kein app/datenschutz, kein app/impressum;
-// Footer-Impressum-Link ist Platzhalter href="#"). Die bestehenden
-// Formulare (AnfrageModal, KontaktFormular) verlinken trotzdem bereits auf
-// /datenschutz -- diese Konstante haelt sich an dasselbe, bereits
-// bestehende Muster, statt einen neuen, anders lautenden Verweis zu
-// erfinden. Siehe CUTOVER.md fuer den notwendigen Owner-Schritt.
+// /datenschutz (app/datenschutz/page.tsx) und /impressum
+// (app/impressum/page.tsx) sind seit Block "Impressum und Datenschutz"
+// reale, oeffentlich erreichbare Seiten mit dem uebernommenen, freigegebenen
+// Webflow-Rechtstext. Der Footer-Link verweist ebenfalls dorthin, der alte
+// Pfad /datenschutzhinweise leitet dauerhaft (308) auf /datenschutz weiter
+// (next.config.ts). Diese Konstante wurde nicht geaendert, da sie schon
+// vorher exakt auf diese kanonischen Pfade zeigte.
 export const LEGAL_LINKS = {
   datenschutzUrl: 'https://proudleut.com/datenschutz',
   impressumUrl: 'https://proudleut.com/impressum',
