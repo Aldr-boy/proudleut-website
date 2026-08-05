@@ -2,6 +2,8 @@
 import { redirect } from 'next/navigation'
 import { requireAdminSession } from '@/lib/admin/requireAdminSession'
 import { retryBandSend, retryConfirmation } from '@/lib/anfrage/service'
+import { createAdminClient } from '@/lib/supabase/server'
+import { getResendClient } from '@/lib/resend/client'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -21,7 +23,7 @@ export async function retryBandSendAction(formData: FormData): Promise<never> {
   const anfrageBandId = str(formData, 'anfrage_band_id')
   if (!anfrageId || !anfrageBandId) redirect('/admin/anfragen')
 
-  const result = await retryBandSend(anfrageBandId)
+  const result = await retryBandSend(anfrageBandId, { client: createAdminClient(), getResendClient })
   if (!result.ok) redirect(`/admin/anfragen/${anfrageId}?retry_error=${result.reason}`)
 
   redirect(`/admin/anfragen/${anfrageId}?retry_ok=1`)
@@ -33,7 +35,7 @@ export async function retryConfirmationAction(formData: FormData): Promise<never
   const anfrageId = str(formData, 'anfrage_id')
   if (!anfrageId) redirect('/admin/anfragen')
 
-  const result = await retryConfirmation(anfrageId)
+  const result = await retryConfirmation(anfrageId, { client: createAdminClient(), getResendClient })
   if (!result.ok) redirect(`/admin/anfragen/${anfrageId}?retry_error=${result.reason}`)
 
   redirect(`/admin/anfragen/${anfrageId}?retry_ok=1`)

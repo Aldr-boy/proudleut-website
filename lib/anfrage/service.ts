@@ -1,50 +1,49 @@
-import 'server-only';
 import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createAdminClient } from '@/lib/supabase/server';
-import { getResendClient } from '@/lib/resend/client';
-import { parseAnfrageSubmission } from './validation';
-import { resolveActiveBandsWithContact } from './resolveBands';
-import { checkAndConsumeRateLimit } from './rateLimit';
-import { renderBandMail, renderConfirmationMail } from './templates';
-import { buildBandMailIdempotencyKey, buildConfirmationIdempotencyKey } from './idempotencyKeys';
-import { sendMailViaResend, isWithinProviderIdempotencyProtectionWindow } from './mailSend';
-import { computeOverallStatus } from './status';
-import { ANFRAGE_SENDER_EMAIL, CURRENT_DATENSCHUTZ_VERSION, TEMPLATE_VERSION } from './constants';
-import type { MailSendOutcome, SubmitAnfrageResult } from './types';
+import { parseAnfrageSubmission } from './validation.ts';
+import { resolveActiveBandsWithContact } from './resolveBands.ts';
+import { checkAndConsumeRateLimit } from './rateLimit.ts';
+import { renderBandMail, renderConfirmationMail } from './templates.ts';
+import { buildBandMailIdempotencyKey, buildConfirmationIdempotencyKey } from './idempotencyKeys.ts';
+import { sendMailViaResend } from './mailSend.ts';
+import type { ResendEmailsClient } from './mailSend.ts';
+import { evaluateRetryEligibility } from './staleness.ts';
+import { computeOverallStatus } from './status.ts';
+import { ANFRAGE_SENDER_EMAIL, CURRENT_DATENSCHUTZ_VERSION, TEMPLATE_VERSION } from './constants.ts';
+import type { MailSendOutcome, SubmitAnfrageResult } from './types.ts';
+
+// Gemeinsame Abhaengigkeiten fuer alle exportierten Funktionen dieser Datei.
+// Client und Resend-Client-Fabrik werden bewusst als Pflichtparameter
+// uebergeben (Dependency Injection, gleiches Muster wie
+// lib/anfrage/resolveBands.ts und lib/anfrage/mailSend.ts) -- dadurch bleibt
+// diese Datei trotz 'server-only' (Orchestrierung bleibt serverseitig)
+// vollstaendig ueber Fake-Client per node:test testbar: der reale, gecachte
+// Client wird ausschliesslich an den Aufrufstellen (app/api/anfrage/route.ts,
+// app/admin/anfragen/actions.ts) aufgeloest. getResendClient ist eine
+// FABRIK (kein bereits konstruierter Client), damit RESEND_API_KEY weiterhin
+// erst unmittelbar vor dem ersten tatsaechlichen Sendeversuch ausgewertet
+// wird (fail-closed bei fehlendem Key, exakt wie zuvor) und nicht schon beim
+// Aufbau der Abhaengigkeiten.
+export type AnfrageServiceDeps = {
+  client: SupabaseClient;
+  getResendClient: () => ResendEmailsClient;
+};
 
 type StatusPatch = {
   status: 'gesendet' | 'fehlgeschlagen' | 'ungeklaert';
-  attempts: number;
-  lastAttemptAt: string;
   sentAt: string | null;
   messageId: string | null;
   errorMessage: string | null;
 };
 
-function computeStatusPatch(outcome: MailSendOutcome, attemptTimeIso: string, previousAttempts: number): StatusPatch {
-  const attempts = previousAttempts + 1;
+function computeFinalStatusPatch(outcome: MailSendOutcome, attemptTimeIso: string): StatusPatch {
   if (outcome.status === 'gesendet') {
-    return {
-      status: 'gesendet',
-      attempts,
-      lastAttemptAt: attemptTimeIso,
-      sentAt: attemptTimeIso,
-      messageId: outcome.messageId,
-      errorMessage: null,
-    };
+    return { status: 'gesendet', sentAt: attemptTimeIso, messageId: outcome.messageId, errorMessage: null };
   }
-  return {
-    status: outcome.status,
-    attempts,
-    lastAttemptAt: attemptTimeIso,
-    sentAt: null,
-    messageId: null,
-    errorMessage: outcome.errorMessage,
-  };
+  return { status: outcome.status, sentAt: null, messageId: null, errorMessage: outcome.errorMessage };
 }
 
-type AnfrageBandSendRow = {
+export type AnfrageBandSendRow = {
   id: string;
   anfrage_id: string;
   recipient_email: string;
@@ -55,10 +54,39 @@ type AnfrageBandSendRow = {
   send_status: string;
   attempts: number;
   last_attempt_at: string | null;
+  created_at: string;
 };
 
-async function sendAndPersistBandMail(client: SupabaseClient, row: AnfrageBandSendRow): Promise<void> {
+// Codex-Nachtrag PR #26, Befund 1: attempts/last_attempt_at werden JETZT in
+// einem eigenen Schreibvorgang VOR dem Resend-Aufruf persistiert (vorher:
+// erst nach Rueckkehr des Aufrufs -- ein Prozessabbruch dazwischen liess die
+// Zeile dauerhaft auf attempts=0/last_attempt_at=null stehen, siehe
+// lib/anfrage/staleness.ts). Schlaegt bereits diese Markierung fehl, wird
+// KEIN Resend-Aufruf gestartet, der Fehler wird sicher geloggt, und die Zeile
+// bleibt unveraendert -- sie wird spaeter ueber die Stale-Pending-Regel
+// erneut als retrybar erkannt statt fälschlich als gesendet zu gelten.
+export async function sendAndPersistBandMail(
+  client: SupabaseClient,
+  row: AnfrageBandSendRow,
+  getResendClient: () => ResendEmailsClient
+): Promise<void> {
   const attemptTimeIso = new Date().toISOString();
+  const nextAttempts = row.attempts + 1;
+
+  const { error: markError } = await client
+    .from('anfrage_bands')
+    .update({ attempts: nextAttempts, last_attempt_at: attemptTimeIso })
+    .eq('id', row.id);
+
+  if (markError) {
+    console.error('[anfrage] Attempt-Markierung vor Band-Mail-Versand fehlgeschlagen -- Resend-Aufruf uebersprungen', {
+      table: 'anfrage_bands',
+      anfrage_band_id: row.id,
+      error: markError.message,
+    });
+    return;
+  }
+
   const outcome = await sendMailViaResend(
     {
       to: row.recipient_email,
@@ -69,13 +97,12 @@ async function sendAndPersistBandMail(client: SupabaseClient, row: AnfrageBandSe
     },
     getResendClient()
   );
-  const patch = computeStatusPatch(outcome, attemptTimeIso, row.attempts);
+
+  const patch = computeFinalStatusPatch(outcome, attemptTimeIso);
   await client
     .from('anfrage_bands')
     .update({
       send_status: patch.status,
-      attempts: patch.attempts,
-      last_attempt_at: patch.lastAttemptAt,
       sent_at: patch.sentAt,
       resend_message_id: patch.messageId,
       error_message: patch.errorMessage,
@@ -83,27 +110,43 @@ async function sendAndPersistBandMail(client: SupabaseClient, row: AnfrageBandSe
     .eq('id', row.id);
 }
 
-type AnfrageConfirmationRow = {
+export type AnfrageConfirmationRow = {
+  id: string;
   confirmation_recipient: string;
   confirmation_reply_to: string | null;
   confirmation_subject: string;
   confirmation_body_text: string;
   confirmation_provider_idempotency_key: string;
   confirmation_attempts: number;
+  confirmation_status: string;
+  confirmation_last_attempt_at: string | null;
+  created_at: string;
 };
 
-async function sendAndPersistConfirmation(client: SupabaseClient, anfrageId: string): Promise<void> {
-  const { data: anfrage } = await client
-    .from('anfragen')
-    .select(
-      'confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts'
-    )
-    .eq('id', anfrageId)
-    .maybeSingle();
-  if (!anfrage) return;
-
-  const row = anfrage as AnfrageConfirmationRow;
+// Codex-Nachtrag PR #26, Befund 2: identisches Vorab-Markierungsmuster wie
+// sendAndPersistBandMail, nur auf anfragen.confirmation_*.
+export async function sendAndPersistConfirmation(
+  client: SupabaseClient,
+  row: AnfrageConfirmationRow,
+  getResendClient: () => ResendEmailsClient
+): Promise<void> {
   const attemptTimeIso = new Date().toISOString();
+  const nextAttempts = row.confirmation_attempts + 1;
+
+  const { error: markError } = await client
+    .from('anfragen')
+    .update({ confirmation_attempts: nextAttempts, confirmation_last_attempt_at: attemptTimeIso })
+    .eq('id', row.id);
+
+  if (markError) {
+    console.error('[anfrage] Attempt-Markierung vor Bestaetigungs-Versand fehlgeschlagen -- Resend-Aufruf uebersprungen', {
+      table: 'anfragen',
+      anfrage_id: row.id,
+      error: markError.message,
+    });
+    return;
+  }
+
   const outcome = await sendMailViaResend(
     {
       to: row.confirmation_recipient,
@@ -114,55 +157,74 @@ async function sendAndPersistConfirmation(client: SupabaseClient, anfrageId: str
     },
     getResendClient()
   );
-  const patch = computeStatusPatch(outcome, attemptTimeIso, row.confirmation_attempts);
+
+  const patch = computeFinalStatusPatch(outcome, attemptTimeIso);
   await client
     .from('anfragen')
     .update({
       confirmation_status: patch.status,
-      confirmation_attempts: patch.attempts,
-      confirmation_last_attempt_at: patch.lastAttemptAt,
       confirmation_sent_at: patch.sentAt,
       confirmation_message_id: patch.messageId,
       confirmation_error: patch.errorMessage,
     })
-    .eq('id', anfrageId);
+    .eq('id', row.id);
 }
 
 async function recomputeOverallStatus(client: SupabaseClient, anfrageId: string): Promise<void> {
   const { data: rows } = await client.from('anfrage_bands').select('send_status').eq('anfrage_id', anfrageId);
-  const statuses = (rows ?? []).map((r) => r.send_status as import('./types').SendStatus);
+  const statuses = (rows ?? []).map((r) => r.send_status as import('./types.ts').SendStatus);
   const overall = computeOverallStatus(statuses);
   await client.from('anfragen').update({ status: overall }).eq('id', anfrageId);
 }
 
 // Ein Fehler bei einer Band-Mail darf weder die uebrigen Band-Mails noch
-// die Veranstalter-Bestaetigung verhindern (DoD 8/9 sinngemaess,
-// Teilpaket 7 "Versandablauf"): Promise.allSettled fuer die Band-Mails,
-// die Bestaetigung wird IMMER im Anschluss versucht, unabhaengig vom
-// Ergebnis der Band-Mails.
-async function sendAllBandMailsAndConfirmation(client: SupabaseClient, anfrageId: string): Promise<void> {
+// die Veranstalter-Bestaetigung verhindern: Promise.allSettled fuer die
+// Band-Mails, die Bestaetigung wird IMMER im Anschluss versucht,
+// unabhaengig vom Ergebnis der Band-Mails.
+async function sendAllBandMailsAndConfirmation(
+  client: SupabaseClient,
+  anfrageId: string,
+  getResendClient: () => ResendEmailsClient
+): Promise<void> {
   const { data: bandRows } = await client
     .from('anfrage_bands')
-    .select('id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at')
+    .select(
+      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at'
+    )
     .eq('anfrage_id', anfrageId);
 
   await Promise.allSettled(
-    ((bandRows ?? []) as AnfrageBandSendRow[]).map((row) => sendAndPersistBandMail(client, row))
+    ((bandRows ?? []) as AnfrageBandSendRow[]).map((row) => sendAndPersistBandMail(client, row, getResendClient))
   );
 
-  await sendAndPersistConfirmation(client, anfrageId);
+  const { data: confirmationRow } = await client
+    .from('anfragen')
+    .select(
+      'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at'
+    )
+    .eq('id', anfrageId)
+    .maybeSingle();
+  if (confirmationRow) {
+    await sendAndPersistConfirmation(client, confirmationRow as AnfrageConfirmationRow, getResendClient);
+  }
+
   await recomputeOverallStatus(client, anfrageId);
 }
 
 export type SubmitAnfrageContext = { ipHash: string };
 
-// Orchestriert den vollstaendigen nativen Anfrageablauf (Teilpaket 4):
-// validieren -> Rate-Limit -> Bands aufloesen -> Mailinhalte rendern +
-// Provider-Idempotency-Keys festlegen -> atomar persistieren -> Band-Mails
-// versenden -> Bestaetigung versenden -> Versandstatus/Gesamtstatus
-// aktualisieren. Unabhaengig genug, um aus der API-Route UND aus Tests
-// aufgerufen zu werden, ohne Geschaeftslogik zu duplizieren.
-export async function submitAnfrage(rawBody: unknown, ctx: SubmitAnfrageContext): Promise<SubmitAnfrageResult> {
+// Orchestriert den vollstaendigen nativen Anfrageablauf: validieren ->
+// Rate-Limit (fail-closed bei technischem Fehler) -> Bands aufloesen ->
+// Mailinhalte rendern + Provider-Idempotency-Keys festlegen -> atomar
+// persistieren -> Band-Mails versenden -> Bestaetigung versenden ->
+// Versandstatus/Gesamtstatus aktualisieren. Unabhaengig genug, um aus der
+// API-Route UND aus Tests aufgerufen zu werden, ohne Geschaeftslogik zu
+// duplizieren.
+export async function submitAnfrage(
+  rawBody: unknown,
+  ctx: SubmitAnfrageContext,
+  deps: AnfrageServiceDeps
+): Promise<SubmitAnfrageResult> {
   const parsed = parseAnfrageSubmission(rawBody);
   if (!parsed.ok) {
     if (parsed.reason === 'bot') return { kind: 'bot_silent' };
@@ -170,17 +232,23 @@ export async function submitAnfrage(rawBody: unknown, ctx: SubmitAnfrageContext)
   }
   const input = parsed.data;
 
-  const rateLimit = await checkAndConsumeRateLimit(ctx.ipHash);
-  if (!rateLimit.allowed) {
+  const rateLimit = await checkAndConsumeRateLimit(deps.client, ctx.ipHash);
+  if (rateLimit.status === 'fail_closed') {
+    // Codex-Nachtrag PR #26, Befund 3: kein stiller fail-open-Pfad mehr --
+    // ein technisch fehlgeschlagenes Rate-Limit blockiert die gesamte
+    // Anfrage, bevor irgendetwas persistiert oder versendet wird.
+    return { kind: 'temporarily_unavailable' };
+  }
+  if (rateLimit.status === 'blocked') {
     return { kind: 'rate_limited', retryAfterSeconds: rateLimit.retryAfterSeconds };
   }
 
-  const client = createAdminClient();
+  const client = deps.client;
 
   // Bandname und Empfaengeradresse kommen NIE vom Client -- ausschliesslich
-  // serverseitig aus Supabase aufgeloest (DoD 6/7). Kann eine Band nicht
-  // eindeutig als aktive Band mit gueltigem Anfragekontakt aufgeloest
-  // werden, wird die GESAMTE Anfrage vor jeder Persistenz abgelehnt.
+  // serverseitig aus Supabase aufgeloest. Kann eine Band nicht eindeutig als
+  // aktive Band mit gueltigem Anfragekontakt aufgeloest werden, wird die
+  // GESAMTE Anfrage vor jeder Persistenz abgelehnt.
   const resolved = await resolveActiveBandsWithContact(client, input.bandSlugs);
   if (!resolved.ok) {
     return { kind: 'unresolvable_band', bandName: resolved.bandName };
@@ -250,63 +318,70 @@ export async function submitAnfrage(rawBody: unknown, ctx: SubmitAnfrageContext)
 
   if (!result.was_created) {
     // Doppel-Submit mit bereits bekanntem idempotency_key: kein erneuter
-    // Insert, kein erneuter Versand, keine erhoehten Attempts (DoD 17).
+    // Insert, kein erneuter Versand, keine erhoehten Attempts (DoD 6/17).
     return { kind: 'accepted' };
   }
 
-  await sendAllBandMailsAndConfirmation(client, result.anfrage_id);
+  await sendAllBandMailsAndConfirmation(client, result.anfrage_id, deps.getResendClient);
 
   return { kind: 'accepted' };
 }
 
 export type RetryOutcome =
   | { ok: true }
-  | { ok: false; reason: 'not_found' | 'already_sent' | 'protection_window_expired' };
+  | { ok: false; reason: 'not_found' | 'already_sent' | 'not_stale_yet' | 'protection_window_expired' };
 
-// Admin-Retry fuer eine EINZELNE fehlgeschlagene/ungeklaerte Band-Mail.
-// Verwendet unveraendert denselben provider_idempotency_key sowie
-// Empfaenger-/Reply-To-/Betreff-/Body-Snapshot wie beim urspruenglichen
-// Versuch (DoD 15/16, Teilpaket 8 "Retry"). Bereits gesendete Zeilen sind
-// unantastbar.
-export async function retryBandSend(anfrageBandId: string): Promise<RetryOutcome> {
-  const client = createAdminClient();
-  const { data: row } = await client
+// Admin-Retry fuer eine EINZELNE fehlgeschlagene/ungeklaerte/veraltet-
+// ausstehende Band-Mail. Verwendet unveraendert denselben
+// provider_idempotency_key sowie Empfaenger-/Reply-To-/Betreff-/
+// Body-Snapshot wie beim urspruenglichen Versuch. Bereits gesendete Zeilen
+// sind unantastbar; frisches 'ausstehend' (< 5 Minuten) ist bewusst NICHT
+// retrybar (moeglicherweise laeuft noch ein echter Versuch).
+export async function retryBandSend(anfrageBandId: string, deps: AnfrageServiceDeps): Promise<RetryOutcome> {
+  const { data: row } = await deps.client
     .from('anfrage_bands')
-    .select('id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at')
+    .select(
+      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at'
+    )
     .eq('id', anfrageBandId)
     .maybeSingle();
 
   if (!row) return { ok: false, reason: 'not_found' };
-  if (row.send_status === 'gesendet') return { ok: false, reason: 'already_sent' };
-  if (row.send_status === 'ungeklaert' && row.last_attempt_at) {
-    if (!isWithinProviderIdempotencyProtectionWindow(new Date(row.last_attempt_at), new Date())) {
-      return { ok: false, reason: 'protection_window_expired' };
-    }
-  }
 
-  await sendAndPersistBandMail(client, row as AnfrageBandSendRow);
-  await recomputeOverallStatus(client, row.anfrage_id);
+  const eligibility = evaluateRetryEligibility({
+    status: row.send_status,
+    lastAttemptAt: row.last_attempt_at,
+    createdAt: row.created_at,
+    now: new Date(),
+  });
+  if (!eligibility.eligible) return { ok: false, reason: eligibility.reason };
+
+  await sendAndPersistBandMail(deps.client, row as AnfrageBandSendRow, deps.getResendClient);
+  await recomputeOverallStatus(deps.client, row.anfrage_id);
   return { ok: true };
 }
 
 // Admin-Retry fuer die Veranstalter-Bestaetigung -- identische Regeln wie
 // retryBandSend, nur auf anfragen.confirmation_* statt anfrage_bands.
-export async function retryConfirmation(anfrageId: string): Promise<RetryOutcome> {
-  const client = createAdminClient();
-  const { data: row } = await client
+export async function retryConfirmation(anfrageId: string, deps: AnfrageServiceDeps): Promise<RetryOutcome> {
+  const { data: row } = await deps.client
     .from('anfragen')
-    .select('id, confirmation_status, confirmation_last_attempt_at')
+    .select(
+      'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at'
+    )
     .eq('id', anfrageId)
     .maybeSingle();
 
   if (!row) return { ok: false, reason: 'not_found' };
-  if (row.confirmation_status === 'gesendet') return { ok: false, reason: 'already_sent' };
-  if (row.confirmation_status === 'ungeklaert' && row.confirmation_last_attempt_at) {
-    if (!isWithinProviderIdempotencyProtectionWindow(new Date(row.confirmation_last_attempt_at), new Date())) {
-      return { ok: false, reason: 'protection_window_expired' };
-    }
-  }
 
-  await sendAndPersistConfirmation(client, anfrageId);
+  const eligibility = evaluateRetryEligibility({
+    status: row.confirmation_status,
+    lastAttemptAt: row.confirmation_last_attempt_at,
+    createdAt: row.created_at,
+    now: new Date(),
+  });
+  if (!eligibility.eligible) return { ok: false, reason: eligibility.reason };
+
+  await sendAndPersistConfirmation(deps.client, row as AnfrageConfirmationRow, deps.getResendClient);
   return { ok: true };
 }

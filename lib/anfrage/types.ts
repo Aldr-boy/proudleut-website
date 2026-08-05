@@ -59,6 +59,10 @@ export type SubmitAnfrageResult =
   | { kind: 'bot_silent' }
   | { kind: 'validation_error'; message: string }
   | { kind: 'rate_limited'; retryAfterSeconds: number }
+  // Rate-Limit-Pruefung selbst technisch fehlgeschlagen (RPC/Tabelle fehlt,
+  // Berechtigungsfehler, unerwartete Antwort) -- fail-closed (Codex-Nachtrag
+  // PR #26, Befund 3): keine Persistenz, kein Versand, neutrale Meldung.
+  | { kind: 'temporarily_unavailable' }
   | { kind: 'unresolvable_band'; bandName: string }
   | { kind: 'server_error' };
 

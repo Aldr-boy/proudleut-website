@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/admin/actions'
-import { isWithinProviderIdempotencyProtectionWindow } from '@/lib/anfrage/mailSend'
+import { evaluateRetryEligibility, STALE_PENDING_AFTER_MINUTES } from '@/lib/anfrage/staleness'
+import type { SendStatus } from '@/lib/anfrage/staleness'
 import { retryBandSendAction, retryConfirmationAction } from '../actions'
 
 export const metadata: Metadata = { title: 'Anfrage-Detail' }
@@ -11,8 +12,9 @@ export const dynamic = 'force-dynamic'
 const RETRY_ERROR_MESSAGES: Record<string, string> = {
   not_found: 'Eintrag nicht gefunden.',
   already_sent: 'Diese Mail wurde bereits erfolgreich versendet und wird nicht erneut gesendet.',
+  not_stale_yet: `Dieser Versand ist noch weniger als ${STALE_PENDING_AFTER_MINUTES} Minuten alt und wird nicht angezeigt, um einen moeglicherweise noch laufenden Versuch nicht zu duplizieren.`,
   protection_window_expired:
-    'Der 24-Stunden-Schutzzeitraum für diesen ungeklärten Versand ist abgelaufen. Aus Sicherheit vor Doppelzustellung ist kein automatischer erneuter Versand mehr möglich — bei Bedarf manuell klären.',
+    'Der 24-Stunden-Schutzzeitraum für diesen Versand ist abgelaufen. Aus Sicherheit vor Doppelzustellung ist kein automatischer erneuter Versand mehr möglich — bei Bedarf im Resend-Dashboard prüfen.',
 }
 
 type AnfrageDetail = {
@@ -63,6 +65,7 @@ type AnfrageBandDetail = {
   sent_at: string | null
   resend_message_id: string | null
   error_message: string | null
+  created_at: string
 }
 
 function formatDateTime(value: string | null): string {
@@ -185,11 +188,12 @@ export default async function AnfrageDetailPage({ params, searchParams }: PagePr
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-gray-900">Bands ({bands.length})</h2>
           {bands.map((b) => {
-            const canRetry = b.send_status === 'fehlgeschlagen' || b.send_status === 'ungeklaert'
-            const withinWindow =
-              b.send_status !== 'ungeklaert' || !b.last_attempt_at
-                ? true
-                : isWithinProviderIdempotencyProtectionWindow(new Date(b.last_attempt_at), now)
+            const eligibility = evaluateRetryEligibility({
+              status: b.send_status as SendStatus,
+              lastAttemptAt: b.last_attempt_at,
+              createdAt: b.created_at,
+              now,
+            })
             return (
               <div key={b.id} className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -213,12 +217,14 @@ export default async function AnfrageDetailPage({ params, searchParams }: PagePr
                     <div className="col-span-2"><dt className="text-gray-500">Fehlermeldung</dt><dd className="text-red-700">{b.error_message}</dd></div>
                   )}
                 </dl>
-                {b.send_status === 'ungeklaert' && !withinWindow && (
+                {!eligibility.eligible && eligibility.reason === 'protection_window_expired' && (
                   <p className="mt-3 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-lg p-2">
-                    Ungeklärter Versandzustand außerhalb des 24-Stunden-Schutzzeitraums — eine Doppelzustellung kann nicht sicher ausgeschlossen werden. Kein automatischer Retry möglich.
+                    {b.send_status === 'ausstehend'
+                      ? 'Dieser Versand ist seit über 24 Stunden veraltet ausstehend — eine Doppelzustellung kann nicht sicher ausgeschlossen werden. Kein automatischer Retry möglich.'
+                      : 'Ungeklärter Versandzustand außerhalb des 24-Stunden-Schutzzeitraums — eine Doppelzustellung kann nicht sicher ausgeschlossen werden. Kein automatischer Retry möglich.'}
                   </p>
                 )}
-                {canRetry && withinWindow && (
+                {eligibility.eligible && (
                   <form action={retryBandSendAction} className="mt-4">
                     <input type="hidden" name="anfrage_id" value={anfrage.id} />
                     <input type="hidden" name="anfrage_band_id" value={b.id} />
@@ -257,20 +263,22 @@ export default async function AnfrageDetailPage({ params, searchParams }: PagePr
             )}
           </dl>
           {(() => {
-            const canRetryConfirmation =
-              anfrage.confirmation_status === 'fehlgeschlagen' || anfrage.confirmation_status === 'ungeklaert'
-            const withinWindow =
-              anfrage.confirmation_status !== 'ungeklaert' || !anfrage.confirmation_last_attempt_at
-                ? true
-                : isWithinProviderIdempotencyProtectionWindow(new Date(anfrage.confirmation_last_attempt_at), now)
-            if (anfrage.confirmation_status === 'ungeklaert' && !withinWindow) {
+            const eligibility = evaluateRetryEligibility({
+              status: anfrage.confirmation_status as SendStatus,
+              lastAttemptAt: anfrage.confirmation_last_attempt_at,
+              createdAt: anfrage.created_at,
+              now,
+            })
+            if (!eligibility.eligible && eligibility.reason === 'protection_window_expired') {
               return (
                 <p className="mt-3 text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded-lg p-2">
-                  Ungeklärter Versandzustand außerhalb des 24-Stunden-Schutzzeitraums — eine Doppelzustellung kann nicht sicher ausgeschlossen werden. Kein automatischer Retry möglich.
+                  {anfrage.confirmation_status === 'ausstehend'
+                    ? 'Diese Bestätigung ist seit über 24 Stunden veraltet ausstehend — eine Doppelzustellung kann nicht sicher ausgeschlossen werden. Kein automatischer Retry möglich.'
+                    : 'Ungeklärter Versandzustand außerhalb des 24-Stunden-Schutzzeitraums — eine Doppelzustellung kann nicht sicher ausgeschlossen werden. Kein automatischer Retry möglich.'}
                 </p>
               )
             }
-            if (canRetryConfirmation && withinWindow) {
+            if (eligibility.eligible) {
               return (
                 <form action={retryConfirmationAction} className="mt-4">
                   <input type="hidden" name="anfrage_id" value={anfrage.id} />

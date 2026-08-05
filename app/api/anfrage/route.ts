@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { extractClientIp } from '@/lib/anfrage/clientIp';
 import { hashClientIp } from '@/lib/anfrage/rateLimit';
 import { submitAnfrage } from '@/lib/anfrage/service';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getResendClient } from '@/lib/resend/client';
 
 // Nativer Anfrage-Endpunkt (Block L-A1): Next.js -> Supabase -> Resend ->
 // Admin-Nachweis. Ersetzt den bisherigen Make-Webhook-Forwarder. Der
@@ -23,11 +25,22 @@ export async function POST(req: NextRequest) {
   try {
     ipHash = hashClientIp(clientIp);
   } catch (err) {
-    console.error('[api/anfrage] Rate-Limit-Konfiguration fehlt', err);
-    return NextResponse.json({ error: 'Konfigurationsfehler – bitte später erneut versuchen' }, { status: 500 });
+    // Fehlendes/ungueltiges ANFRAGE_RATE_LIMIT_SALT ist ebenfalls ein
+    // fail-closed-Fall (Codex-Nachtrag PR #26, Befund 3) -- keine
+    // Persistenz, kein Versand, dieselbe neutrale Meldung wie bei einem
+    // technischen Rate-Limit-RPC-Fehler.
+    console.error('[api/anfrage] Rate-Limit-Konfiguration fehlt, fail-closed', err);
+    return NextResponse.json(
+      { error: 'Deine Anfrage kann gerade nicht verarbeitet werden. Bitte versuche es in einigen Minuten erneut.' },
+      { status: 503 }
+    );
   }
 
-  const result = await submitAnfrage(body, { ipHash });
+  const result = await submitAnfrage(
+    body,
+    { ipHash },
+    { client: createAdminClient(), getResendClient }
+  );
 
   switch (result.kind) {
     case 'bot_silent':
@@ -52,6 +65,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Zu viele Anfragen — bitte versuche es in Kürze erneut.' },
         { status: 429, headers: { 'Retry-After': String(result.retryAfterSeconds) } }
+      );
+
+    case 'temporarily_unavailable':
+      // Rate-Limit-Pruefung selbst technisch fehlgeschlagen (fail-closed,
+      // siehe lib/anfrage/rateLimit.ts) -- keine Persistenz, kein Versand,
+      // keine internen Fehlerdetails an den Client. Der clientseitige
+      // Idempotency-Key bleibt beim Retry unveraendert (AnfrageModal setzt
+      // ihn nur bei res.ok zurueck).
+      return NextResponse.json(
+        { error: 'Deine Anfrage kann gerade nicht verarbeitet werden. Bitte versuche es in einigen Minuten erneut.' },
+        { status: 503 }
       );
 
     case 'unresolvable_band':
