@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isValidContactEmail, mapCreateBandRpcError } from './bandContactValidation.ts'
+import { isValidContactEmail, mapCreateBandRpcError, mapPrimaryContactPromotionError } from './bandContactValidation.ts'
 
 // ── Anfrage-E-Mail-Pflichtfeld beim Anlegen einer neuen Band ────────────
 
@@ -51,4 +51,27 @@ test('mapCreateBandRpcError: unbekannter Code faellt auf generische form-Fehlerm
   const result = mapCreateBandRpcError({ code: 'XX999', message: 'irgendein Fehler' })
   assert.equal(result.field, 'form')
   assert.match(result.message, /irgendein Fehler/)
+})
+
+// ── Codex-Nachtrag PR #26, Befund 4: Fehlerabbildung aus
+//    fn_set_primary_inquiry_contact.sql (atomarer Primaerkontakt-Wechsel) ─
+
+test('mapPrimaryContactPromotionError: PC001 (Band nicht gefunden) -> invalid_contact', () => {
+  assert.equal(mapPrimaryContactPromotionError({ code: 'PC001' }), 'invalid_contact')
+})
+
+test('mapPrimaryContactPromotionError: PC002 (Kontakt nicht gefunden) -> invalid_contact', () => {
+  assert.equal(mapPrimaryContactPromotionError({ code: 'PC002' }), 'invalid_contact')
+})
+
+test('mapPrimaryContactPromotionError: PC003 (Kontakt gehoert nicht zur Band) -> invalid_contact', () => {
+  assert.equal(mapPrimaryContactPromotionError({ code: 'PC003' }), 'invalid_contact')
+})
+
+test('mapPrimaryContactPromotionError: PC004 (ungueltige E-Mail bei aktiver Band) -> primary_email_required_active', () => {
+  assert.equal(mapPrimaryContactPromotionError({ code: 'PC004' }), 'primary_email_required_active')
+})
+
+test('mapPrimaryContactPromotionError: unbekannter Code faellt auf db_error zurueck', () => {
+  assert.equal(mapPrimaryContactPromotionError({ code: 'XX999' }), 'db_error')
 })

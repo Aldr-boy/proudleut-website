@@ -11,6 +11,7 @@ import { deleteBandImageIfUnreferenced } from '@/lib/bandImages/deleteBandImageI
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import { BAND_CARD_REVALIDATION_PATHS } from '@/lib/bandImages/cardRevalidation'
 import { requireAdminSession } from '@/lib/admin/requireAdminSession'
+import { mapPrimaryContactPromotionError } from '@/lib/admin/bandContactValidation'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -285,18 +286,24 @@ export async function createContactAction(formData: FormData): Promise<never> {
   }
 
   if (is_primary_inquiry) {
-    // Schritt 1: Andere Primärkontakte der Band clearen
-    const { error: clearError } = await client
+    // Codex-Nachtrag PR #26, Befund 4: Kontakt wird zunaechst als
+    // NICHT-primaer angelegt, dann atomar ueber set_primary_inquiry_contact()
+    // befoerdert (supabase/fn_set_primary_inquiry_contact.sql). Die RPC
+    // validiert die E-Mail (bei aktiver Band verpflichtend) und raeumt einen
+    // bisherigen Primaerkontakt in DERSELBEN Transaktion ab -- kein
+    // Zwischenzustand, in dem die Band ohne jeden primaeren Kontakt waere.
+    const { data: inserted, error: insertError } = await client
       .from('band_contacts')
-      .update({ is_primary_inquiry: false })
-      .eq('band_id', band_id)
-    if (clearError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(clearError)}`)
-
-    // Schritt 2: Zielkontakt anlegen mit is_primary_inquiry = true
-    const { error: insertError } = await client
-      .from('band_contacts')
-      .insert({ ...payload, is_primary_inquiry: true })
+      .insert({ ...payload, is_primary_inquiry: false })
+      .select('id')
+      .single()
     if (insertError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(insertError)}`)
+
+    const { error: promoteError } = await client.rpc('set_primary_inquiry_contact', {
+      p_band_id: band_id,
+      p_contact_id: inserted!.id,
+    })
+    if (promoteError) redirect(`/admin/bands/${band_id}?contact_error=${mapPrimaryContactPromotionError(promoteError)}`)
   } else {
     const { error: insertError } = await client
       .from('band_contacts')
@@ -381,20 +388,24 @@ export async function updateContactAction(formData: FormData): Promise<never> {
   }
 
   if (is_primary_inquiry) {
-    // Schritt 1: Andere Kontakte der Band auf false setzen
-    const { error: clearError } = await client
-      .from('band_contacts')
-      .update({ is_primary_inquiry: false })
-      .eq('band_id', band_id)
-      .neq('id', contact_id)
-    if (clearError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(clearError)}`)
-
-    // Schritt 2: Zielkontakt aktualisieren mit is_primary_inquiry = true
+    // Codex-Nachtrag PR #26, Befund 4: erst die eigentlichen Kontaktfelder
+    // aktualisieren (is_primary_inquiry bewusst NICHT in diesem Schritt
+    // gesetzt), dann atomar ueber set_primary_inquiry_contact() befoerdern
+    // -- die RPC validiert die (soeben gespeicherte) E-Mail bei aktiver Band
+    // und raeumt einen bisherigen Primaerkontakt in DERSELBEN Transaktion
+    // ab. Schlaegt die Befoerderung fehl, bleibt ein zuvor primaerer
+    // ANDERER Kontakt unveraendert primaer.
     const { error: updateError } = await client
       .from('band_contacts')
-      .update({ ...payload, is_primary_inquiry: true })
+      .update(payload)
       .eq('id', contact_id)
     if (updateError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(updateError)}`)
+
+    const { error: promoteError } = await client.rpc('set_primary_inquiry_contact', {
+      p_band_id: band_id,
+      p_contact_id: contact_id,
+    })
+    if (promoteError) redirect(`/admin/bands/${band_id}?contact_error=${mapPrimaryContactPromotionError(promoteError)}`)
   } else {
     const { error: updateError } = await client
       .from('band_contacts')

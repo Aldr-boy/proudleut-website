@@ -37,3 +37,26 @@ export function mapCreateBandRpcError(error: { code?: string; message?: string }
       return { field: 'form', message: `Datenbankfehler: ${error.message ?? 'unbekannt'}` };
   }
 }
+
+// Bildet die SQLSTATE-Fehlercodes aus
+// supabase/fn_set_primary_inquiry_contact.sql (Codex-Nachtrag PR #26,
+// Befund 4) auf die bestehenden Kontakt-Fehlercodes in
+// app/admin/bands/[id]/actions.ts ab -- PC001-PC003 sind
+// Existenz-/Zugehoerigkeitsprobleme (wie der bereits vorhandene
+// 'invalid_contact'-Fall), PC004 ist exakt derselbe Fall wie das bereits
+// bestehende 'primary_email_required_active' (E-Mail einer aktiven Bands
+// primaerem Kontakt darf nicht ungueltig/leer sein).
+export function mapPrimaryContactPromotionError(
+  error: { code?: string; message?: string }
+): 'invalid_contact' | 'primary_email_required_active' | 'db_error' {
+  switch (error.code) {
+    case 'PC001':
+    case 'PC002':
+    case 'PC003':
+      return 'invalid_contact';
+    case 'PC004':
+      return 'primary_email_required_active';
+    default:
+      return 'db_error';
+  }
+}
