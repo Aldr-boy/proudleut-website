@@ -215,6 +215,8 @@ const CONTACT_ERROR_MESSAGES: Record<string, string> = {
   check_failed: 'Ungültiger Wert (Datenbankprüfung fehlgeschlagen).',
   invalid_contact: 'Kontakt nicht gefunden oder nicht dieser Band zugeordnet.',
   db_error: 'Datenbankfehler – bitte erneut versuchen.',
+  primary_required_active: 'Diese aktive Band würde dadurch ohne primären Anfragekontakt bleiben. Bitte zuerst einen anderen gültigen primären Kontakt festlegen.',
+  primary_email_required_active: 'Die E-Mail-Adresse des primären Anfragekontakts einer aktiven Band darf nicht geleert werden.',
 }
 
 type BandContact = {

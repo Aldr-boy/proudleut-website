@@ -11,6 +11,7 @@ import { deleteBandImageIfUnreferenced } from '@/lib/bandImages/deleteBandImageI
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import { BAND_CARD_REVALIDATION_PATHS } from '@/lib/bandImages/cardRevalidation'
 import { requireAdminSession } from '@/lib/admin/requireAdminSession'
+import { mapContactWriteError } from '@/lib/admin/bandContactValidation'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -114,6 +115,24 @@ export async function updateBandAction(formData: FormData): Promise<never> {
 
   const client = createAdminClient()
 
+  // Kontaktintegritaet (Produktentscheidung 23 / DoD 25): eine Band darf
+  // nicht auf 'active' gesetzt werden, ohne einen gueltigen primaeren
+  // Anfragekontakt zu besitzen — sonst waere sie ueber das native
+  // Anfragesystem anfragbar, ohne dass eine Zustellung moeglich waere.
+  if (data.status === 'active') {
+    const { data: primaryContact } = await client
+      .from('band_contacts')
+      .select('email')
+      .eq('band_id', id)
+      .eq('is_primary_inquiry', true)
+      .maybeSingle()
+    if (!primaryContact?.email) {
+      const p = new URLSearchParams()
+      p.set('e_status', 'Aktivierung nicht möglich: kein gültiger primärer Anfragekontakt vorhanden. Bitte zuerst einen Anfragekontakt mit E-Mail hinterlegen.')
+      redirect(`/admin/bands/${id}?${p.toString()}`)
+    }
+  }
+
   const { error: bandError } = await client
     .from('bands')
     .update({
@@ -186,6 +205,8 @@ type ContactErrorCode =
   | 'check_failed'
   | 'invalid_contact'
   | 'db_error'
+  | 'primary_required_active'
+  | 'primary_email_required_active'
 
 function validateContact(data: {
   contact_name: string
@@ -202,17 +223,6 @@ function validateContact(data: {
     return 'invalid_role'
   }
   return null
-}
-
-function pgContactErrorCode(error: { code?: string; message?: string }): ContactErrorCode {
-  if (error.code === '23505') {
-    if (error.message?.includes('idx_band_contacts_unique_role')) return 'duplicate_role'
-    if (error.message?.includes('idx_band_contacts_one_primary_per_band')) return 'primary_conflict'
-    // Constraint name not identifiable → neutral fallback
-    return 'duplicate_role'
-  }
-  if (error.code === '23514') return 'check_failed'
-  return 'db_error'
 }
 
 // ─────────────────────────────────────────
@@ -255,34 +265,24 @@ export async function createContactAction(formData: FormData): Promise<never> {
     if (roleConflict) redirect(`/admin/bands/${band_id}?contact_error=duplicate_role`)
   }
 
-  const payload = {
-    band_id,
-    contact_name: nullIfEmpty(contact_name),
-    email: nullIfEmpty(email),
-    phone: nullIfEmpty(phone),
-    contact_role: nullIfEmpty(contact_role),
-    is_public,
-  }
-
-  if (is_primary_inquiry) {
-    // Schritt 1: Andere Primärkontakte der Band clearen
-    const { error: clearError } = await client
-      .from('band_contacts')
-      .update({ is_primary_inquiry: false })
-      .eq('band_id', band_id)
-    if (clearError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(clearError)}`)
-
-    // Schritt 2: Zielkontakt anlegen mit is_primary_inquiry = true
-    const { error: insertError } = await client
-      .from('band_contacts')
-      .insert({ ...payload, is_primary_inquiry: true })
-    if (insertError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(insertError)}`)
-  } else {
-    const { error: insertError } = await client
-      .from('band_contacts')
-      .insert({ ...payload, is_primary_inquiry: false })
-    if (insertError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(insertError)}`)
-  }
+  // Codex-Nachtrag PR #26, zweiter Review, Befund 1: Kontakt anlegen und
+  // optionaler Primaerwechsel laufen jetzt in EINEM Datenbankvorgang ueber
+  // create_band_contact() (supabase/fn_set_primary_inquiry_contact.sql).
+  // Schlaegt irgendeine Pruefung (Validierung, Rollenkonflikt, bei aktiver
+  // Band fehlende gueltige E-Mail fuer einen primaeren Kontakt) fehl, bricht
+  // die Funktion VOR jedem INSERT ab -- es kann keine teilweise angelegte,
+  // nicht-primaere Kontaktzeile zurueckbleiben, anders als beim vorherigen
+  // zweistufigen INSERT-dann-RPC-Ablauf.
+  const { error: createError } = await client.rpc('create_band_contact', {
+    p_band_id: band_id,
+    p_contact_name: contact_name,
+    p_email: email,
+    p_phone: phone,
+    p_contact_role: contact_role,
+    p_is_public: is_public,
+    p_is_primary_inquiry: is_primary_inquiry,
+  })
+  if (createError) redirect(`/admin/bands/${band_id}?contact_error=${mapContactWriteError(createError)}`)
 
   redirect(`/admin/bands/${band_id}?contact_created=1`)
 }
@@ -308,7 +308,7 @@ export async function updateContactAction(formData: FormData): Promise<never> {
   // Ownership-Prüfung: Kontakt laden und band_id aus DB gegen Form-Wert prüfen
   const { data: existingContact } = await client
     .from('band_contacts')
-    .select('band_id')
+    .select('band_id, is_primary_inquiry')
     .eq('id', contact_id)
     .maybeSingle()
   if (!existingContact || existingContact.band_id !== band_id) {
@@ -318,6 +318,27 @@ export async function updateContactAction(formData: FormData): Promise<never> {
   // Feldvalidierung
   const validationError = validateContact({ contact_name, email, phone, contact_role })
   if (validationError) redirect(`/admin/bands/${band_id}?contact_error=${validationError}`)
+
+  // Kontaktintegritaet (Produktentscheidung 23 / DoD 25): der letzte
+  // gueltige primaere Anfragekontakt einer aktiven Band darf ueber diese
+  // Aktion weder seine Primaer-Markierung noch eine gueltige E-Mail
+  // verlieren. Ein Wechsel auf einen ANDEREN Kontakt bleibt moeglich —
+  // dieser Guard greift nur, solange genau dieser Kontakt noch primaer ist.
+  if (existingContact.is_primary_inquiry) {
+    const { data: bandRow } = await client
+      .from('bands')
+      .select('status')
+      .eq('id', band_id)
+      .maybeSingle()
+    if (bandRow?.status === 'active') {
+      if (!is_primary_inquiry) {
+        redirect(`/admin/bands/${band_id}?contact_error=primary_required_active`)
+      }
+      if (!email) {
+        redirect(`/admin/bands/${band_id}?contact_error=primary_email_required_active`)
+      }
+    }
+  }
 
   // Rollenkonflikt-Vorabprüfung (vor jedem Schreibvorgang)
   if (contact_role) {
@@ -331,36 +352,25 @@ export async function updateContactAction(formData: FormData): Promise<never> {
     if (roleConflict) redirect(`/admin/bands/${band_id}?contact_error=duplicate_role`)
   }
 
-  const payload = {
-    contact_name: nullIfEmpty(contact_name),
-    email: nullIfEmpty(email),
-    phone: nullIfEmpty(phone),
-    contact_role: nullIfEmpty(contact_role),
-    is_public,
-  }
-
-  if (is_primary_inquiry) {
-    // Schritt 1: Andere Kontakte der Band auf false setzen
-    const { error: clearError } = await client
-      .from('band_contacts')
-      .update({ is_primary_inquiry: false })
-      .eq('band_id', band_id)
-      .neq('id', contact_id)
-    if (clearError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(clearError)}`)
-
-    // Schritt 2: Zielkontakt aktualisieren mit is_primary_inquiry = true
-    const { error: updateError } = await client
-      .from('band_contacts')
-      .update({ ...payload, is_primary_inquiry: true })
-      .eq('id', contact_id)
-    if (updateError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(updateError)}`)
-  } else {
-    const { error: updateError } = await client
-      .from('band_contacts')
-      .update({ ...payload, is_primary_inquiry: false })
-      .eq('id', contact_id)
-    if (updateError) redirect(`/admin/bands/${band_id}?contact_error=${pgContactErrorCode(updateError)}`)
-  }
+  // Codex-Nachtrag PR #26, zweiter Review, Befund 2: Feldupdate und
+  // optionaler Primaerwechsel (inkl. Zuruecksetzen eines bisherigen
+  // Primaerkontakts) laufen jetzt in EINEM Datenbankvorgang ueber
+  // update_band_contact() (supabase/fn_set_primary_inquiry_contact.sql).
+  // Schlaegt irgendeine Pruefung fehl, bricht die Funktion VOR jedem UPDATE
+  // ab -- der Zielkontakt bleibt in JEDEM Fehlerfall vollstaendig
+  // unveraendert, ein zuvor primaerer ANDERER Kontakt bleibt unangetastet
+  // primaer.
+  const { error: updateError } = await client.rpc('update_band_contact', {
+    p_contact_id: contact_id,
+    p_band_id: band_id,
+    p_contact_name: contact_name,
+    p_email: email,
+    p_phone: phone,
+    p_contact_role: contact_role,
+    p_is_public: is_public,
+    p_is_primary_inquiry: is_primary_inquiry,
+  })
+  if (updateError) redirect(`/admin/bands/${band_id}?contact_error=${mapContactWriteError(updateError)}`)
 
   redirect(`/admin/bands/${band_id}?contact_saved=1`)
 }
@@ -379,11 +389,24 @@ export async function deleteContactAction(formData: FormData): Promise<never> {
 
   const { data: existingContact } = await client
     .from('band_contacts')
-    .select('band_id')
+    .select('band_id, is_primary_inquiry')
     .eq('id', contact_id)
     .maybeSingle()
   if (!existingContact || existingContact.band_id !== band_id) {
     redirect(`/admin/bands/${band_id}?contact_error=invalid_contact`)
+  }
+
+  // Kontaktintegritaet (Produktentscheidung 23 / DoD 25): der primaere
+  // Anfragekontakt einer aktiven Band darf nicht geloescht werden.
+  if (existingContact.is_primary_inquiry) {
+    const { data: bandRow } = await client
+      .from('bands')
+      .select('status')
+      .eq('id', band_id)
+      .maybeSingle()
+    if (bandRow?.status === 'active') {
+      redirect(`/admin/bands/${band_id}?contact_error=primary_required_active`)
+    }
   }
 
   const { error } = await client

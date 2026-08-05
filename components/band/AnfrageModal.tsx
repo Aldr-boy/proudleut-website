@@ -86,6 +86,13 @@ function XIcon() {
   );
 }
 
+function generateIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return `web-${crypto.randomUUID()}`;
+  }
+  return `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 const inputClass =
   'w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors ' +
   'bg-[#111] border border-[rgba(196,168,216,0.2)] text-[#ede8e3] ' +
@@ -98,6 +105,13 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const openedAtRef = useRef<number>(0);
+  // Stabil fuer einen gesamten Anfragevorgang (ein Dialog-Aufenthalt), auch
+  // ueber mehrere Submit-Versuche hinweg (technischer Retry nach z. B.
+  // Netzwerkfehler) -- wird NICHT bei jedem Render/Klick neu erzeugt,
+  // sondern nur beim Oeffnen des Dialogs und nach erfolgreichem Eingang
+  // zurueckgesetzt. Der Server erzwingt die eigentliche Idempotenz ueber
+  // anfragen.idempotency_key (UNIQUE-Constraint).
+  const idempotencyKeyRef = useRef<string>('');
   const [form, setForm] = useState<AnfrageFormState>(EMPTY_FORM);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
   const [submitError, setSubmitError] = useState('');
@@ -120,6 +134,7 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
     if (!dialog) return;
     if (isOpen) {
       openedAtRef.current = Date.now();
+      if (!idempotencyKeyRef.current) idempotencyKeyRef.current = generateIdempotencyKey();
       if (!dialog.open) dialog.showModal();
     } else {
       if (dialog.open) dialog.close();
@@ -132,6 +147,7 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
       setSubmitStatus('idle');
       setSubmitError('');
       setDatenschutzError('');
+      idempotencyKeyRef.current = '';
     }
   }, [isOpen]);
 
@@ -185,12 +201,12 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bands: bands.map(({ slug, name }) => ({ slug, name })),
-          eventtyp: form.eventtyp === 'sonstiges' ? 'Sonstiges' : form.eventtyp,
-          eventtyp_custom: form.eventtyp === 'sonstiges' ? form.eventtyp_custom : '',
-          datum: form.datum,
-          ort: form.ort,
-          veranstaltungsort: form.veranstaltungsort,
+          idempotencyKey: idempotencyKeyRef.current,
+          bandSlugs: bands.map(({ slug }) => slug),
+          anlass: form.eventtyp === 'sonstiges' ? form.eventtyp_custom : form.eventtyp,
+          datumText: form.datum,
+          plzOrt: form.ort,
+          location: form.veranstaltungsort,
           gaestezahl: form.gaestezahl,
           spielzeit: form.spielzeit,
           nachricht: form.nachricht,
@@ -198,8 +214,8 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
           nachname: form.nachname,
           email: form.email,
           telefon: form.telefon,
-          firma_hidden: firmaHidden,
-          website_hidden: websiteHidden,
+          firmaHidden,
+          websiteHidden,
           datenschutz: form.datenschutz,
           openedAt: openedAtRef.current,
         }),
@@ -207,11 +223,17 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // idempotencyKeyRef bleibt bei einem Fehlschlag unveraendert stehen
+        // -- ein erneuter Klick ist ein technischer Retry desselben
+        // Vorgangs und muss denselben Key wiederverwenden.
         setSubmitError((data as { error?: string }).error ?? 'Etwas ist schiefgelaufen – bitte versuche es erneut.');
         setSubmitStatus('error');
         return;
       }
 
+      // Eindeutig erfolgreicher Eingang: Key zuruecksetzen, ein spaeterer
+      // neuer Anfragevorgang bekommt beim naechsten Oeffnen einen frischen.
+      idempotencyKeyRef.current = '';
       setSubmitStatus('success');
       setTimeout(() => {
         onSuccess?.();
@@ -339,16 +361,19 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
 
               <div>
                 <label htmlFor="af-datum" className="block text-sm text-[#ede8e3] mb-1">
-                  Datum
+                  Wunschtermin oder möglicher Zeitraum
                 </label>
                 <input
                   id="af-datum"
                   type="text"
                   value={form.datum}
                   onChange={(e) => set('datum', e.target.value)}
-                  placeholder="TT.MM.JJJJ"
+                  placeholder="z. B. 20.06.2027 oder September/Oktober 2026"
                   className={inputClass}
                 />
+                <p className="text-xs text-[#6b5f65] mt-1">
+                  Auch ein Zeitraum oder mehrere mögliche Termine sind möglich – ein festes Datum ist nicht nötig.
+                </p>
               </div>
 
               <div>
