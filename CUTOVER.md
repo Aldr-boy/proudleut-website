@@ -55,9 +55,19 @@ Im Supabase SQL Editor, in dieser Reihenfolge:
 1. `supabase/anfragesystem_native_migration.sql`
 2. `supabase/fn_create_anfrage_with_bands.sql`
 3. `supabase/fn_create_band_with_primary_contact.sql`
+4. `supabase/fn_set_primary_inquiry_contact.sql`
 
-Alle drei sind idempotent im Sinne von „einmalig auszuführen, noch nicht
+Alle vier sind idempotent im Sinne von „einmalig auszuführen, noch nicht
 ausgeführt" — keine der Dateien wurde bisher gegen Production ausgeführt.
+
+Hinweis zu Schritt 4: Die Datei `supabase/fn_set_primary_inquiry_contact.sql`
+enthält zwei Funktionen (`create_band_contact()` und `update_band_contact()`),
+die das Anlegen bzw. Bearbeiten eines Kontakts inklusive eines optionalen
+Primärwechsels vollständig atomar in einer Transaktion durchführen. Diese
+Datei ist eine Laufzeitvoraussetzung für `createContactAction`/
+`updateContactAction` in `app/admin/bands/[id]/actions.ts`. Ohne diese Datei
+schlägt jedes Anlegen oder Bearbeiten eines Bandkontakts im Admin fehl (RPC
+nicht gefunden).
 
 ## 4. Migration verifizieren
 
@@ -66,8 +76,16 @@ ausgeführt" — keine der Dateien wurde bisher gegen Production ausgeführt.
 - RLS aktiv, kein `anon`/`authenticated`-Zugriff (z. B. mit dem
   `NEXT_PUBLIC_SUPABASE_ANON_KEY` gegen `anfragen` lesen versuchen — muss
   leer/verweigert zurückkommen).
-- `select proname from pg_proc where proname in ('create_anfrage_with_bands','create_band_with_primary_contact','check_and_consume_anfrage_rate_limit');`
-  → alle drei vorhanden.
+- `select proname from pg_proc where proname in ('create_anfrage_with_bands','create_band_with_primary_contact','check_and_consume_anfrage_rate_limit','create_band_contact','update_band_contact');`
+  → alle fünf vorhanden.
+- Funktionsprüfung `create_band_contact()`/`update_band_contact()` (an einer
+  Test-/Preview-Band, nicht an einer echten Production-Band): einen Kontakt
+  ohne primäres Flag anlegen → erscheint sofort im Admin; denselben Kontakt
+  anschließend zum primären Anfragekontakt befördern → vorheriger primärer
+  Kontakt (falls vorhanden) wird atomar zurückgesetzt; Versuch, bei einer
+  aktiven Band einen Kontakt ohne gültige E-Mail primär zu setzen → wird
+  mit klarer Fehlermeldung abgelehnt, kein Kontakt bleibt in einem
+  unerwarteten Zwischenzustand zurück.
 
 ## 5. Resend-Env-Variablen in Vercel setzen
 

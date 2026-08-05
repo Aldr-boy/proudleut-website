@@ -38,24 +38,53 @@ export function mapCreateBandRpcError(error: { code?: string; message?: string }
   }
 }
 
+export type ContactWriteErrorCode =
+  | 'missing_fields'
+  | 'too_long'
+  | 'invalid_role'
+  | 'invalid_email'
+  | 'duplicate_role'
+  | 'primary_conflict'
+  | 'check_failed'
+  | 'invalid_contact'
+  | 'primary_email_required_active'
+  | 'db_error';
+
 // Bildet die SQLSTATE-Fehlercodes aus
 // supabase/fn_set_primary_inquiry_contact.sql (Codex-Nachtrag PR #26,
-// Befund 4) auf die bestehenden Kontakt-Fehlercodes in
-// app/admin/bands/[id]/actions.ts ab -- PC001-PC003 sind
-// Existenz-/Zugehoerigkeitsprobleme (wie der bereits vorhandene
-// 'invalid_contact'-Fall), PC004 ist exakt derselbe Fall wie das bereits
-// bestehende 'primary_email_required_active' (E-Mail einer aktiven Bands
-// primaerem Kontakt darf nicht ungueltig/leer sein).
-export function mapPrimaryContactPromotionError(
-  error: { code?: string; message?: string }
-): 'invalid_contact' | 'primary_email_required_active' | 'db_error' {
+// zweiter Review, Befund 1+2 -- create_band_contact()/update_band_contact())
+// auf die bestehenden Kontakt-Fehlercodes/Admin-Meldungen in
+// app/admin/bands/[id]/actions.ts ab. CC001/CC010/CC011 sind Existenz-/
+// Zugehoerigkeitsprobleme, CC002-CC006 spiegeln die bisherige
+// clientseitige validateContact()-Klassifizierung, CC007 ist der bereits
+// bestehende 'primary_email_required_active'-Fall. Ein roher Postgres-
+// 23505 (Race gegen die UNIQUE-Indizes fuer Rolle/Primaerkontakt) bzw.
+// 23514 (CHECK-Constraint) fallen zusaetzlich auf die bereits etablierten
+// Faelle zurueck (identisches Muster wie das bisherige pgContactErrorCode).
+export function mapContactWriteError(error: { code?: string; message?: string }): ContactWriteErrorCode {
   switch (error.code) {
-    case 'PC001':
-    case 'PC002':
-    case 'PC003':
+    case 'CC001':
+    case 'CC010':
+    case 'CC011':
       return 'invalid_contact';
-    case 'PC004':
+    case 'CC002':
+      return 'missing_fields';
+    case 'CC003':
+      return 'too_long';
+    case 'CC004':
+      return 'invalid_email';
+    case 'CC005':
+      return 'invalid_role';
+    case 'CC006':
+      return 'duplicate_role';
+    case 'CC007':
       return 'primary_email_required_active';
+    case '23505':
+      if (error.message?.includes('idx_band_contacts_unique_role')) return 'duplicate_role';
+      if (error.message?.includes('idx_band_contacts_one_primary_per_band')) return 'primary_conflict';
+      return 'duplicate_role';
+    case '23514':
+      return 'check_failed';
     default:
       return 'db_error';
   }

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { isValidContactEmail, mapCreateBandRpcError, mapPrimaryContactPromotionError } from './bandContactValidation.ts'
+import { isValidContactEmail, mapCreateBandRpcError, mapContactWriteError } from './bandContactValidation.ts'
 
 // ── Anfrage-E-Mail-Pflichtfeld beim Anlegen einer neuen Band ────────────
 
@@ -53,25 +53,65 @@ test('mapCreateBandRpcError: unbekannter Code faellt auf generische form-Fehlerm
   assert.match(result.message, /irgendein Fehler/)
 })
 
-// ── Codex-Nachtrag PR #26, Befund 4: Fehlerabbildung aus
-//    fn_set_primary_inquiry_contact.sql (atomarer Primaerkontakt-Wechsel) ─
+// ── Codex-Nachtrag PR #26, zweiter Review, Befund 1+2: Fehlerabbildung aus
+//    fn_set_primary_inquiry_contact.sql (create_band_contact()/
+//    update_band_contact(), atomare Kontaktanlage/-bearbeitung inkl.
+//    optionalem Primaerwechsel) ────────────────────────────────────────
 
-test('mapPrimaryContactPromotionError: PC001 (Band nicht gefunden) -> invalid_contact', () => {
-  assert.equal(mapPrimaryContactPromotionError({ code: 'PC001' }), 'invalid_contact')
+test('mapContactWriteError: CC001 (Band nicht gefunden) -> invalid_contact', () => {
+  assert.equal(mapContactWriteError({ code: 'CC001' }), 'invalid_contact')
 })
 
-test('mapPrimaryContactPromotionError: PC002 (Kontakt nicht gefunden) -> invalid_contact', () => {
-  assert.equal(mapPrimaryContactPromotionError({ code: 'PC002' }), 'invalid_contact')
+test('mapContactWriteError: CC010 (Kontakt nicht gefunden) -> invalid_contact', () => {
+  assert.equal(mapContactWriteError({ code: 'CC010' }), 'invalid_contact')
 })
 
-test('mapPrimaryContactPromotionError: PC003 (Kontakt gehoert nicht zur Band) -> invalid_contact', () => {
-  assert.equal(mapPrimaryContactPromotionError({ code: 'PC003' }), 'invalid_contact')
+test('mapContactWriteError: CC011 (Kontakt gehoert nicht zur Band) -> invalid_contact', () => {
+  assert.equal(mapContactWriteError({ code: 'CC011' }), 'invalid_contact')
 })
 
-test('mapPrimaryContactPromotionError: PC004 (ungueltige E-Mail bei aktiver Band) -> primary_email_required_active', () => {
-  assert.equal(mapPrimaryContactPromotionError({ code: 'PC004' }), 'primary_email_required_active')
+test('mapContactWriteError: CC002 (Pflichtfelder fehlen) -> missing_fields', () => {
+  assert.equal(mapContactWriteError({ code: 'CC002' }), 'missing_fields')
 })
 
-test('mapPrimaryContactPromotionError: unbekannter Code faellt auf db_error zurueck', () => {
-  assert.equal(mapPrimaryContactPromotionError({ code: 'XX999' }), 'db_error')
+test('mapContactWriteError: CC003 (Feld zu lang) -> too_long', () => {
+  assert.equal(mapContactWriteError({ code: 'CC003' }), 'too_long')
+})
+
+test('mapContactWriteError: CC004 (ungueltige E-Mail) -> invalid_email', () => {
+  assert.equal(mapContactWriteError({ code: 'CC004' }), 'invalid_email')
+})
+
+test('mapContactWriteError: CC005 (ungueltige Rolle) -> invalid_role', () => {
+  assert.equal(mapContactWriteError({ code: 'CC005' }), 'invalid_role')
+})
+
+test('mapContactWriteError: CC006 (Rollenkonflikt) -> duplicate_role', () => {
+  assert.equal(mapContactWriteError({ code: 'CC006' }), 'duplicate_role')
+})
+
+test('mapContactWriteError: CC007 (ungueltige E-Mail bei aktiver Band als Primaerkontakt) -> primary_email_required_active', () => {
+  assert.equal(mapContactWriteError({ code: 'CC007' }), 'primary_email_required_active')
+})
+
+test('mapContactWriteError: roher Postgres 23505 auf Rollen-Index -> duplicate_role', () => {
+  assert.equal(
+    mapContactWriteError({ code: '23505', message: 'duplicate key value violates unique constraint "idx_band_contacts_unique_role"' }),
+    'duplicate_role'
+  )
+})
+
+test('mapContactWriteError: roher Postgres 23505 auf Primaerkontakt-Index -> primary_conflict', () => {
+  assert.equal(
+    mapContactWriteError({ code: '23505', message: 'duplicate key value violates unique constraint "idx_band_contacts_one_primary_per_band"' }),
+    'primary_conflict'
+  )
+})
+
+test('mapContactWriteError: 23514 (CHECK-Constraint) -> check_failed', () => {
+  assert.equal(mapContactWriteError({ code: '23514' }), 'check_failed')
+})
+
+test('mapContactWriteError: unbekannter Code faellt auf db_error zurueck', () => {
+  assert.equal(mapContactWriteError({ code: 'XX999' }), 'db_error')
 })
