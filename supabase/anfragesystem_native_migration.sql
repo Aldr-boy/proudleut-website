@@ -221,6 +221,28 @@ revoke all privileges on public.anfragen, public.anfrage_bands, public.anfrage_r
 -- "kein Zugriff", das ist hier ausdruecklich gewollt (siehe Kommentar
 -- oben: kein direkter anon-/authenticated-Zugriff auf diese Tabellen).
 
+-- service_role umgeht zwar RLS, benoetigt aber unabhaengig davon eigene
+-- Tabellen-Grants (RLS-Bypass ersetzt keine GRANTs). Das Default-ACL-Schema
+-- fuer vom postgres-Rolle angelegte Tabellen vergibt an service_role
+-- lediglich REFERENCES/TRIGGER/TRUNCATE/MAINTAIN, nicht aber SELECT/UPDATE
+-- (per Cutover-Test in einer isolierten Testumgebung bestaetigt) -- ohne
+-- diese expliziten Grants schlagen alle direkten Service-Role-Zugriffe aus
+-- lib/anfrage/service.ts (Statusupdates nach Resend-Aufrufen) und den
+-- Admin-Anfrageseiten (app/admin/anfragen/*) fehl.
+--
+-- Bewusst KEIN direktes INSERT fuer service_role: neue Anfragen entstehen
+-- ausschliesslich atomar ueber die SECURITY-DEFINER-Funktion
+-- create_anfrage_with_bands() (siehe supabase/fn_create_anfrage_with_bands.sql),
+-- die mit den Rechten ihres Eigentuemers laeuft, nicht mit denen des
+-- aufrufenden service_role. Ein zusaetzliches direktes INSERT-Recht wuerde
+-- diesen vorgesehenen Pfad unnoetig umgehbar machen (Codex-Befund PR #28).
+-- Das REVOKE steht bewusst vor dem GRANT, damit die Migration beim
+-- wiederholten Ausfuehren gegen ein Projekt mit einem aus einer frueheren
+-- Version dieser Datei stammenden INSERT-Grant idempotent den Zielzustand
+-- herstellt (GRANT allein entzieht kein zuvor vergebenes Recht).
+revoke insert on public.anfragen, public.anfrage_bands from service_role;
+grant select, update on public.anfragen, public.anfrage_bands to service_role;
+
 -- ------------------------------------------------------------
 -- 7. Atomare, race-freie Rate-Limit-Pruefung (SECURITY DEFINER)
 --
