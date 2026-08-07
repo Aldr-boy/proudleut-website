@@ -221,6 +221,16 @@ revoke all privileges on public.anfragen, public.anfrage_bands, public.anfrage_r
 -- "kein Zugriff", das ist hier ausdruecklich gewollt (siehe Kommentar
 -- oben: kein direkter anon-/authenticated-Zugriff auf diese Tabellen).
 
+-- service_role umgeht zwar RLS, benoetigt aber unabhaengig davon eigene
+-- Tabellen-Grants (RLS-Bypass ersetzt keine GRANTs). Das Default-ACL-Schema
+-- fuer vom postgres-Rolle angelegte Tabellen vergibt an service_role
+-- lediglich REFERENCES/TRIGGER/TRUNCATE/MAINTAIN, nicht aber SELECT/INSERT/
+-- UPDATE (per Cutover-Test in einer isolierten Testumgebung bestaetigt) --
+-- ohne diese expliziten Grants schlagen alle direkten Service-Role-Zugriffe
+-- aus lib/anfrage/service.ts (Statusupdates nach Resend-Aufrufen) und den
+-- Admin-Anfrageseiten (app/admin/anfragen/*) fehl.
+grant select, insert, update on public.anfragen, public.anfrage_bands to service_role;
+
 -- ------------------------------------------------------------
 -- 7. Atomare, race-freie Rate-Limit-Pruefung (SECURITY DEFINER)
 --
