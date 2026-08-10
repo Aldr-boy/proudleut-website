@@ -44,6 +44,7 @@ export type ParseResult =
 export type ResolvedBand = {
   bandId: string;
   name: string;
+  slug: string;
   recipientEmail: string;
 };
 

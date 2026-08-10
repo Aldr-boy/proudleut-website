@@ -27,10 +27,32 @@ export const MAX_LENGTHS = {
 // serverseitig geprueft und mit Zeitpunkt und Version dokumentiert".
 export const CURRENT_DATENSCHUTZ_VERSION = 'v1-2026';
 
-export const TEMPLATE_VERSION = 'v1';
+// Getrennte Template-Versionen je Mailtyp (Block "Bandanfrage-Mail V3",
+// A2-Entscheidung): Band-Mail und Veranstalter-Bestaetigung duerfen sich
+// unabhaengig voneinander weiterentwickeln, ohne dass eine gemeinsame
+// Konstante versehentlich beide gleichzeitig veraendert. Beide Werte sind
+// nach Erstversand eingefroren: bereits gesendete/persistierte Zeilen
+// behalten ihre urspruengliche template_version dauerhaft (siehe
+// lib/anfrage/service.ts, Retry-Dispatch). Eine spaetere Aenderung an der
+// Band-Mail-Gestaltung erhoeht BAND_TEMPLATE_VERSION auf einen neuen Wert,
+// veraendert v1/v2 aber nicht rueckwirkend.
+export const BAND_TEMPLATE_VERSION = 'v2';
+export const CONFIRMATION_TEMPLATE_VERSION = 'v1';
 
 export const ANFRAGE_SENDER_EMAIL = 'anfrage@proudleut.com';
 export const ANFRAGE_SENDER_NAME = 'proudleut.com';
+
+// Feste, oeffentliche Supabase-Storage-Assets fuer die Band-Mail V3
+// (proudleut.com zeigt vor dem separat geplanten L-A6-Domain-Cutover noch
+// nicht auf den Next.js-Build -- ein unter public/ abgelegtes Asset waere
+// deshalb keine stabile, versandtaugliche URL). Beide Dateien sind
+// proudleuts eigene, umgebungsunabhaengige Markenassets und bewusst als
+// feste Production-URL hinterlegt, nicht ueber NEXT_PUBLIC_SUPABASE_URL
+// hergeleitet.
+export const BAND_MAIL_LOGO_URL =
+  'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media/proudleut/proudleut_Logo_rgb_72dpi.png';
+export const BAND_MAIL_PORTRAIT_URL =
+  'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media/proudleut/Alexander%20Dressler.jpg';
 
 // /datenschutz (app/datenschutz/page.tsx) und /impressum
 // (app/impressum/page.tsx) sind seit Block "Impressum und Datenschutz"

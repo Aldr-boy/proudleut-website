@@ -17,6 +17,13 @@ export type SendMailParams = {
   subject: string;
   bodyText: string;
   idempotencyKey: string;
+  // Optional: bereits fertig gerendertes HTML (z. B. versionsspezifischer
+  // Band-Mail-Renderer, siehe lib/anfrage/service.ts). Wird dieser
+  // Parameter weggelassen, verhaelt sich die Funktion exakt wie zuvor und
+  // leitet html weiterhin aus subject/bodyText her -- die
+  // Veranstalter-Bestaetigung (Block "Bandanfrage-Mail V3": unveraendert)
+  // nutzt deshalb bewusst weiterhin keinen expliziten html-Parameter.
+  html?: string;
 };
 
 export type ResendEmailsClient = {
@@ -43,7 +50,7 @@ export async function sendMailViaResend(
   params: SendMailParams,
   resendClient: ResendEmailsClient
 ): Promise<MailSendOutcome> {
-  const html = renderHtmlFromTextSnapshot(params.subject, params.bodyText);
+  const html = params.html ?? renderHtmlFromTextSnapshot(params.subject, params.bodyText);
 
   try {
     const { data, error } = await resendClient.emails.send(

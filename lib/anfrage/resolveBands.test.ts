@@ -36,7 +36,7 @@ test('resolveActiveBandsWithContact: aktive Band mit gueltigem Kontakt wird aufg
   const result = await resolveActiveBandsWithContact(client, ['band-eins'])
   assert.deepEqual(result, {
     ok: true,
-    bands: [{ bandId: 'band-1', name: 'Band Eins', recipientEmail: 'kontakt@band-eins.de' }],
+    bands: [{ bandId: 'band-1', name: 'Band Eins', slug: 'band-eins', recipientEmail: 'kontakt@band-eins.de' }],
   })
 })
 

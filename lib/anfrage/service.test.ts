@@ -10,7 +10,13 @@ import {
 } from './service.ts'
 import type { AnfrageBandSendRow, AnfrageConfirmationRow } from './service.ts'
 import type { ResendEmailsClient } from './mailSend.ts'
+import { BAND_TEMPLATE_VERSION, CONFIRMATION_TEMPLATE_VERSION } from './constants.ts'
 
+// Default template_version = 'v1' -- bestehende Tests unten pruefen damit
+// weiterhin bewusst den eingefrorenen v1-Pfad (renderHtmlFromTextSnapshot),
+// unveraendert gegenueber vor Block "Bandanfrage-Mail V3". anfragen ist ein
+// realistischer Default fuer den v2-Dispatch, wird von v1-Tests aber nicht
+// gelesen.
 function bandRow(overrides: Partial<AnfrageBandSendRow> = {}): AnfrageBandSendRow {
   return {
     id: 'band-row-1',
@@ -24,6 +30,21 @@ function bandRow(overrides: Partial<AnfrageBandSendRow> = {}): AnfrageBandSendRo
     attempts: 0,
     last_attempt_at: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    template_version: 'v1',
+    band_name_snapshot: 'Band A',
+    anfragen: {
+      anlass: 'Hochzeit',
+      datum_text: '20.06.2027',
+      plz_ort: '80331 München',
+      location: 'Festscheune Müller',
+      telefon: '0151 1234567',
+      vorname: 'Anna',
+      nachname: 'Müller',
+      nachricht: 'Freuen uns sehr auf euch!',
+    },
+    // Block "Bandmail V3.1": eingebettet ueber den bereits bestehenden
+    // anfrage_bands.band_id-FK, wird von v1-Tests nicht gelesen.
+    bands: { slug: 'band-a' },
     ...overrides,
   }
 }
@@ -412,4 +433,213 @@ test('submitAnfrage: fail-closed Rate-Limit liefert temporarily_unavailable ohne
 
   assert.deepEqual(result, { kind: 'temporarily_unavailable' })
   assert.equal(bandsQueried, false)
+})
+
+// ── Block "Bandanfrage-Mail V3": v1/v2/unbekannt-Dispatch beim Versand ──
+
+test('sendAndPersistBandMail: template_version=v1 sendet weiterhin ueber renderHtmlFromTextSnapshot (Text-Snapshot, escaped + <br />)', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_v1' }, error: null })
+
+  const row = bandRow({
+    template_version: 'v1',
+    subject: 'Betreff mit & Sonderzeichen',
+    body_text: 'Zeile1\nZeile2',
+  })
+  await sendAndPersistBandMail(client, row, () => resendClient)
+
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /Zeile1<br \/>Zeile2/)
+  assert.match(html, /&amp;/)
+  // v1-HTML enthaelt keine V3-Struktur (z. B. kein Logo-Bild/H1-Eyebrow).
+  assert.doesNotMatch(html, /Neue Anfrage/)
+})
+
+test('sendAndPersistBandMail: template_version=BAND_TEMPLATE_VERSION rendert V3-HTML aus den eingebetteten Anfragewerten', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_v2' }, error: null })
+
+  const row = bandRow({
+    template_version: BAND_TEMPLATE_VERSION,
+    band_name_snapshot: 'Donnaweda',
+    anfragen: {
+      anlass: 'Feuerwehrball',
+      datum_text: '30.01.2027',
+      plz_ort: '92331 Parsberg',
+      location: 'Burgsaal',
+      telefon: null,
+      vorname: 'Roland',
+      nachname: 'Lutter',
+      nachricht: null,
+    },
+  })
+  await sendAndPersistBandMail(client, row, () => resendClient)
+
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /Servus <strong>Donnaweda<\/strong>,/)
+  assert.match(html, /Feuerwehrball/)
+  assert.match(html, /30\.01\.2027/)
+  assert.equal(sendCalls.length, 1)
+})
+
+test('sendAndPersistBandMail: unbekannte template_version sendet NICHT, faellt fail closed auf fehlgeschlagen zurueck', async () => {
+  const { client, updatePatches } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'x' }, error: null })
+
+  const row = bandRow({ template_version: 'v99', attempts: 0 })
+  await sendAndPersistBandMail(client, row, () => resendClient)
+
+  assert.equal(sendCalls.length, 0)
+  assert.equal(updatePatches[0].attempts, 1)
+  assert.equal(updatePatches[1].send_status, 'fehlgeschlagen')
+  assert.equal(updatePatches[1].sent_at, null)
+  assert.match(updatePatches[1].error_message as string, /Unbekannte Template-Version/)
+})
+
+test('sendAndPersistBandMail: unbekannte template_version ohne eingebettete Anfragewerte scheitert ebenfalls fail closed (Verteidigung gegen fehlenden Join)', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'x' }, error: null })
+
+  const row = bandRow({ template_version: BAND_TEMPLATE_VERSION, anfragen: null })
+  await sendAndPersistBandMail(client, row, () => resendClient)
+
+  assert.equal(sendCalls.length, 0)
+})
+
+// ── Block "Bandmail V3.1": Bandseiten-Link ueber den bands(slug)-Embed ──
+
+test('sendAndPersistBandMail: v2-HTML enthaelt den Bandseiten-Link der jeweils angefragten Band aus dem bands(slug)-Embed', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_v2_link' }, error: null })
+
+  const row = bandRow({
+    template_version: BAND_TEMPLATE_VERSION,
+    band_name_snapshot: "Ö'ha",
+    bands: { slug: 'oeha-band' },
+  })
+  await sendAndPersistBandMail(client, row, () => resendClient)
+
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /<a href="https:\/\/proudleut\.com\/band\/oeha-band"/)
+})
+
+test('sendAndPersistBandMail: bands-Embed als Array (PostgREST-Formvariante) wird identisch aufgeloest wie ein Objekt', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_v2_arr' }, error: null })
+
+  const row = bandRow({ template_version: BAND_TEMPLATE_VERSION, bands: [{ slug: 'band-a' }] })
+  await sendAndPersistBandMail(client, row, () => resendClient)
+
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /<a href="https:\/\/proudleut\.com\/band\/band-a"/)
+})
+
+test('retryBandSend: v2-Retry rendert denselben Bandseiten-Link ueber dieselbe bands(slug)-Relation, ohne Schemaaenderung', async () => {
+  const events: string[] = []
+  const row = bandRow({
+    send_status: 'fehlgeschlagen',
+    template_version: BAND_TEMPLATE_VERSION,
+    band_name_snapshot: "Ö'ha",
+    bands: { slug: 'oeha-band' },
+    last_attempt_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+  })
+  const client = buildRowFetchClient(row, events)
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_retry_link' }, error: null })
+
+  const result = await retryBandSend('band-row-1', { client, getResendClient: () => resendClient })
+
+  assert.deepEqual(result, { ok: true })
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /<a href="https:\/\/proudleut\.com\/band\/oeha-band"/)
+})
+
+// ── Block "Bandanfrage-Mail V3": Template-Version-Persistenz bei Neuanlage ─
+
+function buildSuccessfulCreateClient() {
+  const rpcCalls: { name: string; args: unknown }[] = []
+  const client = {
+    from: (table: string) => {
+      if (table === 'bands') {
+        return {
+          select: () => ({
+            in: async () => ({
+              data: [
+                {
+                  id: 'band-1',
+                  name: 'Band Eins',
+                  slug: 'band-eins',
+                  status: 'active',
+                  band_contacts: [{ email: 'kontakt@band-eins.de', is_primary_inquiry: true }],
+                },
+              ],
+              error: null,
+            }),
+          }),
+        }
+      }
+      // Sendeschritt nach der Persistenz bewusst leer beantworten -- dieser
+      // Test prueft ausschliesslich die an create_anfrage_with_bands
+      // uebergebene template_version, nicht den nachgelagerten Sendeablauf
+      // (bereits durch die Dispatch-Tests oben abgedeckt).
+      if (table === 'anfrage_bands') {
+        return { select: () => ({ eq: async () => ({ data: [], error: null }) }) }
+      }
+      if (table === 'anfragen') {
+        return {
+          select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+          // recomputeOverallStatus() aktualisiert am Ende immer anfragen.status,
+          // unabhaengig davon, dass Band-/Bestaetigungsversand hier bewusst
+          // leer beantwortet werden.
+          update: () => ({ eq: async () => ({ error: null }) }),
+        }
+      }
+      throw new Error(`Unerwarteter from()-Aufruf fuer Tabelle "${table}"`)
+    },
+    rpc: (name: string, args: unknown) => {
+      rpcCalls.push({ name, args })
+      if (name === 'check_and_consume_anfrage_rate_limit') {
+        return { single: async () => ({ data: { allowed: true, retry_after_seconds: 0 }, error: null }) }
+      }
+      if (name === 'create_anfrage_with_bands') {
+        return { single: async () => ({ data: { anfrage_id: 'new-anfrage-id', was_created: true }, error: null }) }
+      }
+      throw new Error(`Unerwarteter rpc()-Aufruf: ${name}`)
+    },
+  } as unknown as SupabaseClient
+  return { client, rpcCalls }
+}
+
+test('submitAnfrage: persistiert neue Bandanfragen mit BAND_TEMPLATE_VERSION und die Bestaetigung mit CONFIRMATION_TEMPLATE_VERSION', async () => {
+  const { client, rpcCalls } = buildSuccessfulCreateClient()
+  const getResendClient = () =>
+    ({ emails: { send: async () => ({ data: { id: 'x' }, error: null }) } }) as unknown as ResendEmailsClient
+
+  await submitAnfrage(
+    {
+      idempotencyKey: 'web-v2-create-test',
+      bandSlugs: ['band-eins'],
+      anlass: 'Hochzeit',
+      datumText: '20.06.2027',
+      location: '',
+      plzOrt: '',
+      gaestezahl: '',
+      spielzeit: '',
+      nachricht: '',
+      vorname: 'Anna',
+      nachname: '',
+      email: 'anna@beispiel.de',
+      telefon: '',
+      datenschutz: true,
+      firmaHidden: '',
+      websiteHidden: '',
+      openedAt: Date.now() - 5000,
+    },
+    { ipHash: 'a'.repeat(64) },
+    { client, getResendClient }
+  )
+
+  const createCall = rpcCalls.find((c) => c.name === 'create_anfrage_with_bands')
+  const args = createCall?.args as { p_anfrage: Record<string, unknown>; p_bands: Record<string, unknown>[] }
+  assert.equal(args.p_bands[0].template_version, BAND_TEMPLATE_VERSION)
+  assert.equal(args.p_anfrage.confirmation_template_version, CONFIRMATION_TEMPLATE_VERSION)
 })
