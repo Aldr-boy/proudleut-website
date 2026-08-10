@@ -49,7 +49,7 @@ export async function resolveActiveBandsWithContact(
     if (!primaryContact?.email) {
       return { ok: false, bandName: band.name };
     }
-    resolved.push({ bandId: band.id, name: band.name, recipientEmail: primaryContact.email });
+    resolved.push({ bandId: band.id, name: band.name, slug: band.slug, recipientEmail: primaryContact.email });
   }
 
   return { ok: true, bands: resolved };

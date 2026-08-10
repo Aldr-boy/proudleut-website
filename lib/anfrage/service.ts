@@ -3,13 +3,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseAnfrageSubmission } from './validation.ts';
 import { resolveActiveBandsWithContact } from './resolveBands.ts';
 import { checkAndConsumeRateLimit } from './rateLimit.ts';
-import { renderBandMail, renderConfirmationMail } from './templates.ts';
+import { renderBandMailV2, renderBandMailV2Html, renderConfirmationMail, renderHtmlFromTextSnapshot } from './templates.ts';
+import type { BandMailV2Content } from './templates.ts';
 import { buildBandMailIdempotencyKey, buildConfirmationIdempotencyKey } from './idempotencyKeys.ts';
 import { sendMailViaResend } from './mailSend.ts';
 import type { ResendEmailsClient } from './mailSend.ts';
 import { evaluateRetryEligibility } from './staleness.ts';
 import { computeOverallStatus } from './status.ts';
-import { ANFRAGE_SENDER_EMAIL, CURRENT_DATENSCHUTZ_VERSION, TEMPLATE_VERSION } from './constants.ts';
+import { ANFRAGE_SENDER_EMAIL, BAND_TEMPLATE_VERSION, CONFIRMATION_TEMPLATE_VERSION, CURRENT_DATENSCHUTZ_VERSION } from './constants.ts';
 import type { MailSendOutcome, SubmitAnfrageResult } from './types.ts';
 
 // Gemeinsame Abhaengigkeiten fuer alle exportierten Funktionen dieser Datei.
@@ -43,6 +44,22 @@ function computeFinalStatusPatch(outcome: MailSendOutcome, attemptTimeIso: strin
   return { status: outcome.status, sentAt: null, messageId: null, errorMessage: outcome.errorMessage };
 }
 
+// Auf anfrage_bands eingebettete Anfragewerte (Block "Bandanfrage-Mail V3"),
+// nur fuer den v2-HTML-Renderer benoetigt. Diese Werte werden auf der
+// anfragen-Zeile nach dem Erstschreiben nie mehr veraendert (kein UPDATE
+// irgendwo im Code beruehrt sie) -- damit ohne Schemaaenderung fuer
+// spaetere Retries verfuegbar.
+type AnfrageBandSendRowAnfrage = {
+  anlass: string | null;
+  datum_text: string;
+  plz_ort: string | null;
+  location: string | null;
+  telefon: string | null;
+  vorname: string;
+  nachname: string | null;
+  nachricht: string | null;
+};
+
 export type AnfrageBandSendRow = {
   id: string;
   anfrage_id: string;
@@ -55,7 +72,83 @@ export type AnfrageBandSendRow = {
   attempts: number;
   last_attempt_at: string | null;
   created_at: string;
+  template_version: string;
+  band_name_snapshot: string;
+  // PostgREST liefert eine per Fremdschluessel eingebettete Eltern-Zeile je
+  // nach Abfragekontext als Objekt oder als Array mit einem Element (siehe
+  // exakt dasselbe Muster in lib/supabase/normalizeBand.ts::asArr) --
+  // deshalb defensiv als Union getypt und beim Zugriff normalisiert.
+  anfragen: AnfrageBandSendRowAnfrage | AnfrageBandSendRowAnfrage[] | null;
+  // Eingebettet ueber den bereits bestehenden anfrage_bands.band_id-FK
+  // (Block "Bandmail V3.1") -- keine neue Spalte, kein neuer Snapshot: der
+  // Bandseiten-Link wird bei jedem Versand/Retry live ueber diese Relation
+  // aufgeloest, genau wie anfragen(...) oben. Gleiche Array/Objekt-Union
+  // aus demselben PostgREST-Grund.
+  bands: { slug: string } | { slug: string }[] | null;
 };
+
+// Waehlt anhand der auf der Zeile gespeicherten template_version den
+// passenden Renderer und ruft Resend auf. 'v1' bleibt bewusst als Literal
+// stehen (nicht als Konstante) -- v1 ist historisch eingefroren und aendert
+// sich nie mehr, unabhaengig davon, welchen Wert BAND_TEMPLATE_VERSION
+// spaeter fuer neue Versionen annimmt. Eine unbekannte Version sendet
+// NICHTS (fail closed, Owner-Entscheidung) und nutzt denselben bestehenden
+// 'fehlgeschlagen'-Pfad wie ein echter Resend-Fehler -- kein neuer
+// Fehlermechanismus.
+async function renderAndSendBandMail(
+  row: AnfrageBandSendRow,
+  getResendClient: () => ResendEmailsClient
+): Promise<MailSendOutcome> {
+  let html: string;
+
+  if (row.template_version === 'v1') {
+    html = renderHtmlFromTextSnapshot(row.subject, row.body_text);
+  } else if (row.template_version === BAND_TEMPLATE_VERSION) {
+    const anfrageRow = Array.isArray(row.anfragen) ? row.anfragen[0] : row.anfragen;
+    if (!anfrageRow) {
+      return {
+        status: 'fehlgeschlagen',
+        errorMessage: `Anfragedaten fuer Template-Version ${row.template_version} nicht verfuegbar`,
+      };
+    }
+    const bandRow = Array.isArray(row.bands) ? row.bands[0] : row.bands;
+    const content: BandMailV2Content = {
+      bandName: row.band_name_snapshot,
+      bandSlug: bandRow?.slug ?? null,
+      vorname: anfrageRow.vorname,
+      nachname: anfrageRow.nachname,
+      email: row.reply_to,
+      telefon: anfrageRow.telefon,
+      anlass: anfrageRow.anlass,
+      datumText: anfrageRow.datum_text,
+      location: anfrageRow.location,
+      plzOrt: anfrageRow.plz_ort,
+      nachricht: anfrageRow.nachricht,
+    };
+    html = renderBandMailV2Html(content);
+  } else {
+    console.error('[anfrage] Unbekannte Band-Template-Version -- fail closed, kein Versand', {
+      anfrage_band_id: row.id,
+      template_version: row.template_version,
+    });
+    return {
+      status: 'fehlgeschlagen',
+      errorMessage: `Unbekannte Template-Version: ${row.template_version}`,
+    };
+  }
+
+  return sendMailViaResend(
+    {
+      to: row.recipient_email,
+      replyTo: row.reply_to,
+      subject: row.subject,
+      bodyText: row.body_text,
+      html,
+      idempotencyKey: row.provider_idempotency_key,
+    },
+    getResendClient()
+  );
+}
 
 // Codex-Nachtrag PR #26, Befund 1: attempts/last_attempt_at werden JETZT in
 // einem eigenen Schreibvorgang VOR dem Resend-Aufruf persistiert (vorher:
@@ -87,16 +180,7 @@ export async function sendAndPersistBandMail(
     return;
   }
 
-  const outcome = await sendMailViaResend(
-    {
-      to: row.recipient_email,
-      replyTo: row.reply_to,
-      subject: row.subject,
-      bodyText: row.body_text,
-      idempotencyKey: row.provider_idempotency_key,
-    },
-    getResendClient()
-  );
+  const outcome = await renderAndSendBandMail(row, getResendClient);
 
   const patch = computeFinalStatusPatch(outcome, attemptTimeIso);
   await client
@@ -189,7 +273,7 @@ async function sendAllBandMailsAndConfirmation(
   const { data: bandRows } = await client
     .from('anfrage_bands')
     .select(
-      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at'
+      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at, template_version, band_name_snapshot, anfragen(anlass, datum_text, plz_ort, location, telefon, vorname, nachname, nachricht), bands(slug)'
     )
     .eq('anfrage_id', anfrageId);
 
@@ -262,7 +346,7 @@ export async function submitAnfrage(
 
   const bandRows = resolved.bands.map((band, index) => {
     const anfrageBandId = randomUUID();
-    const rendered = renderBandMail(input, band);
+    const rendered = renderBandMailV2(input, band);
     return {
       id: anfrageBandId,
       band_id: band.bandId,
@@ -270,7 +354,7 @@ export async function submitAnfrage(
       band_name_snapshot: band.name,
       recipient_email: band.recipientEmail,
       reply_to: input.email,
-      template_version: TEMPLATE_VERSION,
+      template_version: BAND_TEMPLATE_VERSION,
       provider_idempotency_key: buildBandMailIdempotencyKey(anfrageId, anfrageBandId),
       subject: rendered.subject,
       body_text: rendered.bodyText,
@@ -299,7 +383,7 @@ export async function submitAnfrage(
     confirmation_provider_idempotency_key: confirmationProviderKey,
     confirmation_subject: confirmationRendered.subject,
     confirmation_body_text: confirmationRendered.bodyText,
-    confirmation_template_version: TEMPLATE_VERSION,
+    confirmation_template_version: CONFIRMATION_TEMPLATE_VERSION,
   };
 
   // Atomarer Erstschreibvorgang inkl. Idempotency-Handling (Race-sicher,
@@ -341,7 +425,7 @@ export async function retryBandSend(anfrageBandId: string, deps: AnfrageServiceD
   const { data: row } = await deps.client
     .from('anfrage_bands')
     .select(
-      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at'
+      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at, template_version, band_name_snapshot, anfragen(anlass, datum_text, plz_ort, location, telefon, vorname, nachname, nachricht), bands(slug)'
     )
     .eq('id', anfrageBandId)
     .maybeSingle();
