@@ -37,7 +37,7 @@ export const CURRENT_DATENSCHUTZ_VERSION = 'v1-2026';
 // Band-Mail-Gestaltung erhoeht BAND_TEMPLATE_VERSION auf einen neuen Wert,
 // veraendert v1/v2 aber nicht rueckwirkend.
 export const BAND_TEMPLATE_VERSION = 'v2';
-export const CONFIRMATION_TEMPLATE_VERSION = 'v1';
+export const CONFIRMATION_TEMPLATE_VERSION = 'v2';
 
 export const ANFRAGE_SENDER_EMAIL = 'anfrage@proudleut.com';
 export const ANFRAGE_SENDER_NAME = 'proudleut.com';

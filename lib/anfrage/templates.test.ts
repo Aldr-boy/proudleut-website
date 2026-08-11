@@ -5,10 +5,12 @@ import {
   renderBandMailV2,
   renderBandMailV2Html,
   renderConfirmationMail,
+  renderConfirmationMailV2,
+  renderConfirmationMailV2Html,
   renderHtmlFromTextSnapshot,
   buildTelHref,
 } from './templates.ts'
-import type { BandMailV2Content } from './templates.ts'
+import type { BandMailV2Content, ConfirmationMailV2Content } from './templates.ts'
 import type { NormalizedAnfrageInput, ResolvedBand } from './types.ts'
 import { LEGAL_LINKS } from './constants.ts'
 
@@ -356,4 +358,274 @@ test('renderBandMailV2Html: Logo-URL und Portrait-URL entsprechen den freigegebe
     html,
     /https:\/\/bfyucjjyarvqeftqqihm\.supabase\.co\/storage\/v1\/object\/public\/band-media\/proudleut\/Alexander%20Dressler\.jpg/
   )
+})
+
+// ── Block "Confirmation V2" (Owner-Entscheidung Variante A) ─────────────
+
+const CONFIRMATION_ONE_BAND: ConfirmationMailV2Content = {
+  vorname: 'Pia',
+  bands: [{ name: 'Donnaweda', slug: 'donnaweda' }],
+  anlass: 'Dult',
+  datumText: 'Sonntag, den 22.07.2026',
+  location: 'Hauptbühne am Markt',
+  plzOrt: '92356 Kelheim',
+  nachricht: 'Hallo liebe Band,\n\nbitte begleitet uns bei einem wunderbaren Abend.\n\nLiebe Grüße\nDie Stadt',
+}
+
+const CONFIRMATION_THREE_BANDS: ConfirmationMailV2Content = {
+  ...CONFIRMATION_ONE_BAND,
+  bands: [
+    { name: 'Donnaweda', slug: 'donnaweda' },
+    { name: "Ö'ha", slug: 'oeha-band' },
+    { name: 'De Gaudimacha', slug: 'de-gaudimacha' },
+  ],
+}
+
+test('renderConfirmationMailV2: Betreff bei genau einer Band', () => {
+  const { subject } = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
+  assert.equal(subject, 'Deine Anfrage an Donnaweda ist raus')
+})
+
+test('renderConfirmationMailV2: Betreff bei mehreren Bands', () => {
+  const { subject } = renderConfirmationMailV2(CONFIRMATION_THREE_BANDS)
+  assert.equal(subject, 'Deine Anfrage an 3 Bands ist raus')
+})
+
+test('renderConfirmationMailV2: korrekter Singular in "Wie geht\'s jetzt weiter"', () => {
+  const { bodyText } = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
+  assert.match(bodyText, /Die Band meldet sich direkt bei dir\./)
+  assert.doesNotMatch(bodyText, /Die Bands melden sich/)
+})
+
+test('renderConfirmationMailV2: korrekter Plural in "Wie geht\'s jetzt weiter"', () => {
+  const { bodyText } = renderConfirmationMailV2(CONFIRMATION_THREE_BANDS)
+  assert.match(bodyText, /Die Bands melden sich direkt bei dir\./)
+  assert.doesNotMatch(bodyText, /Die Band meldet sich/)
+})
+
+test('renderConfirmationMailV2: Bandliste enthaelt /band/{slug}-URLs aller Bands', () => {
+  const { bodyText } = renderConfirmationMailV2(CONFIRMATION_THREE_BANDS)
+  assert.match(bodyText, /https:\/\/proudleut\.com\/band\/donnaweda/)
+  assert.match(bodyText, /https:\/\/proudleut\.com\/band\/oeha-band/)
+  assert.match(bodyText, /https:\/\/proudleut\.com\/band\/de-gaudimacha/)
+})
+
+test('renderConfirmationMailV2: Veranstaltungsdaten und persoenliche Nachricht vorhanden', () => {
+  const { bodyText } = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
+  assert.match(bodyText, /Dult/)
+  assert.match(bodyText, /Sonntag, den 22\.07\.2026/)
+  assert.match(bodyText, /92356 Kelheim/)
+  assert.match(bodyText, /Hauptbühne am Markt/)
+  assert.match(bodyText, /bitte begleitet uns bei einem wunderbaren Abend\./)
+})
+
+test('renderConfirmationMailV2: keine Nachricht vorhanden -> kein Nachrichtenblock, kein Ersatztext', () => {
+  const { bodyText } = renderConfirmationMailV2({ ...CONFIRMATION_ONE_BAND, nachricht: null })
+  assert.doesNotMatch(bodyText, /Deine Nachricht:/)
+  assert.doesNotMatch(bodyText, /Keine persönliche Nachricht/)
+})
+
+test('renderConfirmationMailV2: reine Whitespace-Nachricht gilt wie keine Nachricht', () => {
+  const { bodyText } = renderConfirmationMailV2({ ...CONFIRMATION_ONE_BAND, nachricht: '   ' })
+  assert.doesNotMatch(bodyText, /Deine Nachricht:/)
+})
+
+test('renderConfirmationMailV2: enthaelt "Wie geht\'s jetzt weiter?"-Wortlaut', () => {
+  const { bodyText } = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
+  assert.match(bodyText, /Mit deiner Anfrage ist noch keine Buchung verbunden/)
+  assert.match(bodyText, /Viel Vorfreude auf euer Event!/)
+  assert.match(bodyText, /Liebe Grüße\nAlex/)
+})
+
+test('renderConfirmationMailV2: Rechtlinks direkt auf /impressum und /datenschutz', () => {
+  const { bodyText } = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
+  assert.match(bodyText, new RegExp(LEGAL_LINKS.impressumUrl.replace(/\//g, '\\/')))
+  assert.match(bodyText, new RegExp(LEGAL_LINKS.datenschutzUrl.replace(/\//g, '\\/')))
+})
+
+test('renderConfirmationMailV2Html: Betreff bei einer Band identisch zu Plain-Text-Betreff', () => {
+  const plain = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, new RegExp(`<h1[^>]*>\\s*${plain.subject.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\s*<\\/h1>`))
+})
+
+test('renderConfirmationMailV2Html: Betreff bei mehreren Bands', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_THREE_BANDS)
+  assert.match(html, /Deine Anfrage an 3 Bands ist raus/)
+})
+
+test('renderConfirmationMailV2Html: mehrere Bandzeilen mit "Band ansehen"-CTA auf /band/{slug}', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_THREE_BANDS)
+  assert.match(html, /href="https:\/\/proudleut\.com\/band\/donnaweda"[^>]*>[\s\S]*?Band ansehen/)
+  assert.match(html, /href="https:\/\/proudleut\.com\/band\/oeha-band"[^>]*>[\s\S]*?Band ansehen/)
+  assert.match(html, /href="https:\/\/proudleut\.com\/band\/de-gaudimacha"[^>]*>[\s\S]*?Band ansehen/)
+  assert.equal((html.match(/Band ansehen/g) ?? []).length, 3)
+})
+
+test('renderConfirmationMailV2Html: letzte Band-Row ohne border-bottom, vorherige mit border-bottom', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_THREE_BANDS)
+  const rowStyles = [...html.matchAll(/<td style="padding:15px 0;([^"]*)">/g)].map((m) => m[1])
+  assert.equal(rowStyles.length, 3)
+  assert.equal(rowStyles[0], 'border-bottom:1px solid #ece8e4;')
+  assert.equal(rowStyles[1], 'border-bottom:1px solid #ece8e4;')
+  assert.equal(rowStyles[2], '')
+})
+
+// ── Block "Confirmation V2 -- Designtransfer Preview v3" ────────────────
+
+test('renderConfirmationMailV2Html: Eyebrow "Bestätigung" statt "Deine Anfrage"', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(
+    html,
+    /font-size:11px;line-height:1\.4;font-weight:700;letter-spacing:\.08em;text-transform:uppercase;color:#734b8b;">\s*Bestätigung\s*</
+  )
+  assert.doesNotMatch(
+    html,
+    /font-size:11px;line-height:1\.4;font-weight:700;letter-spacing:\.08em;text-transform:uppercase;color:#734b8b;">\s*Deine Anfrage\s*</
+  )
+})
+
+test('renderConfirmationMailV2Html: "Band ansehen" als dezenter Textlink (Pfeil, Proudleut-Lila), kein Pill-Button mehr', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /Band ansehen &rarr;/)
+  assert.match(html, /color:#734b8b;text-decoration:none;font-size:14px;font-weight:600;">\s*Band ansehen &rarr;/)
+  // Alter Pill-Stil (Hintergrund/Border/radius:999px) darf beim Bandlink
+  // nicht mehr vorkommen.
+  assert.doesNotMatch(html, /Band ansehen\s*<\/a>/)
+  assert.doesNotMatch(html, /border-radius:999px;padding:9px 15px/)
+})
+
+test('renderConfirmationMailV2Html: Bandname groesser/gewichtiger als Bodytext', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /font-size:17px;font-weight:700;line-height:1\.3;color:#1a1a1a;">\s*Donnaweda/)
+})
+
+test('renderConfirmationMailV2Html: Deine Veranstaltung als Label\\/Wert-HTML-Tabelle mit den vier Labels', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /<table role="presentation" width="100%"[^>]*>\s*<tr>\s*<td[^>]*>Anlass<\/td>\s*<td[^>]*>Dult<\/td>/)
+  assert.match(html, /<td[^>]*>Termin<\/td>\s*<td[^>]*>Sonntag, den 22\.07\.2026<\/td>/)
+  assert.match(html, /<td[^>]*>Ort<\/td>\s*<td[^>]*>92356 Kelheim<\/td>/)
+  assert.match(html, /<td[^>]*>Location<\/td>\s*<td[^>]*>Hauptbühne am Markt<\/td>/)
+})
+
+test('renderConfirmationMailV2Html: Anlass fehlt -> Zeile "Anlass" wird nicht gerendert (bestehende Conditional-Logik erhalten)', () => {
+  const html = renderConfirmationMailV2Html({ ...CONFIRMATION_ONE_BAND, anlass: null })
+  assert.doesNotMatch(html, /<td[^>]*>Anlass<\/td>/)
+  assert.match(html, /<td[^>]*>Termin<\/td>/)
+})
+
+test('renderConfirmationMailV2Html: "Die Band(s) melden sich direkt bei dir." typografisch hervorgehoben (Singular und Plural)', () => {
+  const htmlSingle = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(htmlSingle, /font-size:17px;font-weight:700;color:#1a1a1a;">\s*Die Band meldet sich direkt bei dir\./)
+
+  const htmlPlural = renderConfirmationMailV2Html(CONFIRMATION_THREE_BANDS)
+  assert.match(htmlPlural, /font-size:17px;font-weight:700;color:#1a1a1a;">\s*Die Bands melden sich direkt bei dir\./)
+})
+
+test('renderConfirmationMailV2Html: zusaetzlicher Abstand vor "Liebe Grüße" (eigener Absatz statt gleicher Zeile)', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /<p style="margin:0 0 10px 0;">\s*Viel Vorfreude auf euer Event!\s*<\/p>/)
+  assert.match(html, /<p style="margin:0;">\s*Liebe Grüße<br>\s*<strong>Alex<\/strong>\s*<\/p>/)
+})
+
+test('renderConfirmationMailV2Html: genau EIN Trenner zwischen Alex-Kontaktblock und technischem Footer', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  const afterPortrait = html.slice(html.indexOf('+49 175 2721331'))
+  assert.equal((afterPortrait.match(/border-top:1px solid/g) ?? []).length, 1)
+})
+
+test('renderConfirmationMailV2Html: Veranstaltungsdaten sichtbar', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /Deine Veranstaltung/)
+  assert.match(html, /Dult/)
+  assert.match(html, /Sonntag, den 22\.07\.2026/)
+  assert.match(html, /92356 Kelheim/)
+  assert.match(html, /Hauptbühne am Markt/)
+})
+
+test('renderConfirmationMailV2Html: persoenliche Nachricht vorhanden -> Zeilenumbrueche als <br>, KEIN white-space:pre-line', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /Deine Nachricht/)
+  assert.match(html, /bitte begleitet uns bei einem wunderbaren Abend\.<br>/)
+  const nachrichtBlockMatch = html.match(/Deine Nachricht[\s\S]*?<\/div>/)
+  assert.ok(nachrichtBlockMatch)
+  assert.doesNotMatch(nachrichtBlockMatch![0], /white-space:pre-line/)
+})
+
+test('renderConfirmationMailV2Html: keine Nachricht -> gesamter Nachrichtenabschnitt fehlt komplett', () => {
+  const html = renderConfirmationMailV2Html({ ...CONFIRMATION_ONE_BAND, nachricht: null })
+  assert.doesNotMatch(html, /Deine Nachricht/)
+})
+
+test('renderConfirmationMailV2Html: reine Whitespace-Nachricht -> gesamter Nachrichtenabschnitt fehlt komplett', () => {
+  const html = renderConfirmationMailV2Html({ ...CONFIRMATION_ONE_BAND, nachricht: '   ' })
+  assert.doesNotMatch(html, /Deine Nachricht/)
+})
+
+test('renderConfirmationMailV2Html: "Wie geht\'s jetzt weiter?"-Abschnitt vorhanden', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /Wie geht's jetzt weiter\?/)
+  assert.match(html, /Mit deiner Anfrage ist noch keine Buchung verbunden/)
+  assert.match(html, /Viel Vorfreude auf euer Event!/)
+})
+
+test('renderConfirmationMailV2Html: Footer-Hinweis exakt', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /Diese Bestätigung wurde automatisch nach deiner Anfrage auf proudleut\.com verschickt\./)
+})
+
+test('renderConfirmationMailV2Html: Preheader vorhanden', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /display:none;max-height:0;overflow:hidden;mso-hide:all;/)
+  assert.match(html, /Deine Anfrage an Donnaweda ist raus/)
+  assert.match(html, /&zwnj;/)
+})
+
+test('renderConfirmationMailV2Html: Nutzertexte (Bandname, Anlass, Ort, Nachricht) sicher escaped', () => {
+  const html = renderConfirmationMailV2Html({
+    ...CONFIRMATION_ONE_BAND,
+    bands: [{ name: '<img src=x onerror=alert(1)>', slug: 'x' }],
+    anlass: '<b>Anlass</b>',
+    location: '<i>Ort</i>',
+    plzOrt: '<u>PLZ</u>',
+    nachricht: 'Zeile1\nZeile2 mit <script>alert(2)</script>',
+  })
+  assert.doesNotMatch(html, /<img src=x onerror/)
+  assert.doesNotMatch(html, /<b>Anlass<\/b>/)
+  assert.doesNotMatch(html, /<i>Ort<\/i>/)
+  assert.doesNotMatch(html, /<u>PLZ<\/u>/)
+  assert.doesNotMatch(html, /<script>alert\(2\)/)
+  assert.match(html, /&lt;script&gt;/)
+})
+
+test('renderConfirmationMailV2Html: Container-Innenabstand ueber pl-px-Klasse wie Bandmail v2 (34px Desktop, 22px Mobile)', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(html, /class="pl-px"/)
+  assert.match(html, /\.pl-px \{\s*padding-left: 22px !important;\s*padding-right: 22px !important;\s*\}/)
+})
+
+test('renderConfirmationMailV2Html: Logo-/Portrait-Assets identisch zur Bandmail v2', () => {
+  const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
+  assert.match(
+    html,
+    /https:\/\/bfyucjjyarvqeftqqihm\.supabase\.co\/storage\/v1\/object\/public\/band-media\/proudleut\/proudleut_Logo_rgb_72dpi\.png/
+  )
+  assert.match(
+    html,
+    /https:\/\/bfyucjjyarvqeftqqihm\.supabase\.co\/storage\/v1\/object\/public\/band-media\/proudleut\/Alexander%20Dressler\.jpg/
+  )
+})
+
+test('renderConfirmationMailV2Html: Plain Text und HTML inhaltlich aequivalent (gleiche Kernaussagen)', () => {
+  const plain = renderConfirmationMailV2(CONFIRMATION_THREE_BANDS)
+  const html = renderConfirmationMailV2Html(CONFIRMATION_THREE_BANDS)
+  assert.equal(plain.subject, 'Deine Anfrage an 3 Bands ist raus')
+  assert.match(html, /Deine Anfrage an 3 Bands ist raus/)
+  for (const band of CONFIRMATION_THREE_BANDS.bands) {
+    assert.match(plain.bodyText, new RegExp(band.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+    const htmlEscapedName = band.name.replace(/'/g, '&#39;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    assert.match(html, new RegExp(htmlEscapedName))
+  }
+  assert.match(plain.bodyText, /Mit deiner Anfrage ist noch keine Buchung verbunden/)
+  assert.match(html, /Mit deiner Anfrage ist noch keine Buchung verbunden/)
 })
