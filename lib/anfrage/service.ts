@@ -621,7 +621,16 @@ export async function retryConfirmation(anfrageId: string, deps: AnfrageServiceD
   });
   if (!eligibility.eligible) return { ok: false, reason: eligibility.reason };
 
-  if (!(await areAllBandsSent(deps.client, anfrageId))) {
+  // Codex P1 "Preserve retries for v1 confirmations": das All-Bands-Sent-
+  // Gate gehoert ausschliesslich zu Confirmation v2, weil nur v2 die
+  // Erfolgsaussage "ist raus" verwendet. Historische v1-Confirmations
+  // ("ist eingegangen") duerfen durch dieses neue Gate nicht eingeschraenkt
+  // werden und folgen weiterhin ausschliesslich der bestehenden
+  // Eligibility-Logik oben.
+  if (
+    row.confirmation_template_version === CONFIRMATION_TEMPLATE_VERSION &&
+    !(await areAllBandsSent(deps.client, anfrageId))
+  ) {
     return { ok: false, reason: 'bands_not_complete' };
   }
 

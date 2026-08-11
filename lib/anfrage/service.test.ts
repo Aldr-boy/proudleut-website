@@ -346,9 +346,10 @@ test('retryConfirmation: veraltetes ausstehend UND alle Bands bereits gesendet i
   assert.equal(sendCalls[0].payload.to, 'veranstalter@beispiel.de')
 })
 
-test('retryConfirmation: Bands noch nicht vollstaendig gesendet -> keine Erfolgsmail, bands_not_complete', async () => {
+test('retryConfirmation: v2 mit Bands noch nicht vollstaendig gesendet -> keine Erfolgsmail, bands_not_complete', async () => {
   const events: string[] = []
   const row = confirmationRow({
+    confirmation_template_version: CONFIRMATION_TEMPLATE_VERSION,
     confirmation_status: 'ausstehend',
     confirmation_last_attempt_at: new Date(Date.now() - 10 * 60_000).toISOString(),
   })
@@ -359,6 +360,33 @@ test('retryConfirmation: Bands noch nicht vollstaendig gesendet -> keine Erfolgs
 
   assert.deepEqual(result, { ok: false, reason: 'bands_not_complete' })
   assert.equal(sendCalls.length, 0)
+})
+
+// Codex P1 "Preserve retries for v1 confirmations": das All-Bands-Sent-Gate
+// darf ausschliesslich fuer Confirmation v2 gelten. Historische v1-Zeilen
+// muessen unabhaengig vom Bandstatus retrybar bleiben, weil v1 die
+// Erfolgsaussage "ist raus" gar nicht verwendet.
+test('retryConfirmation: v1 bleibt retrybar, auch wenn Bands NICHT vollstaendig gesendet sind (kein bands_not_complete)', async () => {
+  const events: string[] = []
+  const row = confirmationRow({
+    confirmation_template_version: 'v1',
+    confirmation_status: 'ausstehend',
+    confirmation_last_attempt_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+    confirmation_recipient: 'veranstalter@beispiel.de',
+  })
+  const client = buildRowFetchClient(row, events, ['gesendet', 'fehlgeschlagen'])
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_v1_retry' }, error: null })
+
+  const result = await retryConfirmation('anfrage-1', { client, getResendClient: () => resendClient })
+
+  assert.deepEqual(result, { ok: true })
+  assert.equal(sendCalls.length, 1)
+  assert.equal(sendCalls[0].payload.to, 'veranstalter@beispiel.de')
+  // Bestehender v1-Snapshot-/HTML-Pfad bleibt erhalten (renderHtmlFromTextSnapshot),
+  // NICHT der v2-HTML-Renderer.
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /Bestaetigung Body Original/)
+  assert.doesNotMatch(html, /Band ansehen/)
 })
 
 // ── DoD 6: Doppel-Submit mit bekanntem Idempotency-Key loest KEINEN
