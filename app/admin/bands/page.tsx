@@ -96,6 +96,12 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
               Repertoire-Katalog verwalten
             </Link>
             <Link
+              href="/admin/event-types"
+              className="text-sm text-violet-700 hover:text-violet-900 hover:underline transition-colors"
+            >
+              Veranstaltungstypen verwalten
+            </Link>
+            <Link
               href="/admin/anfragen"
               className="text-sm text-violet-700 hover:text-violet-900 hover:underline transition-colors"
             >
