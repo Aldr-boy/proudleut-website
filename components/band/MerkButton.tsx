@@ -1,14 +1,15 @@
 'use client';
 
 import { useAnfrageStore } from '@/stores/anfrageStore';
+import type { BandAnfrageEventType } from '@/lib/types/band';
 
 type Props = {
   name: string;
   slug: string;
-  eventTypes: string[];
+  anfrageEventTypes: BandAnfrageEventType[];
 };
 
-export function MerkButton({ name, slug, eventTypes }: Props) {
+export function MerkButton({ name, slug, anfrageEventTypes }: Props) {
   const selected = useAnfrageStore((s) => s.isSelected(slug));
   const otherCount = useAnfrageStore(
     (s) => s.bands.filter((b) => b.slug !== slug).length
@@ -20,7 +21,7 @@ export function MerkButton({ name, slug, eventTypes }: Props) {
     if (selected) {
       removeBand(slug);
     } else {
-      addBand({ slug, name, eventTypes });
+      addBand({ slug, name, anfrageEventTypes });
     }
   }
 

@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { AnfrageModal } from './AnfrageModal';
+import type { BandAnfrageEventType } from '@/lib/types/band';
 
 type Props = {
   name: string;
   slug: string;
-  eventTypes: string[];
+  anfrageEventTypes: BandAnfrageEventType[];
 };
 
-export function AnfrageButton({ name, slug, eventTypes }: Props) {
+export function AnfrageButton({ name, slug, anfrageEventTypes }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
@@ -25,7 +26,7 @@ export function AnfrageButton({ name, slug, eventTypes }: Props) {
       </button>
 
       <AnfrageModal
-        bands={[{ slug, name, eventTypes }]}
+        bands={[{ slug, name, anfrageEventTypes }]}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
       />

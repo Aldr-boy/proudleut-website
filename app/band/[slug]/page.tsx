@@ -79,7 +79,7 @@ export default async function BandPage({ params }: PageProps) {
       />
 
       <BandHero band={band} />
-      <HeroCTA name={band.name} slug={band.slug} eventTypes={band.eventTypes ?? []} />
+      <HeroCTA name={band.name} slug={band.slug} anfrageEventTypes={band.anfrageEventTypes ?? []} />
       <BandTagsSection band={band} />
       <BandVideoSection embedUrl={embedUrl} bandName={band.name} />
       <BandDescription band={band} />

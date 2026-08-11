@@ -103,6 +103,23 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     .map(et => str((et.event_types as Row)?.slug))
     .filter((s): s is string => s !== undefined)
 
+  // Block "Event-Type-Anfrage-Label V1": zusaetzliche, klar typisierte
+  // Struktur ausschliesslich fuer den nativen Anfragekontext -- eventTypes/
+  // categorySlugs oben bleiben fuer bestehende Anzeige-Verbraucher
+  // unveraendert. Ein Eintrag ohne Name ODER ohne Slug wird verworfen
+  // (defensiv, event_types.name/slug sind in der DB NOT NULL). anfrage_label
+  // ist bewusst optional (Spalte kann null sein) -- Fallback auf name
+  // erfolgt NICHT hier, sondern erst am Verwendungsort (Anfrageformular).
+  const anfrageEventTypes = rawEventTypes
+    .map(et => {
+      const eventTypeRow = et.event_types as Row
+      const name = str(eventTypeRow?.name)
+      const slug = str(eventTypeRow?.slug)
+      const anfrageLabel = str(eventTypeRow?.anfrage_label) ?? null
+      return name && slug ? { name, slug, anfrageLabel } : undefined
+    })
+    .filter((t): t is { name: string; slug: string; anfrageLabel: string | null } => t !== undefined)
+
   // klingtNach = Mood-Namen (bestehendes Verhalten unveraendert erhalten);
   // moods = dieselben Zuordnungen als klar typisierte {name, slug}-Struktur
   // fuer den stabilen Slug-Abgleich (z. B. /bands?mood=<slug>).
@@ -249,6 +266,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     bandartSlugs,
     eventTypes,
     categorySlugs,
+    anfrageEventTypes,
 
     klingtNach,
     moods,

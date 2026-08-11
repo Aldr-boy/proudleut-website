@@ -112,12 +112,12 @@ export function BandContactSection({ band, websiteUrl }: Props) {
               <AnfrageButton
                 name={band.name}
                 slug={band.slug}
-                eventTypes={band.eventTypes}
+                anfrageEventTypes={band.anfrageEventTypes ?? []}
               />
               <MerkButton
                 name={band.name}
                 slug={band.slug}
-                eventTypes={band.eventTypes}
+                anfrageEventTypes={band.anfrageEventTypes ?? []}
               />
             </div>
 
