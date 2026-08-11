@@ -3,8 +3,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseAnfrageSubmission } from './validation.ts';
 import { resolveActiveBandsWithContact } from './resolveBands.ts';
 import { checkAndConsumeRateLimit } from './rateLimit.ts';
-import { renderBandMailV2, renderBandMailV2Html, renderConfirmationMail, renderHtmlFromTextSnapshot } from './templates.ts';
-import type { BandMailV2Content } from './templates.ts';
+import {
+  renderBandMailV2,
+  renderBandMailV2Html,
+  renderConfirmationMailV2,
+  renderConfirmationMailV2Html,
+  renderHtmlFromTextSnapshot,
+} from './templates.ts';
+import type { BandMailV2Content, ConfirmationMailV2Content } from './templates.ts';
 import { buildBandMailIdempotencyKey, buildConfirmationIdempotencyKey } from './idempotencyKeys.ts';
 import { sendMailViaResend } from './mailSend.ts';
 import type { ResendEmailsClient } from './mailSend.ts';
@@ -183,7 +189,7 @@ export async function sendAndPersistBandMail(
   const outcome = await renderAndSendBandMail(row, getResendClient);
 
   const patch = computeFinalStatusPatch(outcome, attemptTimeIso);
-  await client
+  const { error: patchError } = await client
     .from('anfrage_bands')
     .update({
       send_status: patch.status,
@@ -192,7 +198,31 @@ export async function sendAndPersistBandMail(
       error_message: patch.errorMessage,
     })
     .eq('id', row.id);
+
+  // Bestaetigter A-Punkt (Block "Confirmation V2"): schlaegt genau dieses
+  // Abschluss-Update fehl, darf die Zeile spaeter NICHT faelschlich als
+  // 'gesendet' vorausgesetzt werden (z. B. bei der Confirmation-Gate-
+  // Entscheidung) -- der tatsaechlich persistierte Zustand bleibt
+  // massgeblich. Kein neuer Fehlermechanismus, gleiches Logging-Muster wie
+  // die Attempt-Markierung oben.
+  if (patchError) {
+    console.error('[anfrage] Abschluss-Update nach Band-Mail-Versand fehlgeschlagen -- Sendeergebnis moeglicherweise nicht persistiert', {
+      table: 'anfrage_bands',
+      anfrage_band_id: row.id,
+      error: patchError.message,
+    });
+  }
 }
+
+// Eingebettet ueber den bereits bestehenden anfrage_bands.anfrage_id-FK
+// (Reverse-Embed, Block "Confirmation V2") -- keine neue Spalte, keine neue
+// Relation: anfrage_bands.anfrage_id existiert bereits (indiziert), genauso
+// wie anfrage_bands.band_id -> bands(slug). Gleiche Array/Objekt-Union aus
+// demselben PostgREST-Grund wie bei AnfrageBandSendRow.bands.
+type AnfrageConfirmationRowAnfrageBand = {
+  band_name_snapshot: string;
+  bands: { slug: string } | { slug: string }[] | null;
+};
 
 export type AnfrageConfirmationRow = {
   id: string;
@@ -205,7 +235,83 @@ export type AnfrageConfirmationRow = {
   confirmation_status: string;
   confirmation_last_attempt_at: string | null;
   created_at: string;
+  confirmation_template_version: string;
+  // Fuer den v2-HTML-Renderer benoetigt -- dieselben, nach Erstschreiben nie
+  // mehr veraenderten anfragen-Spalten wie bei AnfrageBandSendRowAnfrage.
+  vorname: string;
+  anlass: string | null;
+  datum_text: string;
+  location: string | null;
+  plz_ort: string | null;
+  nachricht: string | null;
+  anfrage_bands: AnfrageConfirmationRowAnfrageBand[] | null;
 };
+
+// Gemeinsamer Select-String fuer alle drei Stellen, die eine vollstaendige
+// Confirmation-Zeile lesen (Erstversand, Band-Retry-Nachtrigger, manueller
+// Confirmation-Retry) -- verhindert, dass eine Stelle die fuer v2 noetigen
+// Felder vergisst.
+const CONFIRMATION_SELECT =
+  'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at, confirmation_template_version, vorname, anlass, datum_text, location, plz_ort, nachricht, anfrage_bands(band_name_snapshot, bands(slug))';
+
+// Waehlt anhand der auf der Zeile gespeicherten confirmation_template_version
+// den passenden Renderer und ruft Resend auf -- exakt dasselbe Muster wie
+// renderAndSendBandMail. 'v1' bleibt bewusst als Literal stehen (historisch
+// eingefroren, unabhaengig vom aktuellen Wert von
+// CONFIRMATION_TEMPLATE_VERSION). Eine unbekannte Version sendet NICHTS
+// (fail closed) und nutzt denselben bestehenden 'fehlgeschlagen'-Pfad.
+async function renderAndSendConfirmation(
+  row: AnfrageConfirmationRow,
+  getResendClient: () => ResendEmailsClient
+): Promise<MailSendOutcome> {
+  let html: string;
+
+  if (row.confirmation_template_version === 'v1') {
+    html = renderHtmlFromTextSnapshot(row.confirmation_subject, row.confirmation_body_text);
+  } else if (row.confirmation_template_version === CONFIRMATION_TEMPLATE_VERSION) {
+    const bandRefs = (row.anfrage_bands ?? []).map((ab) => {
+      const bandRow = Array.isArray(ab.bands) ? ab.bands[0] : ab.bands;
+      return { name: ab.band_name_snapshot, slug: bandRow?.slug ?? '' };
+    });
+    if (bandRefs.length === 0) {
+      return {
+        status: 'fehlgeschlagen',
+        errorMessage: `Bandliste fuer Confirmation-Template-Version ${row.confirmation_template_version} nicht verfuegbar`,
+      };
+    }
+    const content: ConfirmationMailV2Content = {
+      vorname: row.vorname,
+      bands: bandRefs,
+      anlass: row.anlass,
+      datumText: row.datum_text,
+      location: row.location,
+      plzOrt: row.plz_ort,
+      nachricht: row.nachricht,
+    };
+    html = renderConfirmationMailV2Html(content);
+  } else {
+    console.error('[anfrage] Unbekannte Confirmation-Template-Version -- fail closed, kein Versand', {
+      anfrage_id: row.id,
+      confirmation_template_version: row.confirmation_template_version,
+    });
+    return {
+      status: 'fehlgeschlagen',
+      errorMessage: `Unbekannte Confirmation-Template-Version: ${row.confirmation_template_version}`,
+    };
+  }
+
+  return sendMailViaResend(
+    {
+      to: row.confirmation_recipient,
+      replyTo: row.confirmation_reply_to ?? ANFRAGE_SENDER_EMAIL,
+      subject: row.confirmation_subject,
+      bodyText: row.confirmation_body_text,
+      html,
+      idempotencyKey: row.confirmation_provider_idempotency_key,
+    },
+    getResendClient()
+  );
+}
 
 // Codex-Nachtrag PR #26, Befund 2: identisches Vorab-Markierungsmuster wie
 // sendAndPersistBandMail, nur auf anfragen.confirmation_*.
@@ -231,19 +337,10 @@ export async function sendAndPersistConfirmation(
     return;
   }
 
-  const outcome = await sendMailViaResend(
-    {
-      to: row.confirmation_recipient,
-      replyTo: row.confirmation_reply_to ?? ANFRAGE_SENDER_EMAIL,
-      subject: row.confirmation_subject,
-      bodyText: row.confirmation_body_text,
-      idempotencyKey: row.confirmation_provider_idempotency_key,
-    },
-    getResendClient()
-  );
+  const outcome = await renderAndSendConfirmation(row, getResendClient);
 
   const patch = computeFinalStatusPatch(outcome, attemptTimeIso);
-  await client
+  const { error: patchError } = await client
     .from('anfragen')
     .update({
       confirmation_status: patch.status,
@@ -252,6 +349,14 @@ export async function sendAndPersistConfirmation(
       confirmation_error: patch.errorMessage,
     })
     .eq('id', row.id);
+
+  if (patchError) {
+    console.error('[anfrage] Abschluss-Update nach Bestaetigungs-Versand fehlgeschlagen -- Sendeergebnis moeglicherweise nicht persistiert', {
+      table: 'anfragen',
+      anfrage_id: row.id,
+      error: patchError.message,
+    });
+  }
 }
 
 async function recomputeOverallStatus(client: SupabaseClient, anfrageId: string): Promise<void> {
@@ -261,10 +366,25 @@ async function recomputeOverallStatus(client: SupabaseClient, anfrageId: string)
   await client.from('anfragen').update({ status: overall }).eq('id', anfrageId);
 }
 
+// Owner-Entscheidung Variante A: massgeblich fuer "sind wirklich ALLE Bands
+// gesendet" ist ausschliesslich der tatsaechlich persistierte DB-Zustand der
+// anfrage_bands-Zeilen -- NICHT das In-Memory-Ergebnis von
+// Promise.allSettled (das nur den Sendeversuch beschreibt, nicht ob dessen
+// Abschluss-Update auch erfolgreich persistiert wurde, siehe Status-
+// Persistenz-A-Punkt oben). Frischer Read bei jedem Aufruf, kein Caching.
+async function areAllBandsSent(client: SupabaseClient, anfrageId: string): Promise<boolean> {
+  const { data: rows } = await client.from('anfrage_bands').select('send_status').eq('anfrage_id', anfrageId);
+  const statuses = (rows ?? []).map((r) => r.send_status as import('./types.ts').SendStatus);
+  return computeOverallStatus(statuses) === 'versendet';
+}
+
 // Ein Fehler bei einer Band-Mail darf weder die uebrigen Band-Mails noch
 // die Veranstalter-Bestaetigung verhindern: Promise.allSettled fuer die
-// Band-Mails, die Bestaetigung wird IMMER im Anschluss versucht,
-// unabhaengig vom Ergebnis der Band-Mails.
+// Band-Mails. Die Bestaetigung wird NUR versendet, wenn danach ALLE
+// zugehoerigen Bandzeilen send_status='gesendet' haben (Owner-Entscheidung
+// Variante A, Wording "ist raus" darf sonst nicht behauptet werden) --
+// andernfalls bleibt sie bewusst 'ausstehend' und wird spaeter durch einen
+// erfolgreichen Band-Retry nachgetriggert (siehe retryBandSend).
 async function sendAllBandMailsAndConfirmation(
   client: SupabaseClient,
   anfrageId: string,
@@ -281,15 +401,15 @@ async function sendAllBandMailsAndConfirmation(
     ((bandRows ?? []) as AnfrageBandSendRow[]).map((row) => sendAndPersistBandMail(client, row, getResendClient))
   );
 
-  const { data: confirmationRow } = await client
-    .from('anfragen')
-    .select(
-      'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at'
-    )
-    .eq('id', anfrageId)
-    .maybeSingle();
-  if (confirmationRow) {
-    await sendAndPersistConfirmation(client, confirmationRow as AnfrageConfirmationRow, getResendClient);
+  if (await areAllBandsSent(client, anfrageId)) {
+    const { data: confirmationRow } = await client
+      .from('anfragen')
+      .select(CONFIRMATION_SELECT)
+      .eq('id', anfrageId)
+      .maybeSingle();
+    if (confirmationRow) {
+      await sendAndPersistConfirmation(client, confirmationRow as AnfrageConfirmationRow, getResendClient);
+    }
   }
 
   await recomputeOverallStatus(client, anfrageId);
@@ -341,7 +461,15 @@ export async function submitAnfrage(
   const anfrageId = randomUUID();
   const nowIso = new Date().toISOString();
 
-  const confirmationRendered = renderConfirmationMail(input, resolved.bands);
+  const confirmationRendered = renderConfirmationMailV2({
+    vorname: input.vorname,
+    bands: resolved.bands.map((band) => ({ name: band.name, slug: band.slug })),
+    anlass: input.anlass,
+    datumText: input.datumText,
+    location: input.location,
+    plzOrt: input.plzOrt,
+    nachricht: input.nachricht,
+  });
   const confirmationProviderKey = buildConfirmationIdempotencyKey(anfrageId);
 
   const bandRows = resolved.bands.map((band, index) => {
@@ -413,7 +541,10 @@ export async function submitAnfrage(
 
 export type RetryOutcome =
   | { ok: true }
-  | { ok: false; reason: 'not_found' | 'already_sent' | 'not_stale_yet' | 'protection_window_expired' };
+  | {
+      ok: false;
+      reason: 'not_found' | 'already_sent' | 'not_stale_yet' | 'protection_window_expired' | 'bands_not_complete';
+    };
 
 // Admin-Retry fuer eine EINZELNE fehlgeschlagene/ungeklaerte/veraltet-
 // ausstehende Band-Mail. Verwendet unveraendert denselben
@@ -442,17 +573,41 @@ export async function retryBandSend(anfrageBandId: string, deps: AnfrageServiceD
 
   await sendAndPersistBandMail(deps.client, row as AnfrageBandSendRow, deps.getResendClient);
   await recomputeOverallStatus(deps.client, row.anfrage_id);
+
+  // Owner-Entscheidung Variante A: erst NACH diesem Retry pruefen, ob dadurch
+  // erstmals ALLE Bandzeilen gesendet sind. Direkter Aufruf von
+  // sendAndPersistConfirmation -- bewusst OHNE evaluateRetryEligibility, da
+  // eine bewusst gehaltene, nie versuchte Confirmation (attempts=0) kein
+  // "Retry" im eigentlichen Sinn ist, sondern ihr erster echter Sendeversuch.
+  // Kein Fresh-Read-Zusatz vor diesem Aufruf (Preflight-Entscheidung
+  // B/Parkliste -- der bestehende, deterministische
+  // confirmation_provider_idempotency_key schuetzt bereits vor einem echten
+  // Doppelversand bei parallelen Retries). Kein neues Locking, keine Queue.
+  if (await areAllBandsSent(deps.client, row.anfrage_id)) {
+    const { data: confirmationRow } = await deps.client
+      .from('anfragen')
+      .select(CONFIRMATION_SELECT)
+      .eq('id', row.anfrage_id)
+      .maybeSingle();
+    if (confirmationRow && (confirmationRow as AnfrageConfirmationRow).confirmation_status !== 'gesendet') {
+      await sendAndPersistConfirmation(deps.client, confirmationRow as AnfrageConfirmationRow, deps.getResendClient);
+    }
+  }
+
   return { ok: true };
 }
 
 // Admin-Retry fuer die Veranstalter-Bestaetigung -- identische Regeln wie
 // retryBandSend, nur auf anfragen.confirmation_* statt anfrage_bands.
+// Owner-Entscheidung Variante A: zusaetzlich zur bestehenden Eligibility-
+// Pruefung muss vor jedem tatsaechlichen Versand sichergestellt sein, dass
+// ALLE zugehoerigen Bandzeilen bereits gesendet sind -- sonst wuerde ein
+// manueller Admin-Retry das Wording "ist raus" faelschlich vor Vollerfolg
+// versenden.
 export async function retryConfirmation(anfrageId: string, deps: AnfrageServiceDeps): Promise<RetryOutcome> {
   const { data: row } = await deps.client
     .from('anfragen')
-    .select(
-      'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at'
-    )
+    .select(CONFIRMATION_SELECT)
     .eq('id', anfrageId)
     .maybeSingle();
 
@@ -465,6 +620,10 @@ export async function retryConfirmation(anfrageId: string, deps: AnfrageServiceD
     now: new Date(),
   });
   if (!eligibility.eligible) return { ok: false, reason: eligibility.reason };
+
+  if (!(await areAllBandsSent(deps.client, anfrageId))) {
+    return { ok: false, reason: 'bands_not_complete' };
+  }
 
   await sendAndPersistConfirmation(deps.client, row as AnfrageConfirmationRow, deps.getResendClient);
   return { ok: true };

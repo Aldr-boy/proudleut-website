@@ -49,6 +49,11 @@ function bandRow(overrides: Partial<AnfrageBandSendRow> = {}): AnfrageBandSendRo
   }
 }
 
+// Default confirmation_template_version = 'v1' -- bestehende Tests unten
+// pruefen damit weiterhin bewusst den eingefrorenen v1-Pfad
+// (renderHtmlFromTextSnapshot), unveraendert gegenueber vor Block
+// "Confirmation V2". vorname/anlass/... und anfrage_bands sind realistische
+// Defaults fuer den v2-Dispatch, werden von v1-Tests aber nicht gelesen.
 function confirmationRow(overrides: Partial<AnfrageConfirmationRow> = {}): AnfrageConfirmationRow {
   return {
     id: 'anfrage-1',
@@ -61,6 +66,14 @@ function confirmationRow(overrides: Partial<AnfrageConfirmationRow> = {}): Anfra
     confirmation_status: 'ausstehend',
     confirmation_last_attempt_at: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    confirmation_template_version: 'v1',
+    vorname: 'Anna',
+    anlass: 'Hochzeit',
+    datum_text: '20.06.2027',
+    location: 'Festscheune Müller',
+    plz_ort: '80331 München',
+    nachricht: 'Freuen uns sehr auf euch!',
+    anfrage_bands: [{ band_name_snapshot: 'Band A', bands: { slug: 'band-a' } }],
     ...overrides,
   }
 }
@@ -215,12 +228,27 @@ test('sendAndPersistConfirmation: verwendet Empfaenger/Betreff/Body/Provider-Key
 
 // ── Retry-Berechtigung end-to-end (retryBandSend / retryConfirmation) ───
 
-function buildRowFetchClient(row: Record<string, unknown> | null, updateEvents: string[]) {
+// bandStatuses steuert das Ergebnis von areAllBandsSent() (Block
+// "Confirmation V2"), das intern per .select('send_status').eq('anfrage_id', ...)
+// OHNE .maybeSingle() abgefragt wird -- die zurueckgegebene eq()-Fake muss
+// deshalb sowohl thenable (Array-Form) als auch mit .maybeSingle()
+// (Einzelzeilen-Form, fuer den bestehenden Row-Fetch per id) nutzbar sein,
+// genau wie der reale Supabase-Query-Builder. Default [] (= "nicht alle
+// gesendet"), damit bestehende retryBandSend-Tests, die den Nachtrigger
+// nicht pruefen, unveraendert bleiben; retryConfirmation-Erfolgstests
+// setzen bandStatuses explizit auf ['gesendet'].
+function buildRowFetchClient(
+  row: Record<string, unknown> | null,
+  updateEvents: string[],
+  bandStatuses: string[] = []
+) {
   return {
     from: () => ({
       select: () => ({
         eq: () => ({
           maybeSingle: async () => ({ data: row, error: null }),
+          then: (resolve: (v: { data: unknown; error: null }) => void) =>
+            resolve({ data: bandStatuses.map((s) => ({ send_status: s })), error: null }),
         }),
       }),
       update: (patch: Record<string, unknown>) => ({
@@ -302,20 +330,35 @@ test('retryConfirmation: bereits gesendet bleibt unantastbar', async () => {
   assert.equal(sendCalls.length, 0)
 })
 
-test('retryConfirmation: veraltetes ausstehend ist retrybar und sendet mit unveraendertem Snapshot', async () => {
+test('retryConfirmation: veraltetes ausstehend UND alle Bands bereits gesendet ist retrybar und sendet mit unveraendertem Snapshot', async () => {
   const events: string[] = []
   const row = confirmationRow({
     confirmation_status: 'ausstehend',
     confirmation_last_attempt_at: new Date(Date.now() - 10 * 60_000).toISOString(),
     confirmation_recipient: 'veranstalter@beispiel.de',
   })
-  const client = buildRowFetchClient(row, events)
+  const client = buildRowFetchClient(row, events, ['gesendet'])
   const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_x' }, error: null })
 
   const result = await retryConfirmation('anfrage-1', { client, getResendClient: () => resendClient })
 
   assert.deepEqual(result, { ok: true })
   assert.equal(sendCalls[0].payload.to, 'veranstalter@beispiel.de')
+})
+
+test('retryConfirmation: Bands noch nicht vollstaendig gesendet -> keine Erfolgsmail, bands_not_complete', async () => {
+  const events: string[] = []
+  const row = confirmationRow({
+    confirmation_status: 'ausstehend',
+    confirmation_last_attempt_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+  })
+  const client = buildRowFetchClient(row, events, ['gesendet', 'fehlgeschlagen'])
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_x' }, error: null })
+
+  const result = await retryConfirmation('anfrage-1', { client, getResendClient: () => resendClient })
+
+  assert.deepEqual(result, { ok: false, reason: 'bands_not_complete' })
+  assert.equal(sendCalls.length, 0)
 })
 
 // ── DoD 6: Doppel-Submit mit bekanntem Idempotency-Key loest KEINEN
@@ -551,6 +594,453 @@ test('retryBandSend: v2-Retry rendert denselben Bandseiten-Link ueber dieselbe b
   assert.deepEqual(result, { ok: true })
   const html = sendCalls[0].payload.html as string
   assert.match(html, /<a href="https:\/\/proudleut\.com\/band\/oeha-band"/)
+})
+
+// ── Block "Confirmation V2": v1/v2/unbekannt-Dispatch beim Versand ──────
+
+test('sendAndPersistConfirmation: confirmation_template_version=v1 sendet weiterhin ueber renderHtmlFromTextSnapshot (Text-Snapshot, escaped + <br />)', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_cv1' }, error: null })
+
+  const row = confirmationRow({
+    confirmation_template_version: 'v1',
+    confirmation_subject: 'Betreff mit & Sonderzeichen',
+    confirmation_body_text: 'Zeile1\nZeile2',
+  })
+  await sendAndPersistConfirmation(client, row, () => resendClient)
+
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /Zeile1<br \/>Zeile2/)
+  assert.match(html, /&amp;/)
+  // v1-HTML enthaelt keine V2-Struktur (z. B. keinen "Band ansehen"-CTA).
+  assert.doesNotMatch(html, /Band ansehen/)
+})
+
+test('sendAndPersistConfirmation: confirmation_template_version=CONFIRMATION_TEMPLATE_VERSION rendert V2-HTML aus den eingebetteten Bandzeilen', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'msg_cv2' }, error: null })
+
+  const row = confirmationRow({
+    confirmation_template_version: CONFIRMATION_TEMPLATE_VERSION,
+    vorname: 'Pia',
+    anfrage_bands: [
+      { band_name_snapshot: 'Donnaweda', bands: { slug: 'donnaweda' } },
+      { band_name_snapshot: "Ö'ha", bands: { slug: 'oeha-band' } },
+    ],
+  })
+  await sendAndPersistConfirmation(client, row, () => resendClient)
+
+  const html = sendCalls[0].payload.html as string
+  assert.match(html, /Servus <strong>Pia<\/strong>,/)
+  assert.match(html, /href="https:\/\/proudleut\.com\/band\/donnaweda"/)
+  assert.match(html, /href="https:\/\/proudleut\.com\/band\/oeha-band"/)
+  assert.equal((html.match(/Band ansehen/g) ?? []).length, 2)
+  assert.equal(sendCalls.length, 1)
+})
+
+test('sendAndPersistConfirmation: unbekannte confirmation_template_version sendet NICHT, faellt fail closed auf fehlgeschlagen zurueck', async () => {
+  const { client, updatePatches } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'x' }, error: null })
+
+  const row = confirmationRow({ confirmation_template_version: 'v99' })
+  await sendAndPersistConfirmation(client, row, () => resendClient)
+
+  assert.equal(sendCalls.length, 0)
+  assert.equal(updatePatches[1].confirmation_status, 'fehlgeschlagen')
+  assert.equal(updatePatches[1].confirmation_sent_at, null)
+  assert.match(updatePatches[1].confirmation_error as string, /Unbekannte Confirmation-Template-Version/)
+})
+
+test('sendAndPersistConfirmation: v2 ohne eingebettete Bandzeilen scheitert ebenfalls fail closed (Verteidigung gegen fehlenden Join)', async () => {
+  const { client } = buildRecordingClient()
+  const { resendClient, sendCalls } = buildRecordingResend({ data: { id: 'x' }, error: null })
+
+  const row = confirmationRow({ confirmation_template_version: CONFIRMATION_TEMPLATE_VERSION, anfrage_bands: [] })
+  await sendAndPersistConfirmation(client, row, () => resendClient)
+
+  assert.equal(sendCalls.length, 0)
+})
+
+// ── Block "Confirmation V2": Status-Persistenzfehler (bestaetigter A-Punkt) ─
+
+test('sendAndPersistBandMail: Fehler beim finalen send_status-Update wird erkannt und geloggt, ohne den Sendeausgang zu verschweigen', async () => {
+  const events: string[] = []
+  let call = 0
+  const client = {
+    from: (table: string) => ({
+      update: (patch: Record<string, unknown>) => ({
+        eq: async () => {
+          call += 1
+          events.push(`update:${table}:${Object.keys(patch).sort().join(',')}`)
+          if (call === 2) return { error: { message: 'db unreachable on final update' } }
+          return { error: null }
+        },
+      }),
+    }),
+  } as unknown as SupabaseClient
+  const { resendClient } = buildRecordingResend({ data: { id: 'msg_1' }, error: null })
+
+  const originalConsoleError = console.error
+  const loggedCalls: unknown[][] = []
+  console.error = (...args: unknown[]) => loggedCalls.push(args)
+  try {
+    await sendAndPersistBandMail(client, bandRow(), () => resendClient)
+  } finally {
+    console.error = originalConsoleError
+  }
+
+  assert.equal(events.length, 2)
+  assert.ok(
+    loggedCalls.some((args) => typeof args[0] === 'string' && args[0].includes('Abschluss-Update nach Band-Mail-Versand fehlgeschlagen'))
+  )
+})
+
+test('sendAndPersistConfirmation: Fehler beim finalen confirmation_status-Update wird erkannt und geloggt', async () => {
+  let call = 0
+  const client = {
+    from: (table: string) => ({
+      update: (patch: Record<string, unknown>) => ({
+        eq: async () => {
+          call += 1
+          if (call === 2) return { error: { message: 'db unreachable on final update' } }
+          return { error: null }
+        },
+      }),
+    }),
+  } as unknown as SupabaseClient
+  const { resendClient } = buildRecordingResend({ data: { id: 'msg_1' }, error: null })
+
+  const originalConsoleError = console.error
+  const loggedCalls: unknown[][] = []
+  console.error = (...args: unknown[]) => loggedCalls.push(args)
+  try {
+    await sendAndPersistConfirmation(client, confirmationRow(), () => resendClient)
+  } finally {
+    console.error = originalConsoleError
+  }
+
+  assert.ok(
+    loggedCalls.some(
+      (args) => typeof args[0] === 'string' && args[0].includes('Abschluss-Update nach Bestaetigungs-Versand fehlgeschlagen')
+    )
+  )
+})
+
+// ── Block "Confirmation V2": Versandlogik Erstversand (Owner-Entscheidung
+//    Variante A) -- FULL SUCCESS / PARTIAL / TOTAL FAILURE / UNGEKLAERT ──
+
+// Stateful Fake-Client, der den relevanten Ausschnitt des realen
+// Supabase-Verhaltens nachbildet: create_anfrage_with_bands persistiert
+// Band-/Anfragen-Zeilen in einem In-Memory-Store, nachfolgende
+// SELECT/UPDATE-Aufrufe lesen/schreiben genau diesen Store -- damit
+// verhaelt sich areAllBandsSent() (liest den tatsaechlich persistierten
+// Zustand) in diesem Test exakt wie gegen eine echte DB.
+function buildEndToEndClient(bandDefs: { slug: string; name: string; email: string }[]) {
+  const bandsTable = bandDefs.map((b, i) => ({
+    id: `band-${i}`,
+    name: b.name,
+    slug: b.slug,
+    status: 'active',
+    band_contacts: [{ email: b.email, is_primary_inquiry: true }],
+  }))
+
+  let anfrageBandsRows: Record<string, unknown>[] | null = null
+  let anfragenRow: Record<string, unknown> | null = null
+
+  function eqResult(data: unknown) {
+    return {
+      maybeSingle: async () => ({ data: (Array.isArray(data) ? data[0] : data) ?? null, error: null }),
+      then: (resolve: (v: { data: unknown; error: null }) => void) => resolve({ data, error: null }),
+    }
+  }
+
+  const client = {
+    from: (table: string) => {
+      if (table === 'bands') {
+        return { select: () => ({ in: async () => ({ data: bandsTable, error: null }) }) }
+      }
+      if (table === 'anfrage_bands') {
+        return {
+          select: (cols: string) => ({
+            eq: (col: string, val: string) => {
+              const rows = (anfrageBandsRows ?? []).filter((r) => (r as Record<string, unknown>)[col] === val)
+              if (cols === 'send_status') {
+                return eqResult(rows.map((r) => ({ send_status: r.send_status })))
+              }
+              return eqResult(rows)
+            },
+          }),
+          update: (patch: Record<string, unknown>) => ({
+            eq: async (_col: string, val: string) => {
+              const row = (anfrageBandsRows ?? []).find((r) => r.id === val)
+              if (row) Object.assign(row, patch)
+              return { error: null }
+            },
+          }),
+        }
+      }
+      if (table === 'anfragen') {
+        return {
+          select: () => ({
+            eq: () =>
+              eqResult(
+                anfragenRow
+                  ? {
+                      ...anfragenRow,
+                      anfrage_bands: (anfrageBandsRows ?? []).map((r) => ({
+                        band_name_snapshot: r.band_name_snapshot,
+                        bands: { slug: r._slug },
+                      })),
+                    }
+                  : null
+              ),
+          }),
+          update: (patch: Record<string, unknown>) => ({
+            eq: async () => {
+              if (anfragenRow) Object.assign(anfragenRow, patch)
+              return { error: null }
+            },
+          }),
+        }
+      }
+      throw new Error(`Unerwarteter from()-Aufruf fuer Tabelle "${table}"`)
+    },
+    rpc: (name: string, args: unknown) => {
+      if (name === 'check_and_consume_anfrage_rate_limit') {
+        return { single: async () => ({ data: { allowed: true, retry_after_seconds: 0 }, error: null }) }
+      }
+      if (name === 'create_anfrage_with_bands') {
+        const a = args as { p_anfrage: Record<string, unknown>; p_bands: Record<string, unknown>[] }
+        anfrageBandsRows = a.p_bands.map((b, i) => ({
+          id: b.id,
+          anfrage_id: a.p_anfrage.id,
+          recipient_email: b.recipient_email,
+          reply_to: b.reply_to,
+          subject: b.subject,
+          body_text: b.body_text,
+          provider_idempotency_key: b.provider_idempotency_key,
+          send_status: 'ausstehend',
+          attempts: 0,
+          last_attempt_at: null,
+          created_at: '2026-01-01T00:00:00.000Z',
+          template_version: b.template_version,
+          band_name_snapshot: b.band_name_snapshot,
+          _slug: bandsTable[i]?.slug,
+          anfragen: {
+            anlass: a.p_anfrage.anlass,
+            datum_text: a.p_anfrage.datum_text,
+            plz_ort: a.p_anfrage.plz_ort,
+            location: a.p_anfrage.location,
+            telefon: a.p_anfrage.telefon,
+            vorname: a.p_anfrage.vorname,
+            nachname: a.p_anfrage.nachname,
+            nachricht: a.p_anfrage.nachricht,
+          },
+          bands: { slug: bandsTable[i]?.slug },
+        }))
+        anfragenRow = {
+          id: a.p_anfrage.id,
+          confirmation_recipient: a.p_anfrage.confirmation_recipient,
+          confirmation_reply_to: a.p_anfrage.confirmation_reply_to,
+          confirmation_subject: a.p_anfrage.confirmation_subject,
+          confirmation_body_text: a.p_anfrage.confirmation_body_text,
+          confirmation_provider_idempotency_key: a.p_anfrage.confirmation_provider_idempotency_key,
+          confirmation_attempts: 0,
+          confirmation_status: 'ausstehend',
+          confirmation_last_attempt_at: null,
+          created_at: '2026-01-01T00:00:00.000Z',
+          confirmation_template_version: a.p_anfrage.confirmation_template_version,
+          vorname: a.p_anfrage.vorname,
+          anlass: a.p_anfrage.anlass,
+          datum_text: a.p_anfrage.datum_text,
+          location: a.p_anfrage.location,
+          plz_ort: a.p_anfrage.plz_ort,
+          nachricht: a.p_anfrage.nachricht,
+        }
+        return { single: async () => ({ data: { anfrage_id: a.p_anfrage.id, was_created: true }, error: null }) }
+      }
+      throw new Error(`Unerwarteter rpc()-Aufruf: ${name}`)
+    },
+  } as unknown as SupabaseClient
+
+  return {
+    client,
+    getAnfrageBandsRows: () => anfrageBandsRows,
+    getAnfragenRow: () => anfragenRow,
+  }
+}
+
+const THREE_BANDS = [
+  { slug: 'donnaweda', name: 'Donnaweda', email: 'kontakt@donnaweda.de' },
+  { slug: 'oeha-band', name: "Ö'ha", email: 'kontakt@oeha.de' },
+  { slug: 'de-gaudimacha', name: 'De Gaudimacha', email: 'kontakt@gaudimacha.de' },
+]
+
+function threeBandsSubmission(overrides: Record<string, unknown> = {}) {
+  return {
+    idempotencyKey: 'web-e2e-' + Math.random().toString(36).slice(2),
+    bandSlugs: THREE_BANDS.map((b) => b.slug),
+    anlass: 'Dult',
+    datumText: 'Sonntag, den 22.07.2026',
+    location: 'Hauptbühne am Markt',
+    plzOrt: '92356 Kelheim',
+    gaestezahl: '',
+    spielzeit: '',
+    nachricht: '',
+    vorname: 'Pia',
+    nachname: '',
+    email: 'pia@beispiel.de',
+    telefon: '',
+    datenschutz: true,
+    firmaHidden: '',
+    websiteHidden: '',
+    openedAt: Date.now() - 5000,
+    ...overrides,
+  }
+}
+
+// resendOutcomeByRecipient: Map Empfaenger-E-Mail -> Resend-Ergebnis fuer
+// GENAU diesen einen Aufruf (Bandmail ODER Confirmation je nach Empfaenger).
+function buildOutcomeBasedResend(outcomeByRecipient: Map<string, { data: unknown; error: unknown } | 'throw'>) {
+  const sendCalls: { payload: Record<string, unknown> }[] = []
+  const send = async (payload: Record<string, unknown>) => {
+    sendCalls.push({ payload })
+    const outcome = outcomeByRecipient.get(payload.to as string)
+    if (outcome === 'throw') throw new Error('network down')
+    if (!outcome) return { data: { id: 'msg-default' }, error: null }
+    return outcome
+  }
+  const resendClient = { emails: { send } } as unknown as ResendEmailsClient
+  return { resendClient, sendCalls }
+}
+
+test('FULL SUCCESS: alle Bandmails gesendet -> Confirmation wird gesendet', async () => {
+  const { client, getAnfragenRow } = buildEndToEndClient(THREE_BANDS)
+  const outcomes = new Map<string, { data: unknown; error: unknown }>(
+    THREE_BANDS.map((b, i) => [b.email, { data: { id: `msg-band-${i}` }, error: null }])
+  )
+  const { resendClient, sendCalls } = buildOutcomeBasedResend(outcomes)
+
+  await submitAnfrage(threeBandsSubmission(), { ipHash: 'a'.repeat(64) }, { client, getResendClient: () => resendClient })
+
+  assert.equal(sendCalls.length, 4) // 3 Bandmails + 1 Confirmation
+  assert.equal(getAnfragenRow()?.confirmation_status, 'gesendet')
+})
+
+test('PARTIAL FAILURE: eine von drei Bandmails fehlgeschlagen -> Confirmation bleibt ausstehend', async () => {
+  const { client, getAnfragenRow } = buildEndToEndClient(THREE_BANDS)
+  const outcomes = new Map<string, { data: unknown; error: unknown }>([
+    [THREE_BANDS[0].email, { data: { id: 'msg-band-0' }, error: null }],
+    [THREE_BANDS[1].email, { data: { id: 'msg-band-1' }, error: null }],
+    [THREE_BANDS[2].email, { data: null, error: { message: 'invalid_from_address' } }],
+  ])
+  const { resendClient, sendCalls } = buildOutcomeBasedResend(outcomes)
+
+  await submitAnfrage(threeBandsSubmission(), { ipHash: 'a'.repeat(64) }, { client, getResendClient: () => resendClient })
+
+  assert.equal(sendCalls.length, 3) // nur 3 Bandmail-Versuche, KEINE Confirmation
+  assert.equal(getAnfragenRow()?.confirmation_status, 'ausstehend')
+})
+
+test('TOTAL FAILURE: keine Bandmail erfolgreich -> Confirmation bleibt ausstehend', async () => {
+  const { client, getAnfragenRow } = buildEndToEndClient(THREE_BANDS)
+  const outcomes = new Map<string, { data: unknown; error: unknown }>(
+    THREE_BANDS.map((b) => [b.email, { data: null, error: { message: 'invalid_from_address' } }])
+  )
+  const { resendClient, sendCalls } = buildOutcomeBasedResend(outcomes)
+
+  await submitAnfrage(threeBandsSubmission(), { ipHash: 'a'.repeat(64) }, { client, getResendClient: () => resendClient })
+
+  assert.equal(sendCalls.length, 3)
+  assert.equal(getAnfragenRow()?.confirmation_status, 'ausstehend')
+})
+
+test('UNGEKLAERT: mindestens eine Bandmail ungeklaert -> Confirmation bleibt ausstehend', async () => {
+  const { client, getAnfragenRow } = buildEndToEndClient(THREE_BANDS)
+  const outcomes = new Map<string, { data: unknown; error: unknown } | 'throw'>([
+    [THREE_BANDS[0].email, { data: { id: 'msg-band-0' }, error: null }],
+    [THREE_BANDS[1].email, { data: { id: 'msg-band-1' }, error: null }],
+    [THREE_BANDS[2].email, 'throw'],
+  ])
+  const { resendClient, sendCalls } = buildOutcomeBasedResend(outcomes)
+
+  await submitAnfrage(threeBandsSubmission(), { ipHash: 'a'.repeat(64) }, { client, getResendClient: () => resendClient })
+
+  assert.equal(sendCalls.length, 3)
+  assert.equal(getAnfragenRow()?.confirmation_status, 'ausstehend')
+})
+
+// ── Block "Confirmation V2": Band-Retry-Nachtrigger ──────────────────────
+
+test('BAND-RETRY: stellt noch keinen vollstaendigen Erfolg her -> weiterhin keine Confirmation', async () => {
+  const { client, getAnfrageBandsRows, getAnfragenRow } = buildEndToEndClient(THREE_BANDS)
+  const outcomes = new Map<string, { data: unknown; error: unknown }>([
+    [THREE_BANDS[0].email, { data: { id: 'msg-band-0' }, error: null }],
+    [THREE_BANDS[1].email, { data: null, error: { message: 'invalid_from_address' } }],
+    [THREE_BANDS[2].email, { data: null, error: { message: 'invalid_from_address' } }],
+  ])
+  const { resendClient, sendCalls } = buildOutcomeBasedResend(outcomes)
+
+  await submitAnfrage(threeBandsSubmission(), { ipHash: 'a'.repeat(64) }, { client, getResendClient: () => resendClient })
+  assert.equal(getAnfragenRow()?.confirmation_status, 'ausstehend')
+
+  // Nur EINE der beiden fehlgeschlagenen Bands erneut versuchen (weiterhin
+  // nicht ALLE gesendet) -- Confirmation muss ausstehend bleiben.
+  const failedRow = (getAnfrageBandsRows() ?? []).find((r) => r.recipient_email === THREE_BANDS[1].email)!
+  ;(failedRow as Record<string, unknown>).last_attempt_at = new Date(Date.now() - 10 * 60_000).toISOString()
+  outcomes.set(THREE_BANDS[1].email, { data: { id: 'msg-band-1-retry' }, error: null })
+
+  const result = await retryBandSend(failedRow.id as string, { client, getResendClient: () => resendClient })
+
+  assert.deepEqual(result, { ok: true })
+  assert.equal(getAnfragenRow()?.confirmation_status, 'ausstehend')
+  assert.equal(sendCalls.length, 4) // 3 initial + 1 Retry, weiterhin keine Confirmation
+})
+
+test('BAND-RETRY: stellt erstmals vollstaendigen Erfolg her -> Confirmation wird automatisch nachgetriggert', async () => {
+  const { client, getAnfrageBandsRows, getAnfragenRow } = buildEndToEndClient(THREE_BANDS)
+  const outcomes = new Map<string, { data: unknown; error: unknown }>([
+    [THREE_BANDS[0].email, { data: { id: 'msg-band-0' }, error: null }],
+    [THREE_BANDS[1].email, { data: { id: 'msg-band-1' }, error: null }],
+    [THREE_BANDS[2].email, { data: null, error: { message: 'invalid_from_address' } }],
+  ])
+  const { resendClient, sendCalls } = buildOutcomeBasedResend(outcomes)
+
+  await submitAnfrage(threeBandsSubmission(), { ipHash: 'a'.repeat(64) }, { client, getResendClient: () => resendClient })
+  assert.equal(getAnfragenRow()?.confirmation_status, 'ausstehend')
+  assert.equal(sendCalls.length, 3) // 3 Bandmails, KEINE Confirmation
+
+  const failedRow = (getAnfrageBandsRows() ?? []).find((r) => r.recipient_email === THREE_BANDS[2].email)!
+  ;(failedRow as Record<string, unknown>).last_attempt_at = new Date(Date.now() - 10 * 60_000).toISOString()
+  outcomes.set(THREE_BANDS[2].email, { data: { id: 'msg-band-2-retry' }, error: null })
+
+  const result = await retryBandSend(failedRow.id as string, { client, getResendClient: () => resendClient })
+
+  assert.deepEqual(result, { ok: true })
+  assert.equal(sendCalls.length, 5) // + 1 Retry + 1 nachgetriggerte Confirmation
+  assert.equal(getAnfragenRow()?.confirmation_status, 'gesendet')
+})
+
+test('BAND-RETRY-Nachtrigger: bestehender deterministischer Confirmation-Idempotency-Key bleibt unveraendert', async () => {
+  const { client, getAnfrageBandsRows, getAnfragenRow } = buildEndToEndClient(THREE_BANDS)
+  const outcomes = new Map<string, { data: unknown; error: unknown }>([
+    [THREE_BANDS[0].email, { data: { id: 'msg-band-0' }, error: null }],
+    [THREE_BANDS[1].email, { data: { id: 'msg-band-1' }, error: null }],
+    [THREE_BANDS[2].email, { data: null, error: { message: 'invalid_from_address' } }],
+  ])
+  const { resendClient, sendCalls } = buildOutcomeBasedResend(outcomes)
+
+  await submitAnfrage(threeBandsSubmission(), { ipHash: 'a'.repeat(64) }, { client, getResendClient: () => resendClient })
+  const keyBeforeRetry = getAnfragenRow()?.confirmation_provider_idempotency_key
+
+  const failedRow = (getAnfrageBandsRows() ?? []).find((r) => r.recipient_email === THREE_BANDS[2].email)!
+  ;(failedRow as Record<string, unknown>).last_attempt_at = new Date(Date.now() - 10 * 60_000).toISOString()
+  outcomes.set(THREE_BANDS[2].email, { data: { id: 'msg-band-2-retry' }, error: null })
+  await retryBandSend(failedRow.id as string, { client, getResendClient: () => resendClient })
+
+  assert.equal(getAnfragenRow()?.confirmation_provider_idempotency_key, keyBeforeRetry)
+  const confirmationCall = sendCalls.find((c) => c.payload.to === 'pia@beispiel.de')
+  assert.ok(confirmationCall)
 })
 
 // ── Block "Bandanfrage-Mail V3": Template-Version-Persistenz bei Neuanlage ─
