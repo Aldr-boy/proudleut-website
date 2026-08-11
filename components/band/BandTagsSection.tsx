@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Band } from '@/lib/types/band';
 import { formatLocation } from '@/lib/utils/formatLocation';
-import { getCategoryBySlug } from '@/lib/categories';
+import { findCategoryForEventTypeSlug } from './bandTagsCategoryMatch';
 
 type Props = {
   band: Band;
@@ -117,11 +117,12 @@ export function BandTagsSection({ band }: Props) {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {band.eventTypes.map((et, i) => {
-                    const slug = band.categorySlugs?.[i];
-                    return slug && getCategoryBySlug(slug) ? (
+                    const eventTypeSlug = band.categorySlugs?.[i];
+                    const category = eventTypeSlug ? findCategoryForEventTypeSlug(eventTypeSlug) : undefined;
+                    return category ? (
                       <Link
                         key={et}
-                        href={`/veranstaltung/${slug}`}
+                        href={`/veranstaltung/${category.slug}`}
                         className={`${NEUTRAL_CHIP} hover:border-pl-medium hover:text-pl-text motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent`}
                       >
                         {et}
