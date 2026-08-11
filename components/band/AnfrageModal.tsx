@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { computeAvailableAnfrageEventTypes, resolveAnfrageDisplayLabel } from '@/lib/anfrage/anfrageEventTypeOptions';
+import type { BandAnfrageEventType } from '@/lib/types/band';
 
 type BandEntry = {
   slug: string;
   name: string;
-  eventTypes: string[];
+  anfrageEventTypes: BandAnfrageEventType[];
 };
 
 type Props = {
@@ -117,17 +119,17 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
   const [submitError, setSubmitError] = useState('');
   const [datenschutzError, setDatenschutzError] = useState('');
 
-  const uniqueEventTypes = (types: string[]) =>
-    Array.from(new Set(types.map((t) => t.trim()).filter(Boolean)));
-
-  const availableEventTypes = useMemo(() => {
-    if (bands.length === 0) return [];
-    if (bands.length === 1) return uniqueEventTypes(bands[0].eventTypes);
-    const firstBandTypes = uniqueEventTypes(bands[0].eventTypes);
-    return firstBandTypes.filter((type) =>
-      bands.every((band) => uniqueEventTypes(band.eventTypes).includes(type))
-    );
-  }, [bands]);
+  // Schnittmenge weiterhin ueber die kanonische Event-Type-Identitaet
+  // (slug), Anzeige/Submit-Wert erst danach ueber anfrage_label ?? name
+  // aufgeloest (Block "Event-Type-Anfrage-Label V1").
+  const availableAnfrageEventTypes = useMemo(
+    () => computeAvailableAnfrageEventTypes(bands),
+    [bands]
+  );
+  const availableEventTypeLabels = useMemo(
+    () => availableAnfrageEventTypes.map(resolveAnfrageDisplayLabel),
+    [availableAnfrageEventTypes]
+  );
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -153,11 +155,11 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
 
   useEffect(() => {
     if (form.eventtyp && form.eventtyp !== 'sonstiges') {
-      if (!availableEventTypes.includes(form.eventtyp)) {
+      if (!availableEventTypeLabels.includes(form.eventtyp)) {
         setForm((prev) => ({ ...prev, eventtyp: '' }));
       }
     }
-  }, [availableEventTypes, form.eventtyp]);
+  }, [availableEventTypeLabels, form.eventtyp]);
 
   function handleBackdropClick(e: React.MouseEvent<HTMLDialogElement>) {
     if (e.target === dialogRef.current) onClose();
@@ -336,9 +338,12 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
                   className={inputClass}
                 >
                   <option value="" disabled>Bitte wählen…</option>
-                  {availableEventTypes.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  {availableAnfrageEventTypes.map((t) => {
+                    const label = resolveAnfrageDisplayLabel(t);
+                    return (
+                      <option key={t.slug} value={label}>{label}</option>
+                    );
+                  })}
                   <option value="sonstiges">Sonstiges</option>
                 </select>
               </div>

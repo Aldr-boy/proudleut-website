@@ -58,6 +58,19 @@ export type BandMood = {
   slug: string;
 };
 
+// Block "Event-Type-Anfrage-Label V1": eventTypes (Namen) bleibt fuer
+// bestehende Anzeige-Verbraucher (Chips, Cards, Admin, JSON-LD)
+// unveraendert erhalten. anfrageEventTypes ist die zusaetzliche, klar
+// typisierte Struktur ausschliesslich fuer den nativen Anfragekontext:
+// Schnittmengenbildung ueber slug (kanonische Identitaet), Anzeige/Submit
+// ueber anfrageLabel ?? name. anfrageLabel ist null, wenn der Event Type
+// kein eigenes Anfrage-Label hat (Fallback auf name).
+export type BandAnfrageEventType = {
+  name: string;
+  slug: string;
+  anfrageLabel: string | null;
+};
+
 export type Band = {
   id: string;
   name: string;
@@ -69,6 +82,12 @@ export type Band = {
   bandartSlugs: string[];
   eventTypes: string[];
   categorySlugs?: string[];
+  // Optional wie categorySlugs: ausschliesslich fuer Supabase-normalisierte
+  // Baender befuellt (siehe lib/supabase/normalizeBand.ts). Der Airtable-
+  // Pfad (lib/airtable/normalizeBand.ts) liefert dieses Feld bewusst nicht
+  // -- die Legacy-Anfrage-/Kontakt-Flows, die Airtable-Baender verwenden,
+  // sind nicht Teil des nativen Anfragesystems.
+  anfrageEventTypes?: BandAnfrageEventType[];
 
   klingtNach: string[];
   moods: BandMood[];

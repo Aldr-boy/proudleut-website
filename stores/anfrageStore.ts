@@ -1,9 +1,10 @@
 import { create } from 'zustand';
+import type { BandAnfrageEventType } from '@/lib/types/band';
 
 export interface MerkBand {
   slug: string;
   name: string;
-  eventTypes: string[];
+  anfrageEventTypes: BandAnfrageEventType[];
 }
 
 interface AnfrageStore {

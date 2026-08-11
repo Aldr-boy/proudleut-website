@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import { AnfrageModal } from './AnfrageModal';
 import { useAnfrageStore } from '@/stores/anfrageStore';
+import type { BandAnfrageEventType } from '@/lib/types/band';
 
 type Props = {
   name: string;
   slug: string;
-  eventTypes: string[];
+  anfrageEventTypes: BandAnfrageEventType[];
 };
 
-export function HeroCTA({ name, slug, eventTypes }: Props) {
+export function HeroCTA({ name, slug, anfrageEventTypes }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const { isSelected, addBand, removeBand } = useAnfrageStore();
   const isGemerkt = isSelected(slug);
@@ -19,7 +20,7 @@ export function HeroCTA({ name, slug, eventTypes }: Props) {
     if (isGemerkt) {
       removeBand(slug);
     } else {
-      addBand({ slug, name, eventTypes });
+      addBand({ slug, name, anfrageEventTypes });
     }
   };
 
@@ -60,7 +61,7 @@ export function HeroCTA({ name, slug, eventTypes }: Props) {
       </div>
 
       <AnfrageModal
-        bands={[{ slug, name, eventTypes }]}
+        bands={[{ slug, name, anfrageEventTypes }]}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         allowBandRemoval={false}

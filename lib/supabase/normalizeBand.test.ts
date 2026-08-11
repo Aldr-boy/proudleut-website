@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizeMoodAssignments } from './normalizeBand.ts'
+import { normalizeMoodAssignments, normalizeBandFromSupabase } from './normalizeBand.ts'
 
 test('normalizeMoodAssignments: liefert Name UND stabilen Slug pro Zuordnung', () => {
   const raw = [
@@ -55,4 +55,53 @@ test('normalizeMoodAssignments: Eintrag ohne Name oder ohne Slug wird verworfen,
     { sort_order: 2, moods: { name: 'Ohne Slug', slug: '' } },
   ]
   assert.deepEqual(normalizeMoodAssignments(raw), [{ name: 'Vollstaendig', slug: 'vollstaendig' }])
+})
+
+// ── Block "Event-Type-Anfrage-Label V1" ──────────────────────────────
+
+test('normalizeBandFromSupabase: eventTypes enthaelt weiterhin die kanonischen Namen, KEINE Umstellung auf anfrage_label', () => {
+  const row = {
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_event_types: [
+      { sort_order: 1, event_types: { name: 'Firmenfeier & Business Event', slug: 'firmenfeier-business-event', anfrage_label: 'Firmenfeier' } },
+      { sort_order: 2, event_types: { name: 'Hochzeit', slug: 'hochzeit', anfrage_label: null } },
+    ],
+  }
+  const band = normalizeBandFromSupabase(row)
+  assert.deepEqual(band.eventTypes, ['Firmenfeier & Business Event', 'Hochzeit'])
+  assert.deepEqual(band.categorySlugs, ['firmenfeier-business-event', 'hochzeit'])
+})
+
+test('normalizeBandFromSupabase: anfrageEventTypes liefert anfrage_label je Event Type, null bei fehlendem Label', () => {
+  const row = {
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_event_types: [
+      { sort_order: 1, event_types: { name: 'Firmenfeier & Business Event', slug: 'firmenfeier-business-event', anfrage_label: 'Firmenfeier' } },
+      { sort_order: 2, event_types: { name: 'Hochzeit', slug: 'hochzeit', anfrage_label: null } },
+    ],
+  }
+  const band = normalizeBandFromSupabase(row)
+  assert.deepEqual(band.anfrageEventTypes, [
+    { name: 'Firmenfeier & Business Event', slug: 'firmenfeier-business-event', anfrageLabel: 'Firmenfeier' },
+    { name: 'Hochzeit', slug: 'hochzeit', anfrageLabel: null },
+  ])
+})
+
+test('normalizeBandFromSupabase: zwei Privatfeier-Event-Types bleiben ueber ihren Slug unterscheidbar', () => {
+  const row = {
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_event_types: [
+      { sort_order: 1, event_types: { name: 'private Feiern', slug: 'private-feiern', anfrage_label: 'Private Feier' } },
+      { sort_order: 2, event_types: { name: 'exklusive Privatfeiern', slug: 'exklusive-privatfeiern', anfrage_label: 'Exklusive Privatfeier' } },
+    ],
+  }
+  const band = normalizeBandFromSupabase(row)
+  assert.deepEqual(band.anfrageEventTypes.map((t) => t.slug), ['private-feiern', 'exklusive-privatfeiern'])
+  assert.deepEqual(band.anfrageEventTypes.map((t) => t.anfrageLabel), ['Private Feier', 'Exklusive Privatfeier'])
 })
