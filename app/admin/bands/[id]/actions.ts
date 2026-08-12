@@ -12,6 +12,10 @@ import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import { BAND_CARD_REVALIDATION_PATHS } from '@/lib/bandImages/cardRevalidation'
 import { requireAdminSession } from '@/lib/admin/requireAdminSession'
 import { mapContactWriteError } from '@/lib/admin/bandContactValidation'
+import { validateBandDocumentPdfFile } from '@/lib/bandDocuments/validatePdfFile'
+import { deleteBandDocumentFileIfUnreferenced } from '@/lib/bandDocuments/deleteBandDocumentFileIfUnreferenced'
+import { computeBandDocumentSwap } from '@/lib/bandDocuments/reorder'
+import { compareBandDocuments } from '@/lib/bands/bandDocumentsSort'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -1589,4 +1593,446 @@ export async function moveBandGalleryImageAction(formData: FormData): Promise<ne
   revalidatePath(`/band/${bandRow.slug}`)
 
   redirect(`/admin/bands/${bandRow.id}?gallery_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// Banddokumente (Paket 2C, Admin-Dokumentverwaltung)
+//
+// PDF und Cover werden bewusst in getrennten Requests hochgeladen (siehe
+// replaceBandDocumentPdfAction/replaceBandDocumentCoverAction) --
+// next.config.ts serverActions.bodySizeLimit (4.2mb) ist auf genau eine
+// 4-MB-Datei pro Request kalibriert (identisches Muster wie Hero/
+// Thumbnail/Galerie), zwei bis zu 4-MB-grosse Dateien in einem
+// gemeinsamen Formular koennten dieses Limit real ueberschreiten.
+//
+// Direkte service_role-DML statt einer neuen RPC (bewusste Entscheidung,
+// kein Stilbruch): die bestehende Paket-2A-Migration
+// (supabase/band_documents_migration.sql) gewaehrt service_role bereits
+// volle SELECT/INSERT/UPDATE/DELETE-Rechte auf band_documents -- eine
+// neue RPC wuerde eine zusaetzliche, gegen Production auszufuehrende
+// SQL-Datei erfordern, ohne dass dieses Admin-Tool die Nebenlaeufigkeits-
+// /Limit-Garantien braucht, die bei der Galerie eine RPC rechtfertigen.
+// Reorder verwendet zwei einzelne, ownership-geprueft gefilterte UPDATEs
+// (siehe moveBandDocumentAction) statt eines DB-seitigen Zeilen-Locks --
+// fuer diesen MVP akzeptiert; ein Teilfehler wird NIEMALS als Erfolg
+// gemeldet (siehe dort).
+// ─────────────────────────────────────────
+
+const DOCUMENT_TITLE_MAX = 200
+const DOCUMENT_AUDIENCE_LABEL_MAX = 100
+
+function documentErrorRedirect(bandId: string, code: string): never {
+  redirect(`/admin/bands/${bandId}?document_error=${code}`)
+}
+
+type DocumentTextFields = {
+  audience_label: string
+  title: string
+  description: string | null
+}
+
+// Validiert Zielgruppe/Titel/Beschreibung gegen dieselben Grenzen wie die
+// DB-CHECK-Constraints (supabase/band_documents_migration.sql). Liefert
+// entweder die bereinigten Werte oder einen stabilen Fehlercode -- die DB
+// bleibt die letzte Wahrheit, diese Pruefung ist nur eine fruehere,
+// nutzerfreundlichere Fehlermeldung.
+function validateDocumentTextFields(formData: FormData): { ok: true; data: DocumentTextFields } | { ok: false; errorCode: string } {
+  const audience_label = str(formData, 'audience_label')
+  const title = str(formData, 'title')
+  const description = nullIfEmpty(str(formData, 'description'))
+
+  if (!audience_label) return { ok: false, errorCode: 'document_audience_required' }
+  if (audience_label.length > DOCUMENT_AUDIENCE_LABEL_MAX) return { ok: false, errorCode: 'document_audience_too_long' }
+  if (!title) return { ok: false, errorCode: 'document_title_required' }
+  if (title.length > DOCUMENT_TITLE_MAX) return { ok: false, errorCode: 'document_title_too_long' }
+
+  return { ok: true, data: { audience_label, title, description } }
+}
+
+export async function createBandDocumentAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?document_error=document_band_not_found`)
+
+  const fields = validateDocumentTextFields(formData)
+  if (!fields.ok) documentErrorRedirect(bandRow.id, fields.errorCode)
+
+  // ---- 1. PDF aus dem FormData lesen und validieren ----
+  const file = formData.get('document_pdf')
+  if (!(file instanceof File) || file.size === 0) {
+    documentErrorRedirect(bandRow.id, 'document_pdf_required')
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const validation = validateBandDocumentPdfFile(bytes)
+  if (!validation.ok) {
+    documentErrorRedirect(bandRow.id, `document_pdf_${validation.errorCode}`)
+  }
+
+  // ---- 2. Naechste Sortierposition ermitteln (ans Ende anhaengen) ----
+  const { data: existingDocs, error: sortLoadError } = await client
+    .from('band_documents')
+    .select('sort_order')
+    .eq('band_id', bandRow.id)
+
+  if (sortLoadError) documentErrorRedirect(bandRow.id, 'document_load_failed')
+
+  const nextSortOrder = (existingDocs ?? []).reduce((max, row) => Math.max(max, row.sort_order ?? 0), -1) + 1
+
+  // ---- 3. Upload unter neuem, eindeutigem Pfad ----
+  const uniqueSuffix = crypto.randomUUID()
+  const storagePath = buildBandImageStoragePath(bandRow.slug, 'document', 'pdf', uniqueSuffix)
+
+  const { error: uploadError } = await client.storage
+    .from(BAND_MEDIA_BUCKET)
+    .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false })
+
+  if (uploadError) documentErrorRedirect(bandRow.id, 'document_pdf_upload_failed')
+
+  const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
+
+  // ---- 4. Insert (Cover wird bewusst erst danach, ueber einen eigenen
+  // Request, per replaceBandDocumentCoverAction nachgereicht -- siehe
+  // Kommentar am Blockanfang). ----
+  const { error: insertError } = await client.from('band_documents').insert({
+    band_id: bandRow.id,
+    audience_label: fields.data.audience_label,
+    title: fields.data.title,
+    description: fields.data.description,
+    file_url: newUrl,
+    sort_order: nextSortOrder,
+  })
+
+  if (insertError) {
+    const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
+    if (cleanupError) {
+      console.error(`[band-document] Cleanup nach fehlgeschlagenem Insert nicht moeglich (${storagePath}): ${cleanupError.message}`)
+    }
+    documentErrorRedirect(bandRow.id, 'document_db_insert_failed')
+  }
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
+}
+
+export async function updateBandDocumentAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const document_id = str(formData, 'document_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?document_error=document_band_not_found`)
+  if (!document_id) documentErrorRedirect(bandRow.id, 'document_target_required')
+
+  const fields = validateDocumentTextFields(formData)
+  if (!fields.ok) documentErrorRedirect(bandRow.id, fields.errorCode)
+
+  // ---- Ownership-Pruefung UND Update in einem einzigen Statement: die
+  // doppelte eq()-Filterung (id UND band_id) sorgt dafuer, dass ein
+  // document_id, das nicht zu dieser Band gehoert, schlicht null Zeilen
+  // trifft -- .select() gibt in dem Fall ein leeres Array zurueck, kein
+  // Fehler. Das wird explizit von "0 Treffer" unterschieden, statt es
+  // stillschweigend als Erfolg zu werten. ----
+  const { data: updatedRows, error: updateError } = await client
+    .from('band_documents')
+    .update({
+      audience_label: fields.data.audience_label,
+      title: fields.data.title,
+      description: fields.data.description,
+    })
+    .eq('id', document_id)
+    .eq('band_id', bandRow.id)
+    .select('id')
+
+  if (updateError) documentErrorRedirect(bandRow.id, 'document_db_update_failed')
+  if (!updatedRows || updatedRows.length === 0) documentErrorRedirect(bandRow.id, 'document_target_not_found')
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
+}
+
+export async function replaceBandDocumentPdfAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const document_id = str(formData, 'document_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?document_error=document_band_not_found`)
+  if (!document_id) documentErrorRedirect(bandRow.id, 'document_target_required')
+
+  // ---- Bestehende Zeile ownership-geprueft laden (fuer die alte
+  // file_url, die nach erfolgreichem Ersetzen aufzuraeumen ist) ----
+  const { data: existingDoc, error: loadError } = await client
+    .from('band_documents')
+    .select('id, file_url')
+    .eq('id', document_id)
+    .eq('band_id', bandRow.id)
+    .maybeSingle()
+
+  if (loadError) documentErrorRedirect(bandRow.id, 'document_load_failed')
+  if (!existingDoc) documentErrorRedirect(bandRow.id, 'document_target_not_found')
+
+  const file = formData.get('document_pdf')
+  if (!(file instanceof File) || file.size === 0) {
+    documentErrorRedirect(bandRow.id, 'document_pdf_required')
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const validation = validateBandDocumentPdfFile(bytes)
+  if (!validation.ok) {
+    documentErrorRedirect(bandRow.id, `document_pdf_${validation.errorCode}`)
+  }
+
+  const uniqueSuffix = crypto.randomUUID()
+  const storagePath = buildBandImageStoragePath(bandRow.slug, 'document', 'pdf', uniqueSuffix)
+
+  const { error: uploadError } = await client.storage
+    .from(BAND_MEDIA_BUCKET)
+    .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false })
+
+  if (uploadError) documentErrorRedirect(bandRow.id, 'document_pdf_upload_failed')
+
+  const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
+
+  const { error: updateError } = await client
+    .from('band_documents')
+    .update({ file_url: newUrl })
+    .eq('id', existingDoc.id)
+    .eq('band_id', bandRow.id)
+
+  if (updateError) {
+    const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
+    if (cleanupError) {
+      console.error(`[band-document-pdf] Cleanup nach fehlgeschlagenem DB-Update nicht moeglich (${storagePath}): ${cleanupError.message}`)
+    }
+    documentErrorRedirect(bandRow.id, 'document_db_update_failed')
+  }
+
+  await deleteBandDocumentFileIfUnreferenced(client, existingDoc.file_url, 'document-pdf')
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
+}
+
+export async function replaceBandDocumentCoverAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const document_id = str(formData, 'document_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?document_error=document_band_not_found`)
+  if (!document_id) documentErrorRedirect(bandRow.id, 'document_target_required')
+
+  const { data: existingDoc, error: loadError } = await client
+    .from('band_documents')
+    .select('id, thumbnail_url')
+    .eq('id', document_id)
+    .eq('band_id', bandRow.id)
+    .maybeSingle()
+
+  if (loadError) documentErrorRedirect(bandRow.id, 'document_load_failed')
+  if (!existingDoc) documentErrorRedirect(bandRow.id, 'document_target_not_found')
+
+  const file = formData.get('document_cover')
+  if (!(file instanceof File) || file.size === 0) {
+    documentErrorRedirect(bandRow.id, 'document_cover_file_required')
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  // Wiederverwendung der bestehenden, rollenneutralen Bildvalidierung
+  // (Magic Bytes + vollstaendiger Decode, JPEG/PNG/WebP, 4 MB) -- ohne
+  // Aenderung. Sie erzwingt kein Seitenverhaeltnis, Hochformat-Cover sind
+  // hier bereits uneingeschraenkt moeglich (siehe Preflight-Bericht).
+  const validation = await validateBandImageFile(bytes)
+  if (!validation.ok) {
+    documentErrorRedirect(bandRow.id, `document_cover_${validation.errorCode}`)
+  }
+
+  const uniqueSuffix = crypto.randomUUID()
+  const storagePath = buildBandImageStoragePath(bandRow.slug, 'document-cover', validation.ext, uniqueSuffix)
+
+  const { error: uploadError } = await client.storage
+    .from(BAND_MEDIA_BUCKET)
+    .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false })
+
+  if (uploadError) documentErrorRedirect(bandRow.id, 'document_cover_upload_failed')
+
+  const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
+
+  const { error: updateError } = await client
+    .from('band_documents')
+    .update({ thumbnail_url: newUrl })
+    .eq('id', existingDoc.id)
+    .eq('band_id', bandRow.id)
+
+  if (updateError) {
+    const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
+    if (cleanupError) {
+      console.error(`[band-document-cover] Cleanup nach fehlgeschlagenem DB-Update nicht moeglich (${storagePath}): ${cleanupError.message}`)
+    }
+    documentErrorRedirect(bandRow.id, 'document_db_update_failed')
+  }
+
+  if (existingDoc.thumbnail_url) {
+    await deleteBandDocumentFileIfUnreferenced(client, existingDoc.thumbnail_url, 'document-cover')
+  }
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
+}
+
+export async function deleteBandDocumentAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const document_id = str(formData, 'document_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?document_error=document_band_not_found`)
+  if (!document_id) documentErrorRedirect(bandRow.id, 'document_target_required')
+
+  // ---- Ownership-geprueftes Delete: doppelte eq()-Filterung, .select()
+  // liefert die geloeschte(n) Zeile(n) inkl. file_url/thumbnail_url fuer
+  // den nachgelagerten Storage-Cleanup zurueck. Leeres Ergebnis ohne
+  // Fehler bedeutet "keine passende Zeile" (falsche ID oder falsche
+  // Band) -- wird explizit als Fehler behandelt. ----
+  const { data: deletedRows, error: deleteError } = await client
+    .from('band_documents')
+    .delete()
+    .eq('id', document_id)
+    .eq('band_id', bandRow.id)
+    .select('file_url, thumbnail_url')
+
+  if (deleteError) documentErrorRedirect(bandRow.id, 'document_db_delete_failed')
+  if (!deletedRows || deletedRows.length === 0) documentErrorRedirect(bandRow.id, 'document_target_not_found')
+
+  const deleted = deletedRows[0]
+  await deleteBandDocumentFileIfUnreferenced(client, deleted.file_url, 'document-pdf')
+  if (deleted.thumbnail_url) {
+    await deleteBandDocumentFileIfUnreferenced(client, deleted.thumbnail_url, 'document-cover')
+  }
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
+}
+
+export async function moveBandDocumentAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const document_id = str(formData, 'document_id')
+  const direction = str(formData, 'direction')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?document_error=document_band_not_found`)
+  if (!document_id) documentErrorRedirect(bandRow.id, 'document_target_required')
+  if (direction !== 'up' && direction !== 'down') documentErrorRedirect(bandRow.id, 'document_invalid_direction')
+
+  // ---- Aktuelle Anzeige-Reihenfolge frisch laden (dieselbe deterministische
+  // Sortierung wie das oeffentliche Frontend, siehe
+  // lib/bands/bandDocumentsSort.ts) -- die Zielpositionen werden aus DIESER
+  // Reihenfolge berechnet, nicht aus womoeglich veralteten Client-Daten. ----
+  const { data: docs, error: loadError } = await client
+    .from('band_documents')
+    .select('id, sort_order, created_at')
+    .eq('band_id', bandRow.id)
+
+  if (loadError) documentErrorRedirect(bandRow.id, 'document_load_failed')
+
+  const orderedIds = (docs ?? []).slice().sort(compareBandDocuments).map(d => d.id)
+  const swap = computeBandDocumentSwap(orderedIds, document_id, direction as 'up' | 'down')
+
+  // Bereits am Rand -> sauberer No-op, kein Fehler (identisches Verhalten
+  // zur Galerie-Reorder-RPC an den Raendern).
+  if (!swap) redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
+
+  // ---- Zwei einzelne, ownership-geprueft gefilterte UPDATEs (bewusst
+  // keine RPC, siehe Blockkommentar oben). Xandi-Vorgabe: ein
+  // Teilfehler darf NIEMALS als Erfolg gemeldet werden -- beide
+  // .select('id')-Ergebnisse werden auf tatsaechlich genau 1 getroffene
+  // Zeile geprueft, nicht nur auf error === null. Bei einem Fehlschlag
+  // (gleich welcher der beiden Updates) kann die Reihenfolge kurzzeitig
+  // inkonsistent bleiben (kein Rollback moeglich ohne RPC/Transaktion) --
+  // das ist fuer diesen MVP explizit akzeptiert, wird aber niemals als
+  // Erfolg dargestellt und ist beim naechsten erfolgreichen Reorder
+  // selbstheilend, da dieser wieder von der frisch geladenen,
+  // tatsaechlichen Reihenfolge ausgeht. ----
+  const [updateA, updateB] = await Promise.all([
+    client.from('band_documents').update({ sort_order: swap.aOrder }).eq('id', swap.aId).eq('band_id', bandRow.id).select('id'),
+    client.from('band_documents').update({ sort_order: swap.bOrder }).eq('id', swap.bId).eq('band_id', bandRow.id).select('id'),
+  ])
+
+  const aOk = !updateA.error && (updateA.data?.length ?? 0) === 1
+  const bOk = !updateB.error && (updateB.data?.length ?? 0) === 1
+
+  if (!aOk || !bOk) documentErrorRedirect(bandRow.id, 'document_reorder_failed')
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
 }

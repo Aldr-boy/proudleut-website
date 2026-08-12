@@ -16,7 +16,10 @@ import { HeroImageEditorSection } from './HeroImageEditorSection'
 import { ThumbnailEditorSection } from './ThumbnailEditorSection'
 import { GalleryEditorSection } from './GalleryEditorSection'
 import type { GalleryImageData } from './GalleryEditorSection'
+import { BandDocumentsEditorSection } from './BandDocumentsEditorSection'
+import type { BandDocumentData } from './BandDocumentsEditorSection'
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
+import { compareBandDocuments } from '@/lib/bands/bandDocumentsSort'
 import type {
   BandRepertoireStyleAssignment,
   RepertoireStyleCatalogEntry,
@@ -165,6 +168,35 @@ const THUMBNAIL_ERROR_MESSAGES: Record<string, string> = {
   db_error:                   'Datenbankfehler – bitte erneut versuchen.',
 }
 
+const DOCUMENT_ERROR_MESSAGES: Record<string, string> = {
+  document_band_not_found:      'Band nicht gefunden.',
+  document_target_required:     'Kein Dokument ausgewählt.',
+  document_target_not_found:    'Dieses Dokument wurde nicht gefunden – bitte Seite neu laden.',
+  document_load_failed:         'Bestehende Dokumente konnten nicht geladen werden – bitte Seite neu laden.',
+  document_audience_required:   'Bitte eine Zielgruppe angeben.',
+  document_audience_too_long:   'Zielgruppe ist zu lang (max. 100 Zeichen).',
+  document_title_required:      'Bitte einen Titel angeben.',
+  document_title_too_long:      'Titel ist zu lang (max. 200 Zeichen).',
+  document_pdf_required:        'Bitte eine PDF-Datei auswählen.',
+  document_pdf_empty:           'Die ausgewählte PDF-Datei ist leer.',
+  document_pdf_too_large:       'Die PDF-Datei ist größer als 4 MB.',
+  document_pdf_invalid_type:    'Die Datei ist keine gültige PDF-Datei.',
+  document_pdf_upload_failed:   'PDF-Upload fehlgeschlagen – bitte erneut versuchen.',
+  document_cover_file_required: 'Bitte eine Bilddatei auswählen.',
+  document_cover_empty:         'Die ausgewählte Datei ist leer.',
+  document_cover_too_large:     'Die Datei ist größer als 4 MB.',
+  document_cover_invalid_type:  'Nur JPEG-, PNG- oder WebP-Dateien sind erlaubt.',
+  document_cover_invalid_image: 'Die Datei ist keine vollständig lesbare JPEG-, PNG- oder WebP-Bilddatei.',
+  document_cover_too_many_pixels: 'Das Bild ist zu hoch aufgelöst. Maximal erlaubt sind 25 Megapixel.',
+  document_cover_upload_failed: 'Cover-Upload fehlgeschlagen – bitte erneut versuchen.',
+  document_db_insert_failed:    'Dokument konnte nicht angelegt werden – bitte erneut versuchen.',
+  document_db_update_failed:    'Änderung konnte nicht gespeichert werden – bitte erneut versuchen.',
+  document_db_delete_failed:    'Dokument konnte nicht gelöscht werden – bitte erneut versuchen.',
+  document_invalid_direction:   'Unbekannte Verschieben-Aktion.',
+  document_reorder_failed:      'Reihenfolge konnte nicht vollständig gespeichert werden – bitte Seite neu laden und erneut versuchen.',
+  db_error:                     'Datenbankfehler – bitte erneut versuchen.',
+}
+
 const GALLERY_ERROR_MESSAGES: Record<string, string> = {
   gallery_band_not_found:    'Band nicht gefunden.',
   gallery_file_required:     'Bitte eine Bilddatei auswählen.',
@@ -299,6 +331,8 @@ type SearchParams = Promise<{
   thumbnail_error?: string
   gallery_saved?: string
   gallery_error?: string
+  document_saved?: string
+  document_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -483,6 +517,17 @@ export default async function AdminBandDetailPage({
     source_provider: string
   }
 
+  type BandDocumentRow = {
+    id: string
+    audience_label: string
+    title: string
+    description: string | null
+    file_url: string
+    thumbnail_url: string | null
+    sort_order: number
+    created_at: string
+  }
+
   const [
     { data: similarRelationsRaw, error: similarRelationsError },
     { data: candidateBandsRaw, error: candidateBandsError },
@@ -493,6 +538,7 @@ export default async function AdminBandDetailPage({
     { data: heroMediaAssetsRaw, error: heroMediaAssetsError },
     { data: thumbnailMediaAssetsRaw, error: thumbnailMediaAssetsError },
     { data: galleryMediaAssetsRaw, error: galleryMediaAssetsError },
+    { data: bandDocumentsRaw, error: bandDocumentsError },
   ] = await Promise.all([
     client
       .from('band_relations')
@@ -552,6 +598,11 @@ export default async function AdminBandDetailPage({
       .eq('role', 'gallery')
       .order('sort_order', { ascending: true })
       .returns<MediaAssetRow[]>(),
+    client
+      .from('band_documents')
+      .select('id, audience_label, title, description, file_url, thumbnail_url, sort_order, created_at')
+      .eq('band_id', id)
+      .returns<BandDocumentRow[]>(),
   ])
 
   // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
@@ -627,6 +678,23 @@ export default async function AdminBandDetailPage({
     alt: row.alt_text ?? `${band.name} live`,
   }))
 
+  // Banddokumente (Paket 2C): gleiches Fail-closed-Prinzip wie Galerie --
+  // ein Ladefehler darf nie als "keine Dokumente" interpretiert werden.
+  // Sortierung identisch zum oeffentlichen Frontend (lib/bands/bandDocumentsSort.ts),
+  // damit die Admin-Reihenfolge exakt der spaeter angezeigten entspricht.
+  const documentsLoadError = !!bandDocumentsError
+  const bandDocuments: BandDocumentData[] = (bandDocumentsRaw ?? [])
+    .slice()
+    .sort(compareBandDocuments)
+    .map((row) => ({
+      id: row.id,
+      audienceLabel: row.audience_label,
+      title: row.title,
+      description: row.description,
+      fileUrl: row.file_url,
+      thumbnailUrl: row.thumbnail_url,
+    }))
+
   let locationUsageCount = 0
   if (band.home_location_id) {
     const { count } = await client
@@ -673,6 +741,9 @@ export default async function AdminBandDetailPage({
     : null
   const galleryErrorMsg = sp.gallery_error
     ? (GALLERY_ERROR_MESSAGES[sp.gallery_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const documentErrorMsg = sp.document_error
+    ? (DOCUMENT_ERROR_MESSAGES[sp.document_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -938,6 +1009,16 @@ export default async function AdminBandDetailPage({
           loadError={galleryLoadError}
           successMsg={sp.gallery_saved ? 'Galerie gespeichert.' : undefined}
           errorMsg={galleryErrorMsg ?? undefined}
+        />
+
+        {/* Unterlagen & Präsentationen (Paket 2C): anlegen, Text/PDF/Cover
+            bearbeiten, umsortieren, loeschen */}
+        <BandDocumentsEditorSection
+          bandId={band.id}
+          documents={bandDocuments}
+          loadError={documentsLoadError}
+          successMsg={sp.document_saved ? 'Gespeichert.' : undefined}
+          errorMsg={documentErrorMsg ?? undefined}
         />
 
         {/* ─── Kontakte ─────────────────────────────── */}

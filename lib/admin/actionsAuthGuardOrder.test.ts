@@ -18,8 +18,9 @@ import path from 'node:path'
 // zuverlaessig brechen. Die reine Session-Vergleichslogik selbst ist
 // separat in isValidAdminSession.test.ts unit-getestet.
 //
-// Liste per Vollstaendigkeitspruefung ermittelt (Codex-P1-Nachtrag):
-// alle 18 exportierten Funktionen dieser Datei erreichen
+// Liste per Vollstaendigkeitspruefung ermittelt (Codex-P1-Nachtrag,
+// erweitert um die 6 Banddokument-Actions aus Paket 2C):
+// alle 24 exportierten Funktionen dieser Datei erreichen
 // createAdminClient() direkt im eigenen Funktionskoerper (kein
 // indirekter lokaler Helper mit eigenem DB-Zugriff gefunden -- die
 // wenigen lokalen, nicht exportierten Funktionen in dieser Datei sind
@@ -49,6 +50,12 @@ const PROTECTED_ACTIONS = [
   'addBandGalleryImageAction',
   'deleteBandGalleryImageAction',
   'moveBandGalleryImageAction',
+  'createBandDocumentAction',
+  'updateBandDocumentAction',
+  'replaceBandDocumentPdfAction',
+  'replaceBandDocumentCoverAction',
+  'deleteBandDocumentAction',
+  'moveBandDocumentAction',
 ]
 
 function extractFunctionBody(functionName: string): string {

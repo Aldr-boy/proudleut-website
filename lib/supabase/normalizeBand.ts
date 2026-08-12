@@ -1,6 +1,7 @@
 import type { ImageAsset } from '../types/image'
 import type {
   Band,
+  BandDocument,
   BandLocation,
   BandMood,
   ReferenceEvent,
@@ -8,6 +9,7 @@ import type {
   SocialLinks,
   WeddingInfo,
 } from '../types/band'
+import { compareBandDocuments } from '../bands/bandDocumentsSort.ts'
 
 type Row = Record<string, unknown>
 
@@ -205,6 +207,23 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     }))
     .filter(re => re.eventName.length > 0)
 
+  // Banddokumente (Paket 2A) -- deterministische Sortierung mit stabilem
+  // Tie-Breaker (sort_order -> created_at -> id), siehe
+  // lib/bands/bandDocumentsSort.ts. Zeilen ohne id/title/audience_label/
+  // file_url werden verworfen (defensiv, diese Spalten sind in der DB NOT
+  // NULL, sollte in der Praxis nicht vorkommen).
+  const documents: BandDocument[] = asArr(r.band_documents as Row[] | null)
+    .sort(compareBandDocuments)
+    .map(doc => ({
+      id:            str(doc.id) ?? '',
+      title:         str(doc.title) ?? '',
+      audienceLabel: str(doc.audience_label) ?? '',
+      description:   str(doc.description),
+      fileUrl:       str(doc.file_url) ?? '',
+      thumbnailUrl:  str(doc.thumbnail_url),
+    }))
+    .filter(d => d.id.length > 0 && d.title.length > 0 && d.audienceLabel.length > 0 && d.fileUrl.length > 0)
+
   // Similar bands (band_relations, max 3, sorted by rank)
   // Nur kuratierte relation_type='similar' -- 'alternative'/'often_together'/
   // 'same_sound_world' sind keine "gefaellt mir"-Empfehlungen.
@@ -291,6 +310,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     socialMediaStats,
     referenceEvents,
     similarBands,
+    documents,
     homepageReady: false,
   }
 }

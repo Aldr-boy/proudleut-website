@@ -105,3 +105,93 @@ test('normalizeBandFromSupabase: zwei Privatfeier-Event-Types bleiben ueber ihre
   assert.deepEqual(band.anfrageEventTypes.map((t) => t.slug), ['private-feiern', 'exklusive-privatfeiern'])
   assert.deepEqual(band.anfrageEventTypes.map((t) => t.anfrageLabel), ['Private Feier', 'Exklusive Privatfeier'])
 })
+
+// ── Paket 2A "Banddokumente" ──────────────────────────────────────────
+
+test('normalizeBandFromSupabase: keine band_documents -> documents ist ein leeres Array, kein Crash', () => {
+  const band = normalizeBandFromSupabase({ name: 'Testband', slug: 'testband', status: 'active' })
+  assert.deepEqual(band.documents, [])
+})
+
+test('normalizeBandFromSupabase: genau 1 Dokument wird vollstaendig gemappt, optionale Felder fehlen defensiv', () => {
+  const row = {
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_documents: [
+      {
+        id: 'doc-1',
+        title: 'Präsentation für Veranstalter',
+        audience_label: 'Für Veranstalter & Festwirte',
+        description: null,
+        file_url: 'https://example.com/band-media/doc-1.pdf',
+        thumbnail_url: null,
+        sort_order: 0,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ],
+  }
+  const band = normalizeBandFromSupabase(row)
+  assert.deepEqual(band.documents, [
+    {
+      id: 'doc-1',
+      title: 'Präsentation für Veranstalter',
+      audienceLabel: 'Für Veranstalter & Festwirte',
+      description: undefined,
+      fileUrl: 'https://example.com/band-media/doc-1.pdf',
+      thumbnailUrl: undefined,
+    },
+  ])
+})
+
+test('normalizeBandFromSupabase: mehrere Dokumente werden deterministisch nach sort_order sortiert', () => {
+  const row = {
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_documents: [
+      { id: 'doc-b', title: 'B', audience_label: 'Für Brautpaare', file_url: 'https://example.com/b.pdf', sort_order: 1, created_at: '2026-01-01T00:00:00Z' },
+      { id: 'doc-a', title: 'A', audience_label: 'Für Veranstalter', file_url: 'https://example.com/a.pdf', sort_order: 0, created_at: '2026-01-01T00:00:00Z' },
+    ],
+  }
+  const band = normalizeBandFromSupabase(row)
+  assert.deepEqual(band.documents.map((d) => d.id), ['doc-a', 'doc-b'])
+})
+
+test('normalizeBandFromSupabase: optionale description/thumbnail_url werden uebernommen, wenn vorhanden', () => {
+  const row = {
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_documents: [
+      {
+        id: 'doc-1',
+        title: 'Präsentation',
+        audience_label: 'Für Veranstalter',
+        description: 'Kurzbeschreibung der Präsentation.',
+        file_url: 'https://example.com/doc-1.pdf',
+        thumbnail_url: 'https://example.com/doc-1-cover.jpg',
+        sort_order: 0,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ],
+  }
+  const band = normalizeBandFromSupabase(row)
+  assert.equal(band.documents[0].description, 'Kurzbeschreibung der Präsentation.')
+  assert.equal(band.documents[0].thumbnailUrl, 'https://example.com/doc-1-cover.jpg')
+})
+
+test('normalizeBandFromSupabase: Dokumentzeile ohne Pflichtfeld (title/audience_label/file_url) wird verworfen', () => {
+  const row = {
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_documents: [
+      { id: 'doc-1', title: '', audience_label: 'Für Veranstalter', file_url: 'https://example.com/doc-1.pdf', sort_order: 0, created_at: '2026-01-01T00:00:00Z' },
+      { id: 'doc-2', title: 'Titel', audience_label: '', file_url: 'https://example.com/doc-2.pdf', sort_order: 1, created_at: '2026-01-01T00:00:00Z' },
+      { id: 'doc-3', title: 'Titel', audience_label: 'Für Veranstalter', file_url: '', sort_order: 2, created_at: '2026-01-01T00:00:00Z' },
+    ],
+  }
+  const band = normalizeBandFromSupabase(row)
+  assert.deepEqual(band.documents, [])
+})

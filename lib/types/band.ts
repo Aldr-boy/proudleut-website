@@ -49,6 +49,19 @@ export type SimilarBandReferences = {
   manual3?: string;
 };
 
+// Optionales Banddokument fuer Veranstalter (z. B. PDF-Praesentation),
+// siehe supabase/band_documents_migration.sql. fileUrl/thumbnailUrl sind
+// volle oeffentliche URLs, analog ImageAsset.url. Bewusst minimal (Paket
+// 2A) -- kein Dokumenttyp, kein konfigurierbarer CTA-Text.
+export type BandDocument = {
+  id: string;
+  title: string;
+  audienceLabel: string;
+  description?: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+};
+
 // "Klingt nach"-Mood mit stabilem Slug fuer URL-/Filterabgleich (z. B.
 // /bands?mood=<slug>) -- klingtNach (Namen) bleibt fuer bestehende
 // Anzeige-Verbraucher unveraendert erhalten, moods ist die zusaetzliche,
@@ -111,5 +124,6 @@ export type Band = {
   socialMediaStats?: SocialMediaStats;
   referenceEvents: ReferenceEvent[];
   similarBands: SimilarBandReferences;
+  documents: BandDocument[];
   homepageReady: boolean;
 };
