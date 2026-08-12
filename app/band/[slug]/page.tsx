@@ -15,6 +15,7 @@ import { BandWeddingModule } from '@/components/band/BandWeddingModule';
 import { BandSocialIndex } from '@/components/band/BandSocialIndex';
 import { BandContactSection } from '@/components/band/BandContactSection';
 import { HeroCTA } from '@/components/band/HeroCTA';
+import { BandFloatingCta } from '@/components/band/BandFloatingCta';
 import { BandVideoSection } from '@/components/band/BandVideoSection';
 import { getYouTubeEmbedUrl } from '@/lib/youtube';
 
@@ -70,8 +71,18 @@ export default async function BandPage({ params }: PageProps) {
   const similarBands = getSimilarBands(band, allBands);
 
 
+  const referenceCount = band.referenceEvents.length;
+  const s = band.socialMediaStats;
+  const hasSocialStats = !!(s?.igFollowers || s?.fbFollowers || s?.ytSubscribers);
+  // Auftrag 4.3: bei genau einer Referenz heller, kompakter Grund (kein
+  // grosser dunkler Block) -- kann sich dadurch nicht mehr mit der
+  // dunklen Social-Stats-Buehne zu einer Insel verschmelzen lassen. Ab 2
+  // Referenzen bleibt das bestehende Merge-Verhalten (max. 2 dunkle
+  // Buehnen-Content-Sections/Seite: Hero + eine Insel).
+  const mergeStageIsland = referenceCount >= 2 && hasSocialStats;
+
   return (
-    <article className="bg-pl-canvas">
+    <article className="bg-pl-canvas pb-20 md:pb-0">
       {/* JSON-LD – produktiv, kein Debug */}
       <script
         type="application/ld+json"
@@ -83,27 +94,38 @@ export default async function BandPage({ params }: PageProps) {
       <BandTagsSection band={band} />
       <BandVideoSection embedUrl={embedUrl} bandName={band.name} />
       <BandDescription band={band} />
-      {(() => {
-        const hasReferenceEvents = band.referenceEvents.length > 0;
-        const s = band.socialMediaStats;
-        const hasSocialStats = !!(s?.igFollowers || s?.fbFollowers || s?.ytSubscribers);
-        const both = hasReferenceEvents && hasSocialStats;
-        if (!hasReferenceEvents && !hasSocialStats) return null;
-        return (
-          <section className="bg-pl-stage">
-            <BandReferenceEvents band={band} compactBottom={both} />
-            {both && <div className="border-t border-white/10" />}
-            <BandSocialIndex band={band} compactTop={both} />
-          </section>
-        );
-      })()}
+
+      {referenceCount === 1 && <BandReferenceEvents band={band} />}
+
+      {referenceCount >= 2 && (
+        <section className="bg-pl-stage">
+          <BandReferenceEvents band={band} compactBottom={mergeStageIsland} />
+          {mergeStageIsland && <div className="border-t border-white/10" />}
+          {mergeStageIsland && <BandSocialIndex band={band} compactTop />}
+        </section>
+      )}
+
+      {hasSocialStats && !mergeStageIsland && (
+        <section className="bg-pl-stage">
+          <BandSocialIndex band={band} />
+        </section>
+      )}
+
       <BandGallery band={band} />
       <BandWeddingModule band={band} />
       <BandContactSection band={band} websiteUrl={websiteUrl} />
 
+      <BandFloatingCta
+        name={band.name}
+        slug={band.slug}
+        anfrageEventTypes={band.anfrageEventTypes ?? []}
+        heroCtaId="hero-cta"
+        contactSectionId="band-contact-section"
+      />
+
       {/* Ähnliche Bands */}
       {similarBands.length > 0 ? (
-        <section className="bg-pl-canvas border-t border-pl-soft py-12 md:py-16 px-4 sm:px-6">
+        <section className="bg-pl-canvas border-t border-pl-soft py-16 md:py-20 px-4 sm:px-6">
           <div className="pl-container-shell">
             <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">
               Ähnliche Bands
