@@ -21,6 +21,7 @@ export async function getBandFromSupabase(slug: string) {
       videos (*),
       social_profiles (*),
       reference_events (*),
+      band_documents (*),
       band_event_types ( event_types (*) ),
       band_band_types ( band_types (*) ),
       band_lineups ( lineups (*) ),

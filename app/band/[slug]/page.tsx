@@ -11,6 +11,7 @@ import { BandTagsSection } from '@/components/band/BandTagsSection';
 import { BandDescription } from '@/components/band/BandDescription';
 import { BandReferenceEvents } from '@/components/band/BandReferenceEvents';
 import { BandGallery } from '@/components/band/BandGallery';
+import { BandDocumentsSection } from '@/components/band/BandDocumentsSection';
 import { BandWeddingModule } from '@/components/band/BandWeddingModule';
 import { BandSocialIndex } from '@/components/band/BandSocialIndex';
 import { BandContactSection } from '@/components/band/BandContactSection';
@@ -112,6 +113,7 @@ export default async function BandPage({ params }: PageProps) {
       )}
 
       <BandGallery band={band} />
+      <BandDocumentsSection band={band} />
       <BandWeddingModule band={band} />
       <BandContactSection band={band} websiteUrl={websiteUrl} />
 

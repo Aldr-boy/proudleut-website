@@ -280,6 +280,10 @@ export function normalizeBand(
       manual2: firstStr(f['similar_2_name']),
       manual3: firstStr(f['similar_3_name']),
     },
+    // Banddokumente (Paket 2A) sind ausschliesslich Supabase-normalisiert
+    // (siehe lib/supabase/normalizeBand.ts) -- der Airtable-Pfad kennt
+    // dieses Feld nicht und liefert immer ein leeres Array.
+    documents: [],
     homepageReady: normalizeBoolean(f['Homepage-ready: ja/nein']) === true,
   };
 }
