@@ -7,12 +7,12 @@ type Props = {
   band: Band;
 };
 
+// Ebene 1 "Klingt nach" -- emotional fuehrend, groesste/prominenteste Chips.
 const GOLDEN_CHIP =
-  'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border';
+  'inline-flex items-center px-4 py-2 md:px-5 md:py-2.5 rounded-full text-sm md:text-base font-medium border';
+// Ebene 2 "Musikalisch verortet" -- zweite Ebene, kleinere sekundaere Chips.
 const PURPLE_CHIP =
-  'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-pl-accent-subtle text-pl-accent-deep';
-const NEUTRAL_CHIP =
-  'inline-flex items-center px-3 py-1 rounded-full text-xs border border-pl-soft text-pl-text-muted';
+  'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-pl-accent-subtle text-pl-accent-deep';
 
 export function BandTagsSection({ band }: Props) {
   const hasKlingtNach = band.klingtNach.length > 0;
@@ -92,21 +92,29 @@ export function BandTagsSection({ band }: Props) {
           </div>
         )}
 
-        {/* Quick Facts */}
+        {/* Ebene 3: Bandart · Herkunft · Besetzung -- ruhige typografische
+            Faktenzeile, keine Karten, Trennung ueber "·". Labels bleiben als
+            sr-only erhalten (Auftrag: "keine vorhandene Bandinformation geht
+            verloren"), sind aber visuell bewusst nicht mehr sichtbar. */}
         {quickFacts.length > 0 && (
-          <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-4 border-t border-pl-soft pt-7">
-            {quickFacts.map(({ label, value }) => (
-              <div key={label}>
-                <dt className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-1">
-                  {label}
-                </dt>
-                <dd className="text-sm font-medium text-pl-text">{value}</dd>
-              </div>
+          <div className="flex flex-wrap items-baseline gap-x-3 border-t border-pl-soft pt-7 text-sm font-medium text-pl-text">
+            {quickFacts.map(({ label, value }, i) => (
+              <span key={label} className="flex items-baseline gap-x-3">
+                {i > 0 && <span className="text-pl-text-hint" aria-hidden="true">·</span>}
+                <span>
+                  <span className="sr-only">{label}: </span>
+                  {value}
+                </span>
+              </span>
             ))}
-          </dl>
+          </div>
         )}
 
-        {/* Spielt bei + Vernetzt */}
+        {/* Ebene 4 "Spielt bei" + Vernetzt -- deutlich zurueckgenommene
+            Meta-Ebene. Textliste mit "·"-Trennern statt Chip-Wolke. Bereits
+            bestehende Kategorie-Verlinkung (siehe bandTagsCategoryMatch.ts)
+            bleibt funktional erhalten -- nur die visuelle Chip-Darstellung
+            entfaellt, nicht der Linkmehrwert (interne Verlinkung/SEO). */}
         {(band.eventTypes.length > 0 || hasSocialLinks) && (
           <div className="flex flex-col sm:flex-row sm:items-start gap-8 border-t border-pl-soft pt-7">
 
@@ -115,25 +123,27 @@ export function BandTagsSection({ band }: Props) {
                 <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
                   Spielt bei
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <p className="text-sm text-pl-text-muted leading-loose">
                   {band.eventTypes.map((et, i) => {
                     const eventTypeSlug = band.categorySlugs?.[i];
                     const category = eventTypeSlug ? findCategoryForEventTypeSlug(eventTypeSlug) : undefined;
-                    return category ? (
-                      <Link
-                        key={et}
-                        href={`/veranstaltung/${category.slug}`}
-                        className={`${NEUTRAL_CHIP} hover:border-pl-medium hover:text-pl-text motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent`}
-                      >
-                        {et}
-                      </Link>
-                    ) : (
-                      <span key={et} className={NEUTRAL_CHIP}>
-                        {et}
+                    return (
+                      <span key={et}>
+                        {i > 0 && <span className="text-pl-text-hint" aria-hidden="true"> · </span>}
+                        {category ? (
+                          <Link
+                            href={`/veranstaltung/${category.slug}`}
+                            className="rounded-sm hover:text-pl-text motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+                          >
+                            {et}
+                          </Link>
+                        ) : (
+                          et
+                        )}
                       </span>
                     );
                   })}
-                </div>
+                </p>
               </div>
             )}
 

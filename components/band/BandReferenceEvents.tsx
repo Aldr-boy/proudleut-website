@@ -1,24 +1,44 @@
-'use client';
-
-import { useState } from 'react';
 import type { Band } from '@/lib/types/band';
-
-const INITIAL_COUNT = 4;
+import { referenceEventsVariant } from '@/lib/bands/bandReferenceEventsLayout';
 
 type Props = { band: Band; compactBottom?: boolean };
 
+// Auftrag 4.3: 0 -> Section entfaellt. 1 -> kompakt auf hellem Grund, kein
+// grosser dunkler Block, neutrale Mikrocopy (NICHT "Zuletzt live erlebt" --
+// eine einzelne, ggf. aeltere Referenz darf keine Inaktivitaet suggerieren).
+// 2+ -> eigene dunkle Buehnen-Insel entsprechend 2d, alle sichtbar, keine
+// "Alle anzeigen"-Pagination mehr (vorheriges Verhalten entfernt).
 export function BandReferenceEvents({ band, compactBottom }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  const events = band.referenceEvents;
+  const variant = referenceEventsVariant(events.length);
+  if (variant === 'none') return null;
 
-  if (band.referenceEvents.length === 0) return null;
-
-  const visible = expanded
-    ? band.referenceEvents
-    : band.referenceEvents.slice(0, INITIAL_COUNT);
-  const hasMore = band.referenceEvents.length > INITIAL_COUNT;
+  if (variant === 'compact-light') {
+    const ev = events[0];
+    return (
+      <section className="bg-pl-canvas border-b border-pl-soft py-12 md:py-16 px-4 sm:px-6">
+        <div className="pl-container-shell flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-10">
+          <div className="shrink-0">
+            <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-1">
+              Referenz-Events
+            </p>
+            <p className="text-lg font-bold text-pl-text">Live erlebt bei</p>
+          </div>
+          <div className="bg-pl-elevated border border-pl-soft shadow-pl-photo rounded-xl px-6 py-4">
+            <p className="text-base font-semibold text-pl-text">{ev.eventName}</p>
+            {(ev.city || ev.year) && (
+              <p className="mt-1 text-sm text-pl-text-muted">
+                {[ev.city, ev.year].filter(Boolean).join(' · ')}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <div className={`${compactBottom ? 'pt-12 md:pt-16 pb-8' : 'py-12 md:py-16'} px-4 sm:px-6`}>
+    <div className={`${compactBottom ? 'pt-16 md:pt-20 pb-8' : 'py-16 md:py-20'} px-4 sm:px-6`}>
       <div className="pl-container-shell">
         <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-2">
           Referenz-Events
@@ -28,14 +48,9 @@ export function BandReferenceEvents({ band, compactBottom }: Props) {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {visible.map((ev, i) => (
-            <div
-              key={i}
-              className="bg-pl-stage-elevated border border-pl-stage rounded-xl p-5"
-            >
-              <p className="text-base md:text-lg font-semibold text-pl-on-stage">
-                {ev.eventName}
-              </p>
+          {events.map((ev, i) => (
+            <div key={i} className="bg-pl-stage-elevated border border-pl-stage rounded-xl p-5">
+              <p className="text-base md:text-lg font-semibold text-pl-on-stage">{ev.eventName}</p>
               {(ev.city || ev.year) && (
                 <p className="mt-1 text-sm text-pl-on-stage-muted">
                   {[ev.city, ev.year].filter(Boolean).join(' · ')}
@@ -44,23 +59,6 @@ export function BandReferenceEvents({ band, compactBottom }: Props) {
             </div>
           ))}
         </div>
-
-        {hasMore && (
-          <div className="mt-7 text-center">
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold
-                         border border-pl-on-stage-muted/30 text-pl-on-stage-muted
-                         hover:border-pl-accent-light hover:text-pl-on-stage
-                         motion-safe:transition-colors"
-            >
-              {expanded
-                ? 'Weniger anzeigen'
-                : `Alle ${band.referenceEvents.length} anzeigen`}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

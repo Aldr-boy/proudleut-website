@@ -1,10 +1,7 @@
 import type { Band } from '@/lib/types/band';
+import { hasWeddingContent } from '@/lib/bands/bandWeddingContent';
 
 type Props = { band: Band };
-
-function hasWeddingContent(band: Band): boolean {
-  return band.eventTypes.some((et) => et.trim().toLowerCase().includes('hochzeit'));
-}
 
 export function BandWeddingModule({ band }: Props) {
   if (!hasWeddingContent(band)) return null;
@@ -35,8 +32,11 @@ export function BandWeddingModule({ band }: Props) {
         <h2 className="text-xl md:text-2xl font-bold text-pl-text mb-2">
           Wenn diese Band eure Hochzeit begleitet
         </h2>
+        {/* Adjektivzeile (2a): bestehende "Klingt nach"-Werte der Band ins
+            Intro integriert -- kein neues Datenfeld, kein neuer Text. */}
         <p className="text-sm text-pl-text-muted mb-10">
           Für Paare, die Live-Musik als Teil des Tages verstehen.
+          {band.klingtNach.length > 0 && ` — ${band.klingtNach.join(' · ')}`}
         </p>
 
         <div

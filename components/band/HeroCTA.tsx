@@ -25,7 +25,7 @@ export function HeroCTA({ name, slug, anfrageEventTypes }: Props) {
   };
 
   return (
-    <div className="bg-[var(--pl-bg-stage)] py-5 px-4 sm:px-6">
+    <div id="hero-cta" className="bg-[var(--pl-bg-stage)] py-5 px-4 sm:px-6">
       <div className="max-w-[1140px] mx-auto flex flex-col sm:flex-row gap-3">
         <button
           type="button"
