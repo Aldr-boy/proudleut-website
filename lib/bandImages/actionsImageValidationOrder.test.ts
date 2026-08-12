@@ -4,14 +4,20 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-// Strukturelle Regressionspruefung fuer die Reihenfolge in den drei
-// Bild-Upload-Actions (Hero/Thumbnail/Galerie-Add): Validierung MUSS vor
-// jedem Storage-Upload und jedem DB-Write stehen, und ein bestehendes
-// Storage-Objekt darf erst NACH einem erfolgreichen DB-Write geloescht
-// werden. Es existiert in diesem Repo keine Server-Action-Mocking-
-// Infrastruktur, daher prueft dieser Test die tatsaechliche Quelldatei
-// textuell -- ein spaeteres versehentliches Umsortieren (z. B. Upload vor
-// Validierung) wuerde diesen Test zuverlaessig brechen.
+// Strukturelle Regressionspruefung fuer die Reihenfolge in den vier
+// Bild-Upload-Actions (Hero/Thumbnail/Galerie-Add/Banddokument-Cover):
+// Validierung MUSS vor jedem Storage-Upload und jedem DB-Write stehen, und
+// ein bestehendes Storage-Objekt darf erst NACH einem erfolgreichen
+// DB-Write geloescht werden. Es existiert in diesem Repo keine
+// Server-Action-Mocking-Infrastruktur, daher prueft dieser Test die
+// tatsaechliche Quelldatei textuell -- ein spaeteres versehentliches
+// Umsortieren (z. B. Upload vor Validierung) wuerde diesen Test
+// zuverlaessig brechen.
+//
+// replaceBandDocumentCoverAction (Paket 2C) wurde als vierte Aufrufstelle
+// ergaenzt -- sie nutzt denselben, unveraenderten validateBandImageFile()-
+// Helfer wie Hero/Thumbnail/Galerie (kein neuer Validierungscode fuer das
+// Dokument-Cover).
 //
 // Liegt bewusst hier statt neben actions.ts: Node's Test-Runner
 // interpretiert "[id]" im Pfad als Glob-Zeichenklasse und findet in einer
@@ -61,6 +67,10 @@ test('addBandGalleryImageAction: Validierung -> Upload -> DB-Write (RPC)', () =>
   assertValidationBeforeUploadBeforeDbWrite('addBandGalleryImageAction', "rpc('add_band_gallery_image'")
 })
 
+test('replaceBandDocumentCoverAction: Validierung -> Upload -> DB-Write', () => {
+  assertValidationBeforeUploadBeforeDbWrite('replaceBandDocumentCoverAction', "from('band_documents')")
+})
+
 test('updateBandHeroImageAction: altes Storage-Objekt wird erst NACH dem erfolgreichen DB-Write entfernt', () => {
   const body = extractFunctionBody('updateBandHeroImageAction')
   const dbWriteBlockIndex = body.indexOf('if (dbError)')
@@ -80,6 +90,6 @@ test('updateBandThumbnailAction: altes Storage-Objekt wird erst NACH dem erfolgr
 test('validateBandImageFile-Aufrufe werden awaited (async Signatur korrekt verwendet)', () => {
   const occurrences = source.match(/validateBandImageFile\(bytes\)/g) ?? []
   const awaitedOccurrences = source.match(/await validateBandImageFile\(bytes\)/g) ?? []
-  assert.equal(occurrences.length, 3, 'Es werden exakt 3 Aufrufstellen (Hero/Thumbnail/Galerie-Add) erwartet')
+  assert.equal(occurrences.length, 4, 'Es werden exakt 4 Aufrufstellen erwartet (Hero/Thumbnail/Galerie-Add/Banddokument-Cover)')
   assert.equal(awaitedOccurrences.length, occurrences.length, 'Jeder validateBandImageFile-Aufruf muss awaited werden')
 })
