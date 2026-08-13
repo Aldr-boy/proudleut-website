@@ -94,7 +94,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Brauche ich einen eigenen Band-Account?',
-    a: 'Nein. Einen eigenen Band-Account gibt es bei proudleut nicht. Ich lege und pflege die Bandseiten selbst im Backend. Wenn wir nach dem ersten Telefonat merken, dass es passt, bekommst du einen kurzen Fragebogen. So habe ich Texte, Fotos, Videos, Links und Kontaktdaten gesammelt an einem Ort und kann deine Bandseite sauber aufbauen.',
+    a: 'Nein. Einen eigenen Band-Account gibt es bei proudleut nicht. Ich lege und pflege die Bandseiten selbst. Wenn wir nach dem ersten Telefonat merken, dass es passt, bekommst du einen kurzen Fragebogen. So habe ich Texte, Fotos, Videos, Links und Kontaktdaten gesammelt an einem Ort und kann deine Bandseite sauber aufbauen.',
   },
 ];
 
