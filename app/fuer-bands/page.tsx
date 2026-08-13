@@ -50,7 +50,7 @@ const BENEFITS = [
 const STEPS = [
   {
     n: '01',
-    title: 'Band vorstellen',
+    title: 'Bandseite anfragen',
     desc: 'Ein paar Eckdaten und Links reichen, damit ich mir einen ersten Eindruck von deiner Band machen kann.',
   },
   {
@@ -65,6 +65,16 @@ const STEPS = [
   },
 ];
 
+// Real, aktive und veröffentlichte Bandseiten (read-only gegen die
+// bestehende Datenbasis geprüft) -- keine geratenen Slugs.
+const PROOF_ACTS = [
+  { name: 'Donnaweda', slug: 'donnaweda' },
+  { name: 'Tegernseer Tanzlmusi', slug: 'tegernseer-tanzlmusi' },
+  { name: 'Harmonic Brass', slug: 'harmonic-brass' },
+  { name: 'San2 and His Soul Patrol', slug: 'san2-and-his-soul-patrol' },
+  { name: 'Donikkl Crew', slug: 'donikkl-crew' },
+];
+
 const FAQ_ITEMS = [
   {
     q: 'Kostet ein Profil bei proudleut etwas?',
@@ -76,15 +86,15 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Wer bekommt die Anfragen?',
-    a: 'Die Anfragen gehen direkt an dich beziehungsweise an die von dir angegebene Kontaktadresse. proudleut ist kein Zwischenhändler und nimmt keine Provision.',
+    a: 'Die Anfragen gehen direkt an dich beziehungsweise an die von dir angegebene Kontaktadresse.',
   },
   {
     q: 'Kann jede Band mitmachen?',
     a: 'Grundsätzlich ja. proudleut soll offen für viele gute Livebands, Duos und Solo-Acts sein. Wichtig ist nur, dass genug Material für ein sinnvolles Profil vorhanden ist: gute Fotos, ein kurzer Text, idealerweise Video und klare Kontaktdaten.',
   },
   {
-    q: 'Gibt es einen Fragebogen?',
-    a: 'Ja. Zum Einstieg brauche ich nur ein paar Eckdaten und Links zu deiner Band. Danach telefonieren wir einmal kurz miteinander. Wenn es für beide Seiten passt, sammeln wir gemeinsam alles, was wir für das Profil brauchen — Fotos, Text, Video und Kontakte.',
+    q: 'Brauche ich einen eigenen Band-Account?',
+    a: 'Nein. Einen eigenen Band-Account gibt es bei proudleut nicht. Ich lege und pflege die Bandseiten selbst im Backend. Wenn wir nach dem ersten Telefonat merken, dass es passt, bekommst du einen kurzen Fragebogen. So habe ich Texte, Fotos, Videos, Links und Kontaktdaten gesammelt an einem Ort und kann deine Bandseite sauber aufbauen.',
   },
 ];
 
@@ -121,10 +131,10 @@ export default function FuerBandsPage() {
                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                        focus-visible:outline-[var(--pl-accent-on-stage)]"
           >
-            Band vorstellen
+            Bandseite anfragen
           </a>
           <p className="mt-7 text-[13px] text-pl-on-stage-muted">
-            Persönlich kuratiert&nbsp;&nbsp;·&nbsp;&nbsp;Direkter Kontakt&nbsp;&nbsp;·&nbsp;&nbsp;Keine Buchungsplattform
+            Direkter Kontakt&nbsp;&nbsp;·&nbsp;&nbsp;Keine Buchungsplattform
           </p>
         </div>
       </section>
@@ -182,10 +192,10 @@ export default function FuerBandsPage() {
                         color: 'var(--pl-accent-deep)',
                       }}
                     >
-                      Blues &amp; Soul
+                      Blues
                     </span>
                     <p className="text-xl font-bold text-pl-on-stage leading-tight">
-                      San2 &amp; His Soul Patrol
+                      San2 and His Soul Patrol
                     </p>
                     <p className="text-xs text-pl-on-stage-muted mt-0.5">
                       Bayern · München und Umgebung
@@ -195,11 +205,13 @@ export default function FuerBandsPage() {
 
                 <div className="p-5">
                   <p className="text-sm text-pl-on-stage-muted italic leading-relaxed mb-4">
-                    „Blues, Soul und Rhythm &amp; Blues mit eigener Handschrift — live, direkt
-                    und mit viel Bühnengefühl."
+                    „San2 zählt zu den markantesten Soul- und Bluessängern Deutschlands."
+                  </p>
+                  <p className="text-[10px] uppercase tracking-wider text-pl-on-stage-muted mb-2">
+                    Klingt nach
                   </p>
                   <div className="flex flex-wrap gap-2 mb-5">
-                    {['Blues', 'Soul', 'Rhythm & Blues'].map((tag) => (
+                    {['Konzertant & hochwertig', 'Authentisch und handgemacht', 'Generationenverbindend'].map((tag) => (
                       <span
                         key={tag}
                         className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
@@ -216,7 +228,7 @@ export default function FuerBandsPage() {
                     {[
                       { label: 'Besetzung', value: 'Liveband' },
                       { label: 'Herkunft', value: 'München' },
-                      { label: 'Spielt bei', value: 'Festival, Club, Event' },
+                      { label: 'Spielt bei', value: 'Konzert, Festival, Open Air' },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <p className="text-[10px] uppercase tracking-wider text-pl-on-stage-muted mb-0.5">
@@ -228,11 +240,11 @@ export default function FuerBandsPage() {
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <div
-                      className="inline-flex items-center px-5 py-2.5 rounded-full text-sm font-semibold
+                      className="inline-flex items-center px-5 py-2.5 rounded-full text-sm font-semibold text-center
                                  bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
                       aria-hidden="true"
                     >
-                      Direkt anfragen →
+                      Band über proudleut anfragen
                     </div>
                     <div
                       className="inline-flex items-center px-5 py-2.5 rounded-full text-sm font-medium
@@ -393,27 +405,18 @@ export default function FuerBandsPage() {
           Über 140 Live-Acts auf proudleut
         </p>
         <p className="text-sm md:text-base leading-loose text-pl-on-stage-muted max-w-[720px] mx-auto">
-          <Link
-            href="/band/donnaweda"
-            className="text-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
-          >
-            Donnaweda
-          </Link>
-          {' · '}
-          <Link
-            href="/band/tegernseer-tanzlmusi"
-            className="text-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
-          >
-            Tegernseer Tanzlmusi
-          </Link>
-          {' · '}Harmonic Brass{' · '}
-          <Link
-            href="/band/san2-and-his-soul-patrol"
-            className="text-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
-          >
-            San2 &amp; His Soul Patrol
-          </Link>
-          {' · '}Donikkl Crew{' · '}…
+          {PROOF_ACTS.map(({ name, slug }, i) => (
+            <span key={slug}>
+              {i > 0 && ' · '}
+              <Link
+                href={`/band/${slug}`}
+                className="text-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
+              >
+                {name}
+              </Link>
+            </span>
+          ))}
+          {' · '}…
         </p>
       </section>
 
@@ -479,10 +482,11 @@ export default function FuerBandsPage() {
         <div className="pl-container-shell">
           <div className="max-w-[640px] mx-auto">
             <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-3 text-pretty">
-              Du glaubst, deine Band passt zu proudleut?
+              Du möchtest deine Band auf proudleut zeigen?
             </h2>
             <p className="text-lg text-pl-text-muted mb-9">
-              Dann stell sie mir kurz vor.
+              Schick mir ein paar Infos und Links zu deiner Band. Ich schaue sie mir in Ruhe an
+              und melde mich bei dir.
             </p>
             <a
               href="mailto:alexander.dressler@proudleut.com"
@@ -492,11 +496,8 @@ export default function FuerBandsPage() {
                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                          focus-visible:outline-[var(--pl-accent)]"
             >
-              Band vorstellen
+              Bandseite anfragen
             </a>
-            <p className="mt-5 text-sm text-pl-text-hint">
-              Ich melde mich meistens innerhalb weniger Tage.
-            </p>
             <p className="mt-11 text-sm text-pl-text-muted">
               Wer dahintersteckt und warum es proudleut gibt{' '}
               <Link
