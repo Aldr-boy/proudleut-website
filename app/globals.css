@@ -138,3 +138,24 @@ body {
   max-width: var(--pl-container-width);
   margin-inline: auto;
 }
+
+/* ── Seiten-Typografie: Display-Stufen ──
+   "Für Bands" Art-Direction-Pass. Zwei Leitmoment-Größen, je zweimal auf
+   der Seite verwendet (Hero + Finale bzw. Haltung + Acts) -- deshalb als
+   wiederverwendbare Klasse statt wiederholter Arbitrary Values. */
+.pl-display-1 {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.pl-display-2 {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+}
+@media (min-width: 768px) {
+  .pl-display-1 { font-size: 84px; }
+  .pl-display-2 { font-size: 56px; }
+}
