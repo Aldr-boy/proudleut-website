@@ -1,223 +1,359 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getBands } from '@/lib/airtable/queries';
-import type { Band } from '@/lib/types/band';
-
-export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Über mich – proudleut',
+  title: 'Über proudleut – proudleut',
   description:
-    'Alexander Dressler über proudleut, Livebands und die Idee, Veranstalter und Bands persönlich zusammenzubringen.',
+    'Warum es proudleut gibt, wer dahintersteht und wie proudleut Veranstaltern und Bands hilft, zueinander zu finden.',
   openGraph: {
-    title: 'Über mich – proudleut',
+    title: 'Über proudleut – proudleut',
     description:
-      'Alexander Dressler über proudleut, Livebands und die Idee, Veranstalter und Bands persönlich zusammenzubringen.',
+      'Warum es proudleut gibt, wer dahintersteht und wie proudleut Veranstaltern und Bands hilft, zueinander zu finden.',
     type: 'website',
   },
 };
 
-const MGMT_BANDS = [
-  { name: 'San2 & His Soul Patrol', sub: 'Blues, Soul & Rhythm’n’Blues' },
-  { name: 'Donnaweda', sub: 'Bayerische Partyband' },
-  { name: 'Freunde des Brautpaares', sub: 'Akustische Hochzeitsmusik' },
-  { name: 'Silk & Sound', sub: 'Eventband für besondere Feiern' },
+const CHAPTERS = [
+  { n: '01', label: 'Warum es proudleut gibt' },
+  { n: '02', label: 'Wer dahintersteht' },
+  { n: '03', label: 'Was proudleut ist' },
+  { n: '04', label: 'Beide Seiten' },
+  { n: '05', label: 'Wie proudleut gedacht ist' },
 ];
 
-function findBand(bands: Band[], name: string): Band | undefined {
-  return bands.find((b) => b.name.toLowerCase() === name.toLowerCase());
+// Bands, die Alex selbst im Booking betreut -- reale, aktive und
+// veröffentlichte Bandseiten, read-only gegen die Datenbasis geprüft
+// (Supabase, derselbe Stand, den /band/[slug] tatsächlich rendert).
+const MANAGED_BANDS = [
+  { name: 'Donnaweda', slug: 'donnaweda', genre: 'Bayerische Partyband' },
+  { name: 'San2 and His Soul Patrol', slug: 'san2-and-his-soul-patrol', genre: 'Blues, Soul & Rhythm’n’Blues' },
+  { name: 'Freunde des Brautpaares', slug: 'freunde-des-brautpaares', genre: 'Akustische Hochzeitsmusik' },
+  { name: 'Silk and Sound', slug: 'silk-and-sound', genre: 'Eventband für besondere Feiern' },
+];
+
+const PRINZIPIEN = [
+  {
+    n: '01',
+    title: 'Zeigen statt verkaufen',
+    desc: 'Kein Profil muss behaupten, eine Band sei „einzigartig" und „unvergesslich". Die Bandprofile sind bewusst auf den Kern reduziert. Die wichtigsten Infos sollen zeigen, was eine Band ausmacht und wofür sie steht.',
+  },
+  {
+    n: '02',
+    title: 'Einordnen statt bewerten',
+    desc: 'proudleut baut keine Rangliste der besten Bands. Eine hervorragende Band kann für einen Abend genau richtig sein und für den nächsten komplett falsch.',
+  },
+  {
+    n: '03',
+    title: 'Offen wachsen',
+    desc: 'proudleut ist im Aufbau und soll um weitere Bands wachsen. Übersichtlich, verständlich und persönlich soll es dabei bleiben.',
+  },
+];
+
+function ChapterEyebrow({ n, label }: { n: string; label: string }) {
+  return (
+    <>
+      <p className="font-mono text-[13px] text-pl-text-hint mb-3">{n}</p>
+      <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">{label}</p>
+    </>
+  );
 }
 
-export default async function UeberMichPage() {
-  const allBands = await getBands();
+function ChapterEyebrowOnStage({ n, label }: { n: string; label: string }) {
+  return (
+    <>
+      <p className="font-mono text-[13px] text-pl-accent-light mb-3">{n}</p>
+      <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider">{label}</p>
+    </>
+  );
+}
 
+export default function UeberProudleutPage() {
   return (
     <main>
+
       {/* Hero */}
-      <section className="bg-pl-stage py-16 md:py-24 px-4 sm:px-6">
+      <section className="bg-pl-stage pt-24 md:pt-40 pb-16 md:pb-24 px-4 sm:px-6">
         <div className="pl-container-shell">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-            <div className="order-2 md:order-1">
-              <p className="text-pl-accent-light text-sm font-medium tracking-wider uppercase mb-5">
-                Persönlich hinter proudleut
-              </p>
-              <h1 className="text-4xl md:text-5xl font-bold text-pl-on-stage mb-6 leading-tight">
-                Servus, ich bin Alex.
-              </h1>
-              <p className="text-base md:text-lg text-pl-on-stage-muted leading-relaxed">
-                Ich arbeite seit vielen Jahren mit Livebands und Veranstaltern – als Musikmanager
-                im Livebereich, Organisator und persönlicher Ansprechpartner. Mit proudleut bringe
-                ich Menschen zusammen, die für besondere Momente die passende Musik suchen.
-              </p>
-            </div>
-            <div className="order-1 md:order-2">
-              <div className="relative w-full max-w-sm mx-auto md:max-w-none aspect-[4/5] rounded-2xl overflow-hidden">
-                <Image
-                  src="/images/alexander-dressler-about.webp"
-                  alt="Alexander Dressler – Gründer von proudleut"
-                  fill
-                  className="object-cover"
-                  sizes="(min-width: 768px) 50vw, 384px"
-                  priority
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Warum proudleut? */}
-      <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
-        <div className="pl-container-shell">
-          <div className="max-w-[820px]">
-            <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-10">Warum proudleut?</h2>
-            <div className="divide-y divide-pl-soft">
-              <div className="py-6 sm:grid sm:grid-cols-[220px_1fr] sm:gap-10 sm:items-start">
-                <p className="text-pl-text-hint text-sm font-semibold mb-2 sm:mb-0">Direkte Verbindung</p>
-                <p className="text-pl-text-muted leading-relaxed">
-                  Ich bringe Bands und Veranstalter zusammen – persönlich, nicht anonym.
-                  Kein anonymes Formular, kein Buchungsportal.
-                </p>
-              </div>
-              <div className="py-6 sm:grid sm:grid-cols-[220px_1fr] sm:gap-10 sm:items-start">
-                <p className="text-pl-text-hint text-sm font-semibold mb-2 sm:mb-0">Orientierung statt Auswahl</p>
-                <p className="text-pl-text-muted leading-relaxed">
-                  Gute Bands gibt es viele – aber die passende für ein Event zu finden, ist oft
-                  mühsam. Gleichzeitig ist es für Bands schwer, sichtbar zu werden, ohne in einer
-                  anonymen Datenbank unterzugehen.
-                </p>
-              </div>
-              <div className="py-6 sm:grid sm:grid-cols-[220px_1fr] sm:gap-10 sm:items-start">
-                <p className="text-pl-text-hint text-sm font-semibold mb-2 sm:mb-0">Persönlich. Ehrlich.</p>
-                <p className="text-pl-text-muted leading-relaxed">
-                  Bei proudleut geht es nicht darum, möglichst viele Bands aufzulisten. Es geht
-                  darum, Menschen miteinander zu verbinden – übersichtlich und mit direktem Kontakt.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Was ich mache */}
-      <section className="bg-pl-paper py-16 md:py-20 px-4 sm:px-6">
-        <div className="pl-container-shell">
-          <div className="max-w-[820px]">
-            <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-8">Was ich mache</h2>
-            <div className="space-y-5">
-              <p className="text-lg md:text-xl font-medium text-pl-text leading-snug">
-                Ich verbinde Bands und Veranstalter – persönlich, nicht anonym.
-              </p>
-              <p className="text-base md:text-lg text-pl-text-muted leading-relaxed">
-                Ich kenne viele Bands direkt, weiß, wie sie live funktionieren und zu welchem
-                Anlass sie passen. Wenn du eine Empfehlung von mir bekommst, kommt sie nicht aus
-                einer automatischen Auswahl, sondern aus Erfahrung, Bauchgefühl und vielen echten
-                Begegnungen mit Musikerinnen, Musikern und Veranstaltern.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Wie ich arbeite */}
-      <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
-        <div className="pl-container-shell">
-          <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-12">Wie ich arbeite</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            <div>
-              <p className="text-pl-accent text-sm font-mono tracking-widest mb-2">01</p>
-              <h3 className="text-pl-text font-bold text-xl mb-4">Zuhören</h3>
-              <p className="text-pl-text-muted leading-relaxed">
-                Was ist geplant, welche Stimmung soll entstehen, welche Band könnte wirklich passen?
-                Ich fange mit Fragen an, nicht mit Empfehlungen.
-              </p>
-            </div>
-            <div>
-              <p className="text-pl-accent text-sm font-mono tracking-widest mb-2">02</p>
-              <h3 className="text-pl-text font-bold text-xl mb-4">Einordnen</h3>
-              <p className="text-pl-text-muted leading-relaxed">
-                Manchmal muss es schnell gehen – manchmal liegt die Lösung näher als gedacht.
-                Ich kenne viele Bands direkt und weiß, wie sie live funktionieren.
-              </p>
-            </div>
-            <div>
-              <p className="text-pl-accent text-sm font-mono tracking-widest mb-2">03</p>
-              <h3 className="text-pl-text font-bold text-xl mb-4">Verbinden</h3>
-              <p className="text-pl-text-muted leading-relaxed">
-                Wenn eine Band nicht passt, sag ich das. Lieber eine klare Einschätzung als
-                irgendeine Empfehlung – dann klappt's beim nächsten Termin.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Bands, die ich aktiv betreue */}
-      <section className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6">
-        <div className="pl-container-shell">
-          <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
-            Bands, die ich aktiv betreue
-          </h2>
-          <p className="text-pl-on-stage-muted leading-relaxed mb-10">
-            Neben proudleut bin ich selbst im Booking und Management aktiv. Dadurch kenne ich
-            beide Seiten: was Veranstalter brauchen – und wie es auf Bandseite wirklich läuft.
+          <p className="text-xs font-semibold text-pl-accent-light uppercase tracking-wider">
+            Über proudleut
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {MGMT_BANDS.map(({ name, sub }) => {
-              const band = findBand(allBands, name);
-              if (band) {
-                return (
-                  <Link
-                    key={name}
-                    href={`/band/${band.slug}`}
-                    className="rounded-xl bg-pl-stage-elevated border border-pl-stage px-5 py-4 hover:border-pl-accent-light motion-safe:transition-colors group"
-                  >
-                    <p className="text-pl-on-stage font-semibold group-hover:text-pl-accent-light motion-safe:transition-colors">
-                      {name}
-                    </p>
-                    <p className="text-pl-on-stage-muted text-sm mt-1">{sub}</p>
-                  </Link>
-                );
-              }
-              return (
-                <div key={name} className="rounded-xl bg-pl-stage-elevated border border-pl-stage px-5 py-4">
-                  <p className="text-pl-on-stage font-semibold">{name}</p>
-                  <p className="text-pl-on-stage-muted text-sm mt-1">{sub}</p>
-                </div>
-              );
-            })}
+          <h1 className="pl-display-1 mt-5 md:mt-7 text-pl-on-stage max-w-[980px] text-balance">
+            Es gibt wahnsinnig viele gute Bands.
+            <br />
+            <span className="text-pl-on-stage-muted">Das ist nicht das Problem.</span>
+          </h1>
+          <p className="mt-9 md:mt-11 text-[17px] md:text-xl leading-relaxed text-pl-on-stage-muted max-w-[540px]">
+            Das Problem ist herauszufinden, welche davon zu deinem Event passt — und welche eher
+            nicht. Genau dafür gibt es proudleut.
+          </p>
+
+          <div className="mt-14 md:mt-20 pt-6 border-t border-pl-stage flex flex-wrap gap-x-9 gap-y-2">
+            {CHAPTERS.map(({ n, label }) => (
+              <span key={n} className="font-mono text-xs text-pl-on-stage-muted">
+                <span className="text-pl-accent-light">{n}</span>&nbsp;&nbsp;{label}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-pl-stage py-16 md:py-24 px-4 sm:px-6">
-        <div className="pl-container-shell">
-          <div className="max-w-[760px] mx-auto text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-pl-on-stage mb-4">
-              Klingt das interessant?
+      {/* 01 — Warum es proudleut gibt */}
+      <section className="bg-pl-paper pt-16 md:pt-28 pb-16 md:pb-24 px-4 sm:px-6">
+        <div className="pl-container-shell grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 md:gap-20">
+          <div>
+            <ChapterEyebrow n="01" label="Warum es proudleut gibt" />
+          </div>
+          <div>
+            <h2 className="text-3xl md:text-[40px] leading-[1.15] font-extrabold tracking-tight text-pl-text max-w-[16ch]">
+              Eine gute Band ist nicht automatisch die richtige Band.
             </h2>
-            <p className="text-pl-on-stage-muted text-lg mb-10 leading-relaxed">
-              Erzähl mir kurz, was du planst — ich melde mich persönlich bei dir.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                href="/bands"
-                className="inline-flex items-center px-6 py-3 rounded-full bg-pl-accent text-pl-on-accent font-semibold hover:opacity-90 motion-safe:transition-opacity"
-              >
-                Bands entdecken
-              </Link>
-              <a
-                href="mailto:alexander.dressler@proudleut.com"
-                className="inline-flex items-center px-6 py-3 rounded-full border border-pl-stage text-pl-on-stage-muted hover:border-pl-accent-light hover:text-pl-on-stage motion-safe:transition-colors"
-              >
-                Kontakt aufnehmen
-              </a>
+            <div className="mt-9 md:mt-11 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 max-w-[820px]">
+              <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
+                Ein Sommerfest im Biergarten, eine Hochzeit mit sechzig Gästen und
+                Brautentführung, ein Stadtplatz mit großer Bühne — jeder dieser Abende braucht
+                etwas anderes. Eine Band, die den einen Abend trägt, kann am anderen verloren
+                wirken.
+              </p>
+              <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
+                proudleut nimmt dir die Bandentscheidung nicht ab. Aber es hilft beim Einordnen:
+                Wie klingt eine Band? Wie tritt sie auf? Für welche Abende passt sie? Und was
+                unterscheidet sie von anderen? Damit du selbst gut entscheiden kannst.
+              </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* 02 — Wer dahintersteht (Alex, Portrait überlappt in die nächste Fläche) */}
+      <section className="bg-pl-stage pt-16 md:pt-28 px-4 sm:px-6 relative">
+        <div className="pl-container-shell grid grid-cols-1 md:grid-cols-[1fr_400px] gap-10 md:gap-16 items-start">
+          <div className="pb-16 md:pb-28">
+            <ChapterEyebrowOnStage n="02" label="Wer dahintersteht" />
+            <h2 className="mt-7 text-4xl md:text-5xl font-extrabold tracking-tight text-pl-on-stage">
+              Servus, ich bin Alex.
+            </h2>
+            <p className="mt-8 text-base md:text-[17px] leading-[1.7] text-pl-on-stage-muted max-w-[480px]">
+              Ich arbeite seit vielen Jahren mit Livebands und Veranstaltern. Bandmanagement und
+              Booking sind mein tägliches Geschäft: Anfragen, Gagen, Termine, Technik und alles,
+              was zwischen Zusage und Auftritt passiert.
+            </p>
+            <p className="mt-5 text-base md:text-[17px] leading-[1.7] text-pl-on-stage-muted max-w-[480px]">
+              proudleut ist aus dieser Arbeit entstanden. Nicht aus der Idee, noch ein weiteres
+              Musikportal zu bauen, sondern aus einer Frage, die in diesem Geschäft ständig
+              auftaucht: <strong className="text-pl-on-stage font-semibold">Passt diese Band wirklich zu diesem Abend?</strong>
+            </p>
+          </div>
+          <div className="relative z-10 mb-[-56px] md:mb-[-90px] pb-8 md:pb-0">
+            <div className="relative w-full max-w-[320px] md:max-w-none mx-auto aspect-[4/5] rounded-2xl overflow-hidden shadow-pl-photo">
+              <Image
+                src="/images/alexander-dressler-about.webp"
+                alt="Alex, Booking und Bandmanagement bei proudleut"
+                fill
+                className="object-cover object-[90%_20%]"
+                sizes="(min-width: 768px) 400px, 320px"
+                priority
+              />
+            </div>
+            <p className="hidden md:block mt-3.5 font-mono text-xs text-pl-on-stage-muted">
+              Alex — Booking, Bandmanagement, proudleut.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 03 — Was proudleut ist — und was nicht */}
+      <section className="bg-pl-paper pt-20 md:pt-32 pb-16 md:pb-24 px-4 sm:px-6">
+        <div className="pl-container-shell grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 md:gap-20">
+          <div>
+            <ChapterEyebrow n="03" label="Was proudleut ist — und was nicht" />
+          </div>
+          <div>
+            <h2 className="text-3xl md:text-[40px] leading-[1.15] font-extrabold tracking-tight text-pl-text max-w-[15ch]">
+              proudleut ist keine Agentur.
+            </h2>
+            <p className="mt-9 text-base md:text-[17px] leading-[1.7] text-pl-text-muted max-w-[62ch]">
+              Als Band auf proudleut präsent zu sein heißt nicht, von mir vertreten zu werden.
+              Die meisten Bands kümmern sich unabhängig von mir um ihr Booking. Bei einigen bin
+              ich selbst im Booking tätig, das kennzeichne ich offen. proudleut ist eine
+              Plattform für Livemusik: Bands können zeigen, was sie im Kern ausmacht.
+              Veranstalter können sich schnell ein Bild machen, Bands einordnen und direkt
+              anfragen.
+            </p>
+
+            <div className="mt-14 md:mt-16 pt-10 md:pt-14 border-t border-pl-soft max-w-[680px]">
+              <h3 className="text-xl md:text-[26px] leading-[1.2] font-extrabold tracking-tight text-pl-text">
+                Noch lange nicht fertig.
+              </h3>
+              <p className="mt-5 text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
+                Heute zeigt proudleut einen Ausschnitt dessen, was an guten Bands in und um
+                Bayern unterwegs ist. Dieser Ausschnitt soll wachsen — mit neuen Bands, neuen
+                Stilrichtungen und neuen Regionen. Das Ziel ist nicht, irgendwann möglichst
+                viele Namen auf einer Seite zu haben.
+              </p>
+              <p className="mt-6 text-lg md:text-xl leading-[1.4] font-extrabold tracking-tight text-pl-accent">
+                Sondern einen Ort zu bauen, an dem man Livemusik wirklich entdecken, verstehen
+                und einordnen kann.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 04 — Beide Seiten + Offen gesagt + San2-Livebild */}
+      <section className="bg-pl-paper pt-16 md:pt-28 border-t border-pl-soft px-4 sm:px-6">
+        <div className="pl-container-shell">
+          <div className="max-w-[620px]">
+            <ChapterEyebrow n="04" label="Beide Seiten" />
+            <h2 className="mt-7 text-3xl md:text-[40px] leading-[1.15] font-extrabold tracking-tight text-pl-text">
+              Ich sitze auf beiden Seiten des Tisches.
+            </h2>
+          </div>
+
+          <div className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0">
+            <div className="md:pr-14 md:border-r border-pl-soft">
+              <p className="text-lg font-bold text-pl-text mb-3.5">Veranstalterseite</p>
+              <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
+                Was kostet eine Band? Passt sie zum Anlass? Wie läuft so eine Anfrage überhaupt
+                ab? Diese Fragen höre ich oft. proudleut soll möglichst viel davon schon klären,
+                bevor überhaupt eine Anfrage rausgeht.
+              </p>
+            </div>
+            <div className="md:pl-14">
+              <p className="text-lg font-bold text-pl-text mb-3.5">Bandseite</p>
+              <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
+                Und ich weiß, was auf der anderen Seite passiert: wie eine gute Anfrage aussieht,
+                was ein Termin organisatorisch bedeutet, was technisch und wirtschaftlich
+                funktionieren muss. Diese Erfahrung steckt im Aufbau von proudleut.
+              </p>
+            </div>
+          </div>
+
+          {/* Offen gesagt */}
+          <div className="mt-20 md:mt-28 pt-12 md:pt-16 border-t border-pl-soft grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 md:gap-20 pb-16 md:pb-24">
+            <div>
+              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                Offen gesagt
+              </p>
+            </div>
+            <div>
+              <p className="text-xl md:text-[28px] leading-[1.3] font-extrabold tracking-tight text-pl-text max-w-[560px]">
+                Vier der Bands auf proudleut betreue ich selbst im Booking.
+                <span className="text-pl-accent">*</span>
+              </p>
+
+              <div className="mt-9 border-t border-pl-soft max-w-[760px]">
+                {MANAGED_BANDS.map(({ name, slug, genre }) => (
+                  <div
+                    key={slug}
+                    className="border-b border-pl-soft py-4 flex flex-col gap-1 md:flex-row md:items-baseline md:gap-6"
+                  >
+                    <Link
+                      href={`/band/${slug}`}
+                      className="shrink-0 md:w-[280px] font-bold text-pl-text border-b border-pl-accent/40 hover:text-pl-accent hover:border-pl-accent motion-safe:transition-colors self-start"
+                    >
+                      {name}
+                    </Link>
+                    <p className="flex-1 text-sm md:text-[15px] text-pl-text-muted">{genre}</p>
+                    <p className="font-mono text-xs text-pl-accent shrink-0">Booking: Alex</p>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-6 text-sm leading-relaxed text-pl-text-muted max-w-[560px]">
+                <span className="text-pl-accent">*</span>&nbsp;Das ist auch auf den jeweiligen
+                Profilen offen gekennzeichnet. Über die Bandnamen kommst du direkt dorthin — und
+                kannst dir selbst ein Bild davon machen, wie die Bands auf proudleut vorgestellt
+                werden.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* San2-Livebild -- volle Farbigkeit, Original unverändert */}
+        <div className="relative w-full aspect-[16/7] md:aspect-[1140/520]">
+          <Image
+            src="/images/ueber-proudleut/san2-live.jpg"
+            alt="San2 and His Soul Patrol live vor Publikum"
+            fill
+            className="object-cover"
+            style={{ objectPosition: 'center 62%' }}
+            sizes="100vw"
+          />
+          <p className="absolute left-4 sm:left-6 md:left-[150px] bottom-4 font-mono text-xs text-pl-on-stage-muted">
+            San2 and His Soul Patrol — live.
+          </p>
+        </div>
+      </section>
+
+      {/* 05 — Wie proudleut gedacht ist */}
+      <section className="bg-pl-canvas pt-20 md:pt-32 pb-20 md:pb-28 px-4 sm:px-6">
+        <div className="pl-container-shell grid grid-cols-1 md:grid-cols-[400px_1fr] gap-8 md:gap-20">
+          <div>
+            <ChapterEyebrow n="05" label="Wie proudleut gedacht ist" />
+            <h2 className="mt-7 text-3xl md:text-[38px] leading-[1.15] font-extrabold tracking-tight text-pl-text">
+              Was mir bei Proudleut wichtig ist.
+            </h2>
+          </div>
+          <div>
+            <div className="border-t border-pl-soft">
+              {PRINZIPIEN.map(({ n, title, desc }) => (
+                <div key={n} className="border-b border-pl-soft py-8 flex gap-8">
+                  <p className="font-mono text-[13px] text-pl-accent shrink-0 w-6 pt-1">{n}</p>
+                  <div>
+                    <p className="text-lg md:text-xl font-bold text-pl-text mb-2.5">{title}</p>
+                    <p className="text-[15px] md:text-base leading-[1.65] text-pl-text-muted max-w-[480px]">
+                      {desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-8 text-[15px] leading-[1.65] text-pl-text-muted max-w-[520px]">
+              Du spielst selbst in einer Band? Auf „Für Bands" erzähle ich genauer, wie proudleut
+              mit Bands arbeitet — und wie der Weg hierher aussieht.{' '}
+              <Link
+                href="/fuer-bands"
+                className="font-semibold text-pl-accent border-b border-pl-accent/40 hover:border-pl-accent motion-safe:transition-colors whitespace-nowrap"
+              >
+                Für Bands →
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Abschluss */}
+      <section className="bg-pl-stage pt-24 md:pt-36 pb-16 md:pb-24 px-4 sm:px-6 text-center">
+        <div className="max-w-[620px] mx-auto">
+          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-pl-on-stage">
+            Schau dich in Ruhe um.
+          </h2>
+          <p className="mt-8 text-lg leading-relaxed text-pl-on-stage-muted max-w-[480px] mx-auto">
+            Und wenn du bei der Auswahl nicht weiterkommst: Erzähl mir kurz, was du planst. Ich
+            melde mich persönlich.
+          </p>
+          <div className="mt-11 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7">
+            <Link
+              href="/bands"
+              className="inline-flex items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
+                         bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
+                         hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors
+                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                         focus-visible:outline-[var(--pl-accent-on-stage)]"
+            >
+              Bands entdecken
+            </Link>
+            <a
+              href="mailto:alexander.dressler@proudleut.com"
+              className="text-base font-semibold text-pl-on-stage-muted border-b border-pl-stage hover:text-pl-on-stage hover:border-pl-on-stage-muted motion-safe:transition-colors"
+            >
+              Kontakt aufnehmen
+            </a>
+          </div>
+        </div>
+      </section>
+
     </main>
   );
 }
