@@ -201,71 +201,73 @@ export default function UeberProudleutPage() {
       </section>
 
       {/* 04 — Beide Seiten + Offen gesagt + San2-Livebild */}
-      <section className="bg-pl-paper pt-16 md:pt-28 border-t border-pl-soft px-4 sm:px-6">
-        <div className="pl-container-shell">
-          <div className="max-w-[620px]">
-            <ChapterEyebrow n="04" label="Beide Seiten" />
-            <h2 className="mt-7 text-3xl md:text-[40px] leading-[1.15] font-extrabold tracking-tight text-pl-text">
-              Ich sitze auf beiden Seiten des Tisches.
-            </h2>
-          </div>
-
-          <div className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0">
-            <div className="md:pr-14 md:border-r border-pl-soft">
-              <p className="text-lg font-bold text-pl-text mb-3.5">Veranstalterseite</p>
-              <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
-                Was kostet eine Band? Passt sie zum Anlass? Wie läuft so eine Anfrage überhaupt
-                ab? Diese Fragen höre ich oft. proudleut soll möglichst viel davon schon klären,
-                bevor überhaupt eine Anfrage rausgeht.
-              </p>
+      <section className="bg-pl-paper pt-16 md:pt-28 border-t border-pl-soft">
+        <div className="px-4 sm:px-6">
+          <div className="pl-container-shell">
+            <div className="max-w-[620px]">
+              <ChapterEyebrow n="04" label="Beide Seiten" />
+              <h2 className="mt-7 text-3xl md:text-[40px] leading-[1.15] font-extrabold tracking-tight text-pl-text">
+                Ich sitze auf beiden Seiten des Tisches.
+              </h2>
             </div>
-            <div className="md:pl-14">
-              <p className="text-lg font-bold text-pl-text mb-3.5">Bandseite</p>
-              <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
-                Und ich weiß, was auf der anderen Seite passiert: wie eine gute Anfrage aussieht,
-                was ein Termin organisatorisch bedeutet, was technisch und wirtschaftlich
-                funktionieren muss. Diese Erfahrung steckt im Aufbau von proudleut.
-              </p>
-            </div>
-          </div>
 
-          {/* Offen gesagt */}
-          <div className="mt-20 md:mt-28 pt-12 md:pt-16 border-t border-pl-soft grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 md:gap-20 pb-16 md:pb-24">
-            <div>
-              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                Offen gesagt
-              </p>
-            </div>
-            <div>
-              <p className="text-xl md:text-[28px] leading-[1.3] font-extrabold tracking-tight text-pl-text max-w-[560px]">
-                Vier der Bands auf proudleut betreue ich selbst im Booking.
-                <span className="text-pl-accent">*</span>
-              </p>
-
-              <div className="mt-9 border-t border-pl-soft max-w-[760px]">
-                {MANAGED_BANDS.map(({ name, slug, genre }) => (
-                  <div
-                    key={slug}
-                    className="border-b border-pl-soft py-4 flex flex-col gap-1 md:flex-row md:items-baseline md:gap-6"
-                  >
-                    <Link
-                      href={`/band/${slug}`}
-                      className="shrink-0 md:w-[280px] font-bold text-pl-text border-b border-pl-accent/40 hover:text-pl-accent hover:border-pl-accent motion-safe:transition-colors self-start"
-                    >
-                      {name}
-                    </Link>
-                    <p className="flex-1 text-sm md:text-[15px] text-pl-text-muted">{genre}</p>
-                    <p className="font-mono text-xs text-pl-accent shrink-0">Booking: Alex</p>
-                  </div>
-                ))}
+            <div className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-0">
+              <div className="md:pr-14 md:border-r border-pl-soft">
+                <p className="text-lg font-bold text-pl-text mb-3.5">Veranstalterseite</p>
+                <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
+                  Was kostet eine Band? Passt sie zum Anlass? Wie läuft so eine Anfrage überhaupt
+                  ab? Diese Fragen höre ich oft. proudleut soll möglichst viel davon schon klären,
+                  bevor überhaupt eine Anfrage rausgeht.
+                </p>
               </div>
+              <div className="md:pl-14">
+                <p className="text-lg font-bold text-pl-text mb-3.5">Bandseite</p>
+                <p className="text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
+                  Und ich weiß, was auf der anderen Seite passiert: wie eine gute Anfrage aussieht,
+                  was ein Termin organisatorisch bedeutet, was technisch und wirtschaftlich
+                  funktionieren muss. Diese Erfahrung steckt im Aufbau von proudleut.
+                </p>
+              </div>
+            </div>
 
-              <p className="mt-6 text-sm leading-relaxed text-pl-text-muted max-w-[560px]">
-                <span className="text-pl-accent">*</span>&nbsp;Das ist auch auf den jeweiligen
-                Profilen offen gekennzeichnet. Über die Bandnamen kommst du direkt dorthin — und
-                kannst dir selbst ein Bild davon machen, wie die Bands auf proudleut vorgestellt
-                werden.
-              </p>
+            {/* Offen gesagt */}
+            <div className="mt-20 md:mt-28 pt-12 md:pt-16 border-t border-pl-soft grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 md:gap-20 pb-16 md:pb-24">
+              <div>
+                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                  Offen gesagt
+                </p>
+              </div>
+              <div>
+                <p className="text-xl md:text-[28px] leading-[1.3] font-extrabold tracking-tight text-pl-text max-w-[560px]">
+                  Vier der Bands auf proudleut betreue ich selbst im Booking.
+                  <span className="text-pl-accent">*</span>
+                </p>
+
+                <div className="mt-9 border-t border-pl-soft max-w-[760px]">
+                  {MANAGED_BANDS.map(({ name, slug, genre }) => (
+                    <div
+                      key={slug}
+                      className="border-b border-pl-soft py-4 flex flex-col gap-1 md:flex-row md:items-baseline md:gap-6"
+                    >
+                      <Link
+                        href={`/band/${slug}`}
+                        className="shrink-0 md:w-[280px] font-bold text-pl-text border-b border-pl-accent/40 hover:text-pl-accent hover:border-pl-accent motion-safe:transition-colors self-start"
+                      >
+                        {name}
+                      </Link>
+                      <p className="flex-1 text-sm md:text-[15px] text-pl-text-muted">{genre}</p>
+                      <p className="font-mono text-xs text-pl-accent shrink-0">Booking: Alex</p>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-6 text-sm leading-relaxed text-pl-text-muted max-w-[560px]">
+                  <span className="text-pl-accent">*</span>&nbsp;Das ist auch auf den jeweiligen
+                  Profilen offen gekennzeichnet. Über die Bandnamen kommst du direkt dorthin — und
+                  kannst dir selbst ein Bild davon machen, wie die Bands auf proudleut vorgestellt
+                  werden.
+                </p>
+              </div>
             </div>
           </div>
         </div>
