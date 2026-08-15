@@ -120,15 +120,20 @@ export default function FuerBandsPage() {
       {/* 01 — Hero (Leitmoment, pl-display-1) */}
       <section className="bg-pl-stage pt-24 md:pt-40 pb-24 md:pb-40 px-4 sm:px-6">
         <div className="pl-container-shell">
-          <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider">
+          <p className="text-xs font-semibold text-pl-accent-light uppercase tracking-wider">
             Für Livebands, Duos &amp; Solo-Acts
           </p>
-          <h1 className="pl-display-1 mt-4 md:mt-7 text-pl-on-stage max-w-[1020px] text-balance">
-            Deine Musik sichtbar machen — in einem Umfeld, das zu dir passt.
+          <h1 className="pl-display-1 mt-4 md:mt-7 max-w-[1020px] text-balance">
+            <span className="block text-pl-on-stage">Deine Musik sichtbar machen.</span>
+            <span className="block text-pl-on-stage-muted">
+              In einem Umfeld,
+              <br />
+              das zu dir passt.
+            </span>
           </h1>
-          <p className="mt-9 md:mt-14 text-[17px] md:text-xl leading-relaxed text-pl-on-stage-muted max-w-[560px]">
-            Auf proudleut bekommt deine Band eine eigene Seite mit Bildern, Video, musikalischer
-            Einordnung und direkter Anfrage.
+          <p className="mt-9 md:mt-11 text-[17px] md:text-xl leading-relaxed text-pl-on-stage-muted max-w-[560px]">
+            Eine eigene Bandseite, gute Bilder und Videos und eine Einordnung, die Veranstaltern
+            zeigt, wofür ihr steht – und ob ihr zu ihrem Event passt.
           </p>
           <div className="mt-11 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
             <a
