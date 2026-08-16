@@ -1,13 +1,18 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
-// "Abschluss" -- bewusst kompakt (Richtwert 250-310px Hoehe), kein zweiter
-// Hero. Bestehendes Bild aus lib/homepage/referenzEvents.ts wiederverwendet
-// statt eines neuen Assets: Donnaweda beim Gruendungsfest der FFW
-// Labersricht, Mai 2025.
+// "Abschluss" -- an die visuelle Referenz app/ueber-mich/page.tsx (letzte
+// Section dort, San2-Livefoto) angeglichen: gleiche Layoutlogik
+// (inhaltsgetriebene Hoehe ueber Padding statt fixer Pixelwert),
+// Headline-/Text-/Button-Typografie und Caption. Bestehendes Bild aus
+// lib/homepage/referenzEvents.ts wiederverwendet statt eines neuen
+// Assets: Donnaweda beim Gruendungsfest der FFW Labersricht, Mai 2025.
+// Overlay-Staerke bewusst NICHT 1:1 uebernommen -- das Donnaweda-Foto ist
+// heller und unruhiger als das San2-Foto, ein identisches (schwaecheres)
+// Overlay wuerde Text/Caption hier schlechter lesbar machen.
 export default function CTASection() {
   return (
-    <section className="relative overflow-hidden flex items-center justify-center text-center h-[250px] md:h-[310px] px-4 sm:px-6">
+    <section className="relative overflow-hidden pt-24 md:pt-36 pb-16 md:pb-24 px-4 sm:px-6 text-center">
       <Image
         src="/images/referenz-events/donnaweda-gruendungsfest-stimmung.webp"
         alt=""
@@ -20,29 +25,38 @@ export default function CTASection() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse 55% 70% at 50% 50%, rgba(18,16,26,0.62) 0%, rgba(18,16,26,0.30) 65%, rgba(18,16,26,0.08) 100%)',
+            'radial-gradient(ellipse 62% 78% at 50% 42%, rgba(18,16,26,0.78) 0%, rgba(18,16,26,0.52) 55%, rgba(18,16,26,0.22) 100%)',
         }}
       />
-      <div className="relative z-10 max-w-xl">
-        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-pl-on-stage" style={{ textShadow: '0 2px 20px rgba(18,16,26,0.55)' }}>
-          Und was feiert ihr?
+      <div className="relative z-10 max-w-[620px] mx-auto">
+        <h2
+          className="text-4xl md:text-6xl font-extrabold tracking-tight text-pl-on-stage"
+          style={{ textShadow: '0 2px 24px rgba(18,16,26,0.6)' }}
+        >
+          Und was feiert ihr so?
         </h2>
-        <p className="mt-2 text-sm text-pl-on-stage" style={{ textShadow: '0 1px 12px rgba(18,16,26,0.55)' }}>
+        <p
+          className="mt-8 text-lg leading-relaxed text-pl-on-stage-muted max-w-[480px] mx-auto"
+          style={{ textShadow: '0 1px 16px rgba(18,16,26,0.6)' }}
+        >
           Hochzeit, Firmenfeier oder Festzelt.
           Schaut euch in Ruhe um und entdeckt, welche Bands zu eurem Anlass passen.
         </p>
-        <div className="mt-5">
+        <div className="mt-11 flex items-center justify-center">
           <Link
             href="/bands"
-            className="inline-flex items-center px-6 py-3 rounded-full bg-pl-accent text-pl-on-accent text-sm font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
+            className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-pl-accent text-pl-on-accent text-base font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
           >
             Bands entdecken →
           </Link>
         </div>
       </div>
-      <div className="absolute left-4 sm:left-6 bottom-3 z-10 font-mono text-[11px] text-pl-on-stage-muted">
+      <p
+        className="absolute left-4 sm:left-6 bottom-3 z-10 font-mono text-[11px] font-normal text-pl-on-stage/70"
+        style={{ textShadow: '0 1px 8px rgba(18,16,26,0.6)' }}
+      >
         Donnaweda · Gründungsfest der FFW Labersricht · Mai 2025
-      </div>
+      </p>
     </section>
   );
 }

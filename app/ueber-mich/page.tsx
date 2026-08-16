@@ -370,7 +370,10 @@ export default function UeberProudleutPage() {
             </a>
           </div>
         </div>
-        <p className="absolute left-4 sm:left-6 bottom-3 z-10 font-mono text-[11px] text-pl-on-stage-muted">
+        <p
+          className="absolute left-4 sm:left-6 bottom-3 z-10 font-mono text-[11px] font-normal text-pl-on-stage/70"
+          style={{ textShadow: '0 1px 8px rgba(18,16,26,0.6)' }}
+        >
           San2 and His Soul Patrol — live.
         </p>
       </section>
