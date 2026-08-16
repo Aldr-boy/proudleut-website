@@ -18,8 +18,11 @@ import { GalleryEditorSection } from './GalleryEditorSection'
 import type { GalleryImageData } from './GalleryEditorSection'
 import { BandDocumentsEditorSection } from './BandDocumentsEditorSection'
 import type { BandDocumentData } from './BandDocumentsEditorSection'
+import { ReferenceEventsEditorSection } from './ReferenceEventsEditorSection'
+import type { AdminReferenceEvent } from '@/lib/types/band'
 import { resolvePubliclyUsedMediaRow } from '@/lib/bandImages/resolveMediaRow'
 import { compareBandDocuments } from '@/lib/bands/bandDocumentsSort'
+import { compareReferenceEvents } from '@/lib/bands/bandReferenceEventsSort'
 import type {
   BandRepertoireStyleAssignment,
   RepertoireStyleCatalogEntry,
@@ -197,6 +200,16 @@ const DOCUMENT_ERROR_MESSAGES: Record<string, string> = {
   db_error:                     'Datenbankfehler – bitte erneut versuchen.',
 }
 
+const REFERENCE_EVENT_ERROR_MESSAGES: Record<string, string> = {
+  reference_event_band_not_found:      'Band nicht gefunden.',
+  reference_event_name_required:       'Bitte eine Veranstaltung/Referenz angeben.',
+  reference_event_year_out_of_range:   'Jahr muss zwischen 1900 und 2100 liegen.',
+  reference_event_not_found:           'Diese Referenz wurde nicht gefunden – bitte Seite neu laden.',
+  reference_event_wrong_band:          'Diese Referenz gehört nicht zu dieser Band – bitte Seite neu laden.',
+  reference_event_invalid_direction:   'Unbekannte Verschieben-Aktion.',
+  db_error:                            'Datenbankfehler – bitte erneut versuchen.',
+}
+
 const GALLERY_ERROR_MESSAGES: Record<string, string> = {
   gallery_band_not_found:    'Band nicht gefunden.',
   gallery_file_required:     'Bitte eine Bilddatei auswählen.',
@@ -333,6 +346,8 @@ type SearchParams = Promise<{
   gallery_error?: string
   document_saved?: string
   document_error?: string
+  reference_event_saved?: string
+  reference_event_error?: string
 }>
 
 function FieldError({ msg }: { msg?: string }) {
@@ -528,6 +543,23 @@ export default async function AdminBandDetailPage({
     created_at: string
   }
 
+  // Referenzverwaltung (V1): reference_events dieser Band, ownership-
+  // gefiltert per band_id. sort_order/created_at werden fuer den
+  // deterministischen Tie-Breaker mitgeladen (siehe
+  // lib/bands/bandReferenceEventsSort.ts). Diese Query liest ausschliesslich --
+  // service_role hat nur SELECT auf reference_events (siehe
+  // supabase/reference_events_admin_read_grant.sql), Schreiben laeuft
+  // ausschliesslich ueber die RPCs in supabase/fn_reference_events_admin.sql.
+  type ReferenceEventRow = {
+    id: string
+    event_name: string
+    location_name: string | null
+    city: string | null
+    year: number | null
+    sort_order: number
+    created_at: string
+  }
+
   const [
     { data: similarRelationsRaw, error: similarRelationsError },
     { data: candidateBandsRaw, error: candidateBandsError },
@@ -539,6 +571,7 @@ export default async function AdminBandDetailPage({
     { data: thumbnailMediaAssetsRaw, error: thumbnailMediaAssetsError },
     { data: galleryMediaAssetsRaw, error: galleryMediaAssetsError },
     { data: bandDocumentsRaw, error: bandDocumentsError },
+    { data: referenceEventsRaw, error: referenceEventsError },
   ] = await Promise.all([
     client
       .from('band_relations')
@@ -603,6 +636,11 @@ export default async function AdminBandDetailPage({
       .select('id, audience_label, title, description, file_url, thumbnail_url, sort_order, created_at')
       .eq('band_id', id)
       .returns<BandDocumentRow[]>(),
+    client
+      .from('reference_events')
+      .select('id, event_name, location_name, city, year, sort_order, created_at')
+      .eq('band_id', id)
+      .returns<ReferenceEventRow[]>(),
   ])
 
   // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
@@ -695,6 +733,22 @@ export default async function AdminBandDetailPage({
       thumbnailUrl: row.thumbnail_url,
     }))
 
+  // Referenzverwaltung (V1): gleiches Fail-closed-Prinzip -- ein
+  // Ladefehler darf nie als "keine Referenzen" interpretiert werden.
+  // Sortierung identisch zum oeffentlichen Frontend (lib/bands/bandReferenceEventsSort.ts).
+  const referenceEventsLoadError = !!referenceEventsError
+  const adminReferenceEvents: AdminReferenceEvent[] = (referenceEventsRaw ?? [])
+    .slice()
+    .sort(compareReferenceEvents)
+    .map((row) => ({
+      id: row.id,
+      eventName: row.event_name,
+      locationName: row.location_name ?? undefined,
+      city: row.city ?? undefined,
+      year: row.year ?? undefined,
+      sortOrder: row.sort_order,
+    }))
+
   let locationUsageCount = 0
   if (band.home_location_id) {
     const { count } = await client
@@ -744,6 +798,9 @@ export default async function AdminBandDetailPage({
     : null
   const documentErrorMsg = sp.document_error
     ? (DOCUMENT_ERROR_MESSAGES[sp.document_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const referenceEventErrorMsg = sp.reference_event_error
+    ? (REFERENCE_EVENT_ERROR_MESSAGES[sp.reference_event_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
 
   return (
@@ -1019,6 +1076,17 @@ export default async function AdminBandDetailPage({
           loadError={documentsLoadError}
           successMsg={sp.document_saved ? 'Gespeichert.' : undefined}
           errorMsg={documentErrorMsg ?? undefined}
+        />
+
+        {/* Referenzen (Referenzverwaltung im Band-Admin, V1): anlegen,
+            bearbeiten, umsortieren, loeschen. Schreibt ausschliesslich ueber
+            die SECURITY DEFINER RPCs in supabase/fn_reference_events_admin.sql */}
+        <ReferenceEventsEditorSection
+          bandId={band.id}
+          referenceEvents={adminReferenceEvents}
+          loadError={referenceEventsLoadError}
+          successMsg={sp.reference_event_saved ? 'Gespeichert.' : undefined}
+          errorMsg={referenceEventErrorMsg ?? undefined}
         />
 
         {/* ─── Kontakte ─────────────────────────────── */}

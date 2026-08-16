@@ -43,6 +43,21 @@ export type ReferenceEvent = {
   year?: number;
 };
 
+// Admin-spezifisches Pendant zu ReferenceEvent (Referenzverwaltung im
+// Band-Admin, V1): eigenes DB-nahes Modell mit id/sortOrder fuer CRUD,
+// bewusst getrennt vom oeffentlichen View-Model oben (keine Vermischung).
+// event_type_id, description, url, is_featured sind in V1 nicht Teil des
+// Admin-Formulars und daher hier nicht abgebildet -- Admin-Updates lassen
+// sie ueber public.fn_reference_event_update unveraendert.
+export type AdminReferenceEvent = {
+  id: string;
+  eventName: string;
+  locationName?: string;
+  city?: string;
+  year?: number;
+  sortOrder: number;
+};
+
 export type SimilarBandReferences = {
   manual1?: string;
   manual2?: string;

@@ -10,6 +10,7 @@ import type {
   WeddingInfo,
 } from '../types/band'
 import { compareBandDocuments } from '../bands/bandDocumentsSort.ts'
+import { compareReferenceEvents } from '../bands/bandReferenceEventsSort.ts'
 
 type Row = Record<string, unknown>
 
@@ -196,9 +197,14 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     ? { igFollowers, igFollowing, fbFollowers, fbFollowing, ytSubscribers }
     : undefined
 
-  // Reference events (schema: event_name, location_name, city, year)
+  // Reference events (schema: event_name, location_name, city, year) --
+  // deterministische Sortierung mit stabilem Tie-Breaker
+  // (sort_order -> created_at -> id), siehe lib/bands/bandReferenceEventsSort.ts.
+  // Identischer Tie-Breaker wie public.fn_reference_event_move (Referenzverwaltung
+  // im Band-Admin, V1), damit Admin- und Public-Reihenfolge bei
+  // sort_order-Gleichstaenden uebereinstimmen.
   const referenceEvents: ReferenceEvent[] = asArr(r.reference_events as Row[] | null)
-    .sort(bySortOrder)
+    .sort(compareReferenceEvents)
     .map(re => ({
       eventName: str(re.event_name) ?? '',
       venue:     str(re.location_name),

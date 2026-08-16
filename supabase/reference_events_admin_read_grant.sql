@@ -1,0 +1,53 @@
+-- ============================================================
+-- reference_events_admin_read_grant.sql
+--
+-- Status: NOCH NICHT AUSGEFUEHRT -- vorbereitet zur manuellen Ausfuehrung
+-- durch den Repo-Owner im Supabase SQL Editor (Production,
+-- bfyucjjyarvqeftqqihm).
+--
+-- Zweck: service_role kann public.reference_events aktuell nicht lesen
+-- (live bestaetigt: 403 permission denied / SQLSTATE 42501 ueber
+-- createAdminClient()). Dieser Grant behebt ausschliesslich das Lesen --
+-- Voraussetzung fuer die Referenzverwaltung im Band-Admin
+-- (/admin/bands/[id]).
+--
+-- Ursache (read-only Analyse vom 2026-08-16): Production-Drift, kein
+-- bewusster Lockdown. grant-service-role-permissions.sql und -v2.sql
+-- sehen den vollen Grant fuer reference_events zwar bereits vor
+-- ("Phase 2 (geplant)"), dieser wurde gegen Production aber nachweislich
+-- nie (vollstaendig) angewendet -- kein REVOKE im Repo zielt auf
+-- service_role + reference_events, und die spaeter (08.07.2026)
+-- ausgefuehrte enable-rls-app-tables.sql aendert service_role-Rechte fuer
+-- diese Tabelle ebenfalls nicht. Betrifft zusaetzlich acht weitere
+-- Tabellen (lineups, sound_worlds, services, die zugehoerigen
+-- band_*-Junctions, social_profiles, plz_reference) -- ausdruecklich
+-- nicht Teil dieses Scripts/Pakets.
+--
+-- Praezedenzfall: identisches Symptom und identischer Fix bereits fuer
+-- public.band_relations, siehe supabase/band_relations_admin_read_grant.sql
+-- (10.07.2026) -- gleiches Muster: SELECT-only fuer service_role, Schreiben
+-- ausschliesslich ueber SECURITY DEFINER RPCs (hier:
+-- supabase/fn_reference_events_admin.sql, Schritt 1 dieses Pakets).
+--
+-- Sprint: Referenzverwaltung im Band-Admin (V1)
+-- Datum des Entwurfs: 2026-08-16
+--
+-- Bewusst NUR SELECT. Schreiben laeuft ausschliesslich ueber die
+-- SECURITY DEFINER Funktionen in fn_reference_events_admin.sql --
+-- service_role bekommt hier explizit KEIN INSERT/UPDATE/DELETE auf die
+-- Tabelle.
+--
+-- Kein RLS-Bezug: service_role hat BYPASSRLS, Policies sind fuer diesen
+-- Grant nicht entscheidungsrelevant. Die bestehende anon-Policy
+-- (reference_events_public_read, siehe enable-rls-app-tables.sql) bleibt
+-- unangetastet.
+-- ============================================================
+
+-- Sollzustand-Deklaration (idempotent): falls jemals zuvor breitere
+-- Schreibrechte vergeben wurden (z. B. durch einen frueheren, nicht
+-- vollstaendig nachvollziehbaren Lauf von grant-service-role-
+-- permissions.sql/-v2.sql), werden diese hier explizit zurueckgenommen --
+-- analog band_relations_admin_read_grant.sql.
+revoke insert, update, delete on public.reference_events from service_role;
+
+grant select on public.reference_events to service_role;

@@ -56,6 +56,10 @@ const PROTECTED_ACTIONS = [
   'replaceBandDocumentCoverAction',
   'deleteBandDocumentAction',
   'moveBandDocumentAction',
+  'createReferenceEventAction',
+  'updateReferenceEventAction',
+  'deleteReferenceEventAction',
+  'moveReferenceEventAction',
 ]
 
 function extractFunctionBody(functionName: string): string {

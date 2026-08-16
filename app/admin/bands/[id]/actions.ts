@@ -2036,3 +2036,196 @@ export async function moveBandDocumentAction(formData: FormData): Promise<never>
 
   redirect(`/admin/bands/${bandRow.id}?document_saved=1`)
 }
+
+// ─────────────────────────────────────────
+// Referenzverwaltung (reference_events) -- RPC public.fn_reference_event_*
+//
+// Schreibt ausschliesslich ueber die SECURITY DEFINER RPCs in
+// supabase/fn_reference_events_admin.sql -- service_role hat bewusst
+// KEINE INSERT/UPDATE/DELETE-Table-Grants auf reference_events (siehe
+// supabase/reference_events_admin_read_grant.sql), nur SELECT. id+band_id
+// werden bereits innerhalb jeder RPC gemeinsam geprueft (Zeilenzuordnung,
+// nicht Ownership im Auth-Sinn); diese Actions mappen nur die
+// resultierenden RE-Fehlercodes auf stabile String-Codes fuer die
+// Fehlermeldungs-Map in page.tsx. slug fuer die Public-Revalidierung wird
+// immer frisch aus der DB gelesen, nie aus einem Formularfeld.
+// ─────────────────────────────────────────
+
+const REFERENCE_EVENT_ERRCODE_TO_SLUG: Record<string, string> = {
+  RE001: 'reference_event_band_not_found',
+  RE002: 'reference_event_name_required',
+  RE003: 'reference_event_year_out_of_range',
+  RE004: 'reference_event_not_found',
+  RE005: 'reference_event_wrong_band',
+  RE006: 'reference_event_invalid_direction',
+}
+
+const REFERENCE_EVENT_MESSAGE_SLUGS = new Set(Object.values(REFERENCE_EVENT_ERRCODE_TO_SLUG))
+
+// Primaer ueber error.code (RE-ERRCODE), error.message (Slug) nur als
+// Fallback, danach genereller db_error-Fallback.
+function referenceEventErrorCode(error: { code?: string | null; message?: string | null }): string {
+  if (error.code && REFERENCE_EVENT_ERRCODE_TO_SLUG[error.code]) return REFERENCE_EVENT_ERRCODE_TO_SLUG[error.code]
+  if (error.message && REFERENCE_EVENT_MESSAGE_SLUGS.has(error.message)) return error.message
+  return 'db_error'
+}
+
+function referenceEventErrorRedirect(bandId: string, code: string): never {
+  redirect(`/admin/bands/${bandId}?reference_event_error=${code}`)
+}
+
+// Leeres Feld -> null (kein Jahr angegeben, bei der RPC weiterhin erlaubt).
+// Nicht-numerische Eingabe wird bereits hier abgefangen -- der eigentliche
+// Bereichs-Check (1900-2100) bleibt bei der RPC/DB-CHECK, hier nur die
+// Format-Vorpruefung.
+function parseReferenceEventYear(formData: FormData): { ok: true; value: number | null } | { ok: false } {
+  const raw = str(formData, 'year')
+  if (raw === '') return { ok: true, value: null }
+  const n = Number(raw)
+  if (!Number.isInteger(n)) return { ok: false }
+  return { ok: true, value: n }
+}
+
+export async function createReferenceEventAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?reference_event_error=reference_event_band_not_found`)
+
+  const event_name = str(formData, 'event_name')
+  const location_name = nullIfEmpty(str(formData, 'location_name'))
+  const city = nullIfEmpty(str(formData, 'city'))
+  const yearField = parseReferenceEventYear(formData)
+  if (!yearField.ok) referenceEventErrorRedirect(bandRow.id, 'reference_event_year_out_of_range')
+
+  const { error } = await client.rpc('fn_reference_event_create', {
+    p_band_id: bandRow.id,
+    p_event_name: event_name,
+    p_location_name: location_name,
+    p_city: city,
+    p_year: yearField.value,
+  })
+
+  if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?reference_event_saved=1`)
+}
+
+export async function updateReferenceEventAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const reference_event_id = str(formData, 'reference_event_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?reference_event_error=reference_event_band_not_found`)
+  if (!reference_event_id) referenceEventErrorRedirect(bandRow.id, 'reference_event_not_found')
+
+  const event_name = str(formData, 'event_name')
+  const location_name = nullIfEmpty(str(formData, 'location_name'))
+  const city = nullIfEmpty(str(formData, 'city'))
+  const yearField = parseReferenceEventYear(formData)
+  if (!yearField.ok) referenceEventErrorRedirect(bandRow.id, 'reference_event_year_out_of_range')
+
+  const { error } = await client.rpc('fn_reference_event_update', {
+    p_id: reference_event_id,
+    p_band_id: bandRow.id,
+    p_event_name: event_name,
+    p_location_name: location_name,
+    p_city: city,
+    p_year: yearField.value,
+  })
+
+  if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?reference_event_saved=1`)
+}
+
+export async function deleteReferenceEventAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const reference_event_id = str(formData, 'reference_event_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?reference_event_error=reference_event_band_not_found`)
+  if (!reference_event_id) referenceEventErrorRedirect(bandRow.id, 'reference_event_not_found')
+
+  const { error } = await client.rpc('fn_reference_event_delete', {
+    p_id: reference_event_id,
+    p_band_id: bandRow.id,
+  })
+
+  if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?reference_event_saved=1`)
+}
+
+export async function moveReferenceEventAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const reference_event_id = str(formData, 'reference_event_id')
+  const direction = str(formData, 'direction')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?reference_event_error=reference_event_band_not_found`)
+  if (!reference_event_id) referenceEventErrorRedirect(bandRow.id, 'reference_event_not_found')
+  if (direction !== 'up' && direction !== 'down') referenceEventErrorRedirect(bandRow.id, 'reference_event_invalid_direction')
+
+  const { error } = await client.rpc('fn_reference_event_move', {
+    p_id: reference_event_id,
+    p_band_id: bandRow.id,
+    p_direction: direction,
+  })
+
+  if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?reference_event_saved=1`)
+}
