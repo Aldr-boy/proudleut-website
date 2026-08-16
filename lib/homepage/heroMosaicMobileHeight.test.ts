@@ -4,54 +4,56 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-// Regressionsschutz fuer Codex-P1 (Re-Review PR #24): auf schmalen
-// Smartphone-Breiten (320-390px) konnten die zwei Chip-Reihen auf bis zu
-// sechs Zeilen umbrechen. Der Inhalt war vollstaendig absolut positioniert
-// (absolute inset-0) und stand damit ausserhalb des normalen Dokument-
-// flusses -- er konnte die feste min-h-[520px] der Hero-Section nicht
-// strecken. Dadurch wurde der Inhalt (v. a. der CTA "Bands entdecken") von
-// overflow-hidden am unteren Rand abgeschnitten.
+// Regressionsschutz fuer Codex-P1 (urspruenglich PR #24, seither bei jedem
+// Hero-Redesign erneut geprueft): Inhalt darf mobil NICHT absolut
+// positioniert sein, sonst kann er von overflow-hidden abgeschnitten
+// werden, sobald die Anlass-Buttons auf schmalen Breiten umbrechen.
 //
-// Bewusst KEIN Test, der die vollstaendige Tailwind-Klassenkette des
-// Content-Wrappers festschreibt (waere bruechig gegenueber unabhaengigen
-// Styling-Aenderungen) -- geprueft wird nur die strukturelle Invariante,
-// die den Fehler tatsaechlich behebt: der Content-Wrapper darf mobil
-// (ohne Breakpoint-Praefix) nicht mehr absolut positioniert sein, damit
-// er im normalen Fluss selbst ueber seine Hoehe bestimmt und die Section
-// per min-h-[520px] automatisch mitwaechst -- robust unabhaengig davon,
-// auf wie viele Zeilen die Chips im Einzelfall umbrechen. Ab md bleibt das
-// bisherige, unveraenderte Desktop-/Tablet-Verhalten (absolute inset-0)
-// erhalten.
+// Seit dem "finales Claude-Design"-Redesign (dieser Auftrag) besteht der
+// Hero aus zwei getrennten, sich gegenseitig ausschliessenden Baeumen
+// (`hidden md:block` fuer Desktop, `md:hidden` fuer Mobil) statt einem
+// einzelnen Content-Wrapper mit responsiven Breakpoint-Praefixen -- die
+// Pruefung testet deshalb beide Baeume separat.
 const sourcePath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   '..', '..', 'components', 'homepage', 'HeroMosaic.tsx'
 )
 const source = readFileSync(sourcePath, 'utf8')
 
-function extractContentWrapperClassName(): string {
-  const marker = '{/* Content --'
-  const startIndex = source.indexOf(marker)
-  assert.ok(startIndex >= 0, 'Content-Wrapper-Kommentar nicht gefunden')
-  const divStart = source.indexOf('<div className="', startIndex)
-  assert.ok(divStart >= 0, 'Content-Wrapper-<div> nicht gefunden')
-  const classStart = divStart + '<div className="'.length
-  const classEnd = source.indexOf('"', classStart)
-  return source.slice(classStart, classEnd)
+// className robust extrahieren, unabhaengig davon, ob weitere Attribute
+// (z. B. ref=) vor className auf demselben <div> stehen.
+function extractDivClassName(marker: string): string {
+  const markerIndex = source.indexOf(marker)
+  assert.ok(markerIndex >= 0, `Marker nicht gefunden: ${marker}`)
+  const divStart = source.indexOf('<div', markerIndex)
+  assert.ok(divStart >= 0, `<div> nach Marker nicht gefunden: ${marker}`)
+  const tagEnd = source.indexOf('>', divStart)
+  const tag = source.slice(divStart, tagEnd)
+  const classMatch = tag.match(/className="([^"]*)"/)
+  assert.ok(classMatch, `className auf <div> nach Marker nicht gefunden: ${marker}`)
+  return classMatch[1]
 }
 
-test('Content-Wrapper ist mobil (ohne Breakpoint-Praefix) NICHT absolut positioniert -- bestimmt seine Hoehe selbst im Dokumentfluss', () => {
-  const className = extractContentWrapperClassName()
+test('Mobiler Baum ist ausschliesslich <md sichtbar und NICHT absolut positioniert', () => {
+  const className = extractDivClassName('{/* Mobil:')
+  assert.match(className, /(^|\s)md:hidden(\s|$)/)
   const baseClasses = className.split(/\s+/).filter((c) => !/^[a-z0-9-]+:/.test(c))
   assert.ok(!baseClasses.includes('absolute'), `erwartet keine unbedingte "absolute"-Klasse, gefunden: ${className}`)
 })
 
-test('Content-Wrapper wird ab md wie zuvor absolut positioniert (Desktop-/Tablet-Verhalten unveraendert)', () => {
-  const className = extractContentWrapperClassName()
-  assert.match(className, /(^|\s)md:absolute(\s|$)/)
-  assert.match(className, /(^|\s)md:inset-0(\s|$)/)
+test('Desktop-Baum ist ausschliesslich ab md sichtbar (hidden md:block)', () => {
+  const className = extractDivClassName('{/* Desktop:')
+  assert.match(className, /(^|\s)hidden(\s|$)/)
+  assert.match(className, /(^|\s)md:block(\s|$)/)
 })
 
-test('Hero-Section behaelt die bestehende Mindesthoehe/-begrenzung und overflow-hidden unveraendert', () => {
-  assert.match(source, /min-h-\[520px\] md:min-h-\[680px\] lg:h-\[85svh\] lg:max-h-\[900px\]/)
-  assert.match(source, /className="relative overflow-hidden bg-pl-stage/)
+test('Desktop-Hero behaelt die bestehende Mindesthoehe/-begrenzung', () => {
+  assert.match(source, /h-\[max\(660px,85svh\)\] max-h-\[900px\]/)
+})
+
+test('prefers-reduced-motion wird fuer die Schwebe-Animation respektiert (globals.css)', () => {
+  const cssPath = path.join(path.dirname(sourcePath), '..', '..', 'app', 'globals.css')
+  const css = readFileSync(cssPath, 'utf8')
+  assert.match(css, /prefers-reduced-motion:\s*reduce/)
+  assert.match(css, /\.pl-hero-float\s*\{\s*animation:\s*none\s*!important;?\s*\}/)
 })

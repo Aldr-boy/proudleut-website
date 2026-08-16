@@ -16,7 +16,7 @@ export default function Footer() {
             />
           </Link>
           <p className="text-pl-on-stage-muted text-sm mt-1">
-            Livebands für besondere Momente.
+            Livebands für euer Event.
           </p>
         </div>
         <nav

@@ -8,17 +8,17 @@ export const faqGroups: FaqGroup[] = [
       {
         question: "Ist proudleut kostenlos?",
         answer:
-          "Ja. Für Veranstalter ist proudleut kostenlos — ohne Gebühren, Provision oder Vermittlungskosten. Auch Bands können aktuell kostenlos dabei sein. proudleut soll helfen, gute Livebands sichtbarer zu machen und Veranstaltern die Suche zu erleichtern.",
+          "Ja. proudleut ist kostenlos. Sprich ohne Gebühren, Provision oder Vermittlungskosten. proudleut soll helfen, gute Livebands sichtbarer zu machen und Veranstaltern die Suche zu erleichtern.",
       },
       {
         question: "Wer steckt hinter proudleut?",
         answer:
-          "Ich bin Alexander Dressler, Bandmanager und Musiker aus der Oberpfalz. proudleut ist keine anonyme Datenbank, sondern ein persönlich aufgebautes Verzeichnis für Livebands. Viele Bands kenne ich aus der Praxis — und genau deshalb kann ich bei Fragen oft ehrlich einschätzen, was passt.",
+          "Ich bin Alexander Dressler, komme aus der Oberpfalz und arbeite seit Jahrzehnten mit Bands und Musikern. proudleut ist keine anonyme Datenbank, sondern ein persönlich aufgebautes Verzeichnis für Livebands.",
       },
       {
         question: "Wie läuft eine Anfrage ab?",
         answer:
-          "Du findest eine Band, die zu deinem Event passt, und kontaktierst sie direkt über die Bandseite. Die Anfrage geht also ohne Umweg an die Band selbst. proudleut ist kein klassisches Buchungsportal und kein Mittelsmann.",
+          "Du findest eine Band, die zu deinem Event passt, und kontaktierst sie direkt über die Bandseite. Die Anfrage geht also ohne Umweg an die Band selbst.",
       },
     ],
   },
@@ -28,12 +28,12 @@ export const faqGroups: FaqGroup[] = [
       {
         question: "Kann ich auch Hilfe bei der Bandsuche bekommen?",
         answer:
-          "Klar. Wenn du nicht sicher bist, welche Band zu deinem Event passt, schreib mir einfach kurz, was du planst. Oft reichen ein paar Eckdaten — Anlass, Ort, Datum, Gästezahl und musikalische Richtung — und ich kann dir zwei oder drei Bands vorschlagen, die gut passen könnten.",
+          "Klar. Wenn du nicht sicher bist, welche Band zu deinem Event passt, schreib mir einfach kurz, was du planst. Oft reichen ein paar Eckdaten: Anlass, Ort, Datum, Gästezahl und musikalische Richtung. Ich kann dir dann zwei oder drei Bands vorschlagen, die gut passen könnten.",
       },
       {
         question: "Wann sollte ich mit der Bandsuche beginnen?",
         answer:
-          "So früh wie möglich. Bei Hochzeiten, Firmenfeiern und größeren Festen ist ein Jahr Vorlauf oft sinnvoll. Gute Bands sind häufig weit im Voraus gebucht — besonders an Samstagen und in der Hauptsaison.",
+          "So früh wie möglich ;). Bei Hochzeiten, Firmenfeiern und größeren Festen ist ein Jahr Vorlauf definitiv sinnvoll. Gute Bands sind häufig weit im Voraus gebucht, besonders an Samstagen und in der Hauptsaison.",
       },
       {
         question: "Was sollte ich vor der Bandsuche geklärt haben?",
@@ -53,12 +53,12 @@ export const faqGroups: FaqGroup[] = [
       {
         question: "Sollte ich einen Vertrag mit der Band machen?",
         answer:
-          "Ja, unbedingt. Ein Vertrag schafft Klarheit für beide Seiten: Termin, Spielzeit, Gage, Technik, Ablauf und besondere Absprachen sind sauber festgehalten. Mein Tipp: Geht einige Wochen vor dem Termin gemeinsam den Ablauf nochmal durch — dann gibt es am Veranstaltungstag weniger Überraschungen.",
+          "Ja, unbedingt. Ein Vertrag schafft Klarheit für beide Seiten: Termin, Spielzeit, Gage, Technik, Ablauf und besondere Absprachen sind sauber festgehalten. Mein Tipp: Geht einige Wochen vor dem Termin gemeinsam den Ablauf nochmal durch, dann gibt es am Veranstaltungstag weniger Überraschungen.",
       },
       {
         question: "Wie kommen Bands auf proudleut?",
         answer:
-          "Wenn ihr als Band auf proudleut erscheinen möchtet, meldet euch einfach bei mir. Ich freue mich über jede gute Liveband, die das Verzeichnis bereichert. Mir ist nur wichtig, kurz persönlich mit euch zu sprechen — damit ich euch, euren Sound und passende Veranstaltungen gut einordnen kann.",
+          "Wenn ihr als Band auf proudleut erscheinen möchtet, meldet euch einfach bei mir. Ich freue mich über jede gute Liveband, die das Verzeichnis bereichert. Mir ist nur wichtig, kurz persönlich mit euch zu sprechen, damit ich euch, euren Sound und passende Veranstaltungen gut einordnen kann.",
       },
     ],
   },
