@@ -10,7 +10,7 @@ export default function Testimonials() {
             Was andere über proudleut sagen
           </h2>
           <p className="text-pl-text-muted text-lg leading-relaxed max-w-2xl mx-auto">
-            Rückmeldungen von Brautpaaren, Veranstaltern und Musikern — aus echten Anfragen, Gesprächen und gemeinsamen Projekten.
+            Rückmeldungen von Brautpaaren, Veranstaltern und Musikern, aus echten Anfragen, Gesprächen und gemeinsamen Projekten.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

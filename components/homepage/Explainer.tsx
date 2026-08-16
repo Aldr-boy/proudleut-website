@@ -2,64 +2,62 @@ import Link from 'next/link';
 
 const steps = [
   {
-    number: "01",
-    title: "Stöbern",
-    description: "Entdecke Bands nach Anlass, Stil und Atmosphäre.",
+    number: '01',
+    title: 'Entdecken',
+    description:
+      'Starte mit deinem Anlass und grenz ein, was zu deinem Abend passt: Stil, Region, „Klingt nach".',
   },
   {
-    number: "02",
-    title: "Direkt anfragen",
-    description: "Du kontaktierst die Bands direkt — ohne Buchungsportal dazwischen.",
+    number: '02',
+    title: 'Band ansehen',
+    description:
+      'Jede Bandseite zeigt mit Fotos, Videos und Einordnung, was die Band ausmacht und wofür sie steht.',
   },
   {
-    number: "03",
-    title: "Persönlich helfen lassen",
-    description: "Du bist unsicher? Schreib mir kurz dein Event — ich denke mit.",
+    number: '03',
+    title: 'Direkt anfragen',
+    description: 'Deine Anfrage geht ohne Umweg an die Band — mit direktem Kontakt für alles Weitere.',
   },
 ];
 
 export default function Explainer() {
   return (
-    <section className="bg-pl-canvas py-10 md:py-14 px-4 sm:px-6">
-      <div className="max-w-5xl mx-auto bg-pl-paper rounded-2xl px-6 sm:px-10 md:px-14 py-12 md:py-16">
-        <div className="mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-pl-text mb-5 leading-tight max-w-2xl">
-            Nicht sicher, welche Band passt?
-          </h2>
-          <p className="text-pl-text-muted text-lg leading-relaxed max-w-xl">
-            Stöbere selbst durch ausgewählte Livebands — oder schreib mir kurz, was du planst.
-            Ich helfe dir gern beim Sortieren.
+    <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
+      <div className="pl-container-shell grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16">
+        <div>
+          <p className="text-xs font-semibold text-pl-accent uppercase tracking-wider">
+            02 — So funktioniert&apos;s
           </p>
+          <h2 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight text-pl-text leading-[1.1]">
+            Entdecken, ansehen, anfragen.
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-pl-text-muted max-w-[400px]">
+            Mehr Schritte sind es nicht. proudleut ist keine Agentur und kein Buchungsportal.
+            Deine Anfrage landet direkt bei der Band.
+          </p>
+          <Link
+            href="/bands"
+            className="inline-block mt-7 text-sm font-semibold text-pl-accent-deep hover:text-pl-accent-link-hover motion-safe:transition-colors"
+          >
+            Bands entdecken →
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
+        <div className="flex flex-col">
           {steps.map((step) => (
             <div
               key={step.number}
-              className="border-t-2 border-pl-accent/30 pt-8 pb-4"
+              className="flex gap-5 py-5 border-t border-pl-border-medium last:border-b"
             >
-              <span className="block text-5xl font-bold text-pl-accent mb-4 tabular-nums">
-                {step.number}
-              </span>
-              <h3 className="text-pl-text font-bold text-xl mb-3">{step.title}</h3>
-              <p className="text-pl-text-muted leading-relaxed">{step.description}</p>
+              <div className="font-mono text-sm text-pl-accent pt-0.5">{step.number}</div>
+              <div>
+                <div className="text-lg font-bold text-pl-text">{step.title}</div>
+                <p className="mt-1.5 text-sm leading-relaxed text-pl-text-muted">
+                  {step.description}
+                </p>
+              </div>
             </div>
           ))}
-        </div>
-
-        <div className="mt-14 flex flex-wrap gap-4 justify-center">
-          <Link
-            href="/bands"
-            className="inline-flex items-center px-8 py-3.5 rounded-full bg-pl-accent text-pl-on-accent font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
-          >
-            Bands entdecken
-          </Link>
-          <a
-            href="mailto:alexander.dressler@proudleut.com"
-            className="inline-flex items-center px-6 py-3 rounded-full border border-pl-accent-light/30 text-pl-text hover:border-pl-accent-light motion-safe:transition-colors"
-          >
-            Schreib mir kurz
-          </a>
         </div>
       </div>
     </section>

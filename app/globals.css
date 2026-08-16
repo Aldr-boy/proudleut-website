@@ -159,3 +159,20 @@ body {
   .pl-display-1 { font-size: 84px; }
   .pl-display-2 { font-size: 56px; }
 }
+
+/* ── Hero-Bildwelt: sehr leichte Schwebe-Bewegung ──
+   Startseiten-Hero, Desktop-Bildkomposition. Animiert bewusst nur
+   margin-top statt transform, damit die separat pro Bild gesetzte
+   rotate()-Transform (inline style) unangetastet bleibt. */
+@keyframes pl-hero-float {
+  0%, 100% { margin-top: 0; }
+  50% { margin-top: -8px; }
+}
+.pl-hero-float {
+  animation-name: pl-hero-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-hero-float { animation: none !important; }
+}

@@ -13,7 +13,7 @@ export default function FAQ() {
             </h2>
             <p className="text-pl-text-muted leading-relaxed mb-6">
               Du hast Fragen zur Bandsuche, zur Plattform oder zum Ablauf?
-              Hier findest du Antworten — und wenn nicht, schreib mir einfach.
+              Hier findest du Antworten und wenn nicht, schreib mir einfach.
             </p>
             <a
               href="mailto:alexander.dressler@proudleut.com"

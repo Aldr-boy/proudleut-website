@@ -2,37 +2,45 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { bandLogos } from '@/lib/homepage/bandLogos';
 
+// Visuelle Bruecke zwischen Hero (dunkel) und "Livebands entdecken"
+// (helle AuswahlSection direkt darunter): keine eigenstaendige Section mit
+// grosser Ueberschrift, sondern ein kleiner, ruhiger Zweizeiler direkt ueber
+// der abgerundeten, dunklen Logo-Card -- Text und Card gehoeren optisch
+// zusammen (knappes mb, gleiche Card auf demselben hellen Grund wie der
+// folgende Contentbereich, bg-pl-paper, identisch zu AuswahlSection).
+// Bewusst keine erklaerende Marketing-Subline ("Ein kleiner Ausschnitt aus
+// dem proudleut-Kosmos." kommt nicht zurueck) und keine grossen vertikalen
+// Abstaende -- kein eigener Seitenabschnitt.
 export default function LogoStrip() {
   return (
-    <section className="bg-pl-paper pt-10 pb-12 md:pt-14 md:pb-16 px-4 sm:px-6">
-      <div className="pl-container-shell text-center">
-        <h2 className="text-lg font-medium text-pl-text mb-1">
-          Bands mit eigener Handschrift
-        </h2>
-        <p className="text-sm text-pl-text-muted mb-6">
-          Ein kleiner Ausschnitt aus dem proudleut-Kosmos.
-        </p>
-        <div className="bg-pl-stage/90 rounded-2xl px-7 py-8 md:px-10 md:py-9 max-w-3xl mx-auto">
-          <div className="flex items-center justify-center gap-x-7 gap-y-5 md:gap-x-9 flex-wrap">
-            {bandLogos.map((logo) => {
-              const img = (
+    <section className="bg-pl-paper pt-6 pb-6 md:pt-8 md:pb-8 px-4 sm:px-6">
+      <div className="pl-container-shell">
+        <div className="text-center mb-4 md:mb-5">
+          <p className="text-sm md:text-base font-semibold text-pl-text">
+            Bands mit eigener Handschrift
+          </p>
+          <p className="text-xs md:text-sm text-pl-text-muted mt-0.5">
+            Nicht nur musikalisch.
+          </p>
+        </div>
+        <div className="bg-pl-stage rounded-2xl md:rounded-[28px] px-6 py-7 md:px-10 md:py-9">
+          <div className="flex items-center justify-center gap-x-8 gap-y-5 md:gap-x-10 flex-wrap">
+            {bandLogos.map((logo) => (
+              <Link
+                key={logo.name}
+                href={logo.href}
+                aria-label={logo.name}
+                className="opacity-80 hover:opacity-100 motion-safe:transition-opacity"
+              >
                 <Image
-                  key={logo.name}
                   src={logo.src}
                   alt={`${logo.name} Logo`}
                   width={160}
                   height={48}
-                  className={`max-h-10 md:max-h-12 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity ${logo.className ?? 'max-w-36 md:max-w-44'}`}
+                  className={`max-h-9 md:max-h-11 w-auto object-contain ${logo.className ?? 'max-w-32 md:max-w-40'}`}
                 />
-              );
-              return logo.href ? (
-                <Link key={logo.name} href={logo.href} aria-label={logo.name}>
-                  {img}
-                </Link>
-              ) : (
-                <span key={logo.name}>{img}</span>
-              );
-            })}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
