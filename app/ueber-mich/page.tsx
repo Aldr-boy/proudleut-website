@@ -200,7 +200,7 @@ export default function UeberProudleutPage() {
         </div>
       </section>
 
-      {/* 04 — Beide Seiten + Offen gesagt + San2-Livebild */}
+      {/* 04 — Beide Seiten + Offen gesagt */}
       <section className="bg-pl-paper pt-16 md:pt-28 border-t border-pl-soft">
         <div className="px-4 sm:px-6">
           <div className="pl-container-shell">
@@ -271,21 +271,6 @@ export default function UeberProudleutPage() {
             </div>
           </div>
         </div>
-
-        {/* San2-Livebild -- volle Farbigkeit, Original unverändert */}
-        <div className="relative w-full aspect-[16/7] md:aspect-[1140/520]">
-          <Image
-            src="/images/ueber-proudleut/san2-live.jpg"
-            alt="San2 and His Soul Patrol live vor Publikum"
-            fill
-            className="object-cover"
-            style={{ objectPosition: 'center 62%' }}
-            sizes="100vw"
-          />
-          <p className="absolute left-4 sm:left-6 md:left-[150px] bottom-4 font-mono text-xs text-pl-on-stage-muted">
-            San2 and His Soul Patrol — live.
-          </p>
-        </div>
       </section>
 
       {/* 05 — Wie proudleut gedacht ist */}
@@ -325,13 +310,43 @@ export default function UeberProudleutPage() {
         </div>
       </section>
 
-      {/* Abschluss */}
-      <section className="bg-pl-stage pt-24 md:pt-36 pb-16 md:pb-24 px-4 sm:px-6 text-center">
-        <div className="max-w-[620px] mx-auto">
-          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-pl-on-stage">
+      {/* Abschluss -- San2-Livefoto als Hintergrund statt eines eigenen
+          alleinstehenden Fotoblocks (siehe components/homepage/CTASection.tsx
+          fuer dasselbe Prinzip: volles Bild + radialer Dunkel-Verlauf +
+          Text/CTAs darueber). Nicht 1:1 uebernommen: Overlay bewusst
+          schwaecher, da das San2-Foto selbst schon eine dunkle, warme
+          Lichtstimmung hat -- staerkeres Abdunkeln haette sie zunichte
+          gemacht. Hoehe bleibt inhaltsgetrieben (bestehendes Padding), nicht
+          die feste, deutlich groessere Aspect-Ratio des frueheren
+          Fotoblocks. */}
+      <section className="relative overflow-hidden pt-24 md:pt-36 pb-16 md:pb-24 px-4 sm:px-6 text-center">
+        <Image
+          src="/images/ueber-proudleut/san2-live.jpg"
+          alt=""
+          fill
+          className="object-cover pointer-events-none"
+          style={{ objectPosition: 'center 62%' }}
+          sizes="100vw"
+          quality={80}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse 62% 78% at 50% 42%, rgba(18,16,26,0.72) 0%, rgba(18,16,26,0.46) 55%, rgba(18,16,26,0.18) 100%)',
+          }}
+        />
+        <div className="relative z-10 max-w-[620px] mx-auto">
+          <h2
+            className="text-4xl md:text-6xl font-extrabold tracking-tight text-pl-on-stage"
+            style={{ textShadow: '0 2px 24px rgba(18,16,26,0.6)' }}
+          >
             Schau dich in Ruhe um.
           </h2>
-          <p className="mt-8 text-lg leading-relaxed text-pl-on-stage-muted max-w-[480px] mx-auto">
+          <p
+            className="mt-8 text-lg leading-relaxed text-pl-on-stage-muted max-w-[480px] mx-auto"
+            style={{ textShadow: '0 1px 16px rgba(18,16,26,0.6)' }}
+          >
             Und wenn du bei der Auswahl nicht weiterkommst: Erzähl mir kurz, was du planst. Ich
             melde mich persönlich.
           </p>
@@ -348,12 +363,16 @@ export default function UeberProudleutPage() {
             </Link>
             <a
               href="mailto:alexander.dressler@proudleut.com"
-              className="text-base font-semibold text-pl-on-stage-muted border-b border-pl-stage hover:text-pl-on-stage hover:border-pl-on-stage-muted motion-safe:transition-colors"
+              className="text-base font-semibold text-pl-on-stage-muted border-b border-transparent hover:text-pl-on-stage hover:border-pl-on-stage-muted motion-safe:transition-colors"
+              style={{ textShadow: '0 1px 16px rgba(18,16,26,0.6)' }}
             >
               Kontakt aufnehmen
             </a>
           </div>
         </div>
+        <p className="absolute left-4 sm:left-6 bottom-3 z-10 font-mono text-[11px] text-pl-on-stage-muted">
+          San2 and His Soul Patrol — live.
+        </p>
       </section>
 
     </main>
