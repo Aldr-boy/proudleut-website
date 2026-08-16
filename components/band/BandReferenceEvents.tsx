@@ -1,5 +1,6 @@
 import type { Band } from '@/lib/types/band';
 import { referenceEventsVariant } from '@/lib/bands/bandReferenceEventsLayout';
+import { referenceEventSublines } from '@/lib/bands/bandReferenceEventSubline';
 
 type Props = { band: Band; compactBottom?: boolean };
 
@@ -15,6 +16,7 @@ export function BandReferenceEvents({ band, compactBottom }: Props) {
 
   if (variant === 'compact-light') {
     const ev = events[0];
+    const sublines = referenceEventSublines(ev);
     return (
       <section className="bg-pl-canvas border-b border-pl-soft py-12 md:py-16 px-4 sm:px-6">
         <div className="pl-container-shell flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-10">
@@ -26,11 +28,11 @@ export function BandReferenceEvents({ band, compactBottom }: Props) {
           </div>
           <div className="bg-pl-elevated border border-pl-soft shadow-pl-photo rounded-xl px-6 py-4">
             <p className="text-base font-semibold text-pl-text">{ev.eventName}</p>
-            {(ev.city || ev.year) && (
-              <p className="mt-1 text-sm text-pl-text-muted">
-                {[ev.city, ev.year].filter(Boolean).join(' · ')}
+            {sublines.map((line, idx) => (
+              <p key={idx} className="mt-1 text-sm text-pl-text-muted">
+                {line}
               </p>
-            )}
+            ))}
           </div>
         </div>
       </section>
@@ -51,11 +53,11 @@ export function BandReferenceEvents({ band, compactBottom }: Props) {
           {events.map((ev, i) => (
             <div key={i} className="bg-pl-stage-elevated border border-pl-stage rounded-xl p-5">
               <p className="text-base md:text-lg font-semibold text-pl-on-stage">{ev.eventName}</p>
-              {(ev.city || ev.year) && (
-                <p className="mt-1 text-sm text-pl-on-stage-muted">
-                  {[ev.city, ev.year].filter(Boolean).join(' · ')}
+              {referenceEventSublines(ev).map((line, idx) => (
+                <p key={idx} className="mt-1 text-sm text-pl-on-stage-muted">
+                  {line}
                 </p>
-              )}
+              ))}
             </div>
           ))}
         </div>

@@ -66,6 +66,14 @@ for (const actionName of ACTIONS) {
   })
 }
 
+test('createReferenceEventAction und updateReferenceEventAction: senden p_description an die RPC (V1.1) -- trifft dadurch die neue Ueberladung mit p_description, nicht die alte V1-Signatur', () => {
+  for (const actionName of ['createReferenceEventAction', 'updateReferenceEventAction']) {
+    const body = extractFunctionBody(actionsSource, actionName)
+    assert.match(body, /const description = nullIfEmpty\(str\(formData, 'description'\)\)/)
+    assert.match(body, /p_description: description,/)
+  }
+})
+
 test('createReferenceEventAction und updateReferenceEventAction: Jahr wird vor dem RPC-Aufruf auf Ganzzahl-Format geprueft', () => {
   for (const actionName of ['createReferenceEventAction', 'updateReferenceEventAction']) {
     const body = extractFunctionBody(actionsSource, actionName)
@@ -105,10 +113,16 @@ test('ReferenceEventsEditorSection: kein Formularfeld fuer sort_order -- Umsorti
   assert.doesNotMatch(editorSource, /name="sort_order"/)
 })
 
-test('ReferenceEventsEditorSection: kein Formularfeld fuer event_type_id, description, url oder is_featured (out of scope V1)', () => {
-  for (const field of ['event_type_id', 'name="description"', 'name="url"', 'is_featured']) {
-    assert.ok(!editorSource.includes(field), `${field} darf nicht im Formular vorkommen (out of scope V1)`)
+test('ReferenceEventsEditorSection: kein Formularfeld fuer event_type_id, url oder is_featured (weiterhin out of scope)', () => {
+  for (const field of ['event_type_id', 'name="url"', 'is_featured']) {
+    assert.ok(!editorSource.includes(field), `${field} darf nicht im Formular vorkommen (out of scope)`)
   }
+})
+
+test('ReferenceEventsEditorSection: description ist ab V1.1 als "Zusatz (optional)"-Formularfeld vorhanden, in Anlege- und Bearbeitungsformular', () => {
+  const descriptionFieldCount = (editorSource.match(/name="description"/g) ?? []).length
+  assert.equal(descriptionFieldCount, 2, 'erwartet je ein description-Feld im Create- und im Update-Formular')
+  assert.match(editorSource, /Zusatz/)
 })
 
 test('ReferenceEventsEditorSection: weist auf sofort live sichtbare Aenderungen hin (kein separater Entwurfsstatus)', () => {

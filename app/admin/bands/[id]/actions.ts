@@ -2105,15 +2105,21 @@ export async function createReferenceEventAction(formData: FormData): Promise<ne
   const event_name = str(formData, 'event_name')
   const location_name = nullIfEmpty(str(formData, 'location_name'))
   const city = nullIfEmpty(str(formData, 'city'))
+  const description = nullIfEmpty(str(formData, 'description'))
   const yearField = parseReferenceEventYear(formData)
   if (!yearField.ok) referenceEventErrorRedirect(bandRow.id, 'reference_event_year_out_of_range')
 
+  // V1.1: ruft die neue RPC-Ueberladung mit p_description auf (siehe
+  // supabase/fn_reference_events_admin.sql) -- die alte 5-Arg-Fassung
+  // ohne p_description bleibt fuer Kompatibilitaet bestehen, wird von
+  // diesem Admin-Code aber nicht mehr aufgerufen.
   const { error } = await client.rpc('fn_reference_event_create', {
     p_band_id: bandRow.id,
     p_event_name: event_name,
     p_location_name: location_name,
     p_city: city,
     p_year: yearField.value,
+    p_description: description,
   })
 
   if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))
@@ -2145,9 +2151,14 @@ export async function updateReferenceEventAction(formData: FormData): Promise<ne
   const event_name = str(formData, 'event_name')
   const location_name = nullIfEmpty(str(formData, 'location_name'))
   const city = nullIfEmpty(str(formData, 'city'))
+  const description = nullIfEmpty(str(formData, 'description'))
   const yearField = parseReferenceEventYear(formData)
   if (!yearField.ok) referenceEventErrorRedirect(bandRow.id, 'reference_event_year_out_of_range')
 
+  // V1.1: ruft die neue RPC-Ueberladung mit p_description auf (siehe
+  // supabase/fn_reference_events_admin.sql) -- die alte 6-Arg-Fassung
+  // ohne p_description bleibt fuer Kompatibilitaet bestehen, wird von
+  // diesem Admin-Code aber nicht mehr aufgerufen.
   const { error } = await client.rpc('fn_reference_event_update', {
     p_id: reference_event_id,
     p_band_id: bandRow.id,
@@ -2155,6 +2166,7 @@ export async function updateReferenceEventAction(formData: FormData): Promise<ne
     p_location_name: location_name,
     p_city: city,
     p_year: yearField.value,
+    p_description: description,
   })
 
   if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))

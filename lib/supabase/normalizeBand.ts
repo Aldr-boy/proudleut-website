@@ -206,10 +206,11 @@ export function normalizeBandFromSupabase(row: unknown): Band {
   const referenceEvents: ReferenceEvent[] = asArr(r.reference_events as Row[] | null)
     .sort(compareReferenceEvents)
     .map(re => ({
-      eventName: str(re.event_name) ?? '',
-      venue:     str(re.location_name),
-      city:      str(re.city),
-      year:      typeof re.year === 'number' ? re.year : undefined,
+      eventName:   str(re.event_name) ?? '',
+      venue:       str(re.location_name),
+      city:        str(re.city),
+      year:        typeof re.year === 'number' ? re.year : undefined,
+      description: str(re.description),
     }))
     .filter(re => re.eventName.length > 0)
 

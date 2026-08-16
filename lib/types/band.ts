@@ -36,25 +36,33 @@ export type SocialMediaStats = {
   ytSubscribers?: number;
 };
 
+// description (ab V1.1): freie, optionale oeffentliche Unterzeile
+// zusaetzlich zum strukturierten year -- year bleibt bewusst integer und
+// wird nicht zu Freitext umgebaut. Siehe components/band/BandReferenceEvents.tsx
+// fuer die Kombinationslogik der Unterzeile.
 export type ReferenceEvent = {
   eventName: string;
   venue?: string;
   city?: string;
   year?: number;
+  description?: string;
 };
 
 // Admin-spezifisches Pendant zu ReferenceEvent (Referenzverwaltung im
-// Band-Admin, V1): eigenes DB-nahes Modell mit id/sortOrder fuer CRUD,
+// Band-Admin, V1/V1.1): eigenes DB-nahes Modell mit id/sortOrder fuer CRUD,
 // bewusst getrennt vom oeffentlichen View-Model oben (keine Vermischung).
-// event_type_id, description, url, is_featured sind in V1 nicht Teil des
+// event_type_id, url, is_featured sind weiterhin nicht Teil des
 // Admin-Formulars und daher hier nicht abgebildet -- Admin-Updates lassen
-// sie ueber public.fn_reference_event_update unveraendert.
+// sie ueber public.fn_reference_event_update unveraendert. description ist
+// ab V1.1 editierbar (siehe fn_reference_event_update-Ueberladung mit
+// p_description).
 export type AdminReferenceEvent = {
   id: string;
   eventName: string;
   locationName?: string;
   city?: string;
   year?: number;
+  description?: string;
   sortOrder: number;
 };
 

@@ -152,6 +152,21 @@ function ReferenceEventForm({
       </div>
 
       <div className="sm:col-span-2">
+        <label htmlFor={`description_${referenceEvent.id}`} className="block text-xs font-medium text-gray-600 mb-1">
+          Zusatz <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <input
+          id={`description_${referenceEvent.id}`}
+          name="description"
+          type="text"
+          defaultValue={referenceEvent.description ?? ''}
+          maxLength={200}
+          placeholder="z. B. Wiederkehrendes Engagement"
+          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+        />
+      </div>
+
+      <div className="sm:col-span-2">
         <SaveButton label="Speichern" />
       </div>
     </form>
@@ -243,6 +258,19 @@ function CreateReferenceEventForm({ bandId }: { bandId: string }) {
             type="number"
             min={1900}
             max={2100}
+            className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="new_reference_event_description" className="block text-xs font-medium text-gray-600 mb-1">
+            Zusatz <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input
+            id="new_reference_event_description"
+            name="description"
+            type="text"
+            maxLength={200}
+            placeholder="z. B. Wiederkehrendes Engagement"
             className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
         </div>
