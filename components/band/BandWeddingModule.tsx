@@ -42,12 +42,12 @@ export function BandWeddingModule({ band }: Props) {
         <div
           className={
             hasText && hasCards
-              ? 'md:grid md:grid-cols-[1fr_1fr] gap-10 md:gap-14'
+              ? 'xl:grid xl:grid-cols-[1fr_1fr] gap-10 xl:gap-14'
               : ''
           }
         >
           {hasText && (
-            <div className="mb-8 md:mb-0">
+            <div className="mb-8 xl:mb-0">
               <p className="text-pl-text leading-relaxed whitespace-pre-line">
                 {info!.weddingDescription}
               </p>
