@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Band } from '@/lib/types/band';
-import { CATEGORIES, bandMatchesCategorySB } from '@/lib/categories';
+import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasions';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import BandCard from '@/components/BandCard';
@@ -87,7 +87,7 @@ export default function BandExplorer({ bands, regions }: Props) {
   const [query, setQuery] = useState<string>(() => searchParams.get('suche') ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
     const p = searchParams.get('anlass');
-    return p && CATEGORIES.some((c) => c.slug === p) ? p : null;
+    return p && FINDER_OCCASIONS.some((c) => c.slug === p) ? p : null;
   });
   const [selectedRegion, setSelectedRegion] = useState<string | null>(() => {
     const p = searchParams.get('region');
@@ -194,7 +194,7 @@ export default function BandExplorer({ bands, regions }: Props) {
 
     const nextQuery = p.get('suche') ?? '';
     const nextCatRaw = p.get('anlass');
-    const nextCat = nextCatRaw && CATEGORIES.some((c) => c.slug === nextCatRaw) ? nextCatRaw : null;
+    const nextCat = nextCatRaw && FINDER_OCCASIONS.some((c) => c.slug === nextCatRaw) ? nextCatRaw : null;
     const nextRegRaw = p.get('region');
     const nextReg = nextRegRaw
       ? (REGION_ORDER.find((r) => r.toLowerCase() === nextRegRaw.toLowerCase()) ?? null)
@@ -252,8 +252,8 @@ export default function BandExplorer({ bands, regions }: Props) {
     }
 
     if (selectedCategory) {
-      const cat = CATEGORIES.find((c) => c.slug === selectedCategory);
-      if (!cat || !bandMatchesCategorySB(band, cat)) return false;
+      const cat = FINDER_OCCASIONS.find((c) => c.slug === selectedCategory);
+      if (!cat || !bandMatchesFinderOccasion(band, cat)) return false;
     }
 
     if (selectedRegion) {
@@ -315,7 +315,7 @@ export default function BandExplorer({ bands, regions }: Props) {
       return `${count} ${plural} im Umkreis von ${radiusKm} km um ${query.trim()} gefunden`;
     }
     if (selectedCategory && !query && !selectedRegion && !selectedBandtyp && !selectedMood) {
-      const cat = CATEGORIES.find((c) => c.slug === selectedCategory);
+      const cat = FINDER_OCCASIONS.find((c) => c.slug === selectedCategory);
       if (cat) return `${count} ${plural} für ${cat.title} gefunden`;
     }
     return `${count} passende ${plural} gefunden`;
@@ -329,7 +329,7 @@ export default function BandExplorer({ bands, regions }: Props) {
       : `Keine Bands gefunden. Versuch es mit weniger Filtern.`;
 
   const activeCategoryTitle = selectedCategory
-    ? (CATEGORIES.find((c) => c.slug === selectedCategory)?.title ?? null)
+    ? (FINDER_OCCASIONS.find((c) => c.slug === selectedCategory)?.title ?? null)
     : null;
 
   return (
@@ -481,7 +481,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             className="absolute left-0 right-0 top-full mt-2 z-20 rounded-xl border border-pl-soft bg-pl-elevated shadow-lg p-5"
           >
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => {
+              {FINDER_OCCASIONS.map((cat) => {
                 const active = selectedCategory === cat.slug;
                 return (
                   <button
