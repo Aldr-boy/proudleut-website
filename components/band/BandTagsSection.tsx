@@ -10,7 +10,7 @@ type Props = {
 // Ebene 1 "Klingt nach" -- emotional fuehrend, groesste/prominenteste Chips.
 const GOLDEN_CHIP =
   'inline-flex items-center px-4 py-2 md:px-5 md:py-2.5 rounded-full text-sm md:text-base font-medium border';
-// Ebene 2 "Musikalisch verortet" -- zweite Ebene, kleinere sekundaere Chips.
+// Ebene 2 "Stil & Einflüsse" -- zweite Ebene, kleinere sekundaere Chips.
 const PURPLE_CHIP =
   'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-pl-accent-subtle text-pl-accent-deep';
 
@@ -49,7 +49,7 @@ export function BandTagsSection({ band }: Props) {
     <section className="bg-pl-canvas py-12 md:py-16 border-b border-pl-soft px-4 sm:px-6">
       <div className="pl-container-shell space-y-8">
 
-        {/* Klingt nach + Musikalisch verortet */}
+        {/* Klingt nach + Stil & Einflüsse */}
         {(hasKlingtNach || hasMusikalischVerortet) && (
           <div className="space-y-5">
             {hasKlingtNach && (
@@ -78,7 +78,7 @@ export function BandTagsSection({ band }: Props) {
             {hasMusikalischVerortet && (
               <div>
                 <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-                  Musikalisch verortet
+                  Stil &amp; Einflüsse
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {band.musikalischVerortet.map((tag) => (
