@@ -126,7 +126,7 @@ export default function UeberProudleutPage() {
       </section>
 
       {/* 02 — Wer dahintersteht (Alex, Portrait überlappt in die nächste Fläche) */}
-      <section className="bg-pl-stage pt-16 md:pt-28 px-4 sm:px-6 relative">
+      <section className="bg-pl-stage pt-16 md:pt-28 md:pb-12 px-4 sm:px-6 relative">
         <div className="pl-container-shell grid grid-cols-1 md:grid-cols-[1fr_400px] gap-10 md:gap-16 items-start">
           <div className="pb-16 md:pb-28">
             <ChapterEyebrowOnStage n="02" label="Wer dahintersteht" />
