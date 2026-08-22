@@ -17,6 +17,10 @@ export const metadata: Metadata = {
 // San2-Beispielprofil (Profil-Demo, Sektion 02) -- reale, geprüfte Werte
 // von /band/san2-and-his-soul-patrol, siehe vorherige Korrekturrunde.
 const SAN2_KLINGT_NACH = ['Konzertant & hochwertig', 'Authentisch und handgemacht', 'Generationenverbindend'];
+// Zweite Ebene "Stil & Einflüsse" -- identisch zu den Werten, die auf der
+// echten Bandseite unter derselben Überschrift stehen (siehe
+// components/band/BandTagsSection.tsx, band.musikalischVerortet).
+const SAN2_STIL_EINFLUESSE = ['Soul, Blues & R&B', 'Bebop-Einflüsse', 'Akustik & Unplugged'];
 const SAN2_META = [
   { label: 'Besetzung', value: 'Liveband' },
   { label: 'Herkunft', value: 'München' },
@@ -221,6 +225,23 @@ export default function FuerBandsPage() {
                 ))}
               </div>
 
+              {/* Stil & Einflüsse -- zweite, zurueckhaltendere Ebene unter
+                  "Klingt nach". Gleiche Chip-Darstellung wie auf der echten
+                  Bandseite (components/band/BandTagsSection.tsx, PURPLE_CHIP). */}
+              <p className="mt-6 text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                Stil &amp; Einflüsse
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {SAN2_STIL_EINFLUESSE.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-pl-accent-subtle text-pl-accent-deep"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+
               <div className="mt-9 md:mt-10 pt-6 border-t border-pl-soft grid grid-cols-1 sm:grid-cols-3 gap-x-8 divide-y divide-pl-soft sm:divide-y-0">
                 {SAN2_META.map(({ label, value }) => (
                   <div key={label} className="flex items-baseline justify-between py-3 sm:block sm:py-0">
@@ -252,7 +273,7 @@ export default function FuerBandsPage() {
             </div>
 
             {/* pl-aside: proudleut-Erklärung, bewusst getrennt vom Bandprofil */}
-            <div className="bg-pl-canvas border-l border-pl-soft px-6 md:px-8 py-7 md:py-9 flex flex-col gap-6 md:gap-8">
+            <div className="bg-pl-canvas border-l border-pl-soft rounded-2xl px-6 md:px-8 py-7 md:py-9 flex flex-col gap-6 md:gap-8">
               {PROFILE_POINTS.map(({ title, desc }) => (
                 <div key={title}>
                   <p className="text-base font-bold text-pl-text">{title}</p>

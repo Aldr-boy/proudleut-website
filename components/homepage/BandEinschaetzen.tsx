@@ -15,7 +15,7 @@ function buildRows(band: Band): Row[] {
     rows.push({ label: 'Klingt nach', value: band.klingtNach.slice(0, 3).join(', ') });
   }
   if (band.musikalischVerortet.length > 0) {
-    rows.push({ label: 'Musikalisch verortet', value: band.musikalischVerortet.join(', ') });
+    rows.push({ label: 'Stil & Einflüsse', value: band.musikalischVerortet.join(', ') });
   }
   if (band.eventTypes.length > 0) {
     rows.push({ label: 'Spielt bei', value: band.eventTypes.slice(0, 3).join(', ') });
