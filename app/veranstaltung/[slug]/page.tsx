@@ -122,7 +122,7 @@ export default async function VeranstaltungPage({ params }: Props) {
                   href={`/bands?anlass=${category.slug}`}
                   className="inline-flex items-center gap-1.5 text-sm text-pl-text-muted hover:text-pl-text motion-safe:transition-colors underline underline-offset-2"
                 >
-                  Alle Bands für {category.title} in der Suche ansehen
+                  Im Finder nach Bands für {category.title} filtern
                 </Link>
               </div>
             </>
