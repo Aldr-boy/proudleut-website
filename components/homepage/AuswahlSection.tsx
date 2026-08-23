@@ -100,6 +100,15 @@ export default function AuswahlSection({ tabs, bandsByTab }: Props) {
           aria-labelledby={`auswahl-tab-${activeTab.key}`}
           className="mt-6"
         >
+          <div className="mb-7">
+            <Link
+              href={`/bands?anlass=${activeTab.finderAnlassSlug}`}
+              className="inline-flex items-center min-h-[44px] text-sm font-semibold text-pl-accent-deep hover:text-pl-accent-link-hover motion-safe:transition-colors"
+            >
+              {activeTab.finderLinkLabel} →
+            </Link>
+          </div>
+
           {activeBands.length === 0 ? (
             <p className="text-pl-text-muted">
               Aktuell sind hier noch keine passenden Bands hinterlegt.
@@ -111,15 +120,6 @@ export default function AuswahlSection({ tabs, bandsByTab }: Props) {
               ))}
             </div>
           )}
-
-          <div className="mt-7 text-right">
-            <Link
-              href={`/bands?anlass=${activeTab.finderAnlassSlug}`}
-              className="text-sm font-semibold text-pl-accent-deep hover:text-pl-accent-link-hover motion-safe:transition-colors"
-            >
-              {activeTab.finderLinkLabel} →
-            </Link>
-          </div>
         </div>
       </div>
     </section>
