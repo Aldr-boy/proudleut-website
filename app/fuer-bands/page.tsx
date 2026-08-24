@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { BandIntroTrigger } from '@/components/bandIntro/BandIntroTrigger';
 
 export const metadata: Metadata = {
   title: 'Für Bands – proudleut',
@@ -140,16 +141,15 @@ export default function FuerBandsPage() {
             zeigt, wofür ihr steht – und ob ihr zu ihrem Event passt.
           </p>
           <div className="mt-11 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-            <a
-              href="#kontakt"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
+            <BandIntroTrigger
+              className="items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
                          bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
                          hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors
                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                          focus-visible:outline-[var(--pl-accent-on-stage)]"
             >
               Bandseite anfragen
-            </a>
+            </BandIntroTrigger>
             <span className="text-[15px] text-pl-on-stage-muted">
               Direkter Kontakt&nbsp;&nbsp;·&nbsp;&nbsp;Keine Buchungsplattform
             </span>
@@ -487,16 +487,15 @@ export default function FuerBandsPage() {
             melde mich bei dir.
           </p>
           <div className="mt-12">
-            <a
-              href="mailto:alexander.dressler@proudleut.com"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
+            <BandIntroTrigger
+              className="items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
                          bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
                          hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors
                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                          focus-visible:outline-[var(--pl-accent)]"
             >
               Bandseite anfragen
-            </a>
+            </BandIntroTrigger>
           </div>
           <p className="mt-9 text-sm text-pl-on-stage-muted">
             Wer dahintersteckt und warum es proudleut gibt{' '}
