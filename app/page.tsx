@@ -1,8 +1,10 @@
 import { getAllBandsFromSupabase, getBandFromSupabase } from '@/lib/supabase/queries';
 import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
-import { EVENT_TYPE_TABS } from '@/lib/homepage/eventTypeTabs';
+import { EVENT_TYPE_TABS, buildAuswahlStateKey } from '@/lib/homepage/eventTypeTabs';
 import { pickRotatingItems, getDayIndex } from '@/lib/homepage/bandRotation';
+import { bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import type { Band } from '@/lib/types/band';
+import { toAuswahlBandSummary, type AuswahlBandSummary } from '@/components/homepage/AuswahlBandCard';
 import HeroMosaic from '@/components/homepage/HeroMosaic';
 import LogoStrip from '@/components/homepage/LogoStrip';
 import AuswahlSection from '@/components/homepage/AuswahlSection';
@@ -43,14 +45,32 @@ export default async function HomePage() {
 
   // Pro Tab: Pool = alle aktiven Baender, die diesem Anlass laut echten
   // Event-Type-Zuordnungen (categorySlugs) tatsaechlich zugeordnet sind --
-  // keine Heuristik, keine feste Liste. Die drei sichtbaren Baender je Tab
-  // werden serverseitig deterministisch fuer den aktuellen Kalendertag
-  // berechnet (lib/homepage/bandRotation.ts), damit clientseitig kein
-  // Math.random() und keine Hydration-Diskrepanz noetig ist.
-  const bandsByTab: Record<string, Band[]> = {};
+  // keine Heuristik, keine feste Liste. Zusaetzlich pro Tab je einer der 4
+  // kuratierten "Klingt nach"-Moods (Nachfass-Paket "Kuratierte
+  // Klingt-nach-Filter"): derselbe Anlass-Pool, zusaetzlich per bestehendem
+  // bandMatchesMood gefiltert. Alle Zustaende (unfiltered + je Mood) werden
+  // serverseitig deterministisch fuer den aktuellen Kalendertag berechnet
+  // (lib/homepage/bandRotation.ts, poolKey via buildAuswahlStateKey um
+  // Anlass+Mood erweitert), damit clientseitig kein Math.random() und keine
+  // Hydration-Diskrepanz noetig ist. Payload-Reduktion: erst auf den vollen
+  // Band-Objekten filtern/rotieren, dann auf das schlanke
+  // AuswahlBandSummary-Format mappen (nur Felder, die AuswahlBandCard
+  // tatsaechlich rendert).
+  const bandsByState: Record<string, AuswahlBandSummary[]> = {};
   for (const tab of EVENT_TYPE_TABS) {
     const pool = activeBands.filter((band) => bandMatchesTab(band, tab.supabaseEventTypeSlugs));
-    bandsByTab[tab.key] = pickRotatingItems(pool, (b) => b.id, tab.key, dayIndex, 3);
+    const unfilteredKey = buildAuswahlStateKey(tab.key, null);
+    bandsByState[unfilteredKey] = pickRotatingItems(pool, (b) => b.id, unfilteredKey, dayIndex, 3).map(
+      toAuswahlBandSummary
+    );
+
+    for (const mood of tab.moods) {
+      const moodPool = pool.filter((band) => bandMatchesMood(band.moods, mood.slug));
+      const moodKey = buildAuswahlStateKey(tab.key, mood.slug);
+      bandsByState[moodKey] = pickRotatingItems(moodPool, (b) => b.id, moodKey, dayIndex, 3).map(
+        toAuswahlBandSummary
+      );
+    }
   }
 
   const einschaetzenBand = einschaetzenResult.data
@@ -61,7 +81,7 @@ export default async function HomePage() {
     <>
       <HeroMosaic />
       <LogoStrip />
-      <AuswahlSection tabs={EVENT_TYPE_TABS} bandsByTab={bandsByTab} />
+      <AuswahlSection tabs={EVENT_TYPE_TABS} bandsByState={bandsByState} />
       <Explainer />
       {einschaetzenBand && <BandEinschaetzen band={einschaetzenBand} />}
       <CuratorBlock />

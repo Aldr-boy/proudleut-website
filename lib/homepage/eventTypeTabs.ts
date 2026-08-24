@@ -25,6 +25,22 @@ const firmenfeier = CATEGORIES.find((c) => c.slug === 'firmenfeier');
 const festzelt = getFinderOccasionBySlug('festzelt');
 const stadtBuergerfest = getFinderOccasionBySlug('stadt-und-buergerfest');
 
+// Kuratierte "Klingt nach"-Ebene je Anlass (Nachfass-Paket "Kuratierte
+// Klingt-nach-Filter"). Bewusst eine feste, redaktionelle 4er-Auswahl statt
+// eines vollstaendigen/datengetriebenen Mood-Katalogs -- Leitidee: nicht die
+// vier repraesentativsten Moods, sondern die vier mit dem groessten
+// Klick-Versprechen innerhalb des jeweiligen Anlasses. Slugs sind echte
+// moods.slug-Werte (read-only gegen Production verifiziert, Schritt 0
+// dieses Auftrags) -- bewusst NICHT aus diesem Auftragstext geraten.
+// "Festzeltenergie" und "Party pur" werden hier absichtlich nicht verwendet
+// (siehe Auftrag Abschnitt 2) -- beide bleiben im Katalog/Finder/auf
+// Bandprofilen unveraendert, sind fuer diese kleine Homepage-Auswahl aber
+// bewusst zu breit bzw. nicht vorgesehen.
+export type HomepageMood = {
+  slug: string;
+  name: string;
+};
+
 export type EventTypeTab = {
   key: string;
   label: string;
@@ -36,6 +52,8 @@ export type EventTypeTab = {
   // Sichtbares Link-Wording. Bewusst ohne "Finder" -- fuer Besucher nicht
   // selbsterklaerend, deshalb "... entdecken" statt "... im Finder".
   finderLinkLabel: string;
+  // Genau 4 fest kuratierte "Klingt nach"-Chips fuer diesen Anlass.
+  moods: HomepageMood[];
 };
 
 export const EVENT_TYPE_TABS: EventTypeTab[] = [
@@ -45,6 +63,12 @@ export const EVENT_TYPE_TABS: EventTypeTab[] = [
     supabaseEventTypeSlugs: ['hochzeit'],
     finderAnlassSlug: 'hochzeit',
     finderLinkLabel: 'Hochzeitsbands entdecken',
+    moods: [
+      { slug: 'emotional-beruehrend', name: 'Emotional & berührend' },
+      { slug: 'tanzflaechen-garantie', name: 'Tanzflächen-Garantie' },
+      { slug: 'herzlich-nahbar', name: 'Herzlich & nahbar' },
+      { slug: 'mitsing-faktor', name: 'Mitsing-Faktor' },
+    ],
   },
   {
     key: 'firmenfeier',
@@ -52,6 +76,12 @@ export const EVENT_TYPE_TABS: EventTypeTab[] = [
     supabaseEventTypeSlugs: firmenfeier?.supabaseEventTypeSlugs ?? [],
     finderAnlassSlug: 'firmenfeier',
     finderLinkLabel: 'Bands für Firmenfeiern entdecken',
+    moods: [
+      { slug: 'konzertant-hochwertig', name: 'Konzertant & hochwertig' },
+      { slug: 'tanzflaechen-garantie', name: 'Tanzflächen-Garantie' },
+      { slug: 'rockig-mitreissend', name: 'Rockig & mitreißend' },
+      { slug: 'authentisch-handgemacht', name: 'Authentisch und handgemacht' },
+    ],
   },
   {
     key: 'festzelt',
@@ -59,6 +89,12 @@ export const EVENT_TYPE_TABS: EventTypeTab[] = [
     supabaseEventTypeSlugs: festzelt?.supabaseEventTypeSlugs ?? [],
     finderAnlassSlug: 'festzelt',
     finderLinkLabel: 'Festzeltbands entdecken',
+    moods: [
+      { slug: 'bayerisch-frech', name: 'Bayerisch & frech' },
+      { slug: 'mitsing-faktor', name: 'Mitsing-Faktor' },
+      { slug: 'tanzflaechen-garantie', name: 'Tanzflächen-Garantie' },
+      { slug: 'rockig-mitreissend', name: 'Rockig & mitreißend' },
+    ],
   },
   {
     key: 'stadt-buergerfest',
@@ -66,5 +102,22 @@ export const EVENT_TYPE_TABS: EventTypeTab[] = [
     supabaseEventTypeSlugs: stadtBuergerfest?.supabaseEventTypeSlugs ?? [],
     finderAnlassSlug: 'stadt-und-buergerfest',
     finderLinkLabel: 'Bands für Stadt- & Bürgerfeste entdecken',
+    moods: [
+      { slug: 'generationenverbindend', name: 'Generationenverbindend' },
+      { slug: 'bayerisch-frech', name: 'Bayerisch & frech' },
+      { slug: 'rockig-mitreissend', name: 'Rockig & mitreißend' },
+      { slug: 'authentisch-handgemacht', name: 'Authentisch und handgemacht' },
+    ],
   },
 ];
+
+// Ein Zustand der AuswahlSection ist (Anlass) oder (Anlass, Mood). Eine
+// einzige, gemeinsam genutzte Schluesselfunktion fuer sowohl den
+// Props-Lookup (app/page.tsx -> AuswahlSection.tsx) als auch den
+// Rotations-Seed (lib/homepage/bandRotation.ts::pickRotatingItems) --
+// verhindert, dass beide Stellen unabhaengig voneinander ein eigenes
+// Schluesselformat pflegen. "::" als Trenner, da Mood-/Anlass-Slugs
+// ausschliesslich einzelne Bindestriche enthalten, keine Kollision moeglich.
+export function buildAuswahlStateKey(tabKey: string, moodSlug: string | null): string {
+  return moodSlug ? `${tabKey}::${moodSlug}` : tabKey;
+}

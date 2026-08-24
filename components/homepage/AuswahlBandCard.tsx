@@ -1,6 +1,29 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
+import type { ImageAsset } from '@/lib/types/image';
+
+// Schlankes Payload-Format fuer "01 -- Auswahl": traegt ausschliesslich die
+// Felder, die diese Card tatsaechlich rendert (Nachfass-Paket "Kuratierte
+// Klingt-nach-Filter", Schritt 4 -- Payload-Reduktion). Wird serverseitig
+// (app/page.tsx) aus dem vollen Band gemappt, nachdem Anlass-/Mood-Filter
+// und Rotation bereits auf den vollen Band-Objekten gelaufen sind.
+export type AuswahlBandSummary = Pick<Band, 'slug' | 'name' | 'moods'> & {
+  shortDescription?: string;
+  thumbnailImage?: ImageAsset;
+  heroImage?: ImageAsset;
+};
+
+export function toAuswahlBandSummary(band: Band): AuswahlBandSummary {
+  return {
+    slug: band.slug,
+    name: band.name,
+    shortDescription: band.shortDescription,
+    thumbnailImage: band.thumbnailImage,
+    heroImage: band.heroImage,
+    moods: band.moods,
+  };
+}
 
 // Eigene, schlanke Card-Variante fuer die Startseiten-Section "01 --
 // Auswahl": bewusst NICHT components/BandCard.tsx wiederverwendet, da
@@ -9,7 +32,13 @@ import type { Band } from '@/lib/types/band';
 // -- eine eigene, kleine Komponente ist die minimalinvasivere Loesung als
 // BandCard fuer einen zweiten Chip-Modus zu erweitern und damit auch
 // /bands und /veranstaltung/[slug] zu beeinflussen.
-export default function AuswahlBandCard({ band, priority }: { band: Band; priority?: boolean }) {
+export default function AuswahlBandCard({
+  band,
+  priority,
+}: {
+  band: AuswahlBandSummary;
+  priority?: boolean;
+}) {
   const image = band.thumbnailImage ?? band.heroImage;
   const chips = band.moods.slice(0, 2);
 
