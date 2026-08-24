@@ -100,7 +100,7 @@ export function renderBandIntroConfirmationMail(content: ConfirmationMailContent
     'Ich melde mich dann bei dir.',
     '',
     'Liebe Grüße',
-    'Xandi',
+    'Alex',
     '',
     '—',
     'proudleut.com',
@@ -123,7 +123,7 @@ export function renderBandIntroConfirmationMailHtml(content: ConfirmationMailCon
     <p style="margin:0 0 22px 0;">Bevor wir eine Bandseite aufbauen, würde ich euch gern kurz kennenlernen und einmal miteinander telefonieren.</p>
     <p style="margin:0 0 22px 0;">Antworte mir dafür einfach auf diese Mail mit zwei oder drei Terminen, an denen es bei dir gut passt, und der Telefonnummer, unter der ich dich am besten erreiche.</p>
     <p style="margin:0 0 22px 0;">Ich melde mich dann bei dir.</p>
-    <p style="margin:0;">Liebe Grüße<br><strong>Xandi</strong></p>
+    <p style="margin:0;">Liebe Grüße<br><strong>Alex</strong></p>
   `;
 
   return wrapSimpleHtml({
