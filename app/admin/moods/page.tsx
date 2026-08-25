@@ -217,9 +217,18 @@ export default async function AdminMoodsPage({ searchParams }: { searchParams: S
                           </span>
                           <span className="text-xs text-gray-400 font-mono">{mood.slug}</span>
                           <span className="text-xs text-gray-400">Rang {mood.sort_order}</span>
-                          <span className="text-xs text-gray-500">
-                            {usageCount} {usageCount === 1 ? 'Zuordnung' : 'Zuordnungen'}
-                          </span>
+                          {mood.status === 'active' ? (
+                            <Link
+                              href={`/admin/moods/${mood.slug}/bands`}
+                              className="text-xs text-violet-700 hover:text-violet-900 hover:underline transition-colors"
+                            >
+                              {usageCount} {usageCount === 1 ? 'Zuordnung' : 'Zuordnungen'} →
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              {usageCount} {usageCount === 1 ? 'Zuordnung' : 'Zuordnungen'}
+                            </span>
+                          )}
                           {missingDescription && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                               ⚠ keine Definition
