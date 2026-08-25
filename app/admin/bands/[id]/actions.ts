@@ -16,6 +16,9 @@ import { validateBandDocumentPdfFile } from '@/lib/bandDocuments/validatePdfFile
 import { deleteBandDocumentFileIfUnreferenced } from '@/lib/bandDocuments/deleteBandDocumentFileIfUnreferenced'
 import { computeBandDocumentSwap } from '@/lib/bandDocuments/reorder'
 import { compareBandDocuments } from '@/lib/bands/bandDocumentsSort'
+import { isValidUrl } from '@/lib/bandIntro/validation'
+import { MAX_LENGTHS } from '@/lib/bandIntro/constants'
+import { resolveSocialLinkWrite } from '@/lib/socialLinks/resolveSocialLinkWrite'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -36,6 +39,16 @@ function nullableBoolean(fd: FormData, key: string): boolean | null {
 // Band validation (Sprint 2, unchanged)
 // ─────────────────────────────────────────
 
+// Social-Links (Instagram/Facebook/YouTube-Kanal/Spotify): dieselbe
+// bereits vorhandene, geeignete URL-Validierung wie beim Bandvorstellen-
+// Formular (lib/bandIntro/validation.ts::isValidUrl) -- erzwingt bereits
+// zwingend http(s), lehnt javascript:/data:/file:/sonstige Schemata sowie
+// CRLF-Injection ab. Bewusst NICHT auf die bestehende, laxere
+// website_url-Pruefung (nur `new URL(...)` ohne Schema-Einschraenkung)
+// umgestellt -- das waere ein themenfremdes Verhaltensaenderung an einem
+// bereits bestehenden Feld.
+const SOCIAL_URL_FIELDS = ['social_instagram', 'social_facebook', 'social_youtube', 'social_spotify'] as const
+
 function validateEditBand(data: {
   name: string
   slug: string
@@ -47,6 +60,10 @@ function validateEditBand(data: {
   slogan: string
   meta_description: string
   price_tier: string
+  social_instagram: string
+  social_facebook: string
+  social_youtube: string
+  social_spotify: string
 }): Record<string, string> {
   const errors: Record<string, string> = {}
 
@@ -78,6 +95,13 @@ function validateEditBand(data: {
   const validPriceTiers = ['', 'budget', 'mid', 'premium', 'on_request']
   if (!validPriceTiers.includes(data.price_tier)) errors.price_tier = 'Ungültiger Preis-Tier'
 
+  for (const field of SOCIAL_URL_FIELDS) {
+    const value = data[field]
+    if (value !== '' && !isValidUrl(value, MAX_LENGTHS.websiteUrl)) {
+      errors[field] = 'Ungültige URL (nur http/https)'
+    }
+  }
+
   return errors
 }
 
@@ -104,6 +128,10 @@ export async function updateBandAction(formData: FormData): Promise<never> {
     wedding_possible_playtimes: str(formData, 'wedding_possible_playtimes'),
     wedding_constellation: str(formData, 'wedding_constellation'),
     wedding_fee_range: str(formData, 'wedding_fee_range'),
+    social_instagram: str(formData, 'social_instagram'),
+    social_facebook: str(formData, 'social_facebook'),
+    social_youtube: str(formData, 'social_youtube'),
+    social_spotify: str(formData, 'social_spotify'),
   }
   const is_published = formData.get('is_published') === '1'
   const wedding_kidnapping_bride = nullableBoolean(formData, 'wedding_kidnapping_bride')
@@ -186,6 +214,99 @@ export async function updateBandAction(formData: FormData): Promise<never> {
   if (profileError) {
     const p = new URLSearchParams()
     p.set('e_form', `Profil-Fehler: ${profileError.message}`)
+    redirect(`/admin/bands/${id}?${p.toString()}`)
+  }
+
+  // ─────────────────────────────────────────
+  // Social-Links (social_profiles): Instagram/Facebook/YouTube-Kanal/
+  // Spotify. Bewusst KEIN blindes upsert -- (band_id, platform) besitzt
+  // zwar einen Unique Constraint (live gegen Production verifiziert), aber
+  // url ist NOT NULL: ein geleertes Feld kann eine bestehende Zeile mit
+  // erhaltenswerten Metadaten (current_followers/current_following/
+  // last_checked_at) nicht einfach auf NULL setzen. Deshalb je Plattform
+  // gezielt lesen, dann entscheiden (vollstaendige Entscheidungsregel
+  // siehe Abschlussbericht):
+  //   Duplikate (>1 Zeile)        -> Plattform unveraendert
+  //   vorhanden + geaendert       -> nur url aktualisieren
+  //   vorhanden + geleert + keine Metadaten -> Zeile loeschen
+  //   vorhanden + geleert + Metadaten        -> unveraendert, sichtbare Rueckmeldung
+  //   fehlend + Wert              -> neue Zeile
+  //   fehlend + leer              -> No-op
+  // Fehler blockieren NICHT die bereits erfolgreich gespeicherten Felder
+  // (bands/band_profiles/andere Plattformen) -- nur die betroffene
+  // Plattform wird als Fehler zurueckgemeldet, der Rest gilt als
+  // gespeichert.
+  const SOCIAL_PLATFORM_FIELDS = {
+    instagram: 'social_instagram',
+    facebook: 'social_facebook',
+    youtube: 'social_youtube',
+    spotify: 'social_spotify',
+  } as const
+
+  const socialErrors: Record<string, string> = {}
+
+  for (const [platform, field] of Object.entries(SOCIAL_PLATFORM_FIELDS) as [
+    keyof typeof SOCIAL_PLATFORM_FIELDS,
+    (typeof SOCIAL_PLATFORM_FIELDS)[keyof typeof SOCIAL_PLATFORM_FIELDS],
+  ][]) {
+    const submittedUrl = nullIfEmpty(data[field])
+
+    const { data: existingRows, error: readError } = await client
+      .from('social_profiles')
+      .select('id, url, current_followers, current_following, last_checked_at')
+      .eq('band_id', id)
+      .eq('platform', platform)
+
+    if (readError) {
+      socialErrors[field] = `Datenbankfehler beim Lesen: ${readError.message}`
+      continue
+    }
+
+    const decision = resolveSocialLinkWrite(existingRows ?? [], submittedUrl)
+
+    switch (decision.action) {
+      case 'noop':
+      case 'skip_duplicate':
+        break
+
+      case 'update': {
+        const { error: updateError } = await client
+          .from('social_profiles')
+          .update({ url: decision.url })
+          .eq('id', decision.rowId)
+        if (updateError) socialErrors[field] = `Datenbankfehler: ${updateError.message}`
+        break
+      }
+
+      case 'delete': {
+        const { error: deleteError } = await client.from('social_profiles').delete().eq('id', decision.rowId)
+        if (deleteError) socialErrors[field] = `Datenbankfehler: ${deleteError.message}`
+        break
+      }
+
+      case 'insert': {
+        const { error: insertError } = await client
+          .from('social_profiles')
+          .insert({ band_id: id, platform, url: decision.url })
+        if (insertError) socialErrors[field] = `Datenbankfehler: ${insertError.message}`
+        break
+      }
+
+      case 'blocked_has_metadata':
+        // url ist NOT NULL und die Zeile besitzt erhaltenswerte Metadaten
+        // -- nicht loeschbar. Zeile bleibt unveraendert, kein stilles
+        // Verwerfen: sichtbare Rueckmeldung ueber den bestehenden
+        // FieldError-Mechanismus. Da die Zeile unangetastet bleibt, zeigt
+        // das Feld nach dem Reload automatisch wieder den bisherigen Wert.
+        socialErrors[field] =
+          'Link konnte nicht entfernt werden – vorhandene Statistiken/Metadaten bleiben erhalten. Bitte bei Bedarf direkt in der Datenbank anpassen.'
+        break
+    }
+  }
+
+  if (Object.keys(socialErrors).length > 0) {
+    const p = new URLSearchParams({ saved: '1' })
+    for (const [k, v] of Object.entries(socialErrors)) p.set(`e_${k}`, v)
     redirect(`/admin/bands/${id}?${p.toString()}`)
   }
 
