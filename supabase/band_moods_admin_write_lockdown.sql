@@ -36,13 +36,35 @@
 -- Ausfuehrung von fn_set_band_moods.sql ausgefuehrt werden. In
 -- umgekehrter Reihenfolge waere der Mood-Editor voruebergehend komplett
 -- schreibunfaehig (weder direkte Grants noch RPC vorhanden).
+--
+-- Nachtrag 2A.1 (Live-Befund gegen Test UND Production): der urspruengliche
+-- REVOKE unten (insert, update, delete) entsprach NICHT dem oben
+-- beschriebenen Soll ("bewusst NUR SELECT") -- service_role besass live
+-- weiterhin TRUNCATE, REFERENCES, TRIGGER und (nur ueber die rohe ACL
+-- sichtbar, nicht ueber information_schema) MAINTAIN auf band_moods.
+-- Herkunft verifiziert: kein projekteigener Grant (weder in diesem noch in
+-- einem anderen supabase/*.sql-Skript wird band_moods TRUNCATE/REFERENCES/
+-- TRIGGER/MAINTAIN gewaehrt), sondern eine bereits bestehende
+-- schemaweite ALTER-DEFAULT-PRIVILEGES-Regel fuer Rolle postgres im Schema
+-- public (pg_default_acl: public/postgres/r -> service_role erhaelt Dxtm,
+-- auf Test zusaetzlich auch anon/authenticated). Diese Default-Privilege-
+-- Regel gilt automatisch fuer JEDE von postgres neu angelegte Tabelle in
+-- public -- betrifft also vermutlich weitere Tabellen, wurde aber bewusst
+-- NICHT untersucht oder veraendert (kein Scope-Wechsel, keine schemaweite
+-- Haertung in diesem Nachtrag). Der REVOKE unten wirkt ausschliesslich auf
+-- die bereits bestehende band_moods-Tabelle und aendert die
+-- Default-Privilege-Regel selbst nicht.
 -- ============================================================
 
 -- Sollzustand-Deklaration (idempotent):
 -- Schreiben auf band_moods laeuft ausschliesslich ueber die SECURITY
--- DEFINER Funktion public.set_band_moods() (siehe
--- supabase/fn_set_band_moods.sql). service_role bekommt hier bewusst
--- KEIN INSERT/UPDATE/DELETE auf die Tabelle.
-revoke insert, update, delete on public.band_moods from service_role;
+-- DEFINER Funktionen public.set_band_moods() und
+-- public.update_mood_band_assignments() (siehe supabase/fn_set_band_moods.sql,
+-- supabase/fn_update_mood_band_assignments.sql). service_role bekommt hier
+-- bewusst AUSSCHLIESSLICH SELECT auf die Tabelle -- kein INSERT/UPDATE/
+-- DELETE und keine der aus der Default-Privilege-Regel geerbten
+-- Struktur-Rechte (TRUNCATE/REFERENCES/TRIGGER/MAINTAIN).
+revoke insert, update, delete, truncate, references, trigger, maintain
+  on public.band_moods from service_role;
 
 grant select on public.band_moods to service_role;
