@@ -313,6 +313,10 @@ type SearchParams = Promise<{
   e_lineup_flexibility?: string
   e_default_member_count?: string
   e_website_url?: string
+  e_social_instagram?: string
+  e_social_facebook?: string
+  e_social_youtube?: string
+  e_social_spotify?: string
   e_short_description?: string
   e_slogan?: string
   e_meta_description?: string
@@ -561,6 +565,26 @@ export default async function AdminBandDetailPage({
     created_at: string
   }
 
+  // Social-Links ("Links"-Abschnitt): eigene, unabhaengige Query statt
+  // Einbettung in die grosse .single()-Hauptabfrage weiter oben -- diese
+  // Hauptabfrage wertet JEDEN Fehler als harten Seitenfehler (siehe dortiger
+  // Kommentar), und aktuell fehlen service_role auf social_profiles die
+  // SELECT/INSERT/UPDATE/DELETE-Grants komplett (nur REFERENCES/TRIGGER/
+  // TRUNCATE vorhanden, live gegen Production verifiziert -- siehe
+  // Abschlussbericht). Eine eingebettete Relation wuerde deshalb JEDE
+  // Band-Bearbeitungsseite lahmlegen. Bewusst dieselbe pro-Sektion
+  // Fail-closed-Isolation wie Similar Bands/Moods/Repertoire Styles: nur
+  // der Links-Abschnitt zeigt bei einem Ladefehler einen Fehlerzustand,
+  // der Rest der Seite bleibt unberuehrt.
+  type SocialProfileRow = {
+    id: string
+    platform: string
+    url: string
+    current_followers: number | null
+    current_following: number | null
+    last_checked_at: string | null
+  }
+
   const [
     { data: similarRelationsRaw, error: similarRelationsError },
     { data: candidateBandsRaw, error: candidateBandsError },
@@ -573,6 +597,7 @@ export default async function AdminBandDetailPage({
     { data: galleryMediaAssetsRaw, error: galleryMediaAssetsError },
     { data: bandDocumentsRaw, error: bandDocumentsError },
     { data: referenceEventsRaw, error: referenceEventsError },
+    { data: socialProfilesRaw, error: socialProfilesError },
   ] = await Promise.all([
     client
       .from('band_relations')
@@ -642,6 +667,11 @@ export default async function AdminBandDetailPage({
       .select('id, event_name, location_name, city, year, description, sort_order, created_at')
       .eq('band_id', id)
       .returns<ReferenceEventRow[]>(),
+    client
+      .from('social_profiles')
+      .select('id, platform, url, current_followers, current_following, last_checked_at')
+      .eq('band_id', id)
+      .returns<SocialProfileRow[]>(),
   ])
 
   // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
@@ -687,6 +717,27 @@ export default async function AdminBandDetailPage({
     sort_order: row.sort_order ?? 0,
     repertoire_style: row.repertoire_styles,
   }))
+
+  // Social-Links: pro Plattform gruppieren. Der YouTube-Social-Link
+  // (Kanal-/Profillink) ist bewusst getrennt vom bereits vorhandenen
+  // YouTube-Video-Link (siehe VideoEditorSection weiter unten) -- beide
+  // teilen sich nur zufaellig den Plattformnamen "youtube", stammen aber
+  // aus unterschiedlichen Tabellen (social_profiles vs. videos).
+  const SOCIAL_PLATFORMS = ['instagram', 'facebook', 'youtube', 'spotify'] as const
+  type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number]
+
+  const socialProfilesLoadError = !!socialProfilesError
+  const socialProfilesByPlatform: Record<SocialPlatform, SocialProfileRow[]> = {
+    instagram: [],
+    facebook: [],
+    youtube: [],
+    spotify: [],
+  }
+  for (const row of socialProfilesRaw ?? []) {
+    if ((SOCIAL_PLATFORMS as readonly string[]).includes(row.platform)) {
+      socialProfilesByPlatform[row.platform as SocialPlatform].push(row)
+    }
+  }
 
   // Hero-Bild fuer die Anzeige: dieselbe Konfliktaufloesung wie im
   // Schreibpfad (lib/bandImages/resolveMediaRow.ts) -- zeigt exakt die
@@ -1568,19 +1619,71 @@ export default async function AdminBandDetailPage({
           {/* Section: Links */}
           <fieldset className="border-t border-gray-100 pt-5">
             <legend className="text-base font-semibold text-gray-900 mb-4">Links</legend>
-            <div>
-              <label htmlFor="website_url" className="block text-sm font-medium text-gray-700 mb-1">
-                Website
-              </label>
-              <input
-                id="website_url"
-                name="website_url"
-                type="url"
-                defaultValue={band.website_url ?? ''}
-                placeholder="https://"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-              />
-              <FieldError msg={sp.e_website_url} />
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="website_url" className="block text-sm font-medium text-gray-700 mb-1">
+                  Website
+                </label>
+                <input
+                  id="website_url"
+                  name="website_url"
+                  type="url"
+                  defaultValue={band.website_url ?? ''}
+                  placeholder="https://"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <FieldError msg={sp.e_website_url} />
+              </div>
+
+              {socialProfilesLoadError ? (
+                <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                  Social-Links konnten nicht geladen werden — bitte Seite neu laden. Es wird
+                  nichts angezeigt oder gespeichert, um keine falschen Annahmen über bestehende
+                  Zuordnungen zu riskieren.
+                </p>
+              ) : (
+                (
+                  [
+                    { key: 'instagram', label: 'Instagram', errorMsg: sp.e_social_instagram, hint: undefined },
+                    { key: 'facebook', label: 'Facebook', errorMsg: sp.e_social_facebook, hint: undefined },
+                    {
+                      key: 'youtube',
+                      label: 'YouTube-Kanal',
+                      errorMsg: sp.e_social_youtube,
+                      hint: 'Kanal-/Profil-Link – nicht der eingebettete Video-Link',
+                    },
+                    { key: 'spotify', label: 'Spotify', errorMsg: sp.e_social_spotify, hint: undefined },
+                  ] as const
+                ).map(({ key, label, errorMsg, hint }) => {
+                  const rows = socialProfilesByPlatform[key]
+                  const isDuplicate = rows.length > 1
+                  const currentUrl = rows.length === 1 ? rows[0].url : ''
+                  return (
+                    <div key={key}>
+                      <label htmlFor={`social_${key}`} className="block text-sm font-medium text-gray-700 mb-1">
+                        {label}
+                      </label>
+                      <input
+                        id={`social_${key}`}
+                        name={`social_${key}`}
+                        type="url"
+                        defaultValue={currentUrl}
+                        placeholder="https://"
+                        disabled={isDuplicate}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
+                      />
+                      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+                      {isDuplicate && (
+                        <p className="mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                          Für diese Plattform existieren mehrere Einträge — kann hier nicht sicher
+                          bearbeitet werden. Bitte direkt in der Datenbank prüfen.
+                        </p>
+                      )}
+                      <FieldError msg={errorMsg} />
+                    </div>
+                  )
+                })
+              )}
             </div>
           </fieldset>
 
