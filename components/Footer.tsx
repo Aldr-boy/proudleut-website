@@ -39,7 +39,7 @@ export default function Footer() {
             Datenschutz
           </Link>
         </nav>
-        <p className="text-pl-on-stage-muted text-xs">© 2025 proudleut.com</p>
+        <p className="text-pl-on-stage-muted text-xs">© 2026 proudleut.com</p>
       </div>
     </footer>
   );
