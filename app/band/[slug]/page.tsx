@@ -83,7 +83,7 @@ export default async function BandPage({ params }: PageProps) {
   const mergeStageIsland = referenceCount >= 2 && hasSocialStats;
 
   return (
-    <article className="bg-pl-canvas pb-20 md:pb-0">
+    <article className="bg-pl-canvas">
       {/* JSON-LD – produktiv, kein Debug */}
       <script
         type="application/ld+json"
@@ -115,14 +115,17 @@ export default async function BandPage({ params }: PageProps) {
       <BandGallery band={band} />
       <BandDocumentsSection band={band} />
       <BandWeddingModule band={band} />
+      {/* Sentinel für BandFloatingCta: markiert den Beginn des finalen Anfragebereichs,
+          damit der Sticky-CTA weiss, wann er wieder ausblenden muss. */}
+      <div id="final-cta-sentinel" aria-hidden="true" className="h-px" />
       <BandContactSection band={band} websiteUrl={websiteUrl} />
 
       <BandFloatingCta
         name={band.name}
         slug={band.slug}
         anfrageEventTypes={band.anfrageEventTypes ?? []}
-        heroCtaId="hero-cta"
-        contactSectionId="band-contact-section"
+        heroSentinelId="hero-cta-sentinel"
+        finalSentinelId="final-cta-sentinel"
       />
 
       {/* Ähnliche Bands */}

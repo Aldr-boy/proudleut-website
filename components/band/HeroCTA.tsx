@@ -38,7 +38,7 @@ export function HeroCTA({ name, slug, anfrageEventTypes }: Props) {
                      focus-visible:outline-[var(--pl-accent)] w-full sm:w-auto"
         >
           <span className="hidden sm:inline">{name}&nbsp;anfragen</span>
-          <span className="sm:hidden">Band anfragen</span>
+          <span className="sm:hidden">Unverbindlich anfragen</span>
         </button>
 
         <button
@@ -59,6 +59,10 @@ export function HeroCTA({ name, slug, anfrageEventTypes }: Props) {
           {isGemerkt ? '✓ Gemerkt' : 'Für Anfrage merken'}
         </button>
       </div>
+
+      {/* Sentinel für BandFloatingCta: markiert das Ende des Hero-CTA-Bereichs,
+          damit der Sticky-CTA per IntersectionObserver weiss, wann er einblenden darf. */}
+      <div id="hero-cta-sentinel" aria-hidden="true" className="h-px" />
 
       <AnfrageModal
         bands={[{ slug, name, anfrageEventTypes }]}
