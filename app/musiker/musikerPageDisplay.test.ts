@@ -47,3 +47,18 @@ test('generateMetadata setzt einen sinnvollen Titel, kein noindex fuer eine gefu
   assert.match(source, /title: person\.name/)
   assert.ok(!source.includes('noindex'), 'aktive Personen duerfen nicht per noindex ausgeschlossen werden')
 })
+
+// ── person_links (Paket 4C-B) ────────────────────────────────────────
+
+test('rendert zusaetzliche Links (person.links) unabhaengig von der Hauptwebsite', () => {
+  assert.match(source, /additionalLinks/)
+  assert.match(source, /person\.links/)
+  // websiteUrl wird weiterhin eigenstaendig aus person.websiteUrl berechnet,
+  // nicht aus additionalLinks abgeleitet -- Website bleibt unabhaengig von
+  // person_links bestehen, auch wenn keine zusaetzlichen Links vorhanden sind.
+  assert.match(source, /const websiteUrl = safeUrl\(person\.websiteUrl\)/)
+})
+
+test('zusaetzliche Links werden ueber safeUrl() gefiltert, keine neue URL-Sicherheitsschicht', () => {
+  assert.match(source, /href: safeUrl\(link\.url\)/)
+})

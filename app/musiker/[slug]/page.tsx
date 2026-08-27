@@ -47,6 +47,12 @@ export default async function MusikerPage({ params }: PageProps) {
   const person = normalizePersonFromSupabase(data);
   const websiteUrl = safeUrl(person.websiteUrl);
 
+  // Zusaetzliche Links (Paket 4C-B, person_links) -- dieselbe safeUrl()-
+  // Pruefung wie bei websiteUrl, keine neue URL-Sicherheitsschicht.
+  const additionalLinks = person.links
+    .map((link) => ({ id: link.id, label: link.label, href: safeUrl(link.url) }))
+    .filter((link): link is { id: string; label: string; href: string } => link.href !== null);
+
   // Rolle/musikalische Einordnung unter dem Namen: eindeutige, nicht-leere
   // Rollen aus allen sichtbaren Memberships, ohne Instrumente vermischt
   // (Auftrag "Paket 4B", Abschnitt "Rollen-/Instrument-Anzeige").
@@ -66,15 +72,30 @@ export default async function MusikerPage({ params }: PageProps) {
             {roles.length > 0 && (
               <p className="text-pl-text-muted mt-1">{roles.join(' · ')}</p>
             )}
-            {websiteUrl && (
-              <a
-                href={websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-3 text-sm text-pl-accent hover:underline"
-              >
-                Website
-              </a>
+            {(websiteUrl || additionalLinks.length > 0) && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+                {websiteUrl && (
+                  <a
+                    href={websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-pl-accent hover:underline"
+                  >
+                    Website ↗
+                  </a>
+                )}
+                {additionalLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-pl-accent hover:underline"
+                  >
+                    {link.label} ↗
+                  </a>
+                ))}
+              </div>
             )}
           </div>
         </div>
