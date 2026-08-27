@@ -107,6 +107,26 @@ export type BandAnfrageEventType = {
   anfrageLabel: string | null;
 };
 
+// "Menschen hinter der Band" (Musiker-/Personenebene V1) -- ausschliesslich
+// oeffentlich sichtbare Personen (RLS-gefiltert, siehe
+// supabase/people_data_foundation_v1.sql: people.status='active',
+// band_memberships.is_public=true). Analog anfrageEventTypes nur fuer
+// Supabase-normalisierte Baender befuellt -- der Airtable-Pfad kennt keine
+// Personenebene.
+export type BandPersonInstrument = {
+  name: string;
+  slug: string;
+};
+
+export type BandPersonSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  role?: string;
+  instruments: BandPersonInstrument[];
+  imageUrl?: string;
+};
+
 export type Band = {
   id: string;
   name: string;
@@ -124,6 +144,12 @@ export type Band = {
   // -- die Legacy-Anfrage-/Kontakt-Flows, die Airtable-Baender verwenden,
   // sind nicht Teil des nativen Anfragesystems.
   anfrageEventTypes?: BandAnfrageEventType[];
+
+  // Nur fuer Supabase-normalisierte Baender befuellt (siehe
+  // BandPersonSummary oben). Undefined statt leerem Array, wenn ueber
+  // diesen Pfad gar nicht abgefragt wurde -- [] bedeutet "abgefragt, aber
+  // aktuell niemand oeffentlich sichtbar".
+  menschenHinterDerBand?: BandPersonSummary[];
 
   klingtNach: string[];
   moods: BandMood[];

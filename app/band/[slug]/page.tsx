@@ -9,6 +9,7 @@ import BandCard from '@/components/BandCard';
 import { BandHero } from '@/components/band/BandHero';
 import { BandTagsSection } from '@/components/band/BandTagsSection';
 import { BandDescription } from '@/components/band/BandDescription';
+import { BandPeopleSection } from '@/components/band/BandPeopleSection';
 import { BandReferenceEvents } from '@/components/band/BandReferenceEvents';
 import { BandGallery } from '@/components/band/BandGallery';
 import { BandDocumentsSection } from '@/components/band/BandDocumentsSection';
@@ -95,6 +96,7 @@ export default async function BandPage({ params }: PageProps) {
       <BandTagsSection band={band} />
       <BandVideoSection embedUrl={embedUrl} bandName={band.name} />
       <BandDescription band={band} />
+      <BandPeopleSection band={band} />
 
       {referenceCount === 1 && <BandReferenceEvents band={band} />}
 

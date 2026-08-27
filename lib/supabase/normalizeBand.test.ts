@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizeMoodAssignments, normalizeBandFromSupabase } from './normalizeBand.ts'
+import { normalizeMoodAssignments, normalizeBandFromSupabase, normalizeBandPeople } from './normalizeBand.ts'
 
 test('normalizeMoodAssignments: liefert Name UND stabilen Slug pro Zuordnung', () => {
   const raw = [
@@ -194,4 +194,67 @@ test('normalizeBandFromSupabase: Dokumentzeile ohne Pflichtfeld (title/audience_
   }
   const band = normalizeBandFromSupabase(row)
   assert.deepEqual(band.documents, [])
+})
+
+// ── "Menschen hinter der Band" (Musiker-/Personenebene V1, Paket 4B) ────
+
+test('normalizeBandPeople: nur sichtbare Personen (RLS liefert bereits gefiltert) werden korrekt uebernommen', () => {
+  const raw = [
+    {
+      role: 'Bassist & Bandleader',
+      sort_order: 0,
+      people: { id: 'p1', name: 'Dominik Palmer', slug: 'dominik-palmer', image_url: null },
+      band_membership_instruments: [],
+    },
+  ]
+  assert.deepEqual(normalizeBandPeople(raw), [
+    { id: 'p1', name: 'Dominik Palmer', slug: 'dominik-palmer', role: 'Bassist & Bandleader', instruments: [], imageUrl: undefined },
+  ])
+})
+
+test('normalizeBandPeople: Zeile ohne people (durch RLS bereits ausgeschlossen) wird uebersprungen, kein Crash', () => {
+  const raw = [
+    { role: 'x', sort_order: 0, people: null, band_membership_instruments: [] },
+  ]
+  assert.deepEqual(normalizeBandPeople(raw), [])
+})
+
+test('normalizeBandPeople: leere/fehlende band_memberships ergibt leeres Array, kein Crash (Empty State)', () => {
+  assert.deepEqual(normalizeBandPeople(null), [])
+  assert.deepEqual(normalizeBandPeople(undefined), [])
+  assert.deepEqual(normalizeBandPeople([]), [])
+})
+
+test('normalizeBandPeople: sortiert nach band_memberships.sort_order', () => {
+  const raw = [
+    { role: 'B', sort_order: 2, people: { id: 'p2', name: 'B Person', slug: 'b-person' }, band_membership_instruments: [] },
+    { role: 'A', sort_order: 1, people: { id: 'p1', name: 'A Person', slug: 'a-person' }, band_membership_instruments: [] },
+  ]
+  assert.deepEqual(normalizeBandPeople(raw).map((p) => p.slug), ['a-person', 'b-person'])
+})
+
+test('normalizeBandPeople: bei gleichem sort_order entscheidet der Personenname (deutsche Locale) als Tie-Breaker', () => {
+  const raw = [
+    { role: 'B', sort_order: 0, people: { id: 'p2', name: 'Zeta', slug: 'zeta' }, band_membership_instruments: [] },
+    { role: 'A', sort_order: 0, people: { id: 'p1', name: 'Alpha', slug: 'alpha' }, band_membership_instruments: [] },
+  ]
+  assert.deepEqual(normalizeBandPeople(raw).map((p) => p.name), ['Alpha', 'Zeta'])
+})
+
+test('normalizeBandPeople: Instrumente stabil nach Join-sort_order sortiert', () => {
+  const raw = [
+    {
+      role: 'x',
+      sort_order: 0,
+      people: { id: 'p1', name: 'Testperson', slug: 'testperson' },
+      band_membership_instruments: [
+        { sort_order: 1, instruments: { name: 'Posaune', slug: 'posaune', sort_order: 30 } },
+        { sort_order: 0, instruments: { name: 'Bass', slug: 'bass', sort_order: 10 } },
+      ],
+    },
+  ]
+  assert.deepEqual(
+    normalizeBandPeople(raw)[0].instruments,
+    [{ name: 'Bass', slug: 'bass' }, { name: 'Posaune', slug: 'posaune' }],
+  )
 })

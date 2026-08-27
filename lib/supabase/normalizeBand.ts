@@ -4,6 +4,8 @@ import type {
   BandDocument,
   BandLocation,
   BandMood,
+  BandPersonInstrument,
+  BandPersonSummary,
   ReferenceEvent,
   SimilarBandReferences,
   SocialLinks,
@@ -51,6 +53,59 @@ export function normalizeMoodAssignments(rawBandMoods: unknown): BandMood[] {
       return name && slug ? { name, slug } : undefined
     })
     .filter((m): m is BandMood => m !== undefined)
+}
+
+// "Menschen hinter der Band" (Musiker-/Personenebene V1, Paket 4B) --
+// band_memberships kommt bereits RLS-gefiltert vom anon-Client zurueck
+// (is_public=true, Person aktiv, Band aktiv+published -- siehe
+// supabase/people_data_foundation_v1.sql). Diese Funktion filtert NICHT
+// aus Sicherheitsgruenden nach, sondern nur defensiv (fehlende Pflichtfelder)
+// -- RLS bleibt die alleinige Security-Grenze, siehe Auftrag "Paket 4B".
+// Sortierung: 1. band_memberships.sort_order, 2. Personenname (deutsche
+// Locale) als stabiler Tie-Breaker. Instrumente je Person: 1. Join-eigene
+// band_membership_instruments.sort_order, 2. Katalog-instruments.sort_order.
+export function normalizeBandPeople(rawBandMemberships: unknown): BandPersonSummary[] {
+  return asArr(rawBandMemberships as Row[] | null)
+    .filter((bm) => bm.people != null)
+    .sort((a, b) => {
+      const sortDiff = bySortOrder(a, b)
+      if (sortDiff !== 0) return sortDiff
+      const nameA = str((a.people as Row)?.name) ?? ''
+      const nameB = str((b.people as Row)?.name) ?? ''
+      return nameA.localeCompare(nameB, 'de')
+    })
+    .map((bm) => {
+      const person = bm.people as Row
+      const id = str(person?.id)
+      const name = str(person?.name)
+      const slug = str(person?.slug)
+      if (!id || !name || !slug) return undefined
+
+      const instruments: BandPersonInstrument[] = asArr(bm.band_membership_instruments as Row[] | null)
+        .sort((a, b) => {
+          const joinDiff = bySortOrder(a, b)
+          if (joinDiff !== 0) return joinDiff
+          return bySortOrder((a.instruments as Row) ?? {}, (b.instruments as Row) ?? {})
+        })
+        .map((bmi) => {
+          const instr = bmi.instruments as Row
+          const iName = str(instr?.name)
+          const iSlug = str(instr?.slug)
+          return iName && iSlug ? { name: iName, slug: iSlug } : undefined
+        })
+        .filter((i): i is BandPersonInstrument => i !== undefined)
+
+      const summary: BandPersonSummary = {
+        id,
+        name,
+        slug,
+        role: str(bm.role),
+        instruments,
+        imageUrl: str(person?.image_url),
+      }
+      return summary
+    })
+    .filter((p): p is BandPersonSummary => p !== undefined)
 }
 
 function normalizeImg(raw: Row | null | undefined, fallbackAlt: string): ImageAsset | undefined {
@@ -293,6 +348,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     eventTypes,
     categorySlugs,
     anfrageEventTypes,
+    menschenHinterDerBand: normalizeBandPeople(r.band_memberships),
 
     klingtNach,
     moods,
