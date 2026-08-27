@@ -36,6 +36,15 @@ export async function getBandFromSupabase(slug: string) {
           name,
           slug
         )
+      ),
+      band_memberships (
+        role,
+        sort_order,
+        people ( id, name, slug, image_url ),
+        band_membership_instruments (
+          sort_order,
+          instruments ( name, slug, sort_order )
+        )
       )
     `)
     .eq('slug', slug)
