@@ -138,9 +138,31 @@ test('createMembershipAction setzt is_public immer hart auf false und liest es n
   assert.ok(!body.includes("formData.get('is_public')"), 'createMembershipAction darf is_public nicht aus dem Formular lesen')
 })
 
-test('updateMembershipAction liest is_public bewusst regulaer aus dem Formular', () => {
+test('updateMembershipAction liest is_public bewusst regulaer aus dem Formular -- ueber getAll().includes(), da formData.get() bei Mehrfachwerten (hidden Fallback + Checkbox) nur den ersten Eintrag liefert', () => {
   const body = extractFunctionBody('updateMembershipAction')
-  assert.match(body, /formData\.get\('is_public'\) === '1'/)
+  assert.match(body, /formData\.getAll\('is_public'\)\.includes\('1'\)/)
+  assert.ok(!body.includes("formData.get('is_public')"), 'updateMembershipAction darf das ordnungsabhaengige formData.get(\'is_public\') nicht mehr verwenden')
+})
+
+// Regressionstest fuer den urspruenglichen Fehler (Paket 4C-C): bildet
+// exakt den echten Browser-Submit einer bereits oeffentlichen Membership
+// nach -- Hidden-Fallback (0) UND aktivierte Checkbox (1) sind beide im
+// FormData vorhanden, in genau dieser DOM-Reihenfolge. Die alte Logik
+// (formData.get('is_public') === '1') haette hier faelschlich false
+// geliefert, da .get() nur den ERSTEN Eintrag zurueckgibt.
+test('Regression: FormData mit is_public=0 UND is_public=1 (echter Browser-Submit einer aktivierten Checkbox) wird korrekt als true interpretiert', () => {
+  const fd = new FormData()
+  fd.append('is_public', '0')
+  fd.append('is_public', '1')
+  assert.equal(fd.getAll('is_public').includes('1'), true)
+  // Gegenprobe: die urspruengliche fehlerhafte Logik haette hier false geliefert
+  assert.equal(fd.get('is_public') === '1', false)
+})
+
+test('Regression: FormData mit ausschliesslich is_public=0 (Checkbox deaktiviert) wird korrekt als false interpretiert', () => {
+  const fd = new FormData()
+  fd.append('is_public', '0')
+  assert.equal(fd.getAll('is_public').includes('1'), false)
 })
 
 test('keine direkten Table-Writes auf public.people/band_memberships/band_membership_instruments ohne vorherige Existenz-/Ownership-Pruefung -- deleteMembershipAction prueft person_id vor dem Delete', () => {
