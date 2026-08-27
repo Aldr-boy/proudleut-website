@@ -15,8 +15,8 @@
 --   (vollstaendige Pruefung in der eigenen Policy, kein Verlass auf RLS
 --   einer anderen Tabelle).
 --
--- Rollout-Umfang dieser Datei: AUSSCHLIESSLICH TEST (jqzqpizykymjdjumwdoj).
--- Production (bfyucjjyarvqeftqqihm) bleibt unveraendert.
+-- Rollout-Stand: in TEST (jqzqpizykymjdjumwdoj) und Production
+-- (bfyucjjyarvqeftqqihm) angewendet.
 -- ============================================================
 
 begin;

@@ -70,7 +70,7 @@ test('zusaetzliche Links werden ueber safeUrl() gefiltert, keine neue URL-Sicher
 // Kommentar oben).
 
 test('bestaetigte Abschnittsreihenfolge: Hero -> Zusammengearbeitet mit -> Ueber -> Bei Proudleut -> Mehr von', () => {
-  const heroIdx = source.indexOf('Musiker bei Proudleut')
+  const heroIdx = source.indexOf('{/* 1 — Hero */}')
   const creditsIdx = source.indexOf('Zusammengearbeitet mit')
   const bioIdx = source.indexOf('Über {firstName}')
   const proudleutIdx = source.indexOf('Bei Proudleut')

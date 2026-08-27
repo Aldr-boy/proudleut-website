@@ -66,8 +66,19 @@ export default async function MusikerPage({ params }: PageProps) {
     .filter((link): link is { id: string; label: string; href: string } => link.href !== null);
 
   // Rolle unter dem Namen: eindeutige, nicht-leere Rollen aus allen
-  // sichtbaren Memberships, ohne Instrumente vermischt.
-  const roles = [...new Set(person.memberships.map((m) => m.role).filter((r): r is string => !!r))];
+  // sichtbaren Memberships, ohne Instrumente vermischt. Im Hero bewusst
+  // nur die primaere Rolle vor einem "&" (z. B. "Bassist" statt
+  // "Bassist & Bandleader") -- reine Hero-Vereinfachung, die einzelne
+  // Membership (m.role) in der Proudleut-Bandzugehoerigkeit-Card bleibt
+  // davon unberuehrt.
+  const roles = [
+    ...new Set(
+      person.memberships
+        .map((m) => m.role)
+        .filter((r): r is string => !!r)
+        .map((r) => r.split(' & ')[0]),
+    ),
+  ];
 
   const hasMehrVonSection = websiteUrl !== null || additionalLinks.length > 0;
 
@@ -92,10 +103,7 @@ export default async function MusikerPage({ params }: PageProps) {
                 />
               </div>
             )}
-            <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mt-6">
-              Musiker bei Proudleut
-            </p>
-            <h1 className="text-4xl font-bold text-pl-text mt-2 leading-tight">{person.name}</h1>
+            <h1 className="text-4xl font-bold text-pl-text mt-6 leading-tight">{person.name}</h1>
             {roles.length > 0 && <p className="text-lg text-pl-text-muted mt-2">{roles.join(' · ')}</p>}
           </div>
 
@@ -114,10 +122,7 @@ export default async function MusikerPage({ params }: PageProps) {
               </div>
             )}
             <div className="pb-2">
-              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                Musiker bei Proudleut
-              </p>
-              <h1 className="text-5xl lg:text-6xl font-bold text-pl-text mt-5 leading-tight">{person.name}</h1>
+              <h1 className="text-5xl lg:text-6xl font-bold text-pl-text leading-tight">{person.name}</h1>
               {roles.length > 0 && <p className="text-xl text-pl-text-muted mt-4">{roles.join(' · ')}</p>}
             </div>
           </div>
@@ -188,7 +193,7 @@ export default async function MusikerPage({ params }: PageProps) {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-lg text-pl-text">{m.bandName}</p>
                     {(m.role || m.instruments.length > 0) && (
-                      <p className="text-sm text-pl-text-muted mt-0.5 truncate">
+                      <p className="text-sm text-pl-text-muted mt-0.5">
                         {[m.role, m.instruments.map((i) => i.name).join(', ')].filter(Boolean).join(' · ')}
                       </p>
                     )}
