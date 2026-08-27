@@ -21,7 +21,7 @@ export async function getPersonBySlugFromSupabase(slug: string) {
       band_memberships (
         role,
         sort_order,
-        bands ( id, name, slug ),
+        bands ( id, name, slug, media_assets ( url, alt_text, role, sort_order ) ),
         band_membership_instruments (
           sort_order,
           instruments ( name, slug, sort_order )
@@ -31,6 +31,11 @@ export async function getPersonBySlugFromSupabase(slug: string) {
         id,
         label,
         url,
+        sort_order
+      ),
+      person_credits (
+        id,
+        name,
         sort_order
       )
     `)

@@ -62,3 +62,48 @@ test('rendert zusaetzliche Links (person.links) unabhaengig von der Hauptwebsite
 test('zusaetzliche Links werden ueber safeUrl() gefiltert, keine neue URL-Sicherheitsschicht', () => {
   assert.match(source, /href: safeUrl\(link\.url\)/)
 })
+
+// ── Musikerseite-Redesign V1: bestaetigte Hierarchie ─────────────────
+// Hero -> Zusammengearbeitet mit -> Ueber [Vorname] -> Bei Proudleut ->
+// Mehr von [Vorname]. Reine Reihenfolge-Pruefung ueber die Position der
+// Abschnitts-Marker im Quelltext -- kein echter Render moeglich (siehe
+// Kommentar oben).
+
+test('bestaetigte Abschnittsreihenfolge: Hero -> Zusammengearbeitet mit -> Ueber -> Bei Proudleut -> Mehr von', () => {
+  const heroIdx = source.indexOf('{/* 1 — Hero */}')
+  const creditsIdx = source.indexOf('Zusammengearbeitet mit')
+  const bioIdx = source.indexOf('Über {firstName}')
+  const proudleutIdx = source.indexOf('Bei Proudleut')
+  const mehrVonIdx = source.indexOf('Mehr von {firstName}')
+  assert.ok(heroIdx >= 0 && creditsIdx >= 0 && bioIdx >= 0 && proudleutIdx >= 0 && mehrVonIdx >= 0, 'alle fuenf Abschnitts-Marker muessen vorhanden sein')
+  assert.ok(heroIdx < creditsIdx, 'Hero muss vor Zusammengearbeitet mit stehen')
+  assert.ok(creditsIdx < bioIdx, 'Zusammengearbeitet mit muss vor Ueber stehen')
+  assert.ok(bioIdx < proudleutIdx, 'Ueber muss vor Bei Proudleut stehen')
+  assert.ok(proudleutIdx < mehrVonIdx, 'Bei Proudleut muss vor Mehr von stehen')
+})
+
+test('keine Einordnungszeile: kein eigenes Datenfeld/Textblock dafuer im Quelltext', () => {
+  assert.ok(!source.toLowerCase().includes('einordnung'), 'Einordnungszeile wurde bewusst gestrichen und darf nicht neu gebaut werden')
+})
+
+test('keine neue Schriftfamilie/kein next/font-Import fuer den Namen (bestaetigte Abweichung vom Hi-Fi-Serifenfont)', () => {
+  assert.ok(!source.includes("from 'next/font"), 'Personenseite darf keine eigene next/font-Schriftfamilie importieren')
+  assert.ok(!/serif/i.test(source), 'Personenseite darf keine Serifenschrift referenzieren -- bestehende Sans-Typografie verwenden')
+})
+
+test('"Zusammengearbeitet mit" wird nur gerendert, wenn Referenzen vorhanden sind (kein erzwungener Abschnitt)', () => {
+  assert.match(source, /\{person\.credits\.length > 0 &&/)
+})
+
+// ── Bandbild (media_assets) fuer die "Bei Proudleut"-Projektkarte ────
+
+test('Bandbild wird nur bedingt gerendert (kein erzwungenes Bild, kein Platzhalter)', () => {
+  assert.match(source, /\{m\.bandImage &&/)
+})
+
+test('"Bei Proudleut" bleibt als Section immer vorhanden (auch ohne sichtbare Membership) -- Empty State statt verstecktem Abschnitt', () => {
+  const sectionIdx = source.indexOf('Bei Proudleut')
+  const emptyStateIdx = source.indexOf('Aktuell keine öffentlich sichtbaren Bandzugehörigkeiten')
+  assert.ok(sectionIdx >= 0 && emptyStateIdx >= 0)
+  assert.ok(sectionIdx < emptyStateIdx, 'Empty State muss Teil derselben, immer gerenderten Bei-Proudleut-Section sein')
+})
