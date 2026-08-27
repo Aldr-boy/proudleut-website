@@ -285,7 +285,15 @@ export async function updateMembershipAction(formData: FormData): Promise<never>
   const role = str(formData, 'role')
   const joined_at = str(formData, 'joined_at')
   const left_at = str(formData, 'left_at')
-  const is_public = formData.get('is_public') === '1'
+  // formData.get() liefert bei Mehrfachwerten (hidden Fallback + Checkbox
+  // teilen sich den Namen "is_public") den ERSTEN Eintrag -- bei
+  // aktiviertem Haekchen submitted der Browser BEIDE Werte in DOM-
+  // Reihenfolge (hidden zuerst), .get() wuerde also faelschlich immer '0'
+  // liefern. getAll().includes('1') ist unabhaengig von der Feld-
+  // Reihenfolge korrekt: nur der Hidden-Fallback -> ['0'] -> false; mit
+  // aktiviertem Haekchen -> ['0','1'] -> true. Identisches Prinzip wie
+  // updatePersonLinkAction (Paket 4C-B).
+  const is_public = formData.getAll('is_public').includes('1')
   const sortOrderRaw = str(formData, 'sort_order')
   const instrument_ids = (formData.getAll('instrument_id') as string[]).map((v) => v.trim()).filter(Boolean)
 
