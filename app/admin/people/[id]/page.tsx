@@ -11,6 +11,9 @@ import {
   createPersonLinkAction,
   updatePersonLinkAction,
   deletePersonLinkAction,
+  createPersonCreditAction,
+  updatePersonCreditAction,
+  deletePersonCreditAction,
 } from '../actions'
 
 export const metadata: Metadata = { title: 'Person bearbeiten' }
@@ -40,6 +43,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_link: 'Link nicht gefunden — bitte Seite neu laden.',
   link_duplicate: 'Diese URL ist für diese Person bereits als Link hinterlegt.',
   duplicate_website: 'Diese URL entspricht bereits der Hauptwebsite — kein zusätzlicher Link nötig.',
+  invalid_name: 'Name ist erforderlich (max. 80 Zeichen).',
+  invalid_credit: 'Eintrag nicht gefunden — bitte Seite neu laden.',
+  credit_duplicate: 'Dieser Name ist für diese Person bereits als Referenz hinterlegt.',
   db_error: 'Datenbankfehler – bitte erneut versuchen.',
 }
 
@@ -63,6 +69,7 @@ type PersonRow = {
 type InstrumentRow = { id: string; name: string; slug: string; sort_order: number }
 type BandRow = { id: string; name: string; slug: string }
 type PersonLinkRow = { id: string; label: string; url: string; sort_order: number; is_public: boolean }
+type PersonCreditRow = { id: string; name: string; sort_order: number; is_public: boolean }
 
 type MembershipRow = {
   id: string
@@ -87,9 +94,13 @@ type SearchParams = Promise<{
   link_created?: string
   link_saved?: string
   link_deleted?: string
+  credit_created?: string
+  credit_saved?: string
+  credit_deleted?: string
   people_error?: string
   membership_error?: string
   link_error?: string
+  credit_error?: string
 }>
 
 export default async function AdminPersonDetailPage({
@@ -103,7 +114,7 @@ export default async function AdminPersonDetailPage({
   const sp = await searchParams
   const client = createAdminClient()
 
-  const [{ data: person }, { data: membershipsRaw }, { data: bandsRaw }, { data: instrumentsRaw }, { data: linksRaw }] = await Promise.all([
+  const [{ data: person }, { data: membershipsRaw }, { data: bandsRaw }, { data: instrumentsRaw }, { data: linksRaw }, { data: creditsRaw }] = await Promise.all([
     client
       .from('people')
       .select('id, name, slug, bio, website_url, image_url, status, approved_at')
@@ -129,6 +140,11 @@ export default async function AdminPersonDetailPage({
       .select('id, label, url, sort_order, is_public')
       .eq('person_id', id)
       .returns<PersonLinkRow[]>(),
+    client
+      .from('person_credits')
+      .select('id, name, sort_order, is_public')
+      .eq('person_id', id)
+      .returns<PersonCreditRow[]>(),
   ])
 
   if (!person) {
@@ -149,10 +165,14 @@ export default async function AdminPersonDetailPage({
   const links = (linksRaw ?? [])
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label, 'de'))
+  const credits = (creditsRaw ?? [])
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'de'))
 
   const peopleErrorMsg = sp.people_error ? (ERROR_MESSAGES[sp.people_error] ?? 'Unbekannter Fehler.') : null
   const membershipErrorMsg = sp.membership_error ? (ERROR_MESSAGES[sp.membership_error] ?? 'Unbekannter Fehler.') : null
   const linkErrorMsg = sp.link_error ? (ERROR_MESSAGES[sp.link_error] ?? 'Unbekannter Fehler.') : null
+  const creditErrorMsg = sp.credit_error ? (ERROR_MESSAGES[sp.credit_error] ?? 'Unbekannter Fehler.') : null
 
   return (
     <div className="min-h-screen">
@@ -185,9 +205,13 @@ export default async function AdminPersonDetailPage({
         {sp.link_created && <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">Link angelegt.</div>}
         {sp.link_saved && <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">Link gespeichert.</div>}
         {sp.link_deleted && <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">Link entfernt.</div>}
+        {sp.credit_created && <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">Referenz angelegt.</div>}
+        {sp.credit_saved && <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">Referenz gespeichert.</div>}
+        {sp.credit_deleted && <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">Referenz entfernt.</div>}
         {peopleErrorMsg && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{peopleErrorMsg}</div>}
         {membershipErrorMsg && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{membershipErrorMsg}</div>}
         {linkErrorMsg && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{linkErrorMsg}</div>}
+        {creditErrorMsg && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{creditErrorMsg}</div>}
 
         {/* Status-Aktionen */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -414,6 +438,123 @@ export default async function AdminPersonDetailPage({
               </div>
               <p className="text-xs text-gray-400">
                 Neue Links sind zunächst privat — „Öffentlich sichtbar“ kann danach bewusst im
+                Bearbeiten-Formular oben gesetzt werden.
+              </p>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-violet-700 text-white rounded-lg text-sm font-medium hover:bg-violet-800 transition-colors"
+              >
+                Hinzufügen
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Zusammengearbeitet mit */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Zusammengearbeitet mit</h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Kuratierte Referenzenliste für die öffentliche Musikerseite (reine Anzeigenamen, keine Verknüpfung
+            zu externen Personen). Neue Einträge sind zunächst intern — Sichtbarkeit wird bewusst separat gesteuert.
+          </p>
+
+          <div className="space-y-3 mb-6">
+            {credits.length === 0 ? (
+              <p className="text-sm text-gray-500">Noch keine Referenz hinterlegt.</p>
+            ) : (
+              credits.map((credit) => (
+                <div key={credit.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium text-gray-900 truncate">{credit.name}</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                          credit.is_public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {credit.is_public ? 'öffentlich' : 'privat'}
+                      </span>
+                    </div>
+                    <form action={deletePersonCreditAction}>
+                      <input type="hidden" name="credit_id" value={credit.id} />
+                      <input type="hidden" name="person_id" value={person.id} />
+                      <button type="submit" className="text-xs text-red-700 hover:text-red-900 hover:underline transition-colors shrink-0">
+                        Entfernen
+                      </button>
+                    </form>
+                  </div>
+                  <form action={updatePersonCreditAction} className="p-4 space-y-3">
+                    <input type="hidden" name="credit_id" value={credit.id} />
+                    <input type="hidden" name="person_id" value={person.id} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                        <input
+                          name="name"
+                          type="text"
+                          defaultValue={credit.name}
+                          maxLength={80}
+                          required
+                          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Reihenfolge</label>
+                        <input
+                          name="sort_order"
+                          type="number"
+                          min={0}
+                          defaultValue={credit.sort_order}
+                          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input type="hidden" name="is_public" value="0" />
+                      <input type="checkbox" name="is_public" value="1" defaultChecked={credit.is_public} className="rounded border-gray-300" />
+                      Öffentlich sichtbar
+                    </label>
+                    <button
+                      type="submit"
+                      className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      Speichern
+                    </button>
+                  </form>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="border-t border-gray-100 pt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Neue Referenz hinzufügen</h3>
+            <form action={createPersonCreditAction} className="space-y-3">
+              <input type="hidden" name="person_id" value={person.id} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                  <input
+                    name="name"
+                    type="text"
+                    maxLength={80}
+                    required
+                    placeholder="z. B. Paul Young"
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Reihenfolge</label>
+                  <input
+                    name="sort_order"
+                    type="number"
+                    min={0}
+                    defaultValue={0}
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">
+                Neue Referenzen sind zunächst privat — „Öffentlich sichtbar“ kann danach bewusst im
                 Bearbeiten-Formular oben gesetzt werden.
               </p>
               <button

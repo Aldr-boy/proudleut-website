@@ -14,6 +14,7 @@ import {
   type CatalogInstrument,
 } from '@/lib/people/instrumentAssignment'
 import { isValidHttpsUrl, isValidLinkLabel, isDuplicateOfWebsite } from '@/lib/people/linkValidation'
+import { isValidCreditName } from '@/lib/people/creditValidation'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -566,4 +567,130 @@ export async function deletePersonLinkAction(formData: FormData): Promise<never>
   if (error) redirect(`/admin/people/${person_id}?link_error=db_error`)
 
   redirect(`/admin/people/${person_id}?link_deleted=1`)
+}
+
+// ─────────────────────────────────────────
+// createPersonCreditAction -- is_public wird IMMER hart auf false gesetzt
+// (identisches Prinzip wie createPersonLinkAction). Referenzenliste
+// "Zusammengearbeitet mit" -- reiner Anzeigename, keine URL.
+// ─────────────────────────────────────────
+
+export async function createPersonCreditAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const person_id = str(formData, 'person_id')
+  const name = str(formData, 'name')
+  const sortOrderRaw = str(formData, 'sort_order')
+
+  if (!person_id) redirect('/admin/people')
+  if (!isValidCreditName(name)) redirect(`/admin/people/${person_id}?credit_error=invalid_name`)
+
+  const sort_order = parseSortOrder(sortOrderRaw)
+  if (sort_order === null) redirect(`/admin/people/${person_id}?credit_error=invalid_sort_order`)
+
+  const client = createAdminClient()
+
+  const { data: person } = await client.from('people').select('id').eq('id', person_id).maybeSingle()
+  if (!person) redirect('/admin/people?credit_error=invalid_person')
+
+  const { error } = await client.from('person_credits').insert({
+    person_id,
+    name: name.trim(),
+    sort_order,
+    is_public: false,
+  })
+
+  if (error) {
+    const code = error.code === '23505' ? 'credit_duplicate' : 'db_error'
+    redirect(`/admin/people/${person_id}?credit_error=${code}`)
+  }
+
+  redirect(`/admin/people/${person_id}?credit_created=1`)
+}
+
+// ─────────────────────────────────────────
+// updatePersonCreditAction -- is_public ist hier -- anders als beim
+// Anlegen -- ein regulaeres, editierbares Feld (identisches Prinzip wie
+// updatePersonLinkAction).
+// ─────────────────────────────────────────
+
+export async function updatePersonCreditAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const credit_id = str(formData, 'credit_id')
+  const person_id = str(formData, 'person_id')
+  const name = str(formData, 'name')
+  const sortOrderRaw = str(formData, 'sort_order')
+  // formData.get() liefert bei Mehrfachwerten (hidden Fallback + Checkbox
+  // teilen sich den Namen "is_public") den ERSTEN Eintrag -- siehe
+  // updatePersonLinkAction/updateMembershipAction. getAll().includes('1')
+  // ist unabhaengig von der Feld-Reihenfolge korrekt.
+  const is_public = formData.getAll('is_public').includes('1')
+
+  if (!person_id) redirect('/admin/people')
+  if (!credit_id) redirect(`/admin/people/${person_id}`)
+  if (!isValidCreditName(name)) redirect(`/admin/people/${person_id}?credit_error=invalid_name`)
+
+  const sort_order = parseSortOrder(sortOrderRaw)
+  if (sort_order === null) redirect(`/admin/people/${person_id}?credit_error=invalid_sort_order`)
+
+  const client = createAdminClient()
+
+  // Ownership-Pruefung: Eintrag laden und person_id aus DB gegen Form-Wert
+  // pruefen (identisches Prinzip wie updatePersonLinkAction).
+  const { data: existing } = await client
+    .from('person_credits')
+    .select('person_id')
+    .eq('id', credit_id)
+    .maybeSingle()
+  if (!existing || existing.person_id !== person_id) {
+    redirect(`/admin/people/${person_id}?credit_error=invalid_credit`)
+  }
+
+  const { error } = await client
+    .from('person_credits')
+    .update({ name: name.trim(), sort_order, is_public })
+    .eq('id', credit_id)
+
+  if (error) {
+    const code = error.code === '23505' ? 'credit_duplicate' : 'db_error'
+    redirect(`/admin/people/${person_id}?credit_error=${code}`)
+  }
+
+  redirect(`/admin/people/${person_id}?credit_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// deletePersonCreditAction
+// ─────────────────────────────────────────
+
+export async function deletePersonCreditAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const credit_id = str(formData, 'credit_id')
+  const person_id = str(formData, 'person_id')
+
+  if (!person_id) redirect('/admin/people')
+  if (!credit_id) redirect(`/admin/people/${person_id}`)
+
+  const client = createAdminClient()
+
+  const { data: existing } = await client
+    .from('person_credits')
+    .select('person_id')
+    .eq('id', credit_id)
+    .maybeSingle()
+  if (!existing || existing.person_id !== person_id) {
+    redirect(`/admin/people/${person_id}?credit_error=invalid_credit`)
+  }
+
+  const { error } = await client
+    .from('person_credits')
+    .delete()
+    .eq('id', credit_id)
+    .eq('person_id', person_id)
+
+  if (error) redirect(`/admin/people/${person_id}?credit_error=db_error`)
+
+  redirect(`/admin/people/${person_id}?credit_deleted=1`)
 }

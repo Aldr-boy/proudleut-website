@@ -30,6 +30,9 @@ const PROTECTED_ACTIONS = [
   'createPersonLinkAction',
   'updatePersonLinkAction',
   'deletePersonLinkAction',
+  'createPersonCreditAction',
+  'updatePersonCreditAction',
+  'deletePersonCreditAction',
 ]
 
 // Grenzt exakt auf den Funktionskoerper ein (bis zur unindentierten
@@ -203,5 +206,28 @@ test('createPersonLinkAction/updatePersonLinkAction lehnen ein Duplikat der Haup
 
 test('deletePersonLinkAction prueft person_id vor dem Delete (Ownership)', () => {
   const body = extractFunctionBody('deletePersonLinkAction')
+  assert.match(body, /existing\.person_id !== person_id/)
+})
+
+// ─────────────────────────────────────────
+// person_credits (Musikerseite-Redesign V1): is_public muss beim Anlegen
+// hart auf false gesetzt sein, beim Bearbeiten bewusst regulaer editierbar
+// -- identisches Muster wie person_links.
+// ─────────────────────────────────────────
+
+test('createPersonCreditAction setzt is_public immer hart auf false und liest es nicht aus dem Formular', () => {
+  const body = extractFunctionBody('createPersonCreditAction')
+  assert.match(body, /is_public: false/)
+  assert.ok(!body.includes("formData.get('is_public')"), 'createPersonCreditAction darf is_public nicht aus dem Formular lesen')
+})
+
+test('updatePersonCreditAction liest is_public bewusst regulaer aus dem Formular -- ueber getAll().includes()', () => {
+  const body = extractFunctionBody('updatePersonCreditAction')
+  assert.match(body, /formData\.getAll\('is_public'\)\.includes\('1'\)/)
+  assert.ok(!body.includes("formData.get('is_public')"), 'updatePersonCreditAction darf das ordnungsabhaengige formData.get(\'is_public\') nicht verwenden')
+})
+
+test('deletePersonCreditAction prueft person_id vor dem Delete (Ownership)', () => {
+  const body = extractFunctionBody('deletePersonCreditAction')
   assert.match(body, /existing\.person_id !== person_id/)
 })

@@ -27,12 +27,18 @@ export type PublicPersonInstrument = {
   slug: string
 }
 
+export type PublicBandImage = {
+  url: string
+  alt: string
+}
+
 export type PublicPersonMembership = {
   bandId: string
   bandName: string
   bandSlug: string
   role?: string
   instruments: PublicPersonInstrument[]
+  bandImage?: PublicBandImage
 }
 
 // Zusaetzliche wichtige Links neben website_url (Paket 4C-B, person_links).
@@ -44,6 +50,15 @@ export type PublicPersonLink = {
   url: string
 }
 
+// Kuratierte Referenzenliste "Zusammengearbeitet mit" (Musikerseite-
+// Redesign V1, person_credits). Reiner Anzeigename, keine externe
+// Verknuepfung -- is_public ist bewusst NICHT Teil dieser Struktur, RLS
+// hat private Zeilen bereits entfernt.
+export type PublicPersonCredit = {
+  id: string
+  name: string
+}
+
 export type PublicPerson = {
   id: string
   name: string
@@ -53,6 +68,22 @@ export type PublicPerson = {
   websiteUrl?: string
   memberships: PublicPersonMembership[]
   links: PublicPersonLink[]
+  credits: PublicPersonCredit[]
+}
+
+// Bandbild fuer die "Bei Proudleut"-Projektkarte -- identische Fallback-
+// Logik wie components/BandCard.tsx (band.thumbnailImage ?? band.heroImage),
+// hier nur minimal aus media_assets extrahiert statt ueber den vollen
+// Band-Normalizer, da die Personenseite keinen kompletten Band-Datensatz
+// braucht. Keine neue Medienarchitektur -- derselbe media_assets.role-
+// Wortschatz ('thumbnail'/'hero') wie ueberall sonst im Projekt.
+function pickBandImage(rawMediaAssets: unknown): PublicBandImage | undefined {
+  const all = asArr(rawMediaAssets as Row[] | null).sort(bySortOrder)
+  const byRole = (role: string) => all.find((m) => m.role === role)
+  const picked = byRole('thumbnail') ?? byRole('hero')
+  const url = str(picked?.url)
+  if (!url) return undefined
+  return { url, alt: str(picked?.alt_text) ?? '' }
 }
 
 // band_memberships kommt bereits RLS-gefiltert vom anon-Client zurueck
@@ -97,6 +128,7 @@ export function normalizePersonMemberships(rawBandMemberships: unknown): PublicP
         bandSlug,
         role: str(bm.role),
         instruments,
+        bandImage: pickBandImage(band.media_assets),
       }
       return membership
     })
@@ -125,6 +157,27 @@ export function normalizePersonLinks(rawPersonLinks: unknown): PublicPersonLink[
     .filter((l): l is PublicPersonLink => l !== undefined)
 }
 
+// person_credits kommt bereits RLS-gefiltert vom anon-Client zurueck
+// (is_public=true, Person aktiv -- siehe supabase/people_credits_v1.sql).
+// Diese Funktion filtert NICHT aus Sicherheitsgruenden nach, nur defensiv
+// (fehlende Pflichtfelder) -- RLS bleibt die alleinige Security-Grenze.
+// Sortierung: 1. person_credits.sort_order, 2. Name (deutsche Locale) als
+// stabiler Tie-Breaker -- identisches Prinzip wie normalizePersonLinks.
+export function normalizePersonCredits(rawPersonCredits: unknown): PublicPersonCredit[] {
+  return asArr(rawPersonCredits as Row[] | null)
+    .sort((a, b) => {
+      const sortDiff = bySortOrder(a, b)
+      if (sortDiff !== 0) return sortDiff
+      return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
+    })
+    .map((row) => {
+      const id = str(row.id)
+      const name = str(row.name)
+      return id && name ? { id, name } : undefined
+    })
+    .filter((c): c is PublicPersonCredit => c !== undefined)
+}
+
 export function normalizePersonFromSupabase(row: unknown): PublicPerson {
   const r = row as Row
 
@@ -137,5 +190,6 @@ export function normalizePersonFromSupabase(row: unknown): PublicPerson {
     websiteUrl: str(r.website_url),
     memberships: normalizePersonMemberships(r.band_memberships),
     links: normalizePersonLinks(r.person_links),
+    credits: normalizePersonCredits(r.person_credits),
   }
 }
