@@ -35,6 +35,15 @@ export type PublicPersonMembership = {
   instruments: PublicPersonInstrument[]
 }
 
+// Zusaetzliche wichtige Links neben website_url (Paket 4C-B, person_links).
+// is_public ist bewusst NICHT Teil dieser Struktur -- RLS hat private
+// Zeilen bereits entfernt, bevor diese Funktion sie sieht.
+export type PublicPersonLink = {
+  id: string
+  label: string
+  url: string
+}
+
 export type PublicPerson = {
   id: string
   name: string
@@ -43,6 +52,7 @@ export type PublicPerson = {
   imageUrl?: string
   websiteUrl?: string
   memberships: PublicPersonMembership[]
+  links: PublicPersonLink[]
 }
 
 // band_memberships kommt bereits RLS-gefiltert vom anon-Client zurueck
@@ -93,6 +103,28 @@ export function normalizePersonMemberships(rawBandMemberships: unknown): PublicP
     .filter((m): m is PublicPersonMembership => m !== undefined)
 }
 
+// person_links kommt bereits RLS-gefiltert vom anon-Client zurueck
+// (is_public=true, Person aktiv -- siehe supabase/people_links_v1.sql).
+// Diese Funktion filtert NICHT aus Sicherheitsgruenden nach, nur defensiv
+// (fehlende Pflichtfelder) -- RLS bleibt die alleinige Security-Grenze.
+// Sortierung: 1. person_links.sort_order, 2. Label (deutsche Locale) als
+// stabiler Tie-Breaker.
+export function normalizePersonLinks(rawPersonLinks: unknown): PublicPersonLink[] {
+  return asArr(rawPersonLinks as Row[] | null)
+    .sort((a, b) => {
+      const sortDiff = bySortOrder(a, b)
+      if (sortDiff !== 0) return sortDiff
+      return String(a.label ?? '').localeCompare(String(b.label ?? ''), 'de')
+    })
+    .map((row) => {
+      const id = str(row.id)
+      const label = str(row.label)
+      const url = str(row.url)
+      return id && label && url ? { id, label, url } : undefined
+    })
+    .filter((l): l is PublicPersonLink => l !== undefined)
+}
+
 export function normalizePersonFromSupabase(row: unknown): PublicPerson {
   const r = row as Row
 
@@ -104,5 +136,6 @@ export function normalizePersonFromSupabase(row: unknown): PublicPerson {
     imageUrl: str(r.image_url),
     websiteUrl: str(r.website_url),
     memberships: normalizePersonMemberships(r.band_memberships),
+    links: normalizePersonLinks(r.person_links),
   }
 }

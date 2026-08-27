@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-// Strukturelle Regressionspruefung: jede der sieben People-Admin-Actions in
+// Strukturelle Regressionspruefung: jede der People-Admin-Actions in
 // app/admin/people/actions.ts muss requireAdminSession() als ALLERERSTE
 // Anweisung aufrufen -- identisches Muster wie
 // lib/admin/eventTypesActionsAuthGuardOrder.test.ts. Testdatei liegt
@@ -27,6 +27,9 @@ const PROTECTED_ACTIONS = [
   'createMembershipAction',
   'updateMembershipAction',
   'deleteMembershipAction',
+  'createPersonLinkAction',
+  'updatePersonLinkAction',
+  'deletePersonLinkAction',
 ]
 
 // Grenzt exakt auf den Funktionskoerper ein (bis zur unindentierten
@@ -142,5 +145,41 @@ test('updateMembershipAction liest is_public bewusst regulaer aus dem Formular',
 
 test('keine direkten Table-Writes auf public.people/band_memberships/band_membership_instruments ohne vorherige Existenz-/Ownership-Pruefung -- deleteMembershipAction prueft person_id vor dem Delete', () => {
   const body = extractFunctionBody('deleteMembershipAction')
+  assert.match(body, /existing\.person_id !== person_id/)
+})
+
+// ─────────────────────────────────────────
+// person_links (Paket 4C-B): is_public muss beim Anlegen hart auf false
+// gesetzt sein, beim Bearbeiten bewusst regulaer editierbar.
+// ─────────────────────────────────────────
+
+test('createPersonLinkAction setzt is_public immer hart auf false und liest es nicht aus dem Formular', () => {
+  const body = extractFunctionBody('createPersonLinkAction')
+  assert.match(body, /is_public: false/)
+  assert.ok(!body.includes("formData.get('is_public')"), 'createPersonLinkAction darf is_public nicht aus dem Formular lesen')
+})
+
+test('updatePersonLinkAction liest is_public bewusst regulaer aus dem Formular -- ueber getAll().includes(), da formData.get() bei Mehrfachwerten (hidden Fallback + Checkbox) nur den ersten Eintrag liefert', () => {
+  const body = extractFunctionBody('updatePersonLinkAction')
+  assert.match(body, /formData\.getAll\('is_public'\)\.includes\('1'\)/)
+  assert.ok(!body.includes("formData.get('is_public')"), 'updatePersonLinkAction darf das ordnungsabhaengige formData.get(\'is_public\') nicht verwenden')
+})
+
+test('createPersonLinkAction/updatePersonLinkAction validieren URL ausschliesslich https (isValidHttpsUrl)', () => {
+  for (const name of ['createPersonLinkAction', 'updatePersonLinkAction']) {
+    const body = extractFunctionBody(name)
+    assert.match(body, /isValidHttpsUrl\(url\)/, `${name} muss isValidHttpsUrl verwenden`)
+  }
+})
+
+test('createPersonLinkAction/updatePersonLinkAction lehnen ein Duplikat der Hauptwebsite ab (isDuplicateOfWebsite)', () => {
+  for (const name of ['createPersonLinkAction', 'updatePersonLinkAction']) {
+    const body = extractFunctionBody(name)
+    assert.match(body, /isDuplicateOfWebsite\(url, person\.website_url/, `${name} muss isDuplicateOfWebsite pruefen`)
+  }
+})
+
+test('deletePersonLinkAction prueft person_id vor dem Delete (Ownership)', () => {
+  const body = extractFunctionBody('deletePersonLinkAction')
   assert.match(body, /existing\.person_id !== person_id/)
 })

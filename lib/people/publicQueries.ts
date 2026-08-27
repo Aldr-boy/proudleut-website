@@ -26,6 +26,12 @@ export async function getPersonBySlugFromSupabase(slug: string) {
           sort_order,
           instruments ( name, slug, sort_order )
         )
+      ),
+      person_links (
+        id,
+        label,
+        url,
+        sort_order
       )
     `)
     .eq('slug', slug)

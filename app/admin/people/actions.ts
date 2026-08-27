@@ -13,6 +13,7 @@ import {
   diffInstrumentAssignments,
   type CatalogInstrument,
 } from '@/lib/people/instrumentAssignment'
+import { isValidHttpsUrl, isValidLinkLabel, isDuplicateOfWebsite } from '@/lib/people/linkValidation'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -401,4 +402,160 @@ export async function deleteMembershipAction(formData: FormData): Promise<never>
   if (error) redirect(`/admin/people/${person_id}?membership_error=db_error`)
 
   redirect(`/admin/people/${person_id}?membership_deleted=1`)
+}
+
+// ─────────────────────────────────────────
+// createPersonLinkAction -- is_public wird IMMER hart auf false gesetzt
+// (identisches Prinzip wie createMembershipAction: "Neue Links muessen
+// serverseitig zwingend is_public=false starten. Nicht auf Hidden Field
+// oder Clientzustand verlassen."). Dieselbe URL wie people.website_url
+// wird abgelehnt (Admin-/Server-Regel, kein Security-Thema, siehe
+// lib/people/linkValidation.ts::isDuplicateOfWebsite).
+// ─────────────────────────────────────────
+
+export async function createPersonLinkAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const person_id = str(formData, 'person_id')
+  const label = str(formData, 'label')
+  const url = str(formData, 'url')
+  const sortOrderRaw = str(formData, 'sort_order')
+
+  if (!person_id) redirect('/admin/people')
+  if (!isValidLinkLabel(label)) redirect(`/admin/people/${person_id}?link_error=invalid_label`)
+  if (!isValidHttpsUrl(url)) redirect(`/admin/people/${person_id}?link_error=invalid_url`)
+
+  const sort_order = parseSortOrder(sortOrderRaw)
+  if (sort_order === null) redirect(`/admin/people/${person_id}?link_error=invalid_sort_order`)
+
+  const client = createAdminClient()
+
+  const { data: person } = await client
+    .from('people')
+    .select('id, website_url')
+    .eq('id', person_id)
+    .maybeSingle()
+  if (!person) redirect('/admin/people?link_error=invalid_person')
+
+  if (isDuplicateOfWebsite(url, person.website_url as string | null)) {
+    redirect(`/admin/people/${person_id}?link_error=duplicate_website`)
+  }
+
+  const { error } = await client.from('person_links').insert({
+    person_id,
+    label: label.trim(),
+    url,
+    sort_order,
+    is_public: false,
+  })
+
+  if (error) {
+    const code = error.code === '23505' ? 'link_duplicate' : 'db_error'
+    redirect(`/admin/people/${person_id}?link_error=${code}`)
+  }
+
+  redirect(`/admin/people/${person_id}?link_created=1`)
+}
+
+// ─────────────────────────────────────────
+// updatePersonLinkAction -- is_public ist hier -- anders als beim Anlegen
+// -- ein regulaeres, editierbares Feld (Auftrag: "Edit darf Sichtbarkeit
+// bewusst aendern.").
+// ─────────────────────────────────────────
+
+export async function updatePersonLinkAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const link_id = str(formData, 'link_id')
+  const person_id = str(formData, 'person_id')
+  const label = str(formData, 'label')
+  const url = str(formData, 'url')
+  const sortOrderRaw = str(formData, 'sort_order')
+  // formData.get() liefert bei Mehrfachwerten (hidden Fallback + Checkbox
+  // teilen sich den Namen "is_public") den ERSTEN Eintrag -- bei
+  // aktiviertem Haekchen submitted der Browser BEIDE Werte in DOM-
+  // Reihenfolge (hidden zuerst), .get() wuerde also faelschlich immer '0'
+  // liefern. getAll().includes('1') ist unabhaengig von der Feld-
+  // Reihenfolge korrekt: nur der Hidden-Fallback -> ['0'] -> false; mit
+  // aktiviertem Haekchen -> ['0','1'] -> true.
+  const is_public = formData.getAll('is_public').includes('1')
+
+  if (!person_id) redirect('/admin/people')
+  if (!link_id) redirect(`/admin/people/${person_id}`)
+  if (!isValidLinkLabel(label)) redirect(`/admin/people/${person_id}?link_error=invalid_label`)
+  if (!isValidHttpsUrl(url)) redirect(`/admin/people/${person_id}?link_error=invalid_url`)
+
+  const sort_order = parseSortOrder(sortOrderRaw)
+  if (sort_order === null) redirect(`/admin/people/${person_id}?link_error=invalid_sort_order`)
+
+  const client = createAdminClient()
+
+  // Ownership-Pruefung: Link laden und person_id aus DB gegen Form-Wert
+  // pruefen (identisches Prinzip wie updateMembershipAction).
+  const { data: existing } = await client
+    .from('person_links')
+    .select('person_id')
+    .eq('id', link_id)
+    .maybeSingle()
+  if (!existing || existing.person_id !== person_id) {
+    redirect(`/admin/people/${person_id}?link_error=invalid_link`)
+  }
+
+  const { data: person } = await client
+    .from('people')
+    .select('website_url')
+    .eq('id', person_id)
+    .maybeSingle()
+  if (!person) redirect('/admin/people?link_error=invalid_person')
+
+  if (isDuplicateOfWebsite(url, person.website_url as string | null)) {
+    redirect(`/admin/people/${person_id}?link_error=duplicate_website`)
+  }
+
+  const { error } = await client
+    .from('person_links')
+    .update({ label: label.trim(), url, sort_order, is_public })
+    .eq('id', link_id)
+
+  if (error) {
+    const code = error.code === '23505' ? 'link_duplicate' : 'db_error'
+    redirect(`/admin/people/${person_id}?link_error=${code}`)
+  }
+
+  redirect(`/admin/people/${person_id}?link_saved=1`)
+}
+
+// ─────────────────────────────────────────
+// deletePersonLinkAction
+// ─────────────────────────────────────────
+
+export async function deletePersonLinkAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const link_id = str(formData, 'link_id')
+  const person_id = str(formData, 'person_id')
+
+  if (!person_id) redirect('/admin/people')
+  if (!link_id) redirect(`/admin/people/${person_id}`)
+
+  const client = createAdminClient()
+
+  const { data: existing } = await client
+    .from('person_links')
+    .select('person_id')
+    .eq('id', link_id)
+    .maybeSingle()
+  if (!existing || existing.person_id !== person_id) {
+    redirect(`/admin/people/${person_id}?link_error=invalid_link`)
+  }
+
+  const { error } = await client
+    .from('person_links')
+    .delete()
+    .eq('id', link_id)
+    .eq('person_id', person_id)
+
+  if (error) redirect(`/admin/people/${person_id}?link_error=db_error`)
+
+  redirect(`/admin/people/${person_id}?link_deleted=1`)
 }

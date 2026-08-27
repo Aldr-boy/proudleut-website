@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizePersonMemberships, normalizePersonFromSupabase } from './normalizePerson.ts'
+import { normalizePersonMemberships, normalizePersonFromSupabase, normalizePersonLinks } from './normalizePerson.ts'
 
 test('normalizePersonFromSupabase: aktive Person wird vollstaendig normalisiert', () => {
   const row = {
@@ -12,6 +12,7 @@ test('normalizePersonFromSupabase: aktive Person wird vollstaendig normalisiert'
     website_url: 'https://example.invalid/',
     approved_at: '2026-01-01T00:00:00Z',
     band_memberships: [],
+    person_links: [],
   }
   const person = normalizePersonFromSupabase(row)
   assert.equal(person.id, 'p1')
@@ -21,6 +22,7 @@ test('normalizePersonFromSupabase: aktive Person wird vollstaendig normalisiert'
   assert.equal(person.imageUrl, undefined)
   assert.equal(person.websiteUrl, 'https://example.invalid/')
   assert.deepEqual(person.memberships, [])
+  assert.deepEqual(person.links, [])
 })
 
 test('normalizePersonMemberships: sichtbare Memberships (RLS liefert bereits gefiltert) werden korrekt uebernommen', () => {
@@ -80,4 +82,38 @@ test('normalizePersonMemberships: Instrumente stabil nach Join-sort_order sortie
     normalizePersonMemberships(raw)[0].instruments,
     [{ name: 'Bass', slug: 'bass' }, { name: 'Posaune', slug: 'posaune' }],
   )
+})
+
+// ── person_links (Paket 4C-B) ────────────────────────────────────────
+
+test('normalizePersonLinks: sichtbare Links (RLS liefert bereits gefiltert) werden korrekt uebernommen', () => {
+  const raw = [{ id: 'l1', label: 'Wikipedia', url: 'https://de.wikipedia.org/wiki/Test', sort_order: 0 }]
+  assert.deepEqual(normalizePersonLinks(raw), [{ id: 'l1', label: 'Wikipedia', url: 'https://de.wikipedia.org/wiki/Test' }])
+})
+
+test('normalizePersonLinks: leere/fehlende person_links ergibt leeres Array (Empty State), kein Crash', () => {
+  assert.deepEqual(normalizePersonLinks(null), [])
+  assert.deepEqual(normalizePersonLinks(undefined), [])
+  assert.deepEqual(normalizePersonLinks([]), [])
+})
+
+test('normalizePersonLinks: sortiert nach sort_order, danach Label (deutsche Locale) als Tie-Breaker', () => {
+  const raw = [
+    { id: 'l2', label: 'Offizielle Seite', url: 'https://example.org/', sort_order: 10 },
+    { id: 'l1', label: 'Wikipedia', url: 'https://de.wikipedia.org/wiki/Test', sort_order: 0 },
+  ]
+  assert.deepEqual(normalizePersonLinks(raw).map((l) => l.id), ['l1', 'l2'])
+})
+
+test('normalizePersonLinks: bei gleichem sort_order entscheidet das Label als Tie-Breaker', () => {
+  const raw = [
+    { id: 'l2', label: 'Zeta', url: 'https://example.org/zeta', sort_order: 0 },
+    { id: 'l1', label: 'Alpha', url: 'https://example.org/alpha', sort_order: 0 },
+  ]
+  assert.deepEqual(normalizePersonLinks(raw).map((l) => l.label), ['Alpha', 'Zeta'])
+})
+
+test('normalizePersonLinks: Zeile ohne id/label/url wird defensiv verworfen, kein Crash', () => {
+  const raw = [{ id: null, label: 'X', url: 'https://example.org/', sort_order: 0 }]
+  assert.deepEqual(normalizePersonLinks(raw), [])
 })
