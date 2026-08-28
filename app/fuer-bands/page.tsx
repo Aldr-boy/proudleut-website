@@ -297,6 +297,12 @@ export default function FuerBandsPage() {
                 <p className="text-xs text-pl-text-muted mt-0.5">
                   Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
                 </p>
+                <Link
+                  href="/musiker/dominik-palmer"
+                  className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
+                >
+                  Musikerprofil ansehen →
+                </Link>
               </div>
             </div>
           </div>
