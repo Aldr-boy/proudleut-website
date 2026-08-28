@@ -96,3 +96,12 @@ test('Archivieren-Button ist NICHT mehr an Bandzuordnungen oder aktive Unterkate
 test('archiveBlockedReasons existiert im gesamten Quelltext nicht mehr', () => {
   assert.ok(!source.includes('archiveBlockedReasons'), 'archiveBlockedReasons ist ein Ueberbleibsel der entfernten Archive-Blocker und darf nicht mehr vorkommen')
 })
+
+// Event-Type-zentrierte Bandverwaltung: die bestehende "X Zuordnungen"-
+// Anzeige ist der Einstieg in /admin/event-types/[slug]/bands (siehe
+// app/admin/event-types/[slug]/bands/page.tsx).
+test('"X Zuordnungen" ist ein Link zum event-type-zentrierten Band-Editor (/admin/event-types/[slug]/bands)', () => {
+  const linkBlockMatch = source.match(/<Link[\s\S]*?\{usageCount\} \{usageCount === 1 \? 'Zuordnung' : 'Zuordnungen'\}[\s\S]*?<\/Link>/)
+  assert.ok(linkBlockMatch, 'Link um die Zuordnungsanzahl nicht gefunden')
+  assert.match(linkBlockMatch[0], /href=\{`\/admin\/event-types\/\$\{type\.slug\}\/bands`\}/)
+})
