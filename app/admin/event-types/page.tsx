@@ -265,9 +265,12 @@ export default async function AdminEventTypesPage({ searchParams }: { searchPara
                           {parentName && (
                             <span className="text-xs text-gray-400">Unterkategorie von {parentName}</span>
                           )}
-                          <span className="text-xs text-gray-500">
+                          <Link
+                            href={`/admin/event-types/${type.slug}/bands`}
+                            className="text-xs text-violet-700 hover:text-violet-900 hover:underline transition-colors"
+                          >
                             {usageCount} {usageCount === 1 ? 'Zuordnung' : 'Zuordnungen'}
-                          </span>
+                          </Link>
                           {activeChildrenCount > 0 && (
                             <span className="text-xs text-gray-500">
                               {activeChildrenCount} aktive {activeChildrenCount === 1 ? 'Unterkategorie' : 'Unterkategorien'}
