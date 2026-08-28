@@ -288,8 +288,15 @@ export default function FuerBandsPage() {
                   „Mit Alex zu arbeiten ist angenehm — strukturiert, entspannt und zuverlässig.
                   Er behält den Überblick, reagiert schnell und bleibt menschlich."
                 </p>
-                <p className="mt-3 text-sm font-bold text-pl-text">Dominik Palmer</p>
-                <p className="text-xs text-pl-text-muted mt-0.5">Bassist &amp; Bandleader, More Candy</p>
+                <Link
+                  href="/musiker/dominik-palmer"
+                  className="mt-3 inline-block rounded-sm text-sm font-bold text-pl-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+                >
+                  Dominik Palmer
+                </Link>
+                <p className="text-xs text-pl-text-muted mt-0.5">
+                  Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
+                </p>
               </div>
             </div>
           </div>
