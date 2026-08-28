@@ -1,5 +1,12 @@
 import { faqGroups } from '@/lib/content/faqs';
 
+// Homepage zeigt nur die als showOnHomepage markierten Fragen -- Gruppen
+// ohne verbleibende sichtbare Fragen entfallen dadurch automatisch, ohne
+// dass Fragetexte hier hardcodiert werden muessten.
+const homepageFaqGroups = faqGroups
+  .map((group) => ({ ...group, items: group.items.filter((item) => item.showOnHomepage) }))
+  .filter((group) => group.items.length > 0);
+
 export default function FAQ() {
   return (
     <section className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6">
@@ -25,7 +32,7 @@ export default function FAQ() {
 
           {/* FAQ-Gruppen */}
           <div className="space-y-8">
-            {faqGroups.map((group) => (
+            {homepageFaqGroups.map((group) => (
               <div key={group.label}>
                 <p className="text-xs tracking-widest text-pl-text-muted font-medium mb-3">
                   {group.label}
