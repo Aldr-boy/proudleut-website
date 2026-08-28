@@ -11,6 +11,7 @@ import AuswahlSection from '@/components/homepage/AuswahlSection';
 import Explainer from '@/components/homepage/Explainer';
 import BandEinschaetzen from '@/components/homepage/BandEinschaetzen';
 import CuratorBlock from '@/components/homepage/CuratorBlock';
+import VeranstalterStatement from '@/components/homepage/VeranstalterStatement';
 import FAQ from '@/components/homepage/FAQ';
 import CTASection from '@/components/homepage/CTASection';
 
@@ -85,6 +86,7 @@ export default async function HomePage() {
       <Explainer />
       {einschaetzenBand && <BandEinschaetzen band={einschaetzenBand} />}
       <CuratorBlock />
+      <VeranstalterStatement />
       <FAQ />
       <CTASection />
     </>
