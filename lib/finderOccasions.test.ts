@@ -21,11 +21,12 @@ test('CATEGORIES[festzelt] bleibt die breite redaktionelle Themenwelt (SEO-Landi
   ])
 })
 
-test('FINDER_OCCASIONS: neun Anlaesse in der vorgegebenen Reihenfolge', () => {
+test('FINDER_OCCASIONS: zehn Anlaesse in der vorgegebenen Reihenfolge', () => {
   assert.deepEqual(
     FINDER_OCCASIONS.map((o) => o.slug),
     [
       'hochzeit',
+      'brautentfuehrung',
       'festzelt',
       'stadt-und-buergerfest',
       'firmenfeier',
@@ -36,6 +37,20 @@ test('FINDER_OCCASIONS: neun Anlaesse in der vorgegebenen Reihenfolge', () => {
       'festival',
     ]
   )
+})
+
+test('Brautentführung ist ein eigener Finder-Anlass direkt nach Hochzeit -- matcht ausschliesslich brautentfuehrung', () => {
+  assert.equal(FINDER_OCCASIONS[1].slug, 'brautentfuehrung', 'Brautentfuehrung muss direkt nach Hochzeit stehen')
+
+  const brautentfuehrung = getFinderOccasionBySlug('brautentfuehrung')
+  assert.ok(brautentfuehrung)
+  assert.equal(brautentfuehrung!.title, 'Brautentführung')
+  assert.equal(brautentfuehrung!.slug, 'brautentfuehrung')
+  assert.deepEqual(brautentfuehrung!.supabaseEventTypeSlugs, ['brautentfuehrung'])
+
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['brautentfuehrung'] }, brautentfuehrung!), true)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['hochzeit'] }, brautentfuehrung!), false)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['freie-trauung'] }, brautentfuehrung!), false)
 })
 
 test('Festzelt matcht ausschliesslich festzelt -- kein Cluster mehr', () => {

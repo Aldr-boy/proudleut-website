@@ -38,6 +38,18 @@ function fromCategory(slug: string, overrideSlugs?: string[]): FinderOccasion {
 
 export const FINDER_OCCASIONS: FinderOccasion[] = [
   fromCategory('hochzeit'),
+  // Eigener Finder-Anlass ohne CATEGORIES-Gegenpart (bewusst kein
+  // fromCategory()): Brautentfuehrung ist ein eigenstaendiger Anlass, kein
+  // Hochzeits-Untertyp. CATEGORIES['hochzeit'].supabaseEventTypeSlugs
+  // bleibt exakt ['hochzeit'] -- ein Match hier darf sich deshalb
+  // ausschliesslich auf den echten Event-Type-Slug "brautentfuehrung"
+  // stuetzen, nicht auf den Hochzeit-Oberbegriff oder weitere
+  // Hochzeitstypen.
+  {
+    title: 'Brautentführung',
+    slug: 'brautentfuehrung',
+    supabaseEventTypeSlugs: ['brautentfuehrung'],
+  },
   // Bewusste Finder-Abweichung: CATEGORIES['festzelt'] bleibt die breite
   // redaktionelle Themenwelt (SEO-Landingpage /veranstaltung/festzelt,
   // 8 Slugs inkl. Stadt-/Buergerfest, Bierfest, Brauereifest, Biergarten,
