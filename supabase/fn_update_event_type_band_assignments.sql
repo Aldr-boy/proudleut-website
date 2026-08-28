@@ -50,18 +50,37 @@
 --   public.band_event_types anzutasten oder den bestehenden
 --   band-zentrierten Schreibweg zu veraendern.
 --
--- SECURITY INVOKER statt DEFINER (bewusste Abweichung vom Mood-Vorbild):
---   update_mood_band_assignments braucht SECURITY DEFINER, weil
---   service_role dort keine direkten Table-Grants auf band_moods mehr
---   hat (Lockdown) und nur ueber die Funktion schreiben kann. Hier ist
---   das nicht der Fall: service_role hat bereits volle Grants auf
---   band_event_types direkt. Eine SECURITY DEFINER-Funktion wuerde daher
---   keinen zusaetzlichen Zugriff freischalten, sondern nur unnoetig vom
---   Prinzip der geringsten Rechte abweichen ("SECURITY DEFINER nur wenn
---   erforderlich" -- Auftrag). Diese Funktion laeuft deshalb mit den
---   Rechten des Aufrufers (SECURITY INVOKER, Postgres-Default) und bleibt
---   dennoch nur fuer service_role ausfuehrbar (siehe GRANT EXECUTE unten,
---   unabhaengig von DEFINER/INVOKER).
+-- SECURITY DEFINER (Korrektur einer urspruenglich zu optimistischen
+-- INVOKER-Annahme):
+--   Diese Funktion wurde zunaechst mit SECURITY INVOKER angelegt, weil
+--   service_role bereits volle DML-Grants direkt auf band_event_types
+--   haelt und daher fuer die eigentlichen DELETE/INSERT-Schritte keine
+--   zusaetzlichen Rechte braucht. Uebersehen wurde dabei: die
+--   Locking-Schritte VOR dem eigentlichen Schreibzugriff lesen
+--   public.event_types per FOR SHARE und public.bands per FOR UPDATE --
+--   und Postgres verlangt fuer SELECT ... FOR UPDATE/FOR SHARE zusaetzlich
+--   zum SELECT-Recht auch das UPDATE-Recht auf der betroffenen Tabelle.
+--   service_role haelt auf public.event_types bewusst nur SELECT/
+--   REFERENCES/TRIGGER/TRUNCATE, kein UPDATE/INSERT/DELETE (anders als
+--   auf band_event_types/bands) -- ein legitimer, bestehender Least-
+--   Privilege-Grenzwert, den diese Migration nicht aufweichen soll. Unter
+--   SECURITY INVOKER schlug der FOR-SHARE-Lock auf event_types deshalb in
+--   Production mit 42501 "permission denied for table event_types" fehl,
+--   sobald service_role real ueber PostgREST aufrief.
+--
+--   Statt service_role per GRANT UPDATE ON event_types (bzw. absehbar
+--   auch auf bands) direkte, dauerhafte Schreibrechte auf diesen Tabellen
+--   einzuraeumen -- was den bestehenden Least-Privilege-Grenzwert fuer
+--   event_types permanent verbreitern wuerde --, laeuft diese Funktion
+--   jetzt mit SECURITY DEFINER unter ihrem Owner (postgres, der ohnehin
+--   volle Rechte auf allen beteiligten Tabellen haelt). Das schaltet
+--   Zugriff ausschliesslich innerhalb dieser einen, eng validierten
+--   Funktion frei -- nicht generell fuer service_role ausserhalb davon.
+--   Fester search_path (siehe unten), vollstaendig schemaqualifizierte
+--   Objektverweise und die unveraendert auf service_role beschraenkte
+--   EXECUTE-ACL (siehe GRANT EXECUTE unten) halten diesen Zugriff eng
+--   auf genau diesen Schreibweg begrenzt -- identisches Sicherheitsprinzip
+--   wie bei fn_update_mood_band_assignments.sql.
 --
 -- Locking-Reihenfolge (identisches Prinzip wie
 -- fn_update_mood_band_assignments.sql):
@@ -98,18 +117,22 @@
 -- Teiloperationen dieses Aufrufs zurueck -- keine Teilcommits.
 --
 -- Sicherheit:
---   SET search_path = pg_catalog, pg_temp, alle Tabellen-/Funktions-
---   verweise vollstaendig schemaqualifiziert. REVOKE ALL FROM
+--   SECURITY DEFINER, SET search_path = pg_catalog, pg_temp fest verdrahtet
+--   (verhindert Search-Path-Hijacking des Function Owners), alle Tabellen-/
+--   Funktionsverweise vollstaendig schemaqualifiziert. REVOKE ALL FROM
 --   PUBLIC/anon/authenticated, GRANT EXECUTE nur an service_role --
---   unabhaengig von SECURITY DEFINER/INVOKER bleibt die Funktion damit
---   ausschliesslich vom Admin-Backend aufrufbar. Keine neuen Table-DML-
---   Grants auf band_event_types -- die Tabelle behaelt exakt die bereits
---   bestehenden Grants (siehe Repo-Recherche), diese Migration aendert
+--   die Funktion bleibt damit ausschliesslich vom Admin-Backend aufrufbar,
+--   unabhaengig davon, dass sie jetzt mit den Rechten des Owners (postgres)
+--   statt des Aufrufers laeuft. Keine neuen direkten Table-DML-Grants an
+--   service_role auf event_types/bands/band_event_types -- die Tabellen
+--   behalten exakt die bereits bestehenden Grants, diese Migration aendert
 --   daran nichts.
 --
--- WICHTIG: Diese Datei ist ein Migrationsentwurf. Sie wurde im Rahmen
--- dieses Auftrags NICHT gegen TEST und NICHT gegen Production
--- ausgefuehrt. Rollout erfolgt separat nach dem bestehenden 2A/2B-Muster.
+-- WICHTIG: Diese Datei korrigiert eine bereits gegen TEST und Production
+-- ausgerollte Vorgaengerversion (SECURITY INVOKER), die dort real mit
+-- 42501 "permission denied for table event_types" scheiterte (siehe
+-- Kommentar oben). Rollout dieser Korrektur erfolgt erneut ueber das
+-- bestehende TEST-vor-Production-Muster.
 -- ============================================================
 
 create or replace function public.update_event_type_band_assignments(
@@ -119,6 +142,7 @@ create or replace function public.update_event_type_band_assignments(
 )
 returns void
 language plpgsql
+security definer
 set search_path = pg_catalog, pg_temp
 as $$
 declare
