@@ -62,6 +62,16 @@ test('search_path ist fix auf pg_catalog, pg_temp gesetzt (kein "public" im sear
   assert.match(sqlSource, /set search_path = pg_catalog, pg_temp/)
 })
 
+// Korrektur: die Funktion lief urspruenglich mit SECURITY INVOKER und
+// scheiterte dadurch in Production real mit 42501 "permission denied for
+// table event_types" (FOR SHARE benoetigt zusaetzlich zu SELECT auch
+// UPDATE-Recht, das service_role dort bewusst nicht hat). Die Funktion
+// laeuft seitdem mit SECURITY DEFINER unter ihrem Owner.
+test('Funktion laeuft mit SECURITY DEFINER (nicht mehr INVOKER) -- vermeidet Table-Grant-Erweiterung auf event_types/bands', () => {
+  assert.match(sqlSource, /language plpgsql\s*\n\s*security definer\s*\n\s*set search_path = pg_catalog, pg_temp/)
+  assert.doesNotMatch(sqlSource, /\bsecurity invoker\b/)
+})
+
 test('Ausfuehrung ist auf service_role beschraenkt (REVOKE ALL von public/anon/authenticated, GRANT EXECUTE nur an service_role)', () => {
   assert.match(sqlSource, /revoke all on function public\.update_event_type_band_assignments\(uuid, uuid\[\], uuid\[\]\) from public;/)
   assert.match(sqlSource, /revoke all on function public\.update_event_type_band_assignments\(uuid, uuid\[\], uuid\[\]\) from anon;/)
