@@ -3,22 +3,16 @@ import assert from 'node:assert/strict'
 import { FINDER_OCCASIONS, bandMatchesFinderOccasion, getFinderOccasionBySlug } from './finderOccasions.ts'
 import { CATEGORIES } from './categories.ts'
 
-// Die Themenwelt-Semantik ist bewusst breiter als die Finder-Semantik.
-// Finder-Praezisierungen gehoeren in FINDER_OCCASIONS, nicht in
-// CATEGORIES.
-test('CATEGORIES[festzelt] bleibt die breite redaktionelle Themenwelt (SEO-Landingpage /veranstaltung/festzelt)', () => {
+// Fachliche Bereinigung "Festzelt-Definition": CATEGORIES['festzelt'] war
+// frueher bewusst breiter als die Finder-Semantik (Sammelkategorie fuer
+// Stadt-/Buergerfest, Bierfest, Brauereifest, Buergerfest, Biergarten,
+// Wirtshausmusi, Fruehschoppen). Das ist kein Soll-Zustand mehr: Festzelt
+// ist ein eigenstaendiger Anlass, /veranstaltung/festzelt und der Finder
+// teilen jetzt denselben, engen Scope.
+test('CATEGORIES[festzelt] hat denselben engen Scope wie FINDER_OCCASIONS[festzelt]', () => {
   const festzeltCategory = CATEGORIES.find((c) => c.slug === 'festzelt')
   assert.ok(festzeltCategory, 'CATEGORIES-Eintrag "festzelt" muss weiterhin existieren')
-  assert.deepEqual(festzeltCategory!.supabaseEventTypeSlugs, [
-    'festzelt',
-    'stadt-und-buergerfest',
-    'bierfest',
-    'brauereifest',
-    'buergerfest',
-    'biergarten',
-    'wirtshausmusi',
-    'fruehschoppen',
-  ])
+  assert.deepEqual(festzeltCategory!.supabaseEventTypeSlugs, ['festzelt'])
 })
 
 test('FINDER_OCCASIONS: zehn Anlaesse in der vorgegebenen Reihenfolge', () => {

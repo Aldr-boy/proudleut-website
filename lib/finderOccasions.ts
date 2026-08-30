@@ -8,16 +8,18 @@ import { CATEGORIES } from './categories.ts';
 // (Oberbegriff + Detailtypen, siehe docs/event-type-redaktionsentscheidungen.md).
 // Der Finder braucht dagegen eine praezisere, teils abweichende Auswahl --
 // z. B. "Stadt- & Buergerfest" als eigene Option ohne CATEGORIES-Gegenpart
-// und ohne eigene SEO-Landingpage, und "Festzelt" mit engeren Match-Slugs
-// als die gleichnamige CATEGORIES-Kategorie.
+// und ohne eigene SEO-Landingpage.
 //
 // Bestehende Anlaesse werden wo moeglich aus CATEGORIES abgeleitet
 // (fromCategory()), damit nicht acht Konfigurationen parallel gepflegt
 // werden muessen. fromCategory() erlaubt dafuer einen expliziten
-// overrideSlugs-Parameter: Titel/Slug kommen weiterhin aus CATEGORIES,
-// nur die tatsaechlichen Match-Slugs koennen bewusst abweichen -- aktuell
-// einzig genutzt fuer Festzelt. Kein impliziter Modus, keine Mutation von
-// CATEGORIES, keine Sonderbehandlung im BandExplorer.
+// overrideSlugs-Parameter, falls Finder- und CATEGORIES-Scope fuer einen
+// Anlass bewusst auseinanderlaufen sollen (Titel/Slug kommen dann
+// weiterhin aus CATEGORIES, nur die Match-Slugs weichen ab) -- aktuell
+// von keinem Eintrag genutzt, da Finder und CATEGORIES fuer alle
+// bestehenden Anlaesse denselben fachlichen Scope teilen. Kein impliziter
+// Modus, keine Mutation von CATEGORIES, keine Sonderbehandlung im
+// BandExplorer.
 export type FinderOccasion = {
   title: string;
   slug: string;
@@ -50,15 +52,10 @@ export const FINDER_OCCASIONS: FinderOccasion[] = [
     slug: 'brautentfuehrung',
     supabaseEventTypeSlugs: ['brautentfuehrung'],
   },
-  // Bewusste Finder-Abweichung: CATEGORIES['festzelt'] bleibt die breite
-  // redaktionelle Themenwelt (SEO-Landingpage /veranstaltung/festzelt,
-  // 8 Slugs inkl. Stadt-/Buergerfest, Bierfest, Brauereifest, Biergarten,
-  // Wirtshausmusi, Fruehschoppen). Der Finder soll hier praeziser sein
-  // und ausschliesslich Bands mit echtem Event-Type festzelt zeigen --
-  // deshalb expliziter overrideSlugs auf ['festzelt']. "Stadt- &
-  // Buergerfest" deckt einen Teil der uebrigen Themenwelt-Slugs als
-  // eigene Finder-Option ab (siehe unten).
-  fromCategory('festzelt', ['festzelt']),
+  fromCategory('festzelt'),
+  // "Stadt- & Buergerfest" ist eine eigene Finder-Option ohne
+  // CATEGORIES-Gegenpart und ohne eigene SEO-Landingpage (siehe
+  // Datei-Kommentar oben).
   {
     title: 'Stadt- & Bürgerfest',
     slug: 'stadt-und-buergerfest',
