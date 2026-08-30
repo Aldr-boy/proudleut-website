@@ -6,12 +6,23 @@ import type { Band } from '@/lib/types/band';
 import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasions';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
+import { buildFinderFilterUrl, buildOccasionNavUrl } from '@/lib/bands/finderRouting';
 import BandCard from '@/components/BandCard';
 import BandCardSkeleton from '@/components/BandCardSkeleton';
 
 type Props = {
   bands: Band[];
   regions: string[];
+  // Gesetzt, wenn BandExplorer innerhalb einer /veranstaltung/[slug]-Seite
+  // mit bereits feststehendem Seiten-Anlass eingebunden wird (Paket
+  // "Finder auf Veranstaltungsseiten wiederverwenden"). Der Slug ist dann
+  // Source of Truth fuer "Wofuer" -- siehe R4 im Auftrag: ein
+  // konkurrierender ?anlass=-Query-Param wird ignoriert, "Wofuer" wird zur
+  // Navigation (buildOccasionNavUrl) statt zum In-Place-Filter, und
+  // suche/region/bandtyp/mood-URLs bleiben auf der aktuellen
+  // Veranstaltungsroute statt auf /bands zu wechseln. Auf /bands (Prop
+  // nicht gesetzt) bleibt das gesamte bisherige Verhalten unveraendert.
+  lockedOccasion?: string;
 };
 
 // Modul-Cache: einmal laden, nie erneut fetchen
@@ -79,13 +90,15 @@ const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
 type OpenPanel = 'anlass' | 'region' | 'bandtyp' | 'mood' | null;
 
-export default function BandExplorer({ bands, regions }: Props) {
+export default function BandExplorer({ bands, regions, lockedOccasion }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const baseRoute = lockedOccasion ? `/veranstaltung/${lockedOccasion}` : '/bands';
 
   const [shuffled, setShuffled] = useState<Band[]>([]);
   const [query, setQuery] = useState<string>(() => searchParams.get('suche') ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+    if (lockedOccasion) return lockedOccasion;
     const p = searchParams.get('anlass');
     return p && FINDER_OCCASIONS.some((c) => c.slug === p) ? p : null;
   });
@@ -193,8 +206,15 @@ export default function BandExplorer({ bands, regions }: Props) {
     const p = new URLSearchParams(searchParamString);
 
     const nextQuery = p.get('suche') ?? '';
-    const nextCatRaw = p.get('anlass');
-    const nextCat = nextCatRaw && FINDER_OCCASIONS.some((c) => c.slug === nextCatRaw) ? nextCatRaw : null;
+    // R4: der Seiten-Anlass (lockedOccasion) ist Source of Truth -- ein
+    // konkurrierender ?anlass=-Param wird im Veranstaltungsseiten-Kontext
+    // beim URL->State-Sync ignoriert (auch bei Back/Forward).
+    const nextCat = lockedOccasion
+      ? lockedOccasion
+      : (() => {
+          const nextCatRaw = p.get('anlass');
+          return nextCatRaw && FINDER_OCCASIONS.some((c) => c.slug === nextCatRaw) ? nextCatRaw : null;
+        })();
     const nextRegRaw = p.get('region');
     const nextReg = nextRegRaw
       ? (REGION_ORDER.find((r) => r.toLowerCase() === nextRegRaw.toLowerCase()) ?? null)
@@ -219,7 +239,7 @@ export default function BandExplorer({ bands, regions }: Props) {
     setSelectedBandtyp((prev) => (prev !== nextBandtyp ? nextBandtyp : prev));
     setSelectedMood((prev) => (prev !== nextMood ? nextMood : prev));
     setRadiusKm(0);
-  }, [searchParamString]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParamString, lockedOccasion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Offenes Panel bei Klick außerhalb der Finder-Bar schließen
   useEffect(() => {
@@ -291,23 +311,30 @@ export default function BandExplorer({ bands, regions }: Props) {
         })
       : filtered;
 
+  // Im Veranstaltungsseiten-Kontext ist selectedCategory immer ==
+  // lockedOccasion -- Seitenkontext, kein vom Nutzer abwaehlbarer Filter
+  // (siehe Prop-Kommentar oben) -- zaehlt deshalb dort bewusst NICHT als
+  // Filter fuer hasFilter. Auf /bands unveraendert wie bisher.
   const hasFilter = Boolean(
-    query || selectedCategory || selectedRegion || radiusKm > 0 || selectedBandtyp || selectedMood
+    query || (!lockedOccasion && selectedCategory) || selectedRegion || radiusKm > 0 || selectedBandtyp || selectedMood
   );
 
   const resetFilters = useCallback(() => {
     setQuery('');
-    setSelectedCategory(null);
+    if (!lockedOccasion) setSelectedCategory(null);
     setSelectedRegion(null);
     setSelectedBandtyp(null);
     setSelectedMood(null);
     setRadiusKm(0);
-    router.push('/bands', { scroll: false });
-  }, [router]);
+    router.push(baseRoute, { scroll: false });
+  }, [router, lockedOccasion, baseRoute]);
 
-  // Keine Gesamtzahl im ungefilterten Zustand – nur bei aktivem Filter anzeigen
+  // Keine Gesamtzahl im ungefilterten Zustand -- ausser im
+  // Veranstaltungsseiten-Kontext: dort ist die anlassbezogene Zahl (z. B.
+  // "110 Livebands fuer Hochzeit gefunden") bereits im Initialzustand
+  // sinnvoll (siehe Auftrag Abschnitt "ERGEBNISZAHL").
   const countLabel = (() => {
-    if (shuffled.length === 0 || !hasFilter) return '';
+    if (shuffled.length === 0 || !(hasFilter || lockedOccasion)) return '';
     const count = displayed.length;
     const plural = count === 1 ? 'Liveband' : 'Livebands';
     if (count === 0) return 'Keine Livebands gefunden';
@@ -331,6 +358,25 @@ export default function BandExplorer({ bands, regions }: Props) {
   const activeCategoryTitle = selectedCategory
     ? (FINDER_OCCASIONS.find((c) => c.slug === selectedCategory)?.title ?? null)
     : null;
+
+  // URL fuer suche/region/bandtyp/mood-Aenderungen: auf /bands unveraendert
+  // ueber buildUrl (inkl. anlass), im Veranstaltungsseiten-Kontext bleibt
+  // die Route baseRoute (/veranstaltung/<slug>) ohne anlass-Param (R4).
+  function buildFilterUrl(overrides: {
+    region?: string | null;
+    suche?: string;
+    bandtyp?: string | null;
+    mood?: string | null;
+  }): string {
+    const region = overrides.region !== undefined ? overrides.region : selectedRegion;
+    const suche = overrides.suche !== undefined ? overrides.suche : query;
+    const bandtyp = overrides.bandtyp !== undefined ? overrides.bandtyp : selectedBandtyp;
+    const mood = overrides.mood !== undefined ? overrides.mood : selectedMood;
+    if (lockedOccasion) {
+      return buildFinderFilterUrl(baseRoute, { region, suche, bandtyp, mood });
+    }
+    return buildUrl({ anlass: selectedCategory, region, suche, bandtyp, mood });
+  }
 
   return (
     <div>
@@ -362,7 +408,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                 const next = e.target.value;
                 setQuery(next);
                 router.replace(
-                  buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: next, bandtyp: selectedBandtyp, mood: selectedMood }),
+                  buildFilterUrl({ suche: next }),
                   { scroll: false }
                 );
               }}
@@ -481,6 +527,27 @@ export default function BandExplorer({ bands, regions }: Props) {
             className="absolute left-0 right-0 top-full mt-2 z-20 rounded-xl border border-pl-soft bg-pl-elevated shadow-lg p-5"
           >
             <div className="flex flex-wrap gap-2">
+              {/* "Alle Anlaesse" -- nur im Veranstaltungsseiten-Kontext (R1):
+                  navigiert immer zu /bands, uebrige Filter bleiben erhalten.
+                  Auf /bands unveraendert nicht vorhanden -- dort bleibt das
+                  bisherige Anlass-Verhalten (Toggle-off der aktiven Pille). */}
+              {lockedOccasion && (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  onClick={() => {
+                    setOpenPanel(null);
+                    router.push(
+                      buildFinderFilterUrl('/bands', { region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+                      { scroll: false }
+                    );
+                  }}
+                  className="px-3.5 py-1.5 rounded-full text-sm border motion-safe:transition-colors border-pl-soft text-pl-text-muted hover:border-pl-accent hover:text-pl-text"
+                >
+                  Alle Anlässe
+                </button>
+              )}
               {FINDER_OCCASIONS.map((cat) => {
                 const active = selectedCategory === cat.slug;
                 return (
@@ -490,6 +557,19 @@ export default function BandExplorer({ bands, regions }: Props) {
                     role="option"
                     aria-selected={active}
                     onClick={() => {
+                      if (lockedOccasion) {
+                        // R1: "Wofuer" ist im Veranstaltungsseiten-Kontext
+                        // Navigation. Klick auf den bereits aktiven
+                        // (gesperrten) Anlass ist bewusst ein No-op -- kein
+                        // Abwaehlen moeglich (siehe Prop-Kommentar oben).
+                        setOpenPanel(null);
+                        if (active) return;
+                        router.push(
+                          buildOccasionNavUrl(cat.slug, { region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+                          { scroll: false }
+                        );
+                        return;
+                      }
                       const next = active ? null : cat.slug;
                       setSelectedCategory(next);
                       setOpenPanel(null);
@@ -533,7 +613,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                       setSelectedRegion(next);
                       setOpenPanel(null);
                       router.push(
-                        buildUrl({ anlass: selectedCategory, region: next, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+                        buildFilterUrl({ region: next }),
                         { scroll: false }
                       );
                     }}
@@ -572,7 +652,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                       setSelectedBandtyp(next);
                       setOpenPanel(null);
                       router.push(
-                        buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: query, bandtyp: next, mood: selectedMood }),
+                        buildFilterUrl({ bandtyp: next }),
                         { scroll: false }
                       );
                     }}
@@ -611,7 +691,7 @@ export default function BandExplorer({ bands, regions }: Props) {
                       setSelectedMood(next);
                       setOpenPanel(null);
                       router.push(
-                        buildUrl({ anlass: selectedCategory, region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: next }),
+                        buildFilterUrl({ mood: next }),
                         { scroll: false }
                       );
                     }}
@@ -663,13 +743,19 @@ export default function BandExplorer({ bands, regions }: Props) {
       )}
 
       {/*
-        Zähler + Reset: immer als Spacer gerendert (konsistenter Abstand zum Grid),
-        Inhalt nur wenn ein Filter aktiv ist – keine initiale Gesamtzahl.
+        Zähler + Reset: immer als Spacer gerendert (konsistenter Abstand zum Grid).
+        Zähler: nur wenn ein Filter aktiv ist ODER ein Seiten-Anlass gesetzt ist
+        (z. B. "110 Livebands für Hochzeit gefunden" bereits im Initialzustand
+        einer Veranstaltungsseite) -- keine initiale Gesamtzahl auf /bands.
+        Reset: nur bei einem echten zusätzlichen Filter -- der gesetzte
+        Seiten-Anlass allein ist Kontext, kein zurücksetzbarer Zusatzfilter
+        (siehe hasFilter oben).
       */}
       <div className="mb-8">
-        {shuffled.length > 0 && hasFilter && (
+        {shuffled.length > 0 && (hasFilter || lockedOccasion) && (
           <div className="flex items-center gap-4">
             <p className="text-pl-text-hint text-sm">{countLabel}</p>
+            {hasFilter && (
             <button
               type="button"
               onClick={resetFilters}
@@ -677,6 +763,7 @@ export default function BandExplorer({ bands, regions }: Props) {
             >
               Filter zurücksetzen
             </button>
+            )}
           </div>
         )}
       </div>

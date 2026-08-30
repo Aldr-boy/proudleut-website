@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { getAllBandsFromSupabase } from '@/lib/supabase/queries';
 import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import { CATEGORIES, bandMatchesCategorySB, getCategoryBySlug, getRelatedCategories } from '@/lib/categories';
-import BandGrid from '@/components/homepage/BandGrid';
+import BandExplorer from '@/components/bands/BandExplorer';
+import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { fetchEventCategoryHero } from '@/sanity/lib/fetchEventCategoryHero';
 import { urlFor } from '@/sanity/lib/image';
 
@@ -43,11 +45,13 @@ export default async function VeranstaltungPage({ params }: Props) {
 
   const bands = allBands.filter((b) => bandMatchesCategorySB(b, category));
   const related = getRelatedCategories(slug);
+  // Regionsoptionen fuer den eingebetteten BandExplorer, identisches
+  // Prinzip wie app/bands/page.tsx: nur Regionen mit tatsaechlichem
+  // Treffer innerhalb der bereits anlassgefilterten Grundmenge.
+  const regions = REGION_ORDER.filter((r) => bands.some((b) => getBandRegionBucket(b) === r));
 
   const h1 = category.h1Title ?? category.title;
   const subtitleText = heroData?.subtitle ?? category.description ?? null;
-  const bandCount = bands.length;
-  const bandLabel = bandCount === 1 ? 'passende Band' : 'passende Bands';
 
   return (
     <>
@@ -112,20 +116,9 @@ export default async function VeranstaltungPage({ params }: Props) {
               </Link>
             </div>
           ) : (
-            <>
-              <p className="text-pl-text-muted text-sm mb-6">
-                {bandCount} {bandLabel}
-              </p>
-              <BandGrid bands={bands} />
-              <div className="mt-10 text-center">
-                <Link
-                  href={`/bands?anlass=${category.slug}`}
-                  className="inline-flex items-center gap-1.5 text-sm text-pl-text-muted hover:text-pl-text motion-safe:transition-colors underline underline-offset-2"
-                >
-                  Im Finder nach Bands für {category.title} filtern
-                </Link>
-              </div>
-            </>
+            <Suspense fallback={null}>
+              <BandExplorer key={category.slug} bands={bands} regions={regions} lockedOccasion={category.slug} />
+            </Suspense>
           )}
         </div>
       </section>
