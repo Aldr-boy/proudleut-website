@@ -130,6 +130,10 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
   const scrollAfterLoad = useRef(false);
   const prevVisibleRef = useRef(0);
   const barRef = useRef<HTMLDivElement>(null);
+  const finderSentinelRef = useRef<HTMLDivElement>(null);
+  const explorerEndSentinelRef = useRef<HTMLDivElement>(null);
+  const [finderPassed, setFinderPassed] = useState(false);
+  const [explorerEndReached, setExplorerEndReached] = useState(false);
 
   // Bandtyp-Optionen aus den vorhandenen Banddaten ableiten (band.category = Hauptkategorie/Bandart)
   const bandtypOptions = (() => {
@@ -240,6 +244,52 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
     setSelectedMood((prev) => (prev !== nextMood ? nextMood : prev));
     setRadiusKm(0);
   }, [searchParamString, lockedOccasion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sticky-Zugang "Auswahl verfeinern" -- Sichtbarkeit ausschliesslich
+  // ueber zwei IntersectionObserver auf dedizierten 1px-Sentinels
+  // (kein Scroll-Listener), sinngemaess identisches Muster wie
+  // components/band/BandFloatingCta.tsx (PR #55):
+  //   finderPassed        -- der Finder-Sentinel (unmittelbar NACH der
+  //                           Finder-Bar) liegt bereits oberhalb der
+  //                           Observer-Grenze
+  //   explorerEndReached  -- der Explorer-Ende-Sentinel ist sichtbar
+  //                           oder bereits passiert
+  //   stickyVisible = finderPassed && !explorerEndReached
+  // Ein Sentinel mit isIntersecting === false kann entweder noch
+  // unterhalb des Viewports liegen oder bereits oberhalb passiert sein --
+  // beide Faelle werden hier bewusst unterschieden (ueber
+  // rootBounds.top bzw. den dokumentierten Fallback), statt naiv
+  // "!isIntersecting" gleichzusetzen.
+  useEffect(() => {
+    const finderSentinel = finderSentinelRef.current;
+    const endSentinel = explorerEndSentinelRef.current;
+    if (!finderSentinel || !endSentinel) return;
+
+    // rootMargin '-8px 0px 0px 0px' gilt ausschliesslich fuer den
+    // Finder-Observer -- bewusst kein pixelgenauer Nachbau der
+    // Navigationshoehe, nur eine kleine deterministische Toleranz
+    // (identisch zu BandFloatingCta).
+    const finderObserver = new IntersectionObserver(([entry]) => {
+      const boundary = entry.rootBounds ? entry.rootBounds.top : 8;
+      const isAboveBoundary = entry.boundingClientRect.top < boundary;
+      setFinderPassed(!entry.isIntersecting && isAboveBoundary);
+    }, { rootMargin: '-8px 0px 0px 0px' });
+
+    // End-Observer nutzt den Default-rootMargin.
+    const endObserver = new IntersectionObserver(([entry]) => {
+      const boundary = entry.rootBounds ? entry.rootBounds.top : 0;
+      const isAboveBoundary = entry.boundingClientRect.top < boundary;
+      setExplorerEndReached(entry.isIntersecting || isAboveBoundary);
+    });
+
+    finderObserver.observe(finderSentinel);
+    endObserver.observe(endSentinel);
+
+    return () => {
+      finderObserver.disconnect();
+      endObserver.disconnect();
+    };
+  }, []);
 
   // Offenes Panel bei Klick außerhalb der Finder-Bar schließen
   useEffect(() => {
@@ -359,6 +409,19 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
     ? (FINDER_OCCASIONS.find((c) => c.slug === selectedCategory)?.title ?? null)
     : null;
 
+  // Sticky-"Auswahl verfeinern": nicht sichtbar, solange BandExplorer noch
+  // keine geladene/shuffled Ergebnismenge hat (kein Mount-Flash), sonst
+  // ausschliesslich ueber die beiden Sentinel-Observer bestimmt.
+  const stickyVisible = shuffled.length > 0 && finderPassed && !explorerEndReached;
+  const stickyCount = displayed.length;
+  const stickyLabel = `Auswahl verfeinern · ${stickyCount} ${stickyCount === 1 ? 'Band' : 'Bands'}`;
+
+  function scrollToFinder() {
+    const prefersReducedMotion =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    barRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+
   // URL fuer suche/region/bandtyp/mood-Aenderungen: auf /bands unveraendert
   // ueber buildUrl (inkl. anlass), im Veranstaltungsseiten-Kontext bleibt
   // die Route baseRoute (/veranstaltung/<slug>) ohne anlass-Param (R4).
@@ -381,7 +444,11 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
   return (
     <div>
       {/* ── Finder-Bar ──────────────────────────────────────────── */}
-      <div ref={barRef} className="relative mb-6">
+      {/* scroll-mt: bestehende --pl-nav-height-CSS-Variable (Header.tsx,
+          live gemessen), damit der Finder nach scrollToFinder() nicht
+          unter der fixen Navigation verschwindet -- keine eigene
+          JS-Navigationshoehenberechnung. */}
+      <div ref={barRef} className="relative mb-6 scroll-mt-[var(--pl-nav-height)]">
 
         {/* Bar: fuenf Segmente in einer Zeile (Desktop ab lg/1024px) / gestapelt
             (Mobile bis Tablet, < 1024px). Row-Modus erst ab lg, da die vier
@@ -710,6 +777,11 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
         )}
       </div>
       {/* ── Ende Finder-Bar ─────────────────────────────────────── */}
+      {/* Sentinel fuer den Sticky-"Auswahl verfeinern"-Zugang: bewusst
+          unmittelbar NACH der Finder-Bar (nicht an deren Anfang), da die
+          Bar auf Mobile deutlich hoeher ist als auf Desktop -- der Sticky
+          soll erst erscheinen, wenn die komplette Bar passiert wurde. */}
+      <div ref={finderSentinelRef} aria-hidden="true" className="h-px" />
 
       {/* PLZ-Hinweis – nur wenn PLZ-Lookup abgeschlossen und keine Koordinaten gefunden */}
       {isPLZ && !plzLoading && !centerCoords && (
@@ -810,6 +882,43 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
           )}
         </>
       )}
+
+      {/* Sentinel fuer den Sticky-"Auswahl verfeinern"-Zugang: markiert das
+          Ende des Explorer-Ergebnisbereichs (nach Grid/Empty-State/
+          "Weitere Bands anzeigen"). Sobald dieser Sentinel sichtbar oder
+          bereits passiert ist, blendet sich der Sticky-Control wieder aus,
+          damit er nicht ueber nachfolgendem Seiteninhalt (z. B. "Weitere
+          Anlaesse entdecken" auf Veranstaltungsseiten) schwebt. */}
+      <div ref={explorerEndSentinelRef} aria-hidden="true" className="h-px" />
+
+      {/* Sticky-Zugang "Auswahl verfeinern" -- bewusst kompakt (kein
+          zweiter Finder, kein Filter-Drawer), veraendert beim Klick
+          ausschliesslich die Scrollposition (kein Filter-/URL-State,
+          siehe scrollToFinder). Sinngemaess identisches Sichtbarkeits-/
+          Animations-/A11y-Muster wie components/band/BandFloatingCta.tsx
+          (PR #55): opacity/translate nur unter motion-safe, pointer-events
+          und inert im ausgeblendeten Zustand, kein Tab-Fokus. */}
+      <div
+        {...(stickyVisible ? {} : { inert: true })}
+        aria-hidden={!stickyVisible}
+        className={`fixed inset-x-0 z-40 flex justify-center px-4 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] motion-safe:transition-all motion-safe:duration-300 ${
+          stickyVisible
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 translate-y-2 pointer-events-none'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={scrollToFinder}
+          tabIndex={stickyVisible ? 0 : -1}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold
+                     bg-pl-elevated text-pl-text shadow-lg border border-pl-soft hover:border-pl-accent
+                     motion-safe:transition-colors focus-visible:outline focus-visible:outline-2
+                     focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+        >
+          {stickyLabel}
+        </button>
+      </div>
     </div>
   );
 }
