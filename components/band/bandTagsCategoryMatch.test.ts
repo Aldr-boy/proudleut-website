@@ -13,8 +13,19 @@ test('findCategoryForEventTypeSlug: eindeutig gemappter Event-Type-Slug liefert 
   assert.equal(category?.slug, 'firmenfeier')
 })
 
-test('findCategoryForEventTypeSlug: weiterer eindeutig gemappter Fall (Festzelt-Gruppe)', () => {
-  assert.equal(findCategoryForEventTypeSlug('stadt-und-buergerfest')?.slug, 'festzelt')
+test('findCategoryForEventTypeSlug: festzelt ist eindeutig auf die Kategorie festzelt gemappt', () => {
+  assert.equal(findCategoryForEventTypeSlug('festzelt')?.slug, 'festzelt')
+})
+
+// Fachliche Bereinigung "Festzelt-Definition": Festzelt ist ein
+// eigenstaendiger Anlass, keine Sammelkategorie mehr fuer
+// Stadt-/Buergerfest, Bierfest, Brauereifest, Buergerfest, Biergarten,
+// Wirtshausmusi oder Fruehschoppen (siehe lib/categories.ts). Diese
+// Event-Types haben aktuell keine eigene Kategorie -- der zugehoerige
+// "Spielt bei"-Tag bleibt auf der Bandprofilseite bewusst unverlinkter
+// Text (kein Ersatz-/Alias-Link auf /veranstaltung/festzelt).
+test('findCategoryForEventTypeSlug: stadt-und-buergerfest hat nach der Festzelt-Bereinigung keine passende Kategorie mehr', () => {
+  assert.equal(findCategoryForEventTypeSlug('stadt-und-buergerfest'), undefined)
 })
 
 test('findCategoryForEventTypeSlug: Event-Type-Slug ohne Kategorie-Zuordnung liefert undefined', () => {

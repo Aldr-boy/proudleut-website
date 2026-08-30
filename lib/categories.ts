@@ -44,16 +44,14 @@ export const CATEGORIES: CategoryConfig[] = [
       'Zoigl',
       'Grottenfest',
     ],
-    supabaseEventTypeSlugs: [
-      'festzelt',
-      'stadt-und-buergerfest',
-      'bierfest',
-      'brauereifest',
-      'buergerfest',
-      'biergarten',
-      'wirtshausmusi',
-      'fruehschoppen',
-    ],
+    // Fachlich bereinigt: Festzelt ist ein eigenstaendiger Anlass, keine
+    // Sammelkategorie fuer Stadt-/Buergerfest, Bierfest, Brauereifest,
+    // Buergerfest, Biergarten, Wirtshausmusi oder Fruehschoppen. Diese
+    // Event-Types haben aktuell keine eigene /veranstaltung/<slug>-Seite
+    // und werden bewusst NICHT mehr auf /veranstaltung/festzelt verlinkt
+    // (siehe components/band/bandTagsCategoryMatch.ts -- ein Event-Type-
+    // Tag ohne eindeutig passende Kategorie bleibt unverlinkter Text).
+    supabaseEventTypeSlugs: ['festzelt'],
   },
   {
     title: 'Firmenfeier & Business Event',
