@@ -5,7 +5,9 @@ import { pickRotatingItems, getDayIndex } from '@/lib/homepage/bandRotation';
 import { bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import type { Band } from '@/lib/types/band';
 import { toAuswahlBandSummary, type AuswahlBandSummary } from '@/components/homepage/AuswahlBandCard';
-import HeroMosaic from '@/components/homepage/HeroMosaic';
+import { HeroWall } from '@/components/hero/HeroWall';
+import { HeroContent } from '@/components/homepage/HeroContent';
+import { fetchHeroWallPool } from '@/lib/heroWall/fetchHeroWallPool';
 import LogoStrip from '@/components/homepage/LogoStrip';
 import AuswahlSection from '@/components/homepage/AuswahlSection';
 import Explainer from '@/components/homepage/Explainer';
@@ -29,9 +31,10 @@ function bandMatchesTab(band: Band, supabaseEventTypeSlugs: string[]): boolean {
 }
 
 export default async function HomePage() {
-  const [bandsResult, einschaetzenResult] = await Promise.all([
+  const [bandsResult, einschaetzenResult, heroPool] = await Promise.all([
     getAllBandsFromSupabase(),
     getBandFromSupabase(EINSCHAETZEN_BAND_SLUG),
+    fetchHeroWallPool(),
   ]);
 
   if (bandsResult.error) {
@@ -80,7 +83,9 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroMosaic />
+      <HeroWall images={heroPool}>
+        <HeroContent />
+      </HeroWall>
       <LogoStrip />
       <AuswahlSection tabs={EVENT_TYPE_TABS} bandsByState={bandsByState} />
       <Explainer />

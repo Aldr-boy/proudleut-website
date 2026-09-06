@@ -11,6 +11,7 @@ import {
   type HeroWallSelectionItem,
 } from '@/lib/heroWall/heroWallSelectionState'
 import { findIdenticalHeroWallColumns } from '@/lib/heroWall/simulateHeroWallSlots'
+import { HeroWall, type HeroWallImage } from '@/components/hero/HeroWall'
 import type { HeroImageAsset } from './page'
 
 const FOCUS_LABEL: Record<HeroFocus, string> = {
@@ -49,6 +50,21 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
   const imageById = useMemo(() => new Map(images.map((img) => [img.id, img])), [images])
   const selectedIds = useMemo(() => new Set(selection.map((s) => s.id)), [selection])
   const hasStagedChanges = !heroWallSelectionsAreEqual(originalSelection, selection)
+
+  // Live-Vorschau (Paket 2, SCHRITT 2B): reiner Mapping-Schritt vom
+  // bereits vorhandenen, sortierten lokalen Auswahl-State auf die
+  // Prop-Form von HeroWall -- keine zweite Slot-/Grid-Implementierung,
+  // keine eigene Layoutlogik. Jede Aenderung an `selection` (Auswahl,
+  // Reorder, Fokus) spiegelt sich hierueber unmittelbar in der Vorschau,
+  // schon vor einem Save.
+  const previewImages: HeroWallImage[] = useMemo(
+    () =>
+      selection.flatMap((s) => {
+        const img = imageById.get(s.id)
+        return img ? [{ id: img.id, url: img.url, heroFocus: s.heroFocus }] : []
+      }),
+    [selection, imageById]
+  )
 
   useEffect(() => {
     if (!hasStagedChanges) return
@@ -147,7 +163,10 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Linke Spalte -- Bildauswahl */}
+        {/* Linke Spalte -- Bildauswahl. Auf Desktop darf diese Spalte durch
+            die gesamte Bildbibliothek (alle Bands) scrollen; die rechte
+            Spalte bleibt daneben als Curation-Workspace sichtbar (siehe
+            unten). */}
         <div>
           <h2 className="text-base font-semibold text-gray-900 mb-1">Alle Bilder</h2>
           <p className="text-xs text-gray-400 mb-4">Klick auf ein Bild nimmt es in die Auswahl auf oder entfernt es.</p>
@@ -200,60 +219,115 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
           </div>
         </div>
 
-        {/* Rechte Spalte -- ausgewaehlter Hero-Pool, sortierbar */}
+        {/* Rechte Spalte -- Curation-Workspace: Live-Vorschau + Reihenfolge
+            als EINE zusammenhaengende sticky Einheit (nicht zwei
+            unabhaengige sticky Elemente). Das aeussere Grid-Item bekommt
+            bewusst KEINE eigene Hoehenbegrenzung: CSS Grid streckt es per
+            Default auf die Hoehe der linken Spalte (die durch alle Bilder
+            scrollt) -- das gibt dem inneren sticky-Workspace genug Raum,
+            um waehrend der gesamten Scrolldistanz der Bildbibliothek
+            angeheftet zu bleiben (gleiches Prinzip wie zuvor: ein sticky
+            Element braucht einen ausreichend hohen Block-Vorfahren).
+            Sticky/Hoehenbegrenzung nur ab lg (Desktop) -- auf kleinen
+            Screens faellt das Grid ohnehin auf eine Spalte zurueck und
+            Vorschau/Pool sollen dort normal untereinander erscheinen. */}
         <div>
-          <h2 className="text-base font-semibold text-gray-900 mb-1">Ausgewählter Hero-Pool</h2>
-          <p className="text-xs text-gray-400 mb-4">
-            Reihenfolge bestimmt die Slot-Belegung der Hero-Bildwand (Position 0 zuerst).
-          </p>
+          <div className="flex flex-col gap-4 lg:sticky lg:top-0 lg:max-h-[100svh] lg:overflow-hidden">
+            {/* Live-Vorschau -- dieselbe Komponente wie auf der Homepage
+                (components/hero/HeroWall.tsx), gespeist aus dem aktuellen
+                lokalen Auswahl-State. Zeigt unmittelbar den Stand vor dem
+                Speichern; keine zusaetzlichen DB-Zugriffe.
 
-          {belowMinimum && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
-              Weniger als 10 Bilder ausgewählt ({selection.length}). Für eine überzeugende Bildwand werden
-              in der Regel 15–25 Bilder empfohlen.
-            </div>
-          )}
-
-          {identicalColumnPairs.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
-              <p className="font-medium">
-                {identicalColumnPairs.length === 1 ? 'Zwei Spalten wären identisch:' : 'Mehrere Spalten wären identisch:'}
+                WICHTIG: HeroWall wird VOLLSTAENDIG und UNVERAENDERT
+                gerendert (keine geclippte/vertikal abgeschnittene
+                Teilansicht) und nur rein visuell per CSS-Transform auf
+                ca. 50% skaliert. Der innere Canvas ist doppelt so breit
+                (w-[200%]) wie der sichtbare Bereich; scale-50 verkleinert
+                ihn wieder auf 100% sichtbare Breite. Die Aussenbox bekommt
+                exakt die Hoehe des skalierten Ergebnisses (h-[50svh] =
+                50% von HeroWalls eigener min-h-[100svh]) -- dadurch bleibt
+                kein unskalierter Leerraum stehen, und nichts wird
+                abgeschnitten, weil Aussenbox-Hoehe und skalierte
+                HeroWall-Hoehe exakt uebereinstimmen. */}
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Live-Vorschau</h2>
+              <p className="text-xs text-gray-400 mb-2">
+                Zeigt den aktuellen Bearbeitungsstand in Echtzeit, auch vor dem Speichern -- dieselbe
+                Bildwand-Komponente wie auf der Homepage, komplett und verkleinert.
               </p>
-              <ul className="mt-1 list-disc list-inside">
-                {identicalColumnPairs.map((p) => (
-                  <li key={`${p.columnIndexA}-${p.columnIndexB}`}>
-                    Spalte {p.columnIndexA + 1} und Spalte {p.columnIndexB + 1} zeigen dieselbe Bildfolge.
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-1">Empfehlung: ein Bild hinzufügen oder entfernen.</p>
-            </div>
-          )}
 
-          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
-            {selection.length === 0 ? (
-              <p className="text-center text-gray-500 text-sm py-10">Noch keine Bilder ausgewählt.</p>
-            ) : (
-              selection.map((item, index) => {
-                const img = imageById.get(item.id)
-                if (!img) return null
-                return (
-                  <SelectedRow
-                    key={item.id}
-                    image={img}
-                    position={index}
-                    heroFocus={item.heroFocus}
-                    isMobilePool={isInMobilePool(index)}
-                    isFirst={index === 0}
-                    isLast={index === selection.length - 1}
-                    onMoveUp={() => moveSelection(item.id, 'up')}
-                    onMoveDown={() => moveSelection(item.id, 'down')}
-                    onFocusChange={(focus) => setFocus(item.id, focus)}
-                    onRemove={() => removeFromSelection(item.id)}
-                  />
-                )
-              })
-            )}
+              {selection.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
+                  Noch keine Bilder ausgewählt. Die Vorschau erscheint, sobald mindestens ein Bild ausgewählt ist.
+                </div>
+              ) : (
+                <div className="relative h-[50svh] w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                  <div className="w-[200%] origin-top-left scale-50">
+                    <HeroWall images={previewImages} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Ausgewaehlter Hero-Pool -- Teil derselben sticky Einheit wie
+                die Vorschau; nur diese Liste scrollt bei Bedarf intern
+                (min-h-0 + flex-1 + overflow-y-auto), damit der gesamte
+                Workspace innerhalb max-h-[100svh] bleibt. */}
+            <div className="flex min-h-0 flex-1 flex-col">
+              <h2 className="text-base font-semibold text-gray-900 mb-1 shrink-0">Ausgewählter Hero-Pool</h2>
+              <p className="text-xs text-gray-400 mb-4 shrink-0">
+                Reihenfolge bestimmt die Slot-Belegung der Hero-Bildwand (Position 0 zuerst).
+              </p>
+
+              {belowMinimum && (
+                <div className="shrink-0 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
+                  Weniger als 10 Bilder ausgewählt ({selection.length}). Für eine überzeugende Bildwand werden
+                  in der Regel 15–25 Bilder empfohlen.
+                </div>
+              )}
+
+              {identicalColumnPairs.length > 0 && (
+                <div className="shrink-0 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
+                  <p className="font-medium">
+                    {identicalColumnPairs.length === 1 ? 'Zwei Spalten wären identisch:' : 'Mehrere Spalten wären identisch:'}
+                  </p>
+                  <ul className="mt-1 list-disc list-inside">
+                    {identicalColumnPairs.map((p) => (
+                      <li key={`${p.columnIndexA}-${p.columnIndexB}`}>
+                        Spalte {p.columnIndexA + 1} und Spalte {p.columnIndexB + 1} zeigen dieselbe Bildfolge.
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1">Empfehlung: ein Bild hinzufügen oder entfernen.</p>
+                </div>
+              )}
+
+              <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
+                {selection.length === 0 ? (
+                  <p className="text-center text-gray-500 text-sm py-10">Noch keine Bilder ausgewählt.</p>
+                ) : (
+                  selection.map((item, index) => {
+                    const img = imageById.get(item.id)
+                    if (!img) return null
+                    return (
+                      <SelectedRow
+                        key={item.id}
+                        image={img}
+                        position={index}
+                        heroFocus={item.heroFocus}
+                        isMobilePool={isInMobilePool(index)}
+                        isFirst={index === 0}
+                        isLast={index === selection.length - 1}
+                        onMoveUp={() => moveSelection(item.id, 'up')}
+                        onMoveDown={() => moveSelection(item.id, 'down')}
+                        onFocusChange={(focus) => setFocus(item.id, focus)}
+                        onRemove={() => removeFromSelection(item.id)}
+                      />
+                    )
+                  })
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
