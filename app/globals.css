@@ -176,3 +176,40 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .pl-hero-float { animation: none !important; }
 }
+
+/* ── Hero-Bildwand: Paternoster-Bewegung ──
+   Reale Vermessung der Webflow-Referenz (proudleut.com, siehe
+   docs/spezifikation-hero-bildwand.md, Nachtrag "Paternoster-Animation"):
+   translate3d(0, 0%, 0) <-> translate3d(0, -50%, 0), 50s, linear,
+   infinite, harter Reset (kein Seamless-Loop). Wirkt ausschliesslich auf
+   die Spalte (header79_image-column-Aequivalent in HeroWall.tsx) --
+   niemals auf Grid, Bilder, Listen, Content oder Overlay. Bewusst
+   transform statt margin (anders als .pl-hero-float oben), weil die
+   Spalte bereits eine eigene statische margin-top-Positionierung traegt,
+   die von dieser Animation unberuehrt bleiben muss. */
+@keyframes pl-paternoster-up {
+  from { transform: translate3d(0, 0%, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+@keyframes pl-paternoster-down {
+  from { transform: translate3d(0, -50%, 0); }
+  to { transform: translate3d(0, 0%, 0); }
+}
+.pl-paternoster-up {
+  animation: pl-paternoster-up 50s linear infinite;
+  will-change: transform;
+}
+.pl-paternoster-down {
+  animation: pl-paternoster-down 50s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Auch DOWN-Spalten duerfen bei reduced-motion nicht dauerhaft bei
+     -50% stehen bleiben -- transform:none stellt fuer beide Richtungen
+     einheitlich den unanimierten 2A-Ausgangszustand wieder her. */
+  .pl-paternoster-up,
+  .pl-paternoster-down {
+    animation: none !important;
+    transform: none !important;
+  }
+}

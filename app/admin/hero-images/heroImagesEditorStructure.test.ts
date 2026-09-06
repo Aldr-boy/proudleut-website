@@ -142,6 +142,92 @@ test('keine Live-Vorschau der echten Hero-Bildwand implementiert', () => {
   }
 })
 
+// ── Live-Vorschau (Paket 2, SCHRITT 2B) ────────────────────────────────
+// Der Editor verwendet fuer die Vorschau ausschliesslich die bestehende,
+// gemeinsame Hero-Wand-Komponente -- keine zweite Grid-/Slot-/Offset-
+// Implementierung, keine eigene Layoutlogik im Admin-Bereich.
+
+test('Live-Vorschau importiert die echte HeroWall-Komponente aus components/hero, keine eigene Kopie', () => {
+  assert.match(editorSource, /import \{ HeroWall, type HeroWallImage \} from '@\/components\/hero\/HeroWall'/)
+  assert.match(editorSource, /<HeroWall images=\{previewImages\} \/>/)
+})
+
+test('previewImages ist ein reiner Mapping-Schritt aus dem bestehenden Auswahl-State, keine zweite Slot-Simulation im Editor', () => {
+  const start = editorSource.indexOf('const previewImages')
+  assert.ok(start >= 0, 'previewImages nicht gefunden')
+  const body = editorSource.slice(start, start + 500)
+  assert.match(body, /selection\.flatMap/)
+  assert.match(body, /imageById\.get\(s\.id\)/)
+  // Keine eigene Grid-/Spalten-/Offset-Berechnung im Editor: die
+  // charakteristischen Bausteine der Bildwand-Geometrie duerfen nur in
+  // HeroWall.tsx bzw. simulateHeroWallSlots.ts existieren.
+  for (const forbidden of ['buildHeroWallSlots', 'splitIntoColumns', 'grid-cols-5', 'COLUMN_META']) {
+    assert.doesNotMatch(editorSource, new RegExp(forbidden), `Editor darf "${forbidden}" nicht selbst implementieren`)
+  }
+})
+
+test('0 ausgewaehlte Bilder: Hinweistext statt HeroWall, keine bedingungslose Rendering', () => {
+  assert.match(editorSource, /selection\.length === 0 \? \(/)
+  const start = editorSource.indexOf('selection.length === 0 ? (')
+  const body = editorSource.slice(start, start + 400)
+  assert.doesNotMatch(body, /<HeroWall/, 'HeroWall darf im 0-Bilder-Zustand nicht im truthy-Zweig der 0-Pruefung stehen')
+})
+
+test('Live-Vorschau-Wrapper aendert nur aeussere Admin-Chrome (Rahmen/Clipping/Skalierung), keine viewportabhaengige Breitensimulation', () => {
+  const start = editorSource.indexOf('Rechte Spalte -- Curation-Workspace')
+  assert.ok(start >= 0, 'Rechte-Spalte-Block nicht gefunden')
+  const body = editorSource.slice(start, start + 2600)
+  assert.doesNotMatch(body, /window\.innerWidth|matchMedia|useMediaQuery|ResizeObserver/, 'keine JS-Breitenermittlung fuer eine simulierte Vorschaugroesse erlaubt')
+  assert.doesNotMatch(body, /@container|container-type/, 'keine Container-Queries erlaubt')
+})
+
+// ── UX-Korrektur V2 (Paket 2, SCHRITT 2B Folgeauftrag): rechte Spalte
+// ist ein gemeinsamer sticky Curation-Workspace (vollstaendige, visuell
+// skalierte HeroWall + separat scrollbare Reihenfolge), linke Spalte
+// scrollt unabhaengig durch die gesamte Bildbibliothek. ─────────────────
+
+test('Curation-Workspace liegt in der RECHTEN Spalte (nach "Alle Bilder"), nicht mehr oberhalb beider Spalten', () => {
+  const allBilderIdx = editorSource.indexOf('>Alle Bilder<')
+  const workspaceIdx = editorSource.indexOf('Rechte Spalte -- Curation-Workspace')
+  const previewIdx = editorSource.indexOf('Live-Vorschau -- dieselbe Komponente')
+  assert.ok(allBilderIdx >= 0 && workspaceIdx >= 0 && previewIdx >= 0, 'einer der Markup-Marker fehlt')
+  assert.ok(allBilderIdx < workspaceIdx, '"Alle Bilder" muss vor dem Curation-Workspace stehen (linke vor rechter Spalte)')
+  assert.ok(workspaceIdx < previewIdx, 'Live-Vorschau muss innerhalb des Curation-Workspace-Blocks stehen')
+})
+
+test('HeroWall wird VOLLSTAENDIG gerendert und nur per CSS-Transform skaliert -- kein Clipping/kein Abschneiden (keine feste Innenhoehe wie h-80)', () => {
+  const start = editorSource.indexOf('Live-Vorschau -- dieselbe Komponente')
+  const body = editorSource.slice(start, start + 2000)
+  assert.match(body, /w-\[200%\]/, 'innerer Canvas muss doppelt so breit sein wie die sichtbare Breite')
+  assert.match(body, /scale-50/, 'HeroWall muss per scale(0.5) verkleinert werden, nicht abgeschnitten')
+  assert.match(body, /origin-top-left/, 'Skalierung muss von oben links ausgehen, sonst verschiebt sich das Ergebnis')
+  assert.match(body, /h-\[50svh\]/, 'Aussenbox muss exakt der skalierten HeroWall-Hoehe entsprechen (50% von HeroWalls eigener 100svh)')
+  assert.doesNotMatch(body, /\bh-80\b/, 'keine feste, geclippte Innenhoehe mehr -- das war genau das Problem der vorherigen Fassung')
+  assert.match(body, /<HeroWall images=\{previewImages\} \/>/)
+})
+
+test('genau EIN gemeinsamer sticky Workspace (Vorschau + Reihenfolge zusammen), nicht zwei unabhaengige sticky Elemente', () => {
+  // Gezielt nach dem tatsaechlichen Klassen-Einsatz suchen (lg:sticky),
+  // nicht nach dem blossen Wort "sticky" -- das kommt legitim mehrfach in
+  // erklaerenden Kommentaren vor.
+  const stickyClassMatches = editorSource.match(/\blg:sticky\b/g) ?? []
+  assert.equal(stickyClassMatches.length, 1, `erwartet genau 1 Vorkommen der Klasse "lg:sticky", gefunden: ${stickyClassMatches.length}`)
+  assert.match(editorSource, /lg:sticky lg:top-0 lg:max-h-\[100svh\] lg:overflow-hidden/, 'sticky/Hoehenbegrenzung nur ab lg (Desktop), nicht erzwungen auf kleinen Screens')
+
+  const workspaceStart = editorSource.indexOf('lg:sticky lg:top-0')
+  const previewIdx = editorSource.indexOf('Live-Vorschau -- dieselbe Komponente')
+  const poolHeadingIdx = editorSource.indexOf('>Ausgewählter Hero-Pool<')
+  assert.ok(workspaceStart >= 0 && previewIdx > workspaceStart, 'Live-Vorschau muss innerhalb der sticky Workspace-Box liegen')
+  assert.ok(poolHeadingIdx > previewIdx, '"Ausgewählter Hero-Pool" muss nach der Live-Vorschau, innerhalb derselben sticky Einheit liegen')
+})
+
+test('Reihenfolgeliste ist innerhalb des Workspace separat scrollbar (nicht der ganze Workspace)', () => {
+  const poolListStart = editorSource.indexOf('min-h-0 flex-1 overflow-y-auto')
+  assert.ok(poolListStart >= 0, 'separat scrollbare Reihenfolgeliste nicht gefunden')
+  const before = editorSource.slice(0, poolListStart)
+  assert.ok(before.includes('>Ausgewählter Hero-Pool<'), 'scrollbare Liste muss nach der "Ausgewählter Hero-Pool"-Ueberschrift stehen')
+})
+
 // ── actions.ts: reiner RPC-Schreibpfad ─────────────────────────────────
 
 test('actions.ts schreibt hero_wall/hero_wall_position/hero_focus ausschliesslich ueber die RPC, nie per direktem Tabellen-Update', () => {

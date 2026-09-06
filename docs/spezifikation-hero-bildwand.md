@@ -78,7 +78,11 @@ section_header79 2                      position: relative
 
 **Kachelanzahl:** 5 × 2 × 4 = **40**. Im Webflow-Style-Panel bestätigt.
 
-**Entscheidung zu `header79_image-list`:** Wird nicht nachgebaut. Die Ebene ist Webflow-Struktur; bei Grid-Span 1/1 ist sie funktional wirkungslos. Kein Rechercheauftrag, keine offene Frage.
+**Entscheidung zu `header79_image-list` (KORRIGIERT, siehe Abschnitt 12):** Die ursprüngliche Annahme unten war falsch und wurde durch reale Vermessung der Live-Seite widerlegt.
+
+~~Wird nicht nachgebaut. Die Ebene ist Webflow-Struktur; bei Grid-Span 1/1 ist sie funktional wirkungslos. Kein Rechercheauftrag, keine offene Frage.~~
+
+Real gemessen: Die beiden `header79_image-list` pro Spalte tragen **unterschiedliche Bildinhalte** (List A = erste 4 Slots der Spalte, List B = zweite 4 Slots) und sind **Träger der Paternoster-Animation** — siehe Abschnitt 12.
 
 ---
 
@@ -304,6 +308,39 @@ Das Risiko beim Auslassen ist gering und am fertigen Ergebnis beurteilbar.
 3. **Paket 2:** Frontend-Hero. Kann zwischenzeitlich auf den bestehenden 12 Bildern laufen, es wird nur die Datenquelle getauscht.
 
 Ein Design-Prototyp ist nicht nötig. Die Geometrie ist vollständig bestimmt, es handelt sich um ein Implementierungspaket.
+
+---
+
+## 12. Nachtrag: Paternoster-Animation
+
+**Status:** Nachträglich ergänzt nach realer Vermessung von `www.proudleut.com` (Chrome DevTools/CDP, Live-Seite). Korrigiert die in Abschnitt 2 getroffene Fehlannahme, `header79_image-list` sei funktional wirkungslos. Diese Ergänzung ist Teil des eingefrorenen Standes, nicht optional wie Abschnitt 10.
+
+### Struktur (bestätigt korrekt, keine Änderung nötig)
+
+- 40 Slots bleiben unverändert: 5 Spalten × 8 Kacheln.
+- Jede 8-Slot-Spalte wird strukturell in zwei gleich große Hälften geteilt: **List A = Slots 0–3 der Spalte, List B = Slots 4–7 derselben Spalte** (spaltenlokale Indizes, nicht global).
+- List A und List B sind **keine Klone** — sie zeigen unterschiedliche Slotbereiche desselben Spalten-Inhalts. Auf der Live-Referenz sind es dadurch überwiegend unterschiedliche Bilder.
+- Die globale Slot-Belegung bleibt exakt wie in Abschnitt 6 beschrieben: `slot[s] = pool[s mod N]`, serverseitig, deterministisch. Keine Änderung an `simulateHeroWallSlots` oder der Admin-Kollisionsprüfung.
+
+### Animation
+
+- Wirkt **ausschließlich auf die Spalte** (`header79_image-column`-Äquivalent) — niemals auf Grid, einzelne Bilder, List A/B, Content oder Overlay.
+- Richtung alternierend: Spalte 1 ↑, 2 ↓, 3 ↑, 4 ↓, 5 ↑.
+- UP: `translate3d(0, 0%, 0)` → `translate3d(0, -50%, 0)`.
+- DOWN: `translate3d(0, -50%, 0)` → `translate3d(0, 0%, 0)`.
+- Duration exakt **50s**, Easing **linear**, Iteration **infinite**.
+- Transformweg exakt **50% der eigenen Spaltenhöhe** (List A + Gap + List B) — bei zwei gleich hohen Listen fällt das automatisch korrekt aus, keine gesonderte Pixel-/Prozentrechnung nötig.
+- Nach jedem Zyklus ein **harter, nicht animierter Reset** auf den jeweiligen Anfangswert (0% bzw. -50%). Kein Seamless-Loop — auf der Referenz durch unterschiedliche Inhalte von List A/B auch inhaltlich sichtbar.
+- Die statischen Margin-Offsets aus Abschnitt 3 (−20% / −50% / 0% / −30% / −20%) bleiben **unverändert und separat** — sie sind reine initiale Geometrie, keine Animationsphase. Beide Layer (Margin + animierter Transform) wirken unabhängig auf derselben Spalte.
+- Gilt identisch auf allen Breakpoints (Desktop/Tablet/Mobile) — keine breakpointspezifische Abweichung in Richtung oder Geschwindigkeit.
+
+### Abweichung von der Referenz (bewusst, für die Next.js-Umsetzung verbindlich)
+
+`prefers-reduced-motion: reduce` wird von der Webflow-Referenz **nicht** berücksichtigt. Die Next.js-Umsetzung **muss** die kontinuierliche Bewegung bei aktivem reduced-motion vollständig deaktivieren (`animation: none; transform: none;` für beide Richtungen einheitlich — auch DOWN-Spalten dürfen dabei nicht dauerhaft bei -50% stehen bleiben, sondern zeigen denselben unanimierten Ausgangszustand wie UP-Spalten).
+
+### Ladeverhalten (real verifiziert, Next.js-Implementierung)
+
+Natives `loading="lazy"` reagiert nicht zuverlässig auf die kontinuierliche Transform-Animation: Die jeweils letzte Kachel (List B, Slot 4) einer per Paternoster nach oben laufenden Spalte blieb in der realen Messung auch nach 15s ungeladen, obwohl die Spalte durchgehend sichtbar ist. Fix: Kacheln der beiden **immer sichtbaren** Spalten (1 und 2, auf jedem Breakpoint ohne `display:none`) erhalten zusätzlich zur bestehenden `priority`-Regel (nur die ersten beiden Kacheln) `loading="eager"` für die übrigen 6 Kacheln. Spalten 3–5 bleiben bei `loading="lazy"`, weil `eager` dort auch im ausgeblendeten Zustand (Mobile/Tablet) einen Request auslösen und die bestehende Kein-Request-Regel brechen würde — bewusst in Kauf genommene, schmalere Restlücke nur für gelegentlich sichtbare Spalten, statt einer pauschalen Eager-Lösung.
 
 ---
 
