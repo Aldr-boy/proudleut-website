@@ -166,14 +166,7 @@ export default function Header() {
 
       <header
         ref={pillRef as React.RefObject<HTMLElement>}
-        // Breite/Zentrierung: reale Webflow-Referenz vermessen (A-Fix
-        // Header-Sichtbarkeit) -- Seitenrand skaliert je Breakpoint exakt
-        // wie dort gemessen (1rem mobil / 2rem ab md / 5rem ab xl), keine
-        // willkuerliche w-full. xl:max-w-[80rem] deckt sich bewusst mit
-        // dem bestehenden site-weiten Content-Container (siehe u. a.
-        // HeroWall.tsx), damit die Pill auf sehr breiten Screens nicht
-        // unbegrenzt weiterwaechst.
-        className="fixed z-50 left-1/2 -translate-x-1/2 top-3 md:top-6 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-md md:w-[calc(100%-4rem)] md:max-w-none xl:w-[calc(100%-10rem)] xl:max-w-[80rem]"
+        className="fixed z-50 left-1/2 -translate-x-1/2 top-3 md:top-6 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-md md:w-auto md:max-w-none"
       >
         <div className="bg-pl-paper border border-pl-soft shadow-[0_8px_30px_rgba(42,34,38,0.12)] rounded-[1.75rem] md:rounded-full">
           <div className="h-14 md:h-16 pl-3 pr-2 md:pl-6 md:pr-2 flex items-center justify-between gap-2 md:gap-4">
