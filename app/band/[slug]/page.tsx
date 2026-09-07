@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { getBandFromSupabase, getAllBandsFromSupabase } from '@/lib/supabase/queries';
 import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import { generateBandJsonLd } from '@/lib/seo/jsonLd';
+import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import { getSimilarBands } from '@/lib/bands/similarBands';
 import BandCard from '@/components/BandCard';
 import { BandHero } from '@/components/band/BandHero';
@@ -45,12 +46,38 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { data } = await getBandFromSupabase(slug);
   if (!data) return {};
   const band = normalizeBandFromSupabase(data);
+  const description =
+    band.metaDescription ||
+    band.shortDescription ||
+    `${band.name} – Liveband bei proudleut`;
+  const canonicalUrl = absoluteUrl(`/band/${band.slug}`);
+  const socialImage = isAbsoluteHttpsUrl(band.heroImage?.url)
+    ? {
+        url: band.heroImage!.url,
+        alt: band.heroImage!.alt,
+        ...(band.heroImage!.width && band.heroImage!.height
+          ? { width: band.heroImage!.width, height: band.heroImage!.height }
+          : {}),
+      }
+    : DEFAULT_SOCIAL_IMAGE;
+
   return {
     title: band.name,
-    description:
-      band.metaDescription ||
-      band.shortDescription ||
-      `${band.name} – Liveband bei proudleut`,
+    description,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: band.name,
+      description,
+      url: canonicalUrl,
+      type: 'website',
+      images: [socialImage],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: band.name,
+      description,
+      images: [socialImage.url],
+    },
   };
 }
 

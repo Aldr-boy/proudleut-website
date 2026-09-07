@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getPersonBySlugFromSupabase } from '@/lib/people/publicQueries';
 import { normalizePersonFromSupabase } from '@/lib/people/normalizePerson';
+import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE, SITE_DEFAULT_DESCRIPTION } from '@/lib/seo/metadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,33 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { data, error } = await getPersonBySlugFromSupabase(slug);
   if (error || !data) return {};
   const person = normalizePersonFromSupabase(data);
-  return { title: person.name };
+  const canonicalUrl = absoluteUrl(`/musiker/${person.slug}`);
+  const socialImage = isAbsoluteHttpsUrl(person.imageUrl)
+    ? { url: person.imageUrl, alt: person.name }
+    : DEFAULT_SOCIAL_IMAGE;
+
+  // Paket 1 aendert bewusst nicht die normale Meta-Description (bleibt der
+  // implizite Site-Default aus dem Root-Layout, siehe Auftrag "Musiker-
+  // Description NICHT korrigieren"). Fuer og:description/twitter:description
+  // wird derselbe bestehende Site-Default-Text hier lediglich explizit
+  // gesetzt statt implizit vererbt -- keine neue Musiker-Copy.
+  return {
+    title: person.name,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: person.name,
+      description: SITE_DEFAULT_DESCRIPTION,
+      url: canonicalUrl,
+      type: 'website',
+      images: [socialImage],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: person.name,
+      description: SITE_DEFAULT_DESCRIPTION,
+      images: [socialImage.url],
+    },
+  };
 }
 
 // --- Page ---
