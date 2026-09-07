@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { getPersonBySlugFromSupabase } from '@/lib/people/publicQueries';
 import { normalizePersonFromSupabase } from '@/lib/people/normalizePerson';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE, SITE_DEFAULT_DESCRIPTION } from '@/lib/seo/metadata';
+import { deriveDescriptionFromText } from '@/lib/seo/deriveDescription';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,17 +47,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? { url: person.imageUrl, alt: person.name }
     : DEFAULT_SOCIAL_IMAGE;
 
-  // Paket 1 aendert bewusst nicht die normale Meta-Description (bleibt der
-  // implizite Site-Default aus dem Root-Layout, siehe Auftrag "Musiker-
-  // Description NICHT korrigieren"). Fuer og:description/twitter:description
-  // wird derselbe bestehende Site-Default-Text hier lediglich explizit
-  // gesetzt statt implizit vererbt -- keine neue Musiker-Copy.
+  // Paket 3: individuelle Description aus der bereits vorhandenen Bio
+  // ableiten (einzige oeffentliche Personen-Fliesstextquelle, siehe
+  // lib/people/normalizePerson.ts) -- keine neue Copy, nur deterministische
+  // Kuerzung/Whitespace-Normalisierung (lib/seo/deriveDescription.ts). Ohne
+  // Bio bleibt der bisherige Site-Default als Fallback erhalten. Dieselbe
+  // effektive Description wird fuer normale Meta-Description UND
+  // og:description/twitter:description verwendet (keine getrennte Kopie).
+  const description = deriveDescriptionFromText(person.bio) ?? SITE_DEFAULT_DESCRIPTION;
+
   return {
     title: person.name,
+    description,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: person.name,
-      description: SITE_DEFAULT_DESCRIPTION,
+      description,
       url: canonicalUrl,
       type: 'website',
       images: [socialImage],
@@ -64,7 +70,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     twitter: {
       card: 'summary_large_image',
       title: person.name,
-      description: SITE_DEFAULT_DESCRIPTION,
+      description,
       images: [socialImage.url],
     },
   };

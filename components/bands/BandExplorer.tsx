@@ -95,7 +95,13 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
   const router = useRouter();
   const baseRoute = lockedOccasion ? `/veranstaltung/${lockedOccasion}` : '/bands';
 
-  const [shuffled, setShuffled] = useState<Band[]>([]);
+  // Deterministischer Initial-State: identisch zur eingehenden bands-Prop,
+  // damit Server- und erster Client-Render (Hydration) exakt uebereinstimmen
+  // -- keine Randomisierung waehrend der State-Initialisierung, da Server
+  // und Browser sonst unterschiedliche Reihenfolgen erzeugen koennten
+  // (Hydration-Mismatch-Risiko). Die eigentliche Zufallssortierung fuer
+  // Nutzer bleibt unveraendert im Mount-Effekt direkt darunter erhalten.
+  const [shuffled, setShuffled] = useState<Band[]>(bands);
   const [query, setQuery] = useState<string>(() => searchParams.get('suche') ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
     if (lockedOccasion) return lockedOccasion;
