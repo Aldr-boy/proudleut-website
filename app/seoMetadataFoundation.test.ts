@@ -75,13 +75,21 @@ test('Veranstaltung: lib/categories.ts wird in Paket 1 nicht veraendert (kein Ti
   assert.ok(!veranstaltungSource.includes("category.seoTitle.replace"))
 })
 
-test('Musiker: og:description/twitter:description nutzen den bestehenden Site-Default explizit, keine neue Musiker-Copy', () => {
+// Paket 3 aendert diese Stelle bewusst und explizit gegenueber Paket 1:
+// og:description/twitter:description nutzen jetzt dieselbe individuelle,
+// aus person.bio abgeleitete Description (Fallback: SITE_DEFAULT_DESCRIPTION)
+// statt ausschliesslich des Site-Defaults -- siehe
+// app/musiker/musikerDescriptionStructure.test.ts fuer die genaue Pruefung
+// der Paket-3-Ableitungslogik. Dieser Test prueft hier nur noch, dass die
+// gemeinsame description-Variable explizit in beiden Bloecken verwendet
+// wird (Paket-1-Anforderung "explizit setzen, nicht implizit vererben"
+// bleibt gueltig).
+test('Musiker: og:description/twitter:description setzen explizit dieselbe (Paket-3-)description-Variable, kein impliziter Fallback', () => {
   assert.match(musikerSource, /import \{[^}]*SITE_DEFAULT_DESCRIPTION[^}]*\} from ['"]@\/lib\/seo\/metadata['"]/)
-  assert.match(musikerSource, /description:\s*SITE_DEFAULT_DESCRIPTION/)
-  // Die normale (nicht-Social-) description bleibt weiterhin unangetastet:
-  // generateMetadata() gibt fuer den normalen Titel weiterhin nur { title: person.name, ... }
-  // zurueck, ohne eine neue oberste description hinzuzufuegen.
-  assert.ok(!/^\s*description:\s*person\./m.test(musikerSource), 'keine neue personenbezogene normale Meta-Description in Paket 1')
+  const openGraphBlock = musikerSource.match(/openGraph:\s*\{[\s\S]*?\}/)?.[0] ?? ''
+  const twitterBlock = musikerSource.match(/twitter:\s*\{[\s\S]*?\}/)?.[0] ?? ''
+  assert.match(openGraphBlock, /description,/)
+  assert.match(twitterBlock, /description,/)
 })
 
 test('Band: Social-Bild wird aus band.heroImage abgeleitet, keine neue Datenquelle', () => {

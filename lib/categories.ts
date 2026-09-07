@@ -17,7 +17,7 @@ export const CATEGORIES: CategoryConfig[] = [
     slug: 'hochzeit',
     h1Title: 'Hochzeitsbands',
     description: 'Livebands für Hochzeit, freie Trauung, Sektempfang und Feier.',
-    seoTitle: 'Hochzeitsbands – proudleut.com',
+    seoTitle: 'Hochzeitsbands',
     seoDescription:
       'Finde die passende Liveband für deine Hochzeit – persönlich, direkt und mit starken Bands.',
     airtableEventTypes: ['Hochzeit'],
@@ -59,7 +59,7 @@ export const CATEGORIES: CategoryConfig[] = [
     h1Title: 'Bands für Firmenfeiern & Business Events',
     description:
       'Professionelle Livebands für Firmenfeiern, Business Events und besondere Unternehmensabende.',
-    seoTitle: 'Bands für Firmenfeier & Business Events – proudleut.com',
+    seoTitle: 'Bands für Firmenfeier & Business Events',
     seoDescription:
       'Livebands für Firmenfeiern, Galas und Business Events – professionell, hochwertig und passgenau.',
     airtableEventTypes: [
@@ -80,7 +80,7 @@ export const CATEGORIES: CategoryConfig[] = [
     slug: 'geburtstag',
     h1Title: 'Bands für Geburtstag & Privatfeier',
     description: 'Livebands für Geburtstage, private Feiern und besondere Anlässe.',
-    seoTitle: 'Bands für Geburtstag & Privatfeier – proudleut.com',
+    seoTitle: 'Bands für Geburtstag & Privatfeier',
     seoDescription:
       'Livebands für Geburtstage und Privatfeiern – persönlich, unterhaltsam und direkt kontaktierbar.',
     airtableEventTypes: [
@@ -105,7 +105,7 @@ export const CATEGORIES: CategoryConfig[] = [
     slug: 'gala',
     h1Title: 'Bands für Gala & Empfang',
     description: 'Stilvolle Livebands für Galas, Empfänge und hochwertige Events.',
-    seoTitle: 'Bands für Gala & Empfang – proudleut.com',
+    seoTitle: 'Bands für Gala & Empfang',
     seoDescription:
       'Livebands für Galas und Empfänge – stilvoll, professionell und auf den Punkt.',
     airtableEventTypes: ['Empfang', 'Ball', 'Bankett', 'Ehrenabende', 'Vernissage'],
@@ -117,7 +117,7 @@ export const CATEGORIES: CategoryConfig[] = [
     h1Title: 'Bands für Fasching & Faschingsbälle',
     description:
       'Livebands für Faschingsbälle, Inthronisationen und die fünfte Jahreszeit – Stimmung für Saal, Bühne und Tanzfläche.',
-    seoTitle: 'Faschingsbands & Bands für Faschingsbälle – proudleut.com',
+    seoTitle: 'Faschingsbands & Bands für Faschingsbälle',
     seoDescription:
       'Livebands für Fasching, Faschingsbälle, Karneval und Inthronisationen in Bayern finden – passende Bands für die fünfte Jahreszeit entdecken.',
     airtableEventTypes: ['Fasching'],
@@ -129,7 +129,7 @@ export const CATEGORIES: CategoryConfig[] = [
     h1Title: 'Bands für Weihnachtsfeiern & Jahresabschluss',
     description:
       'Livemusik für Weihnachtsfeiern und Jahresabschlüsse – von festlich-leise bis ausgelassen.',
-    seoTitle: 'Bands für Weihnachtsfeiern – proudleut.com',
+    seoTitle: 'Bands für Weihnachtsfeiern',
     seoDescription:
       'Livebands für Weihnachtsfeiern, Jahresabschlussfeiern und festliche Winterabende in Bayern – stimmungsvoll und passgenau für euren Anlass.',
     airtableEventTypes: ['Weihnachtsfeier'],
@@ -141,7 +141,7 @@ export const CATEGORIES: CategoryConfig[] = [
     h1Title: 'Bands für Festivals & Open Airs',
     description:
       'Livebands für Festivals, Open Airs und besondere Bühnenmomente – Energie, die bis in die letzte Reihe trägt.',
-    seoTitle: 'Festivalbands & Bands für Open Airs – proudleut.com',
+    seoTitle: 'Festivalbands & Bands für Open Airs',
     seoDescription:
       'Livebands für Festivals und Open-Air-Bühnen in Bayern finden – vom kleinen Kulturfestival bis zum großen Line-up.',
     airtableEventTypes: ['Festival'],
