@@ -2,3 +2,5 @@ User-agent: *
 Allow: /
 
 Disallow: /studio
+
+Sitemap: https://proudleut.com/sitemap.xml

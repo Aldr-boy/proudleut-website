@@ -7,6 +7,20 @@ import { supabase } from '../supabase/client'
 // hier. Eine draft/archivierte Person liefert dadurch schlicht 0 Zeilen;
 // .single() macht das zu einem error, den der Aufrufer (app/musiker/[slug]/
 // page.tsx) als notFound() behandelt -- identisches Prinzip wie bei Baendern.
+// Sitemap-Quelle (Paket 2): einzige oeffentliche Listenabfrage fuer
+// Personen, bislang gab es nur den Einzel-Lookup oben. Identisches Prinzip
+// -- derselbe anon-Client, dieselbe RLS-Policy people_public_read
+// (status='active') als alleinige Sichtbarkeitsgrenze, keine zusaetzliche
+// Filterung hier (siehe Kommentar oben). Nur der Slug wird benoetigt.
+export async function getAllPublicPeopleSlugsFromSupabase() {
+  const { data, error } = await supabase
+    .from('people')
+    .select('slug')
+    .order('slug', { ascending: true })
+
+  return { data, error }
+}
+
 export async function getPersonBySlugFromSupabase(slug: string) {
   const { data, error } = await supabase
     .from('people')
