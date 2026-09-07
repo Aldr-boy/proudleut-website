@@ -10,6 +10,7 @@ import BandExplorer from '@/components/bands/BandExplorer';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { fetchEventCategoryHero } from '@/sanity/lib/fetchEventCategoryHero';
 import { urlFor } from '@/sanity/lib/image';
+import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 
 export const revalidate = 300;
 
@@ -25,9 +26,47 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = getCategoryBySlug(slug);
   if (!category) return {};
+
+  const canonicalUrl = absoluteUrl(`/veranstaltung/${category.slug}`);
+  const h1 = category.h1Title ?? category.title;
+
+  // Titelregel Paket 1: seoTitle wird fuer openGraph.title/twitter.title
+  // unveraendert uebernommen (auch mit dem bekannten "– proudleut.com"-
+  // Anteil einzelner Kategorien) -- die Korrektur des doppelten normalen
+  // <title>-Suffix ist ausdruecklich Paket 3, kein Teil dieses Auftrags.
+  const socialTitle = category.seoTitle;
+  const socialDescription = category.seoDescription;
+
+  const heroData = await fetchEventCategoryHero(slug);
+  const heroImageUrl = heroData
+    ? urlFor(heroData.heroImage).width(1200).height(630).url()
+    : undefined;
+  const socialImage = isAbsoluteHttpsUrl(heroImageUrl)
+    ? {
+        url: heroImageUrl,
+        alt: heroData?.heroImageAlt ?? h1,
+        width: 1200,
+        height: 630,
+      }
+    : DEFAULT_SOCIAL_IMAGE;
+
   return {
     title: category.seoTitle,
     description: category.seoDescription,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title: socialTitle,
+      description: socialDescription,
+      url: canonicalUrl,
+      type: 'website',
+      images: [socialImage],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: socialTitle,
+      description: socialDescription,
+      images: [socialImage.url],
+    },
   };
 }
 

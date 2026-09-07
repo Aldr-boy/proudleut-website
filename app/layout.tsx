@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { MerklisteBar } from "@/components/band/MerklisteBar";
 import GridOverlay from "@/components/dev/GridOverlay";
+import { SITE_URL, SITE_DEFAULT_DESCRIPTION } from "@/lib/seo/metadata";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,12 +19,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     template: "%s – proudleut.com",
     default: "proudleut.com – Livebands entdecken",
   },
-  description:
-    "Finde die passende Liveband für dein Event – persönlich, direkt und ohne Mittelmann.",
+  description: SITE_DEFAULT_DESCRIPTION,
 };
 
 export default async function RootLayout({
