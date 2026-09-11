@@ -66,12 +66,37 @@ test('kein Segment traegt noch eine verwaiste "sm:"-Mindestbreiten- oder Border-
   assert.doesNotMatch(bar, /sm:py-4/)
 })
 
-test('Suchsegment bleibt ohne eigene Mindestbreite (flex-1 min-w-0) -- es ist bewusst das einzige schrumpfende Segment', () => {
-  const searchStart = bar.indexOf('Segment 1')
-  const searchEnd = bar.indexOf('</div>', bar.indexOf('<svg', searchStart))
-  const seg = bar.slice(searchStart, searchEnd)
-  assert.match(seg, /flex-1 min-w-0/)
-  assert.doesNotMatch(seg, /min-w-\[\d/)
+// Auftrag "Bandfinder-Redesign -- Layout-Nachgang": die Suche wird auf
+// Desktop ans rechte Ende der Bar verschoben und dafuer bewusst zweimal
+// gerendert (mobile Kopfzeile links neben dem Filter-Zugang, Desktop als
+// Segment 6 rechts aussen) -- siehe renderSearchField()-Kommentar in
+// BandExplorer.tsx. Beide Instanzen bleiben ohne eigene Mindestbreite.
+test('beide Such-Instanzen (mobile Kopfzeile, Desktop-Segment 6) bleiben ohne eigene Mindestbreite (flex-1 min-w-0) -- bewusst die einzigen schrumpfenden Segmente', () => {
+  const mobileStart = bar.indexOf('Mobile Kopfzeile')
+  assert.ok(mobileStart >= 0, 'Mobile Kopfzeile nicht gefunden')
+  const mobileEnd = bar.indexOf('</div>', bar.indexOf('renderSearchField()', mobileStart))
+  const mobileSeg = bar.slice(mobileStart, mobileEnd)
+  assert.match(mobileSeg, /flex-1 min-w-0/)
+  assert.doesNotMatch(mobileSeg, /min-w-\[\d/)
+
+  const desktopStart = bar.indexOf('Segment 6')
+  assert.ok(desktopStart >= 0, 'Segment 6 (Desktop-Suche) nicht gefunden')
+  const desktopEnd = bar.indexOf('</div>', bar.indexOf('renderSearchField()', desktopStart))
+  const desktopSeg = bar.slice(desktopStart, desktopEnd)
+  assert.match(desktopSeg, /flex-1 min-w-0/)
+  assert.doesNotMatch(desktopSeg, /min-w-\[\d/)
+})
+
+test('nie zwei fokussierbare Sucheingaben gleichzeitig -- mobile Instanz ist ab lg ausgeblendet, Desktop-Instanz ist unterhalb lg ausgeblendet', () => {
+  const mobileStart = bar.indexOf('Mobile Kopfzeile')
+  const mobileWrapperEnd = bar.indexOf('>', bar.indexOf('<div', mobileStart)) + 1
+  const mobileWrapperOpenTag = bar.slice(bar.indexOf('<div', mobileStart), mobileWrapperEnd)
+  assert.match(mobileWrapperOpenTag, /flex lg:hidden/)
+
+  const desktopStart = bar.indexOf('Segment 6')
+  const desktopWrapperEnd = bar.indexOf('>', bar.indexOf('<div', desktopStart)) + 1
+  const desktopWrapperOpenTag = bar.slice(bar.indexOf('<div', desktopStart), desktopWrapperEnd)
+  assert.match(desktopWrapperOpenTag, /hidden lg:flex/)
 })
 
 test('Segment 4 (Bandtyp) hat im gestapelten Modus einen unteren Trenner, da es dort nicht mehr das letzte Segment ist', () => {
