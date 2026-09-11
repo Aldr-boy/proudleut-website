@@ -67,6 +67,21 @@ export const FINDER_OCCASIONS: FinderOccasion[] = [
   fromCategory('fasching'),
   fromCategory('weihnachtsfeier'),
   fromCategory('festival'),
+  // "Konzert, Club & Festival" ist der sechste Themen-Einstieg des neuen
+  // Bandfinders (Auftrag "Bandfinder-Redesign"). Read-only gegen Produktion
+  // verifiziert: "festival", "konzert" und "club" sind drei eigenstaendige,
+  // aktive event_types-Datensaetze mit realen Bandzuordnungen (26 Baender
+  // insgesamt) -- im Code bislang nur "festival" ueber CATEGORIES verdrahtet.
+  // Eigene Finder-Option ohne CATEGORIES-Gegenpart, identisches Muster wie
+  // "stadt-und-buergerfest" oben: die bestehende /veranstaltung/festival-
+  // Seite (CATEGORIES['festival']) bleibt dadurch bewusst unveraendert und
+  // inhaltlich nicht erweitert -- dieser Eintrag ist ausschliesslich eine
+  // zusaetzliche, breitere Finder-Option (?anlass=konzert-club-festival).
+  {
+    title: 'Konzert, Club & Festival',
+    slug: 'konzert-club-festival',
+    supabaseEventTypeSlugs: ['festival', 'konzert', 'club'],
+  },
 ];
 
 // Finder-Matching -- bewusst eine eigene, klar benannte Funktion statt

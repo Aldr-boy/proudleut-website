@@ -18,9 +18,12 @@ interface AnfrageStore {
 export const useAnfrageStore = create<AnfrageStore>((set, get) => ({
   bands: [],
 
+  // Merken ist bewusst unbegrenzt (Produktentscheidung Nachgang
+  // "Merkliste-Mengenbegrenzung"): die Acht-Grenze gilt ausschliesslich fuer
+  // die Auswahl innerhalb einer einzelnen Anfrage (siehe MerklisteFlow.tsx),
+  // nicht fuer die Merkliste selbst. Weiterhin nur Duplikate verhindern.
   addBand: (band) =>
     set((state) => {
-      if (state.bands.length >= 8) return state;
       if (state.bands.some((b) => b.slug === band.slug)) return state;
       return { bands: [...state.bands, band] };
     }),

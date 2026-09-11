@@ -15,7 +15,7 @@ test('CATEGORIES[festzelt] hat denselben engen Scope wie FINDER_OCCASIONS[festze
   assert.deepEqual(festzeltCategory!.supabaseEventTypeSlugs, ['festzelt'])
 })
 
-test('FINDER_OCCASIONS: zehn Anlaesse in der vorgegebenen Reihenfolge', () => {
+test('FINDER_OCCASIONS: elf Anlaesse in der vorgegebenen Reihenfolge', () => {
   assert.deepEqual(
     FINDER_OCCASIONS.map((o) => o.slug),
     [
@@ -29,8 +29,38 @@ test('FINDER_OCCASIONS: zehn Anlaesse in der vorgegebenen Reihenfolge', () => {
       'fasching',
       'weihnachtsfeier',
       'festival',
+      'konzert-club-festival',
     ]
   )
+})
+
+// Auftrag "Bandfinder-Redesign": sechster Themen-Einstieg. Read-only gegen
+// Produktion verifiziert -- "festival", "konzert" und "club" sind drei
+// eigenstaendige, aktive event_types mit realen Bandzuordnungen (26
+// Baender insgesamt), im Code bislang nur "festival" ueber CATEGORIES
+// verdrahtet. Eigene Finder-Option ohne CATEGORIES-Gegenpart, identisches
+// Muster wie "stadt-und-buergerfest" -- die bestehende CATEGORIES['festival']
+// (/veranstaltung/festival) bleibt davon unberuehrt.
+test('Konzert, Club & Festival matcht festival ODER konzert ODER club -- CATEGORIES[festival] bleibt unveraendert eng (nur "festival")', () => {
+  const konzertClubFestival = getFinderOccasionBySlug('konzert-club-festival')
+  assert.ok(konzertClubFestival)
+  assert.equal(konzertClubFestival!.title, 'Konzert, Club & Festival')
+  assert.deepEqual(konzertClubFestival!.supabaseEventTypeSlugs, ['festival', 'konzert', 'club'])
+
+  const festivalCategory = CATEGORIES.find((c) => c.slug === 'festival')
+  assert.ok(festivalCategory)
+  assert.deepEqual(festivalCategory!.supabaseEventTypeSlugs, ['festival'], 'CATEGORIES[festival] darf durch den neuen Finder-Eintrag nicht erweitert werden')
+
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['festival'] }, konzertClubFestival!), true)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['konzert'] }, konzertClubFestival!), true)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['club'] }, konzertClubFestival!), true)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['hochzeit'] }, konzertClubFestival!), false)
+})
+
+test('Repro Free Vocals: matcht Konzert, Club & Festival (traegt sowohl konzert als auch festival)', () => {
+  const freeVocals = { categorySlugs: ['konzert', 'festival', 'stadt-und-buergerfest', 'firmenfeier-business-event', 'hochzeit', 'geburtstagsfeier', 'beerdigung', 'empfang'] }
+  const konzertClubFestival = getFinderOccasionBySlug('konzert-club-festival')!
+  assert.equal(bandMatchesFinderOccasion(freeVocals, konzertClubFestival), true)
 })
 
 test('Brautentführung ist ein eigener Finder-Anlass direkt nach Hochzeit -- matcht ausschliesslich brautentfuehrung', () => {

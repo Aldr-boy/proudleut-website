@@ -2,11 +2,18 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
 import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasions';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import { buildFinderFilterUrl, buildOccasionNavUrl } from '@/lib/bands/finderRouting';
+import { resolveBandFinderThemeNav } from '@/lib/bands/bandFinderThemes';
+import type { BandFinderThemeKey } from '@/lib/bands/bandFinderThemes';
+import type { BandFinderThemeImage } from '@/lib/bands/bandFinderThemeImages';
+import { useAnfrageStore } from '@/stores/anfrageStore';
+import { MerklisteFlow } from '@/components/band/MerklisteFlow';
 import BandCard from '@/components/BandCard';
 import BandCardSkeleton from '@/components/BandCardSkeleton';
 
@@ -23,6 +30,11 @@ type Props = {
   // Veranstaltungsroute statt auf /bands zu wechseln. Auf /bands (Prop
   // nicht gesetzt) bleibt das gesamte bisherige Verhalten unveraendert.
   lockedOccasion?: string;
+  // Sechs Themen-Bilder fuer den neuen kompakten Suchkopf (Auftrag
+  // "Bandfinder-Redesign"), serverseitig einmal pro Seite aufgeloest
+  // (lib/bands/bandFinderThemeImages.ts) und hier nur noch gerendert --
+  // BandExplorer selbst startet keine eigene Bildabfrage.
+  themeImages: Record<BandFinderThemeKey, BandFinderThemeImage>;
 };
 
 // Modul-Cache: einmal laden, nie erneut fetchen
@@ -90,10 +102,19 @@ const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
 type OpenPanel = 'anlass' | 'region' | 'bandtyp' | 'mood' | null;
 
-export default function BandExplorer({ bands, regions, lockedOccasion }: Props) {
+export default function BandExplorer({ bands, regions, lockedOccasion, themeImages }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const baseRoute = lockedOccasion ? `/veranstaltung/${lockedOccasion}` : '/bands';
+
+  // Merkliste -- bestehender, globaler Store (stores/anfrageStore.ts),
+  // bereits ueber components/band/MerklisteBar.tsx (in app/layout.tsx)
+  // sitenweit angebunden. Hier keine zweite parallele Merkliste, nur ein
+  // zusaetzlicher, gut auffindbarer Zugang direkt in der Ergebniszeile --
+  // oeffnet denselben bestehenden MerklisteFlow (Sammlung ansehen -> bewusst
+  // fuer eine Anfrage auswaehlen -> Formular) wie MerklisteBar.
+  const anfrageBands = useAnfrageStore((s) => s.bands);
+  const [merklisteOpen, setMerklisteOpen] = useState(false);
 
   // Deterministischer Initial-State: identisch zur eingehenden bands-Prop,
   // damit Server- und erster Client-Render (Hydration) exakt uebereinstimmen
@@ -131,6 +152,13 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
   const [plzLoading, setPlzLoading] = useState(false);
   const [visibleCount, setVisibleCount] = useState(24);
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
+  // Mobiler, kompakter "Filter"-Zugang (Auftrag "Bandfinder-Redesign --
+  // Nachgang", Abschnitt 4): Wofuer/Region/Bandtyp/Klingt-nach waren bisher
+  // auf Mobil immer als lange gestapelte Liste sichtbar -- kein kompakter
+  // Zugang mit Anzahl. Suche bleibt bewusst immer sichtbar, nur die
+  // uebrigen vier Segmente klappen dahinter ein. Ab lg (Desktop) bleibt
+  // das bestehende Verhalten (alle Segmente immer sichtbar) unveraendert.
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollAfterLoad = useRef(false);
@@ -415,6 +443,68 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
     ? (FINDER_OCCASIONS.find((c) => c.slug === selectedCategory)?.title ?? null)
     : null;
 
+  // Einzeln entfernbare aktive Filter-Chips (Auftrag "Bandfinder-Redesign --
+  // Nachgang", Abschnitt 4): bisher gab es nur "Filter zurücksetzen" fuer
+  // alle Filter zusammen. Jeder Chip setzt ausschliesslich seinen eigenen
+  // Filter zurueck und nutzt dafuer dieselben bereits bestehenden Setter/
+  // URL-Builder wie die Finder-Bar selbst -- keine neue Filterlogik. Der
+  // Seiten-Anlass (lockedOccasion) ist bewusst kein entfernbarer Chip
+  // (Kontext der Seite, siehe hasFilter-Kommentar oben).
+  const activeFilterChips: { key: string; label: string; onRemove: () => void }[] = [];
+  if (query) {
+    activeFilterChips.push({
+      key: 'suche',
+      label: `Suche: „${query}"`,
+      onRemove: () => {
+        setQuery('');
+        router.replace(buildFilterUrl({ suche: '' }), { scroll: false });
+      },
+    });
+  }
+  if (!lockedOccasion && selectedCategory) {
+    activeFilterChips.push({
+      key: 'anlass',
+      label: activeCategoryTitle ?? selectedCategory,
+      onRemove: () => {
+        setSelectedCategory(null);
+        router.push(
+          buildUrl({ anlass: null, region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+          { scroll: false }
+        );
+      },
+    });
+  }
+  if (selectedRegion) {
+    activeFilterChips.push({
+      key: 'region',
+      label: selectedRegion,
+      onRemove: () => {
+        setSelectedRegion(null);
+        router.push(buildFilterUrl({ region: null }), { scroll: false });
+      },
+    });
+  }
+  if (selectedBandtyp) {
+    activeFilterChips.push({
+      key: 'bandtyp',
+      label: selectedBandtyp,
+      onRemove: () => {
+        setSelectedBandtyp(null);
+        router.push(buildFilterUrl({ bandtyp: null }), { scroll: false });
+      },
+    });
+  }
+  if (selectedMood) {
+    activeFilterChips.push({
+      key: 'mood',
+      label: moodOptions.find((m) => m.slug === selectedMood)?.name ?? selectedMood,
+      onRemove: () => {
+        setSelectedMood(null);
+        router.push(buildFilterUrl({ mood: null }), { scroll: false });
+      },
+    });
+  }
+
   // Sticky-"Auswahl verfeinern": nicht sichtbar, solange BandExplorer noch
   // keine geladene/shuffled Ergebnismenge hat (kein Mount-Flash), sonst
   // ausschliesslich ueber die beiden Sentinel-Observer bestimmt.
@@ -447,14 +537,117 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
     return buildUrl({ anlass: selectedCategory, region, suche, bandtyp, mood });
   }
 
+  // Sechs Themen-Kacheln des neuen Suchkopfs -- Href/Aktiv-Status kommen
+  // aus der ausgelagerten, direkt getesteten resolveBandFinderThemeNav()
+  // (lib/bands/bandFinderThemes.ts), die ihrerseits ausschliesslich die
+  // bereits bestehenden buildFinderFilterUrl()/buildOccasionNavUrl()
+  // nutzt -- keine neue Routing-Logik. "Alle Bands" hat keinen Anlass-
+  // Slug und entfernt den Anlass-Filter, die uebrigen Filter (Region/
+  // Suche/Bandtyp/Mood) bleiben erhalten.
+  const themeNavItems = resolveBandFinderThemeNav(
+    lockedOccasion,
+    selectedCategory,
+    { region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood },
+    buildFinderFilterUrl,
+    buildOccasionNavUrl
+  ).map((theme) => ({ ...theme, image: themeImages[theme.key] }));
+
+  // Such-Icon + Input als eigene Render-Funktion (Auftrag "Bandfinder-
+  // Redesign -- Layout-Nachgang", Suchfeld auf Desktop nach rechts):
+  // dieselbe Eingabe wird bewusst zweimal im DOM gerendert -- einmal in
+  // ihrer mobilen Position (links neben dem Filter-Zugang, oben in der
+  // Bar) und einmal in ihrer Desktop-Position (rechtes Ende der Bar,
+  // ab lg). Grund: die sichtbare Reihenfolge unterscheidet sich bewusst
+  // je Breakpoint (mobil: Suche vor den vier Filter-Segmenten; Desktop:
+  // Suche nach ihnen) -- eine reine CSS-`order`-Verschiebung wuerde dort
+  // die Tab-Reihenfolge vom sichtbaren Layout entkoppeln. Da immer genau
+  // eine der beiden Varianten ueber Tailwind `hidden`/`lg:hidden` aus dem
+  // Layout UND (display:none) aus der Tab-Reihenfolge faellt, gibt es nie
+  // zwei gleichzeitig fokussierbare Instanzen -- beide binden denselben
+  // `query`-State, bleiben also immer synchron. Keine neue Filterlogik.
+  function renderSearchField() {
+    return (
+      <>
+        <svg
+          className="w-4 h-4 text-pl-text-hint flex-shrink-0"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+        </svg>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => {
+            const next = e.target.value;
+            setQuery(next);
+            router.replace(
+              buildFilterUrl({ suche: next }),
+              { scroll: false }
+            );
+          }}
+          placeholder="Bandname, Ort oder PLZ"
+          aria-label="Bands suchen"
+          className="flex-1 min-w-0 bg-transparent text-pl-text placeholder:text-pl-text-hint text-sm focus:outline-none"
+        />
+      </>
+    );
+  }
+
   return (
     <div>
+      {/* ── Warm getoenter Suchbereich: Themenraster + Filterleiste ──
+          (Auftrag "Bandfinder-Redesign -- Layout-Nachgang"). Aeussere
+          Flaeche bg-pl-paper ohne eigene Breitenbegrenzung -- setzt sich
+          nahtlos an components/bands/BandFinderPageHead.tsx (identischer
+          Farbton, direkt davor auf der Seite) fort, wirkt dadurch wie ein
+          einziger zusammenhaengender Bereich, obwohl es zwei Elemente sind.
+          Inhalt bleibt im bestehenden 1140px-Container (pl-container-shell).
+          pb-6/md:pb-8 sorgt fuer den geforderten Abstand, bevor die Flaeche
+          unterhalb der Filterleiste endet -- Ergebniszahl/Chips/Merkliste/
+          Bandkarten (siehe zweiter Container weiter unten) stehen bewusst
+          wieder auf dem bisherigen Seitenhintergrund, keine Umrandung/
+          Schattenkante um den Suchbereich. */}
+      <div className="bg-pl-paper pb-6 md:pb-8">
+        <div className="pl-container-shell px-4 sm:px-6">
+      {/* ── Themen-Suchkopf ─────────────────────────────────────── */}
+      {/* Sechs Themen-Einstiege (Auftrag "Bandfinder-Redesign"): echte
+          Links (next/link, kein reines onClick) mit aria-current fuer den
+          aktiven Einstieg. Desktop 3 Spalten/2 Reihen, Mobil 2 Spalten/3
+          Reihen -- Standard-Tailwind-Grid, keine eigene Breakpoint-Logik.
+          Schriftgewicht bewusst konstant (font-semibold in jedem Zustand):
+          ein gewichtsabhaengiger Wechsel wuerde bei den beiden langen
+          Bezeichnungen ("Stadt- & Buergerfest", "Konzert, Club & Festival")
+          die Textbreite/den Umbruch veraendern -- die Auswahl wird
+          stattdessen ausschliesslich ueber Flaeche/Textfarbe markiert. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 mb-4 md:mb-5 pt-4 md:pt-5">
+        {themeNavItems.map((theme) => (
+          <Link
+            key={theme.key}
+            href={theme.href}
+            aria-current={theme.active ? 'page' : undefined}
+            className={`flex items-center gap-2.5 rounded-xl px-2.5 py-2 md:px-3 md:py-2.5 text-left
+                       motion-safe:transition-colors focus:outline-none focus-visible:outline-2
+                       focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]
+                       ${theme.active ? 'bg-pl-accent-subtle' : 'hover:bg-black/[0.03]'}`}
+          >
+            <span className="relative w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden shrink-0 bg-pl-elevated">
+              <Image src={theme.image.url} alt="" fill sizes="44px" className="object-cover" />
+            </span>
+            <span className={`text-sm font-semibold leading-snug ${theme.active ? 'text-pl-accent-deep' : 'text-pl-text'}`}>
+              {theme.label}
+            </span>
+          </Link>
+        ))}
+      </div>
+
       {/* ── Finder-Bar ──────────────────────────────────────────── */}
       {/* scroll-mt: bestehende --pl-nav-height-CSS-Variable (Header.tsx,
           live gemessen), damit der Finder nach scrollToFinder() nicht
           unter der fixen Navigation verschwindet -- keine eigene
           JS-Navigationshoehenberechnung. */}
-      <div ref={barRef} className="relative mb-6 scroll-mt-[var(--pl-nav-height)]">
+      <div ref={barRef} className="relative scroll-mt-[var(--pl-nav-height)]">
 
         {/* Bar: fuenf Segmente in einer Zeile (Desktop ab lg/1024px) / gestapelt
             (Mobile bis Tablet, < 1024px). Row-Modus erst ab lg, da die vier
@@ -464,31 +657,32 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
             umzubrechen (Codex P1, siehe Commit-Beschreibung). */}
         <div className="flex flex-col lg:flex-row rounded-xl border border-pl-soft bg-pl-elevated shadow-sm overflow-hidden">
 
-          {/* Segment 1 – Suche */}
-          <div className="flex items-center gap-2.5 px-4 py-3.5 lg:py-4 flex-1 min-w-0 border-b border-pl-soft lg:border-b-0 focus-within:bg-black/[0.03] motion-safe:transition-colors">
-            <svg
-              className="w-4 h-4 text-pl-text-hint flex-shrink-0"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-              aria-hidden="true"
+          {/* Mobile Kopfzeile – Suche (links) + Filter-Zugang (rechts),
+              nebeneinander. Ab lg vollstaendig ausgeblendet (dort steht die
+              Suche als eigenes Segment am rechten Ende der Bar, siehe
+              unten) -- damit nie zwei fokussierbare Sucheingaben
+              gleichzeitig existieren (siehe renderSearchField-Kommentar). */}
+          <div className="flex lg:hidden items-stretch border-b border-pl-soft">
+            <div className="flex items-center gap-2.5 px-4 py-3.5 flex-1 min-w-0 focus-within:bg-black/[0.03] motion-safe:transition-colors">
+              {renderSearchField()}
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen((v) => !v)}
+              aria-expanded={mobileFiltersOpen}
+              className="flex items-center justify-between gap-3 px-4 py-3 border-l border-pl-soft motion-safe:transition-colors hover:bg-black/[0.03]"
             >
-              <circle cx="11" cy="11" r="8" />
-              <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
-            </svg>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => {
-                const next = e.target.value;
-                setQuery(next);
-                router.replace(
-                  buildFilterUrl({ suche: next }),
-                  { scroll: false }
-                );
-              }}
-              placeholder="Bandname, Ort oder PLZ"
-              aria-label="Bands suchen"
-              className="flex-1 min-w-0 bg-transparent text-pl-text placeholder:text-pl-text-hint text-sm focus:outline-none"
-            />
+              <span className="text-sm font-medium text-pl-text">
+                Filter{activeFilterChips.length > 0 ? ` · ${activeFilterChips.length}` : ''}
+              </span>
+              <svg
+                className={`w-4 h-4 flex-shrink-0 text-pl-text-hint motion-safe:transition-transform ${mobileFiltersOpen ? 'rotate-180' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           </div>
 
           {/* Segment 2 – Wofür? (Anlass) */}
@@ -497,14 +691,14 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
             aria-expanded={openPanel === 'anlass'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'anlass' ? null : 'anlass')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[180px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`${mobileFiltersOpen ? 'flex' : 'hidden'} lg:flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[180px] border-b border-pl-soft lg:border-b-0 group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'anlass' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-muted leading-none mb-1">
                 Wofür
               </p>
               <p className={`text-sm truncate leading-snug ${activeCategoryTitle ? 'text-pl-text font-medium' : 'text-pl-text-muted'}`}>
-                {activeCategoryTitle ?? 'Anlass wählen'}
+                {activeCategoryTitle ?? 'Alle Anlässe'}
               </p>
             </div>
             <svg
@@ -522,14 +716,14 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
             aria-expanded={openPanel === 'region'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'region' ? null : 'region')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[128px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`${mobileFiltersOpen ? 'flex' : 'hidden'} lg:flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[128px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'region' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-muted leading-none mb-1">
                 Region
               </p>
               <p className={`text-sm truncate leading-snug ${selectedRegion ? 'text-pl-text font-medium' : 'text-pl-text-muted'}`}>
-                {selectedRegion ?? 'Region wählen'}
+                {selectedRegion ?? 'Alle Regionen'}
               </p>
             </div>
             <svg
@@ -547,14 +741,14 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
             aria-expanded={openPanel === 'bandtyp'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'bandtyp' ? null : 'bandtyp')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`${mobileFiltersOpen ? 'flex' : 'hidden'} lg:flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] border-b border-pl-soft lg:border-b-0 lg:border-l group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'bandtyp' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-muted leading-none mb-1">
                 Bandtyp
               </p>
               <p className={`text-sm truncate leading-snug ${selectedBandtyp ? 'text-pl-text font-medium' : 'text-pl-text-muted'}`}>
-                {selectedBandtyp ?? 'Egal'}
+                {selectedBandtyp ?? 'Alle Bandarten'}
               </p>
             </div>
             <svg
@@ -572,14 +766,14 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
             aria-expanded={openPanel === 'mood'}
             aria-haspopup="listbox"
             onClick={() => setOpenPanel(openPanel === 'mood' ? null : 'mood')}
-            className={`flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] lg:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'mood' ? 'bg-pl-accent-subtle' : ''}`}
+            className={`${mobileFiltersOpen ? 'flex' : 'hidden'} lg:flex items-center justify-between gap-3 px-5 py-3.5 lg:py-4 text-left lg:min-w-[172px] lg:border-l border-pl-soft group motion-safe:transition-colors hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent/40 focus-visible:ring-inset ${openPanel === 'mood' ? 'bg-pl-accent-subtle' : ''}`}
           >
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-hint leading-none mb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-pl-text-muted leading-none mb-1">
                 Klingt nach
               </p>
               <p className={`text-sm truncate leading-snug ${selectedMood ? 'text-pl-text font-medium' : 'text-pl-text-muted'}`}>
-                {moodOptions.find((m) => m.slug === selectedMood)?.name ?? 'Egal'}
+                {moodOptions.find((m) => m.slug === selectedMood)?.name ?? 'Alle Stimmungen'}
               </p>
             </div>
             <svg
@@ -590,6 +784,14 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
+
+          {/* Segment 6 – Suche (Desktop, rechtes Ende der Bar). Nur ab lg
+              sichtbar -- die mobile Instanz (oben, links neben dem
+              Filter-Zugang) deckt Mobile/Tablet ab, siehe
+              renderSearchField-Kommentar oben. */}
+          <div className="hidden lg:flex items-center gap-2.5 px-4 py-4 flex-1 min-w-0 lg:border-l border-pl-soft focus-within:bg-black/[0.03] motion-safe:transition-colors">
+            {renderSearchField()}
+          </div>
         </div>
 
         {/* Panel – Anlass */}
@@ -783,6 +985,14 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
         )}
       </div>
       {/* ── Ende Finder-Bar ─────────────────────────────────────── */}
+        </div>
+      </div>
+      {/* ── Ende warm getoenter Suchbereich ─────────────────────── */}
+
+      {/* Ergebniszahl/Chips/Merkliste/Bandkarten stehen bewusst wieder auf
+          dem bisherigen Seitenhintergrund (kein eigener Ton), weiterhin im
+          bestehenden 1140px-Container. */}
+      <div className="pl-container-shell px-4 sm:px-6">
       {/* Sentinel fuer den Sticky-"Auswahl verfeinern"-Zugang: bewusst
           unmittelbar NACH der Finder-Bar (nicht an deren Anfang), da die
           Bar auf Mobile deutlich hoeher ist als auf Desktop -- der Sticky
@@ -829,10 +1039,28 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
         Seiten-Anlass allein ist Kontext, kein zurücksetzbarer Zusatzfilter
         (siehe hasFilter oben).
       */}
-      <div className="mb-8">
-        {shuffled.length > 0 && (hasFilter || lockedOccasion) && (
-          <div className="flex items-center gap-4">
+      <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+        {shuffled.length > 0 && (hasFilter || lockedOccasion) ? (
+          <div className="flex items-center gap-3 flex-wrap">
             <p className="text-pl-text-hint text-sm">{countLabel}</p>
+            {activeFilterChips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={chip.onRemove}
+                title="Filter entfernen"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
+                           bg-pl-accent-subtle text-pl-accent-deep hover:bg-pl-accent/20
+                           motion-safe:transition-colors focus:outline-none focus-visible:outline-2
+                           focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
+              >
+                <span>{chip.label}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            ))}
             {hasFilter && (
             <button
               type="button"
@@ -843,6 +1071,31 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
             </button>
             )}
           </div>
+        ) : <span />}
+
+        {/* Gut auffindbarer Zugang zur Merkliste direkt in der
+            Ergebniszeile -- nur sichtbar, sobald tatsaechlich etwas
+            gemerkt ist (identisches Sichtbarkeits-Prinzip wie die
+            bestehende, sitenweite MerklisteBar). Oeffnet dasselbe
+            bestehende AnfrageModal, keine zweite Merkliste. */}
+        {anfrageBands.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setMerklisteOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold
+                       border border-pl-soft text-pl-accent-deep bg-pl-accent-subtle
+                       hover:border-pl-accent motion-safe:transition-colors
+                       focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2
+                       focus-visible:outline-[var(--pl-accent)]"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                fill="currentColor"
+              />
+            </svg>
+            <span>Merkliste · {anfrageBands.length}</span>
+          </button>
         )}
       </div>
 
@@ -863,12 +1116,22 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
           >
             Alle Bands anzeigen
           </button>
+          {/* Persoenliche Hilfe -- bestehender Kontaktweg (/kontakt), keine
+              neue Seite/kein neues Formular (Auftrag "Bandfinder-Redesign --
+              Nachgang", Abschnitt 5 "Null Treffer"). */}
+          <p className="text-sm text-pl-text-muted mt-6">
+            Nicht die richtige Band dabei?{' '}
+            <Link href="/kontakt" className="text-pl-accent hover:opacity-80 motion-safe:transition-opacity underline underline-offset-2">
+              Schreib uns kurz
+            </Link>
+            {' '}– wir helfen persönlich weiter.
+          </p>
         </div>
       ) : (
         <>
           <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayed.slice(0, visibleCount).map((band, index) => (
-              <BandCard key={band.id} band={band} priority={index < 6} />
+              <BandCard key={band.id} band={band} priority={index < 6} showMerkButton />
             ))}
           </div>
           {visibleCount < displayed.length && (
@@ -896,6 +1159,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
           damit er nicht ueber nachfolgendem Seiteninhalt (z. B. "Weitere
           Anlaesse entdecken" auf Veranstaltungsseiten) schwebt. */}
       <div ref={explorerEndSentinelRef} aria-hidden="true" className="h-px" />
+      </div>
 
       {/* Sticky-Zugang "Auswahl verfeinern" -- bewusst kompakt (kein
           zweiter Finder, kein Filter-Drawer), veraendert beim Klick
@@ -925,6 +1189,8 @@ export default function BandExplorer({ bands, regions, lockedOccasion }: Props) 
           {stickyLabel}
         </button>
       </div>
+
+      <MerklisteFlow isOpen={merklisteOpen} onClose={() => setMerklisteOpen(false)} />
     </div>
   );
 }

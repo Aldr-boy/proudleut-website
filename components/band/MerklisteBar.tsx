@@ -2,12 +2,10 @@
 
 import { useState } from 'react';
 import { useAnfrageStore } from '@/stores/anfrageStore';
-import { AnfrageModal } from './AnfrageModal';
+import { MerklisteFlow } from './MerklisteFlow';
 
 export function MerklisteBar() {
   const bands = useAnfrageStore((s) => s.bands);
-  const clearBands = useAnfrageStore((s) => s.clearBands);
-  const removeBand = useAnfrageStore((s) => s.removeBand);
   const [modalOpen, setModalOpen] = useState(false);
 
   if (bands.length === 0) return null;
@@ -49,19 +47,12 @@ export function MerklisteBar() {
               color: 'var(--pl-text-on-accent)',
             }}
           >
-            Auswahl anfragen
+            Merkliste ansehen
           </button>
         </div>
       </div>
 
-      <AnfrageModal
-        bands={bands}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={clearBands}
-        allowBandRemoval={true}
-        onRemoveBand={removeBand}
-      />
+      <MerklisteFlow isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
 }

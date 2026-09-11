@@ -17,6 +17,13 @@ type Props = {
   onSuccess?: () => void;
   allowBandRemoval?: boolean;
   onRemoveBand?: (slug: string) => void;
+  // Optional: wenn gesetzt, zeigt der Header einen Zurueck-Pfeil statt nur
+  // des Schliessen-Buttons -- genutzt von components/band/MerklisteFlow.tsx,
+  // um vom Formular zur vorgeschalteten Sammlungsansicht zurueckzukehren,
+  // ohne den gesamten Ablauf zu schliessen. Bestehende Aufrufstellen
+  // (HeroCTA, BandFloatingCta, direkte Einzelbandanfragen) setzen die Prop
+  // nicht -- dort bleibt der Header unveraendert.
+  onBack?: () => void;
 };
 
 type AnfrageFormState = {
@@ -53,7 +60,7 @@ const EMPTY_FORM: AnfrageFormState = {
   datenschutz: false,
 };
 
-function Initials({ name }: { name: string }) {
+export function Initials({ name }: { name: string }) {
   const parts = name.trim().split(/\s+/);
   const letters =
     parts.length >= 2
@@ -79,11 +86,19 @@ function SpinnerIcon() {
   );
 }
 
-function XIcon() {
+export function XIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19 12H5M12 19l-7-7 7-7" />
     </svg>
   );
 }
@@ -103,7 +118,7 @@ const inputClass =
 
 const labelClass = 'block text-xs font-semibold text-[#8a7e84] uppercase tracking-wide mb-1.5';
 
-export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemoval, onRemoveBand }: Props) {
+export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemoval, onRemoveBand, onBack }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const openedAtRef = useRef<number>(0);
@@ -272,7 +287,19 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
       >
       {/* Header */}
       <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[rgba(196,168,216,0.12)] shrink-0">
-        <h2 className="text-base font-bold text-[#ede8e3]">Bandanfrage</h2>
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Zurück zur Auswahl"
+              className="text-[#8a7e84] hover:text-[#ede8e3] transition-colors rounded-md p-1 -ml-1"
+            >
+              <BackIcon />
+            </button>
+          )}
+          <h2 className="text-base font-bold text-[#ede8e3]">Bandanfrage</h2>
+        </div>
         <button
           type="button"
           onClick={onClose}
