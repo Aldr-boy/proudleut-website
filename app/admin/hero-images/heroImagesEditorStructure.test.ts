@@ -77,21 +77,22 @@ test('hero_focus wird beim Aufbau der Auswahl ueber resolveHeroFocus normalisier
   assert.match(editorSource, /heroFocus: resolveHeroFocus\(img\.heroFocus\)/)
 })
 
-// ── HeroImagesEditor.tsx: Mobile-Pool-Kennzeichnung ────────────────────
+// ── HeroImagesEditor.tsx: "In dieser Ansicht verwendet"-Kennzeichnung ──
+// Admin-Adaption (Auftrag Abschnitt 3): das fruehere, mobile-only
+// isInMobilePool ist abgeloest -- die Markierung, welche ausgewaehlten
+// Bilder tatsaechlich verwendet werden, bezieht sich jetzt auf die
+// AKTUELL im Umschalter gewaehlte Ansicht (mobile/tablet/desktop) und
+// wird direkt aus slotUsage.total (countUsedHeroWallSlots) abgeleitet --
+// keine zweite, admin-eigene hartkodierte Zahl.
 
-test('Mobile-Pool-Kennzeichnung nutzt isInMobilePool, keine eigene hartkodierte "16"-Pruefung', () => {
-  assert.match(editorSource, /import \{[^}]*isInMobilePool[^}]*\} from '@\/lib\/heroWall\/heroWallSelectionState'/)
-  assert.match(editorSource, /isInMobilePool\(index\)/)
-  // Die Zahl 16 darf nur innerhalb der importierten Konstante leben, nicht
-  // ein zweites Mal frei im Editor auftauchen.
-  assert.doesNotMatch(editorSource, /< 16|<= 15|position < 16/)
+test('"in Ansicht verwendet"-Kennzeichnung leitet sich direkt aus slotUsage.total ab, keine eigene hartkodierte Positions-Grenze', () => {
+  assert.doesNotMatch(editorSource, /isInMobilePool/, 'das abgeloeste mobile-only Konzept darf nicht mehr referenziert werden')
+  assert.match(editorSource, /isUsedInView=\{index < slotUsage\.total\}/)
 })
 
-test('Mobile-Pool-Hinweistext behauptet nicht, alle 16 Bilder seien gleichzeitig im initialen Viewport sichtbar', () => {
-  const forbidden = ['gleichzeitig sichtbar', 'immer sichtbar', 'alle 16 Bilder sichtbar']
-  for (const phrase of forbidden) {
-    assert.doesNotMatch(editorSource, new RegExp(phrase, 'i'), `unerwartete Behauptung "${phrase}" gefunden`)
-  }
+test('isInMobilePool/HERO_WALL_MOBILE_POOL_SIZE sind aus heroWallSelectionState.ts entfernt (ersetzt durch breakpoint-generische Pruefung)', async () => {
+  const selectionStateSource = readFileSync(path.join(dir, '..', '..', '..', 'lib', 'heroWall', 'heroWallSelectionState.ts'), 'utf8')
+  assert.doesNotMatch(selectionStateSource, /isInMobilePool|HERO_WALL_MOBILE_POOL_SIZE/)
 })
 
 // ── HeroImagesEditor.tsx: Warnungen ────────────────────────────────────
@@ -102,54 +103,94 @@ test('Warnung bei weniger als 10 ausgewaehlten Bildern nutzt isBelowRecommendedM
   assert.doesNotMatch(editorSource, /selection\.length < 10/)
 })
 
-test('Spaltengleichheits-Warnung nutzt findIdenticalHeroWallColumns (echte Sequenzpruefung), keine hartkodierte Problemliste', () => {
-  assert.match(editorSource, /import \{ findIdenticalHeroWallColumns \} from '@\/lib\/heroWall\/simulateHeroWallSlots'/)
-  assert.match(editorSource, /findIdenticalHeroWallColumns\(selection\.map\(\(s\) => s\.id\)\)/)
-  for (const n of ['[8, 12, 16, 24, 32]', '[8,12,16,24,32]']) {
-    assert.doesNotMatch(editorSource, new RegExp(n.replace(/[[\]]/g, '\\$&')), 'hartkodierte Problem-N-Liste darf nicht vorkommen')
-  }
+// Startseiten-Hero-Redesign: die fruehere Modulo-Wrap-Slot-Simulation
+// (simulateHeroWallSlots.ts, "identische Spalten"-Warnung) ist abgeloest.
+// Die neue Split-Komposition ordnet Bildplatz n = Poolbild n ohne
+// Wiederholung zu (heroWallComposition.ts) -- keine Kollisionsgefahr
+// mehr, stattdessen eine transparente Nutzungsanzeige.
+test('nutzt countUsedHeroWallSlots fuer eine transparente, Breakpoint-abhaengige Bildplatz-Nutzungsanzeige, keine Spaltengleichheits-Warnung mehr', () => {
+  assert.match(editorSource, /import \{ countUsedHeroWallSlots \} from '@\/lib\/heroWall\/heroWallComposition'/)
+  assert.match(editorSource, /countUsedHeroWallSlots\(selection\.length, previewSize\)/)
+  assert.doesNotMatch(editorSource, /findIdenticalHeroWallColumns|simulateHeroWallSlots/, 'abgeloeste Modulo-Wrap-Pruefung darf nicht mehr referenziert werden')
+})
+
+test('Bildplatz-Nutzungstext folgt dem Auftragsbeispiel "X ausgewaehlt - Y im <Ansicht>-Hero verwendet - Z weitere ausgewaehlt"', () => {
+  assert.match(editorSource, /\{selection\.length\} ausgewählt/)
+  assert.match(editorSource, /im \{PREVIEW_DEVICES\[previewSize\]\.label\}-Hero/)
+  assert.match(editorSource, /weitere ausgewählt/)
 })
 
 // ── beforeunload-Guard ─────────────────────────────────────────────────
 
 test('beforeunload-Guard ist an hasStagedChanges gekoppelt (fruehzeitiger Return ohne staged Aenderungen)', () => {
-  const effectStart = editorSource.indexOf('useEffect(() => {\n    if (!hasStagedChanges) return')
-  assert.ok(effectStart >= 0, 'beforeunload-Effect mit fruehzeitigem Return nicht gefunden')
+  // \r?\n statt literalem \n -- robust gegen CRLF/LF-Zeilenenden.
+  const effectMatch = editorSource.match(/useEffect\(\(\) => \{\r?\n\s*if \(!hasStagedChanges\) return/)
+  assert.ok(effectMatch, 'beforeunload-Effect mit fruehzeitigem Return nicht gefunden')
+  const effectStart = effectMatch!.index!
   const effectBody = editorSource.slice(effectStart, effectStart + 400)
   assert.match(effectBody, /addEventListener\('beforeunload', handler\)/)
   assert.match(effectBody, /e\.preventDefault\(\)/)
 })
 
-// ── Keine Live-Vorschau (ausdruecklich nicht Teil von Paket 1) ─────────
+// ── Live-Vorschau: keine zweite Hero-Implementierung im Editor ────────
+// Admin-Adaption (Auftrag Abschnitt 1+2): die vorherige CSS-scale()-
+// Vorschau (w-[200%]/scale-50 um ein direkt im Editor gerendertes
+// <HeroWall>) hat nie echte Breakpoints ausgeloest -- sie skalierte nur
+// Pixel, ohne das von Tailwind ausgewertete Viewport zu aendern. Die
+// neue Loesung rendert HeroWall NICHT mehr direkt im Editor, sondern in
+// einer eigenen Route (app/admin/hero-images/preview) innerhalb eines
+// <iframe> mit echter Geraetebreite/-hoehe -- der Editor selbst importiert
+// HeroWall daher nicht mehr als Komponente (nur noch den Typ
+// HeroWallImage fuer previewImages).
 
-test('keine Live-Vorschau der echten Hero-Bildwand implementiert', () => {
-  // Gezielt nach konkreten Implementierungsartefakten einer echten
-  // Vorschau suchen (Import/JSX-Einsatz der Frontend-Hero-Komponente,
-  // Embed-/Video-Tag) -- NICHT nach Prosa wie "keine Live-Vorschau" in
-  // erklaerenden Kommentaren (diese referenzieren die Abwesenheit des
-  // Features legitim) und NICHT nach dem blossen Substring "HeroWall",
-  // der legitim Teil der eigenen Typnamen dieses Features ist
-  // (HeroWallSelectionItem, heroWallSelectionsAreEqual etc.).
-  const forbidden = [
-    /from ['"]@\/components\/homepage\/HeroMosaic['"]/,
-    /<HeroMosaic/,
-    /<iframe/,
-    /<video/,
-  ]
-  for (const pattern of forbidden) {
-    assert.doesNotMatch(editorSource, pattern, `unerwarteter Live-Vorschau-Bezug "${pattern}" gefunden`)
-    assert.doesNotMatch(pageSource, pattern, `unerwarteter Live-Vorschau-Bezug "${pattern}" gefunden`)
-  }
+test('Editor rendert HeroWall nicht mehr selbst -- nur der Typ HeroWallImage wird importiert, die Komponente selbst nicht', () => {
+  assert.match(editorSource, /import type \{ HeroWallImage \} from '@\/components\/hero\/HeroWall'/)
+  // Anker bewusst /<HeroWall[\s>]/ statt /<HeroWall/ -- letzteres matcht
+  // auch generische Typparameter wie useState<HeroWallSelectionItem[]>
+  // (legitim, kein JSX-Einsatz der Komponente selbst).
+  assert.doesNotMatch(editorSource, /<HeroWall[\s>]/, 'HeroWall darf nicht mehr direkt im Editor gerendert werden -- das war die Ursache der nie echten Breakpoints ausloesenden Vorschau')
 })
 
-// ── Live-Vorschau (Paket 2, SCHRITT 2B) ────────────────────────────────
-// Der Editor verwendet fuer die Vorschau ausschliesslich die bestehende,
-// gemeinsame Hero-Wand-Komponente -- keine zweite Grid-/Slot-/Offset-
-// Implementierung, keine eigene Layoutlogik im Admin-Bereich.
+test('Vorschau laeuft in einem <iframe> auf die eigenstaendige Preview-Route, mit echten Geraete-Pixelmassen (390x844 / 768x1024 / 1440x900)', () => {
+  assert.match(editorSource, /<iframe/)
+  assert.match(editorSource, /src="\/admin\/hero-images\/preview"/)
+  assert.match(editorSource, /mobile: \{ width: 390, height: 844/)
+  assert.match(editorSource, /tablet: \{ width: 768, height: 1024/)
+  assert.match(editorSource, /desktop: \{ width: 1440, height: 900/)
+})
 
-test('Live-Vorschau importiert die echte HeroWall-Komponente aus components/hero, keine eigene Kopie', () => {
-  assert.match(editorSource, /import \{ HeroWall, type HeroWallImage \} from '@\/components\/hero\/HeroWall'/)
-  assert.match(editorSource, /<HeroWall images=\{previewImages\} \/>/)
+test('Iframe-Groesse wird ueber echte width/height-Styles gesetzt (nicht nur optisch skaliert) -- das Iframe bekommt sein eigenes echtes Layout-Viewport', () => {
+  // Anker bewusst auf das ref-Attribut, nicht auf den blossen Substring
+  // "<iframe" -- der taucht zuerst in einem erklaerenden Kommentar auf
+  // (legitime Prosa ueber die Technik), nicht im tatsaechlichen JSX-Tag.
+  const start = editorSource.indexOf('ref={previewIframeRef}')
+  assert.ok(start >= 0, 'iframe (ref={previewIframeRef}) nicht gefunden')
+  const body = editorSource.slice(start, start + 500)
+  assert.match(body, /width: PREVIEW_DEVICES\[previewSize\]\.width/)
+  assert.match(body, /height: PREVIEW_DEVICES\[previewSize\]\.height/)
+})
+
+test('Iframe blockt Interaktionen (pointerEvents none) -- ein Klick in der Vorschau (z.B. der CTA-Link) darf den Admin nicht verlassen', () => {
+  const start = editorSource.indexOf('ref={previewIframeRef}')
+  assert.ok(start >= 0, 'iframe (ref={previewIframeRef}) nicht gefunden')
+  const body = editorSource.slice(start, start + 700)
+  assert.match(body, /pointerEvents: 'none'/)
+})
+
+test('Vorschau-Sync ueberträgt den unsaved Auswahl-Stand per postMessage (kein zweiter Datenspeicher, kein sessionStorage, kein Save als Vorbedingung)', () => {
+  assert.match(editorSource, /import \{ HERO_WALL_PREVIEW_MESSAGE_TYPE \} from '@\/lib\/heroWall\/heroWallPreviewMessage'/)
+  assert.match(editorSource, /contentWindow\?\.postMessage\(/)
+  assert.match(editorSource, /\{ type: HERO_WALL_PREVIEW_MESSAGE_TYPE, images: previewImages \}/)
+  assert.doesNotMatch(editorSource, /sessionStorage|localStorage/, 'kein zweiter, persistenter Datenspeicher fuer die Vorschau erlaubt')
+})
+
+test('eigenstaendige Preview-Route rendert dieselben Komponenten wie die Homepage (HeroWall + HeroContent), keine zweite Implementierung', () => {
+  const previewSource = readFileSync(path.join(dir, 'preview', 'page.tsx'), 'utf8')
+  assert.match(previewSource, /import \{ HeroWall, type HeroWallImage \} from '@\/components\/hero\/HeroWall'/)
+  assert.match(previewSource, /import \{ HeroContent \} from '@\/components\/homepage\/HeroContent'/)
+  assert.match(previewSource, /<HeroWall images=\{images\}>/)
+  assert.match(previewSource, /<HeroContent \/>/)
+  assert.match(previewSource, /event\.origin !== window\.location\.origin/, 'Nachrichten muessen auf same-origin geprueft werden')
 })
 
 test('previewImages ist ein reiner Mapping-Schritt aus dem bestehenden Auswahl-State, keine zweite Slot-Simulation im Editor', () => {
@@ -166,19 +207,31 @@ test('previewImages ist ein reiner Mapping-Schritt aus dem bestehenden Auswahl-S
   }
 })
 
-test('0 ausgewaehlte Bilder: Hinweistext statt HeroWall, keine bedingungslose Rendering', () => {
+test('0 ausgewaehlte Bilder: Hinweistext statt Vorschau-Iframe, keine bedingungslose Rendering', () => {
   assert.match(editorSource, /selection\.length === 0 \? \(/)
   const start = editorSource.indexOf('selection.length === 0 ? (')
   const body = editorSource.slice(start, start + 400)
-  assert.doesNotMatch(body, /<HeroWall/, 'HeroWall darf im 0-Bilder-Zustand nicht im truthy-Zweig der 0-Pruefung stehen')
+  assert.doesNotMatch(body, /<iframe/, 'Vorschau-Iframe darf im 0-Bilder-Zustand nicht im truthy-Zweig der 0-Pruefung stehen')
 })
 
-test('Live-Vorschau-Wrapper aendert nur aeussere Admin-Chrome (Rahmen/Clipping/Skalierung), keine viewportabhaengige Breitensimulation', () => {
+test('kompakte Darstellung skaliert nur die AEUSSERE Box per Container-Query (echtes Iframe-Viewport bleibt Geraetegroesse) -- keine JS-Breitenermittlung', () => {
   const start = editorSource.indexOf('Rechte Spalte -- Curation-Workspace')
   assert.ok(start >= 0, 'Rechte-Spalte-Block nicht gefunden')
-  const body = editorSource.slice(start, start + 2600)
+  const body = editorSource.slice(start, start + 5200)
   assert.doesNotMatch(body, /window\.innerWidth|matchMedia|useMediaQuery|ResizeObserver/, 'keine JS-Breitenermittlung fuer eine simulierte Vorschaugroesse erlaubt')
-  assert.doesNotMatch(body, /@container|container-type/, 'keine Container-Queries erlaubt')
+  // Container-Queries sind hier bewusst erlaubt: sie skalieren nur die
+  // AEUSSERE Praesentationsbox kompakt, das Iframe selbst behaelt uebers
+  // width/height-Style seine echte Geraetegroesse (siehe Iframe-Tests
+  // oben) -- das ist keine Breitensimulation, sondern reine Darstellung.
+  // container-type: size (statt nur inline-size) macht BEIDE Achsen
+  // (cqw und cqh) verfuegbar -- noetig fuer den min(Breite, Hoehe)-Fit.
+  assert.match(body, /containerType: 'size'/)
+})
+
+test('Skalierungsfaktor ist nie groesser als 1 (kein Hochskalieren schmaler Geraete wie Mobile) -- min(1, Breitenverhaeltnis, Hoehenverhaeltnis)', () => {
+  const start = editorSource.indexOf('Live-Vorschau -- eigene Route')
+  const body = editorSource.slice(start, start + 5200)
+  assert.match(body, /scale\(min\(1, calc\(100cqw \/ \$\{PREVIEW_DEVICES\[previewSize\]\.width\}px\), calc\(100cqh \/ \$\{PREVIEW_DEVICES\[previewSize\]\.height\}px\)\)\)/)
 })
 
 // ── UX-Korrektur V2 (Paket 2, SCHRITT 2B Folgeauftrag): rechte Spalte
@@ -189,21 +242,36 @@ test('Live-Vorschau-Wrapper aendert nur aeussere Admin-Chrome (Rahmen/Clipping/S
 test('Curation-Workspace liegt in der RECHTEN Spalte (nach "Alle Bilder"), nicht mehr oberhalb beider Spalten', () => {
   const allBilderIdx = editorSource.indexOf('>Alle Bilder<')
   const workspaceIdx = editorSource.indexOf('Rechte Spalte -- Curation-Workspace')
-  const previewIdx = editorSource.indexOf('Live-Vorschau -- dieselbe Komponente')
+  const previewIdx = editorSource.indexOf('Live-Vorschau -- eigene Route')
   assert.ok(allBilderIdx >= 0 && workspaceIdx >= 0 && previewIdx >= 0, 'einer der Markup-Marker fehlt')
   assert.ok(allBilderIdx < workspaceIdx, '"Alle Bilder" muss vor dem Curation-Workspace stehen (linke vor rechter Spalte)')
   assert.ok(workspaceIdx < previewIdx, 'Live-Vorschau muss innerhalb des Curation-Workspace-Blocks stehen')
 })
 
-test('HeroWall wird VOLLSTAENDIG gerendert und nur per CSS-Transform skaliert -- kein Clipping/kein Abschneiden (keine feste Innenhoehe wie h-80)', () => {
-  const start = editorSource.indexOf('Live-Vorschau -- dieselbe Komponente')
-  const body = editorSource.slice(start, start + 2000)
-  assert.match(body, /w-\[200%\]/, 'innerer Canvas muss doppelt so breit sein wie die sichtbare Breite')
-  assert.match(body, /scale-50/, 'HeroWall muss per scale(0.5) verkleinert werden, nicht abgeschnitten')
-  assert.match(body, /origin-top-left/, 'Skalierung muss von oben links ausgehen, sonst verschiebt sich das Ergebnis')
-  assert.match(body, /h-\[50svh\]/, 'Aussenbox muss exakt der skalierten HeroWall-Hoehe entsprechen (50% von HeroWalls eigener 100svh)')
-  assert.doesNotMatch(body, /\bh-80\b/, 'keine feste, geclippte Innenhoehe mehr -- das war genau das Problem der vorherigen Fassung')
-  assert.match(body, /<HeroWall images=\{previewImages\} \/>/)
+test('kein Rueckfall auf die alte CSS-scale()-Vorschau (w-[200%]/scale-50 um ein direkt gerendertes HeroWall) -- das loeste nie echte Breakpoints aus', () => {
+  assert.doesNotMatch(editorSource, /w-\[200%\]/, 'die alte, nie echt breakpoint-ausloesende Verdopplungs-Technik darf nicht zurueckkehren')
+  assert.doesNotMatch(editorSource, /origin-top-left scale-50/, 'die alte 50%-Skalierung um ein direkt gerendertes HeroWall darf nicht zurueckkehren')
+  assert.doesNotMatch(editorSource, /h-\[50svh\]/, 'die alte, an HeroWalls eigener min-h-[100svh] verankerte Aussenbox-Hoehe darf nicht zurueckkehren')
+})
+
+test('Vorschau-Buehne hat eine gemeinsame, geraeteunabhaengige feste Hoehe (PREVIEW_STAGE_HEIGHT), nicht mehr aspect-ratio-gekoppelt', () => {
+  // Nachbesserung "Vorschaugroesse": aspect-ratio auf der Aussenbox war die
+  // Ursache der Hochskalierung bei Mobile (Box immer 100% Spaltenbreite,
+  // Hoehe daraus abgeleitet -- nie durch eine Hoehen-Obergrenze gedeckelt).
+  assert.doesNotMatch(editorSource, /aspectRatio:/, 'aspect-ratio-Kopplung der Aussenbox an das Geraeteseitenverhaeltnis darf nicht zurueckkehren')
+  assert.match(editorSource, /const PREVIEW_STAGE_HEIGHT = /)
+  const start = editorSource.indexOf('Live-Vorschau -- eigene Route')
+  const body = editorSource.slice(start, start + 5200)
+  assert.match(body, /height: PREVIEW_STAGE_HEIGHT/)
+})
+
+test('skalierter Geraete-Ausschnitt wird unabhaengig vom Skalierungsfaktor exakt in der Buehne zentriert (absolute + 50%/50% + halbe Aussenmasse als negativer Rand)', () => {
+  const start = editorSource.indexOf('Live-Vorschau -- eigene Route')
+  const body = editorSource.slice(start, start + 5200)
+  assert.match(body, /top: '50%'/)
+  assert.match(body, /left: '50%'/)
+  assert.match(body, /marginTop: -PREVIEW_DEVICES\[previewSize\]\.height \/ 2/)
+  assert.match(body, /marginLeft: -PREVIEW_DEVICES\[previewSize\]\.width \/ 2/)
 })
 
 test('genau EIN gemeinsamer sticky Workspace (Vorschau + Reihenfolge zusammen), nicht zwei unabhaengige sticky Elemente', () => {
@@ -215,7 +283,7 @@ test('genau EIN gemeinsamer sticky Workspace (Vorschau + Reihenfolge zusammen), 
   assert.match(editorSource, /lg:sticky lg:top-0 lg:max-h-\[100svh\] lg:overflow-hidden/, 'sticky/Hoehenbegrenzung nur ab lg (Desktop), nicht erzwungen auf kleinen Screens')
 
   const workspaceStart = editorSource.indexOf('lg:sticky lg:top-0')
-  const previewIdx = editorSource.indexOf('Live-Vorschau -- dieselbe Komponente')
+  const previewIdx = editorSource.indexOf('Live-Vorschau -- eigene Route')
   const poolHeadingIdx = editorSource.indexOf('>Ausgewählter Hero-Pool<')
   assert.ok(workspaceStart >= 0 && previewIdx > workspaceStart, 'Live-Vorschau muss innerhalb der sticky Workspace-Box liegen')
   assert.ok(poolHeadingIdx > previewIdx, '"Ausgewählter Hero-Pool" muss nach der Live-Vorschau, innerhalb derselben sticky Einheit liegen')

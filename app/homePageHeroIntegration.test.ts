@@ -40,17 +40,26 @@ test('bestehender Hero-Content (Claim/CTA) wird als children in HeroWall eingeha
   assert.match(wallBody, /<HeroContent \/>/)
 })
 
-test('HeroContent uebernimmt Text/Claim/CTA unveraendert (H1, Anlass-Pills, Alle-Bands-Link)', () => {
-  assert.match(heroContentSource, />\s*Livebands für dein Event\.\s*</)
-  assert.match(heroContentSource, /'Hochzeit'/)
-  assert.match(heroContentSource, /'Firmenfeier & Business Event'/)
-  assert.match(heroContentSource, /'Festzelt'/)
+// Startseiten-Hero-Redesign: neuer, verbindlicher Text (Auftrag
+// Abschnitt 3) ersetzt den bisherigen Claim/die Anlass-Pills/den
+// "Alle Bands ansehen"-Link vollstaendig.
+test('HeroContent zeigt den neuen verbindlichen Text/CTA (Eyebrow, H1, Subtext, einziger primaerer CTA "Bands entdecken")', () => {
+  assert.match(heroContentSource, />\s*In und um Bayern\s*</)
+  assert.match(heroContentSource, /Livebands für/)
+  assert.match(heroContentSource, />euren Moment\.</)
+  assert.match(heroContentSource, /Für eure Hochzeit, Firmenfeier oder ein Fest, das in Erinnerung bleibt\./)
   assert.match(heroContentSource, /href="\/bands"/)
-  assert.match(heroContentSource, /Alle Bands ansehen/)
+  assert.match(heroContentSource, /Bands entdecken/)
+})
+
+test('HeroContent laesst die abgeloesten Elemente (Anlass-Pills, "Was hast du vor?", "Alle Bands ansehen", Claim-Zeile) weg', () => {
+  for (const removed of ['Was hast du vor', 'Alle Bands ansehen', 'Firmenfeier & Business Event', 'Handverlesen']) {
+    assert.doesNotMatch(heroContentSource, new RegExp(removed), `HeroContent darf "${removed}" nicht mehr enthalten`)
+  }
 })
 
 test('HeroContent implementiert keine eigene Grid-/Slot-/Offset-Logik (reiner Text-/Button-Inhalt)', () => {
-  for (const forbidden of ['buildHeroWallSlots', 'splitIntoColumns', 'grid-cols-5', 'COLUMN_META', 'aspect-[5/6]']) {
+  for (const forbidden of ['buildHeroWallTracks', 'TrackSet', 'aspect-[3/4]', 'pl-hero-float']) {
     assert.doesNotMatch(heroContentSource, new RegExp(forbidden.replace(/[[\]/]/g, '\\$&')), `HeroContent darf "${forbidden}" nicht enthalten`)
   }
 })

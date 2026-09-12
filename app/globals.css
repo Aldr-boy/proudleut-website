@@ -161,17 +161,30 @@ body {
 }
 
 /* ── Hero-Bildwelt: sehr leichte Schwebe-Bewegung ──
-   Startseiten-Hero, Desktop-Bildkomposition. Animiert bewusst nur
-   margin-top statt transform, damit die separat pro Bild gesetzte
-   rotate()-Transform (inline style) unangetastet bleibt. */
+   Startseiten-Hero-Redesign, Bildspuren der Split-Hero-Komposition
+   (components/hero/HeroWall.tsx). Animiert bewusst nur transform:
+   translateY statt margin-top, damit die separat pro Track per Inline-
+   Style gesetzte statische margin-top-Positionierung (vertikaler
+   Versatz je Spur) unangetastet bleibt -- die Rotation der gesamten
+   Bildwand sitzt zusätzlich eine Ebene höher auf einem eigenen
+   Vorfahren-Element, beide Transformationen bleiben dadurch getrennt.
+   Distanz/Dauer je Track über CSS-Variablen mit Fallback einstellbar
+   (siehe trackAnimationStyle() in HeroWall.tsx). */
 @keyframes pl-hero-float {
-  0%, 100% { margin-top: 0; }
-  50% { margin-top: -8px; }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(var(--pl-hero-float-distance, -8px)); }
 }
 .pl-hero-float {
   animation-name: pl-hero-float;
+  animation-duration: var(--pl-hero-float-duration, 34s);
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
+}
+/* Pause-Button (HeroImageWall) setzt data-hero-wall-paused="true" auf den
+   Rotationscontainer -- pausiert alle Bildspuren darunter, ohne die
+   Animation zu entfernen (Zustand bleibt für Resume erhalten). */
+[data-hero-wall-paused='true'] .pl-hero-float {
+  animation-play-state: paused;
 }
 @media (prefers-reduced-motion: reduce) {
   .pl-hero-float { animation: none !important; }
