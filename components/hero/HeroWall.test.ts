@@ -4,203 +4,185 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-// Strukturelle Regressionspruefung fuer die echte Hero-Bildwand-
-// Komponente (Paket 2, Schritt 2A) gegen die eingefrorene Spec
-// (docs/spezifikation-hero-bildwand.md, Abschnitt 5 "Next.js-Umsetzung"
-// und Abschnitt 9 DoD). Es gibt in diesem Repo keine React-Testing-
-// Infrastruktur (kein jsdom, keine @testing-library-Abhaengigkeit) --
-// die echte Quelldatei wird per readFileSync gelesen und strukturell
-// geprueft, identisches Muster wie die uebrigen *Structure.test.ts-
-// Dateien in diesem Repo.
+// Strukturelle Regressionspruefung fuer die neue Split-Hero-Komponente
+// (Auftrag "Startseiten-Hero-Redesign"). Es gibt in diesem Repo keine
+// React-Testing-Infrastruktur (kein jsdom, keine @testing-library-
+// Abhaengigkeit) -- die echte Quelldatei wird per readFileSync gelesen
+// und strukturell geprueft, identisches Muster wie die uebrigen
+// *Structure.test.ts-Dateien in diesem Repo. Der reale interaktive/
+// visuelle Ablauf (Rotation, Pendeln, Pause, Breakpoints) wurde per
+// Browser verifiziert (siehe Abschlussbericht) -- hier nur strukturelle
+// Absicherung der Kernmechanik.
 const sourcePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'HeroWall.tsx')
 const source = readFileSync(sourcePath, 'utf8')
 
-test('Section: relative, min-h-[100svh], overflow-hidden, KEINE feste vh-Hoehe', () => {
+test('Section: relative, overflow-hidden, bg-pl-stage -- keine feste vh-Hoehe auf der Section selbst', () => {
   const sectionStart = source.indexOf('<section')
   const sectionEnd = source.indexOf('>', sectionStart)
   const sectionTag = source.slice(sectionStart, sectionEnd)
   assert.match(sectionTag, /\brelative\b/)
-  assert.match(sectionTag, /min-h-\[100svh\]/)
   assert.match(sectionTag, /overflow-hidden/)
-  assert.doesNotMatch(sectionTag, /(?<!min-)h-\[/, 'keine feste Hoehe erlaubt (min-h-[...] ist erlaubt, h-[...] nicht)')
+  assert.match(sectionTag, /bg-pl-stage/)
+  assert.doesNotMatch(sectionTag, /\bh-\[/, 'keine feste Hoehe auf der Section erlaubt')
   assert.doesNotMatch(sectionTag, /\bh-screen\b/)
 })
 
-test('Content: relative z-20, max-w-[80rem], px-4, py-28 (7rem)', () => {
-  const marker = '{/* Content */}'
-  const idx = source.indexOf(marker)
-  assert.ok(idx >= 0, 'Content-Marker nicht gefunden')
-  const divStart = source.indexOf('<div', idx)
-  const divEnd = source.indexOf('>', divStart)
-  const divTag = source.slice(divStart, divEnd)
-  assert.match(divTag, /relative z-20/)
-  assert.match(divTag, /max-w-\[80rem\]/)
-  assert.match(divTag, /px-4/)
-  assert.match(divTag, /py-28/)
+test('xl:min-h-[100svh] sitzt auf der Flex-Zeile (waechst mit Inhalt/Textvergroesserung, keine Deckel-Hoehe) -- erst ab Desktop erzwungen, Tablet bleibt inhaltsbestimmt ohne kuenstliche Leerflaeche', () => {
+  assert.match(source, /xl:min-h-\[100svh\]/)
+  assert.doesNotMatch(source, /\bmd:min-h-\[100svh\]/, 'volle Viewporthoehe darf nicht schon ab Tablet erzwungen werden (Leerflaechen-Risiko bei weniger Tracks)')
+  assert.doesNotMatch(source, /max-h-\[100svh\]/, 'keine Hoehenbegrenzung nach oben auf der Hero-Section')
 })
 
-test('Bildwand-Container: absolute inset-0 z-0 overflow-hidden', () => {
-  const marker = '{/* Bildwand */}'
-  const idx = source.indexOf(marker)
-  assert.ok(idx >= 0, 'Bildwand-Marker nicht gefunden')
-  const divStart = source.indexOf('<div', idx)
-  const divEnd = source.indexOf('>', divStart)
-  const divTag = source.slice(divStart, divEnd)
-  assert.match(divTag, /absolute inset-0 z-0 overflow-hidden/)
+test('Textflaeche steht im Dokumentfluss vor der Bilderwelt (Mobile: Text zuerst, danach Bilder)', () => {
+  const textIdx = source.indexOf('{children}')
+  const wallIdx = source.indexOf('<HeroImageWall')
+  assert.ok(textIdx >= 0 && wallIdx >= 0, 'Text- oder Bildwelt-Marker nicht gefunden')
+  assert.ok(textIdx < wallIdx, 'children (HeroContent) muss vor HeroImageWall im JSX stehen')
 })
 
-test('Overlay: exakt rgba(32,32,32,0.66), absolute inset-0 z-10, kein Verlauf', () => {
-  assert.match(source, /absolute inset-0 z-10 bg-\[rgba\(32,32,32,0\.66\)\]/)
-  assert.doesNotMatch(source, /gradient/i)
+// Nachgang "Komposition & weiche Übergänge": Text und Bildwelt sind ab md
+// bewusst zwei sich überlappende absolute Ebenen in einem gemeinsamen
+// Szenencontainer (löst die harte Flex-Spalten-Kante ab) -- auf Mobile
+// bleibt die Bildwelt weiterhin ein normaler Flow-Block ohne jede
+// absolute/fixed Positionierung (unpräfigierte Basisklassen).
+test('Bilderwelt-Wrapper: auf Mobile normaler Flow-Block mit eigener Mindesthoehe (kein unpräfigiertes absolute/fixed), ab md bewusst absolute (überlappende Ebene)', () => {
+  const wallWrapperMatch = source.match(/<div className="relative w-full min-h-\[42svh\][^"]*">/)
+  assert.ok(wallWrapperMatch, 'Bilderwelt-Wrapper-Div nicht gefunden')
+  const classes = wallWrapperMatch[0]
+  assert.match(classes, /min-h-\[42svh\]/, 'Bilderwelt braucht eine eigene Mindesthoehe auf Mobile (Dokumentfluss statt fester Position)')
+  // Keine UNPRAEFIGIERTE (Mobile-wirksame) absolute/fixed-Klasse.
+  assert.doesNotMatch(classes, /(^|\s)absolute\b|(^|\s)fixed\b/)
+  // Ab md bewusst absolute -- Kernbestandteil der Ueberlappungs-/Gradient-Loesung.
+  assert.match(classes, /md:absolute/)
+  assert.match(classes, /md:inset-y-0/)
 })
 
-test('Z-Index-Reihenfolge exakt: Bildwand z-0, Overlay z-10, Content z-20', () => {
-  const contentZIndex = source.indexOf('relative z-20')
-  const overlayZIndex = source.indexOf('z-10 bg-[rgba')
-  const bildwandZIndex = source.indexOf('absolute inset-0 z-0')
-  assert.ok(contentZIndex >= 0 && overlayZIndex >= 0 && bildwandZIndex >= 0)
+test('children (HeroContent) wird unveraendert als Slot eingehaengt -- HeroWall selbst rendert keinen eigenen Text', () => {
+  assert.match(source, /\{children\}/)
+  assert.doesNotMatch(source, /Livebands für|Bands entdecken/, 'HeroWall darf keinen eigenen Hero-Text enthalten -- das ist Aufgabe von HeroContent')
 })
 
-test('Grid: grid-cols-2 md:grid-cols-3 xl:grid-cols-5, gap-4, px-4', () => {
-  assert.match(source, /grid grid-cols-2 gap-4 px-4 md:grid-cols-3 xl:grid-cols-5/)
-})
-
-test('COLUMN_META: genau 5 Spalten, exakte Offsets und Sichtbarkeits-Klassen aus Spec Abschnitt 3+4', () => {
-  const start = source.indexOf('const COLUMN_META')
-  assert.ok(start >= 0, 'COLUMN_META nicht gefunden')
-  const arrayStart = source.indexOf('= [', start)
-  const end = source.indexOf('\n]', arrayStart)
-  const block = source.slice(start, end)
-  assert.match(block, /offset: '-mt-\[20%\]', display: 'flex'/)
-  assert.match(block, /offset: '-mt-\[50%\]', display: 'flex'/)
-  assert.match(block, /offset: 'mt-0', display: 'hidden md:flex'/)
-  assert.match(block, /offset: '-mt-\[30%\]', display: 'hidden xl:flex'/)
-  assert.match(block, /offset: '-mt-\[20%\]', display: 'hidden xl:flex'/)
-  // Nur tatsaechliche Array-Eintraege zaehlen (Wert ist ein String-Literal
-  // in Anfuehrungszeichen) -- die Typannotation "{ offset: string; ... }[]"
-  // enthaelt denselben Substring "{ offset:" ohne folgendes Anfuehrungszeichen
-  // und darf nicht mitgezaehlt werden.
-  const entries = block.match(/\{ offset: '/g) ?? []
-  assert.equal(entries.length, 5, 'COLUMN_META muss genau 5 Eintraege haben (immer alle 5 Spalten)')
-})
-
-// ── Paternoster-Animation (Nachtrag, reale Webflow-Vermessung) ────────
-
-test('COLUMN_META: alternierende Animationsrichtung 1↑ 2↓ 3↑ 4↓ 5↑, reale gemessene Reihenfolge', () => {
-  const start = source.indexOf('const COLUMN_META')
-  const arrayStart = source.indexOf('= [', start)
-  const end = source.indexOf('\n]', arrayStart)
-  const block = source.slice(start, end)
-  const directions = Array.from(block.matchAll(/animationClass: '(pl-paternoster-(?:up|down))'/g)).map((m) => m[1])
-  assert.deepEqual(directions, [
-    'pl-paternoster-up',
-    'pl-paternoster-down',
-    'pl-paternoster-up',
-    'pl-paternoster-down',
-    'pl-paternoster-up',
-  ])
-})
-
-test('Animation wirkt ausschliesslich auf die Spalte selbst -- nicht auf Grid, Bilder, List A/B, Content oder Overlay', () => {
-  // Die einzige Stelle, an der eine pl-paternoster-*-Klasse tatsaechlich
-  // in einem className landet, ist die Spalten-Div-Vorlage selbst.
-  const columnDivStart = source.indexOf('className={`${col.display} ${col.offset} ${col.animationClass}')
-  assert.ok(columnDivStart >= 0, 'Spalten-Div mit col.animationClass nicht gefunden')
-
-  const contentMarker = source.indexOf('{/* Content */}')
-  const contentDivEnd = source.indexOf('>', source.indexOf('<div', contentMarker))
-  assert.doesNotMatch(source.slice(contentMarker, contentDivEnd), /paternoster/i)
-
-  const overlayLine = source.match(/absolute inset-0 z-10 bg-\[rgba\(32,32,32,0\.66\)\][^\n]*/)?.[0] ?? ''
-  assert.doesNotMatch(overlayLine, /paternoster/i)
-
-  const gridTag = source.slice(source.indexOf('grid grid-cols-2') - 20, source.indexOf('grid grid-cols-2') + 100)
-  assert.doesNotMatch(gridTag, /paternoster/i)
-
-  // List A/B-Wrapper-Divs tragen ausschliesslich flex flex-col gap-4, keine eigene Animationsklasse.
-  const listWrappers = Array.from(source.matchAll(/className="flex flex-col gap-4"/g))
-  assert.equal(listWrappers.length, 2, 'erwartet genau 2 List-Wrapper-Divs (List A, List B) ohne eigene Animationsklasse')
-})
-
-test('alle 5 Spalten werden IMMER gerendert -- COLUMN_META.map ohne Slice/Filter/viewportabhaengige Bedingung', () => {
-  const mapIdx = source.indexOf('COLUMN_META.map')
-  assert.ok(mapIdx >= 0, 'COLUMN_META.map nicht gefunden')
-  const mapBody = source.slice(mapIdx, mapIdx + 400)
-  // Gezielt nur eine Kuerzung der COLUMN_META-Liste selbst verbieten (das
-  // wuerde Spalten aus dem Grid entfernen) -- columns[i].slice(0,4)/(4,8)
-  // ist eine legitime Aufteilung der 8 Kacheln EINER Spalte in List A/B
-  // und darf nicht mit diesem Verbot kollidieren.
-  assert.doesNotMatch(mapBody, /COLUMN_META\.map\([^)]*\)\.slice\(|COLUMN_META\.slice\(/, 'keine Slice-Kuerzung der Spaltenliste selbst erlaubt')
-  assert.doesNotMatch(mapBody, /COLUMN_META\.filter\(/, 'keine Filter-Kuerzung der Spaltenliste erlaubt')
-  assert.doesNotMatch(mapBody, /window\.innerWidth|matchMedia|useMediaQuery/, 'keine clientseitige Viewport-Ermittlung erlaubt')
-})
-
-test('Spalten-Divs sind direkte Kinder des Grids -- kein Wrapper-Div zwischen Grid-Container und Spalte', () => {
-  const gridStart = source.indexOf('grid grid-cols-2')
-  const gridDivStart = source.lastIndexOf('<div', gridStart)
-  const gridDivEnd = source.indexOf('>', gridDivStart)
-  const afterGridTag = source.slice(gridDivEnd + 1, gridDivEnd + 200).trimStart()
-  assert.match(afterGridTag, /^\{COLUMN_META\.map/, 'direkt nach dem Grid-Div-Tag muss COLUMN_META.map folgen, kein zusaetzlicher Wrapper')
-})
-
-test('Slot-Belegung nutzt ausschliesslich die bestehende Paket-1-Logik (buildHeroWallSlots, splitIntoColumns) -- keine zweite Implementierung', () => {
-  assert.match(source, /import \{ buildHeroWallSlots, splitIntoColumns \} from '@\/lib\/heroWall\/simulateHeroWallSlots'/)
-  assert.match(source, /buildHeroWallSlots\(images\)/)
-  assert.match(source, /splitIntoColumns\(slots\)/)
-  // Gezielt nach tatsaechlichem Einsatz (Funktionsaufruf/Methode) suchen,
-  // nicht nach dem blossen Wort "Shuffle" -- das kommt legitim in
-  // erklaerenden Kommentaren vor ("kein Shuffle").
+test('Bildplatz-Zuordnung nutzt ausschliesslich die gemeinsame Komposition (buildHeroWallTracks) -- keine zweite Implementierung', () => {
+  assert.match(source, /import \{[^}]*buildHeroWallTracks[^}]*\} from '@\/lib\/heroWall\/heroWallComposition'/)
+  assert.match(source, /buildHeroWallTracks\(images, breakpoint\)/)
   assert.doesNotMatch(source, /Math\.random\(\)|\.shuffle\(|sort\(\(\) =>/i, 'keine Zufalls-/Shuffle-Logik erlaubt')
+  assert.doesNotMatch(source, /% pool\.length|% images\.length/, 'kein Modulo-Wrap mehr -- das war die abgeloeste Logik')
+})
+
+test('alle vier Breakpoint-Kompositionen werden serverseitig gerendert und ausschliesslich per CSS ein-/ausgeblendet, keine clientseitige Breitenermittlung', () => {
+  for (const bp of ['mobile', 'tablet', 'tabletWide', 'desktop']) {
+    assert.match(source, new RegExp(`<TrackSet images=\\{images\\} breakpoint="${bp}"`), `TrackSet fuer Breakpoint "${bp}" nicht gefunden`)
+  }
+  assert.doesNotMatch(source, /window\.innerWidth|matchMedia|useMediaQuery/, 'keine clientseitige Viewport-Ermittlung erlaubt')
 })
 
 test('hero_focus: NULL -> center ueber resolveHeroFocus, alle drei Werte auf object-position-Klassen abgebildet', () => {
   assert.match(source, /import \{ resolveHeroFocus \} from '@\/lib\/heroWall\/resolveHeroFocus'/)
-  assert.match(source, /resolveHeroFocus\(img\.heroFocus\)/)
-  const mapStart = source.indexOf('FOCUS_TO_OBJECT_POSITION_CLASS')
-  const mapBlock = source.slice(mapStart, mapStart + 300)
-  assert.match(mapBlock, /top: 'object-top'/)
-  assert.match(mapBlock, /center: 'object-center'/)
-  assert.match(mapBlock, /bottom: 'object-bottom'/)
+  assert.match(source, /resolveHeroFocus\(slot\.image\.heroFocus\)/)
+  assert.match(source, /'top'.*'object-top'/)
+  assert.match(source, /'object-bottom'/)
+  assert.match(source, /'object-center'/)
 })
 
-test('Kachel: aspect-[5/6], object-cover, alt="", sizes exakt aus Spec', () => {
-  assert.match(source, /aspect-\[5\/6\]/)
-  assert.match(source, /object-cover/)
-  assert.match(source, /alt=""/)
-  assert.match(source, /sizes="\(max-width: 767px\) 50vw, \(max-width: 1279px\) 33vw, 20vw"/)
+test('fehlendes Poolbild (Platzhalter) zeigt einen erkennbaren, aber nicht poetischen Hinweistext -- kein Bildduplikat, kein Fehler', () => {
+  assert.match(source, /function PlaceholderTile/)
+  assert.match(source, /Motiv fehlt/)
+  assert.match(source, /if \(!slot\.image\) return <PlaceholderTile/)
 })
 
-test('priority ausschliesslich fuer Spalte-Index < 2 UND Kachel-Index < 2 (Spalte 1+2, fruehe Slots in List A)', () => {
-  assert.match(source, /priority=\{i < 2 && j < 2\}/)
+test('Rotation der gesamten Bildwand sitzt auf einem eigenen Vorfahren-Element, getrennt von der Pendel-Bewegung pro Track', () => {
+  const rotateMatch = source.match(/transform: 'rotate\(-6deg\)'/)
+  assert.ok(rotateMatch, 'Rotation nicht gefunden')
+  // Die Pendel-Klasse (pl-hero-float) darf nicht auf demselben Element wie die Rotation sitzen.
+  const rotateLineStart = source.lastIndexOf('<div', source.indexOf("transform: 'rotate(-6deg)'"))
+  const rotateLineEnd = source.indexOf('>', source.indexOf("transform: 'rotate(-6deg)'"))
+  const rotateTag = source.slice(rotateLineStart, rotateLineEnd)
+  assert.doesNotMatch(rotateTag, /pl-hero-float/)
+  assert.match(source, /pl-hero-float/, 'Pendel-Klasse muss an anderer Stelle (pro Track) vorkommen')
 })
 
-test('eager-Ladeverhalten (Nachtrag Pop-in-Fix) nur fuer die immer sichtbaren Spalten 1+2, nie fuer breakpointabhaengig ausgeblendete Spalten', () => {
-  assert.match(source, /eager=\{i < 2\}/, 'eager muss an i<2 gekoppelt sein (Spalten ohne jede display:none-Bedingung)')
-  const listAStart = source.indexOf('listA.map')
-  const listBStart = source.indexOf('listB.map')
-  assert.ok(listAStart >= 0 && listBStart >= 0)
-  assert.match(source.slice(listAStart, listAStart + 150), /eager=\{i < 2\}/)
-  assert.match(source.slice(listBStart, listBStart + 150), /eager=\{i < 2\}/)
-  // loading darf nur ueber priority ? undefined : eager ? 'eager' : 'lazy' entschieden werden --
-  // kein hartkodiertes loading="eager" fuer alle Kacheln (das wuerde Spalte 3-5 auf
-  // Mobile/Tablet trotz display:none Requests ausloesen).
-  assert.match(source, /loading=\{priority \? undefined : eager \? 'eager' : 'lazy'\}/)
+test('Pause-Button: aria-pressed, verstaendlicher aria-label, steuert data-hero-wall-paused', () => {
+  assert.match(source, /aria-pressed=\{paused\}/)
+  assert.match(source, /aria-label=\{paused \? 'Bewegung der Bildwand fortsetzen' : 'Bewegung der Bildwand pausieren'\}/)
+  assert.match(source, /data-hero-wall-paused=\{paused\}/)
+  assert.match(source, /onClick=\{\(\) => setPaused\(\(p\) => !p\)\}/)
 })
 
-test('List B bekommt niemals priority (globaler Kachel-Index dort immer >= 4)', () => {
-  const listBStart = source.indexOf('listB.map')
-  assert.ok(listBStart >= 0, 'listB.map nicht gefunden')
-  const listBBody = source.slice(listBStart, listBStart + 200)
-  assert.match(listBBody, /priority=\{false\}/)
+test('Pause-Button ist per Tastatur erreichbar (<button>) und hat sichtbaren Fokus (focus-visible:ring)', () => {
+  const buttonStart = source.indexOf('aria-pressed={paused}')
+  const buttonTagStart = source.lastIndexOf('<button', buttonStart)
+  assert.ok(buttonTagStart >= 0)
+  assert.match(source.slice(buttonTagStart, buttonStart + 600), /focus-visible:ring-2/)
 })
 
-test('List A und List B sind je exakt 4 Slots derselben Spalte (erste/zweite Haelfte), keine zweite Slot-Herleitung', () => {
-  assert.match(source, /const listA = columns\[i\]\.slice\(0, 4\)/)
-  assert.match(source, /const listB = columns\[i\]\.slice\(4, 8\)/)
+test('next/image: preload nur gezielt (reale LCP-Messung: Bildkachel ab Tablet, H1 auf Mobile), lazy fuer alle uebrigen Kacheln', () => {
+  assert.match(source, /preload=\{breakpoint !== 'mobile' && t < 2 && p === 0\}/)
+  assert.match(source, /loading=\{preload \? undefined : 'lazy'\}/)
 })
 
-test('kein rounded/border-radius auf den Kacheln', () => {
-  const tileStart = source.indexOf('aspect-[5/6]')
-  const tileBlock = source.slice(tileStart - 50, tileStart + 400)
-  assert.doesNotMatch(tileBlock, /rounded/)
+test('kein pauschales overflow-x:hidden auf body/html -- Clipping bleibt lokal am Szenencontainer gekapselt', () => {
+  assert.doesNotMatch(source, /document\.body|document\.documentElement/)
+})
+
+// ── Nachgang "Komposition & weiche Übergänge" ──────────────────────────
+
+test('Textfläche: ab md eine eigene absolute Ebene links, unabhängig von der Bildwelt-Position (löst die harte Flex-Spalten-Kante ab)', () => {
+  const textDivMatch = source.match(/<div className="relative z-20 w-full md:absolute[^"]*">/)
+  assert.ok(textDivMatch, 'Text-Ebene mit md:absolute nicht gefunden')
+  assert.match(textDivMatch[0], /md:inset-y-0/)
+  assert.match(textDivMatch[0], /md:left-0/)
+})
+
+test('Gradient-Ebene: ungedreht, über der Bildwelt und unter dem Text (z-10), pointer-events-none, nur ab md aktiv', () => {
+  const start = source.indexOf('function GradientOverlay')
+  assert.ok(start >= 0, 'GradientOverlay nicht gefunden')
+  const body = source.slice(start, start + 900)
+  assert.match(body, /pointer-events-none/)
+  assert.match(body, /absolute inset-0 z-10/)
+  assert.match(body, /hidden md:block/, 'Gradient darf Mobile nicht abdecken (dort keine seitliche Kante zu kaschieren)')
+  assert.doesNotMatch(body, /rotate/, 'Verlaufsebene darf nicht mitrotieren')
+})
+
+test('Gradient-Farben aus dem vorhandenen --pl-bg-stage abgeleitet (rgb 18,16,26), nicht die Studio-Originalfarbe #281e2c', () => {
+  assert.match(source, /rgba\(18,16,26,/)
+  // Gezielt nur die tatsaechlichen Gradient-Style-Bloecke pruefen (nicht
+  // den gesamten Dateitext) -- ein erklaerender Kommentar darf legitim
+  // die verbotene Farbe *nennen* ("NICHT #281e2c uebernehmen"), ohne dass
+  // das als tatsaechliche Verwendung zaehlt.
+  const gradientStart = source.indexOf('function GradientOverlay')
+  const gradientEnd = source.indexOf('function HeroImageWall')
+  const gradientBlock = source.slice(gradientStart, gradientEnd)
+  assert.doesNotMatch(gradientBlock, /background:[\s\S]*#281e2c/i, 'Studio-Originalfarbe darf im tatsaechlichen Gradient-Wert nicht vorkommen')
+})
+
+test('Mobile-Randauslauf (MobileEdgeFade) ist das Gegenstück zur Gradient-Ebene -- nur unterhalb md aktiv, ebenfalls pointer-events-none', () => {
+  const start = source.indexOf('function MobileEdgeFade')
+  assert.ok(start >= 0, 'MobileEdgeFade nicht gefunden')
+  const body = source.slice(start, start + 500)
+  assert.match(body, /pointer-events-none/)
+  assert.match(body, /md:hidden/)
+})
+
+test('Rotationscontainer: transform-origin 50% 60% (verifizierter Studio-Referenzwert)', () => {
+  assert.match(source, /transformOrigin: '50% 60%'/)
+})
+
+test('Bildwelt hat ab md kein eigenes overflow-hidden mehr -- Clipping nur am äußeren Szenencontainer (Auftrag Abschnitt 2A)', () => {
+  const start = source.indexOf('function HeroImageWall')
+  const body = source.slice(start, start + 1200)
+  assert.match(body, /overflow-hidden md:overflow-visible/)
+})
+
+test('sechs Seitenverhältnisse (reale Studio-Referenzwerte) statt vier -- sichtbar mehr Formatvielfalt', () => {
+  const start = source.indexOf('const ASPECT_BY_POSITION = [')
+  const end = source.indexOf('\n]', start)
+  const arrBlock = source.slice(start, end)
+  const entries = arrBlock.match(/aspect-\[/g) ?? []
+  assert.equal(entries.length, 6)
+})
+
+test('Pause-Button: genau eine gemeinsame Instanz für alle Breakpoint-TrackSets, am Szenencontainer verankert (nicht mehr pro Bildwelt-Ebene dupliziert)', () => {
+  const buttonMatches = source.match(/aria-pressed=\{paused\}/g) ?? []
+  assert.equal(buttonMatches.length, 1, 'erwartet genau einen Pause-Button, unabhängig von der Anzahl sichtbarer Breakpoint-Ebenen')
+  assert.match(source, /const \[paused, setPaused\] = useState\(false\)/)
 })

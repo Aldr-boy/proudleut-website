@@ -1,20 +1,10 @@
 import type { HeroFocus } from './resolveHeroFocus'
 
-// Schwellenwerte aus der Spec (docs/spezifikation-hero-bildwand.md,
-// Abschnitt 7 "Warnungen" und Abschnitt 9 DoD Punkt 11).
+// Schwellenwerte fuer den Admin-Editor.
 export const HERO_WALL_MIN_RECOMMENDED = 10
-export const HERO_WALL_MOBILE_POOL_SIZE = 16
 
 export function isBelowRecommendedMinimum(selectedCount: number): boolean {
   return selectedCount < HERO_WALL_MIN_RECOMMENDED
-}
-
-// Spec Abschnitt 7: "Die ersten 16 Positionen des ausgewaehlten Pools"
-// (Spalte 1 + Spalte 2 des spaeteren Frontends) -- bezieht sich auf die
-// Position INNERHALB der Redakteurs-Auswahl selbst, nicht auf die
-// 40-Slot-Simulation. index ist 0-basiert.
-export function isInMobilePool(index: number): boolean {
-  return index < HERO_WALL_MOBILE_POOL_SIZE
 }
 
 export type HeroWallSelectionItem = { id: string; heroFocus: HeroFocus }

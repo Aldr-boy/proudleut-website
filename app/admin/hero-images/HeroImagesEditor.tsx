@@ -1,17 +1,17 @@
 'use client'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { updateHeroWallSelectionAction } from './actions'
 import { resolveHeroFocus, type HeroFocus } from '@/lib/heroWall/resolveHeroFocus'
 import {
   isBelowRecommendedMinimum,
-  isInMobilePool,
   heroWallSelectionsAreEqual,
   type HeroWallSelectionItem,
 } from '@/lib/heroWall/heroWallSelectionState'
-import { findIdenticalHeroWallColumns } from '@/lib/heroWall/simulateHeroWallSlots'
-import { HeroWall, type HeroWallImage } from '@/components/hero/HeroWall'
+import { countUsedHeroWallSlots } from '@/lib/heroWall/heroWallComposition'
+import type { HeroWallImage } from '@/components/hero/HeroWall'
+import { HERO_WALL_PREVIEW_MESSAGE_TYPE } from '@/lib/heroWall/heroWallPreviewMessage'
 import type { HeroImageAsset } from './page'
 
 const FOCUS_LABEL: Record<HeroFocus, string> = {
@@ -19,6 +19,29 @@ const FOCUS_LABEL: Record<HeroFocus, string> = {
   center: 'Mitte',
   bottom: 'Unten',
 }
+
+// Vorschau-Groessen (Auftrag Abschnitt 2): echte Geraete-Pixelmasse, keine
+// Naeherung. Bewusst nur diese drei (nicht der vierte Komposition-
+// Breakpoint "tabletWide") -- der Auftrag nennt explizit genau drei
+// Ansichten. Die Keys sind direkt gueltige HeroWallBreakpoint-Werte, damit
+// countUsedHeroWallSlots() dieselbe Breakpoint-Logik verwendet wie die
+// eigentliche Komposition -- keine zweite, admin-eigene Breakpoint-Regel.
+type PreviewSize = 'mobile' | 'tablet' | 'desktop'
+const PREVIEW_DEVICES: Record<PreviewSize, { width: number; height: number; label: string }> = {
+  mobile: { width: 390, height: 844, label: 'Mobile' },
+  tablet: { width: 768, height: 1024, label: 'Tablet' },
+  desktop: { width: 1440, height: 900, label: 'Desktop' },
+}
+
+// EINE gemeinsame Vorschauflaeche fuer alle drei Geraetegroessen (Nachbesserung
+// "Vorschaugroesse"): eine feste, responsiv sinnvolle Hoehe, unabhaengig vom
+// Seitenverhaeltnis des gerade gewaehlten Geraets. Vorher war die Aussenbox per
+// aspect-ratio an das Geraete-Seitenverhaeltnis gekoppelt und immer 100% der
+// Spaltenbreite breit -- das ergab bei schmalen Geraeten (Mobile) einen
+// Skalierungsfaktor > 1 (Hochskalierung), weil nur nach Breite skaliert wurde,
+// nie nach Hoehe. Jetzt bestimmt CSS (container-type: size + min() aus
+// Breiten- UND Hoehenverhaeltnis) den Faktor, gedeckelt auf 1.
+const PREVIEW_STAGE_HEIGHT = 'min(52svh, 560px)'
 
 function buildInitialSelection(images: HeroImageAsset[]): HeroWallSelectionItem[] {
   return images
@@ -46,6 +69,9 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedBanner, setSavedBanner] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [previewSize, setPreviewSize] = useState<PreviewSize>('desktop')
+  const previewIframeRef = useRef<HTMLIFrameElement>(null)
+  const [previewIframeReady, setPreviewIframeReady] = useState(false)
 
   const imageById = useMemo(() => new Map(images.map((img) => [img.id, img])), [images])
   const selectedIds = useMemo(() => new Set(selection.map((s) => s.id)), [selection])
@@ -76,6 +102,42 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasStagedChanges])
 
+  // Erkennt zuverlaessig, wann das Vorschau-Iframe geladen hat: React's
+  // onLoad-Prop feuert fuer <iframe> in der Praxis nicht zuverlaessig
+  // (load ist ein nicht-blasendes Event) -- ein direkt am DOM-Knoten
+  // registrierter nativer Listener ist der robuste, empfohlene Weg.
+  useEffect(() => {
+    const node = previewIframeRef.current
+    if (!node) return
+    function handleLoad() {
+      setPreviewIframeReady(true)
+    }
+    node.addEventListener('load', handleLoad)
+    // Ein lokales Iframe kann so schnell laden, dass "load" schon vor
+    // dem addEventListener-Aufruf oben gefeuert hat (Effect-Attach
+    // laeuft erst nach Commit/Paint) -- readyState-Fallback faengt genau
+    // dieses Race ab.
+    if (node.contentDocument?.readyState === 'complete') {
+      setPreviewIframeReady(true)
+    }
+    return () => node.removeEventListener('load', handleLoad)
+  }, [])
+
+  // Ueberträgt den aktuellen (auch ungespeicherten) Auswahl-Stand an die
+  // Vorschau-Route im Iframe -- per postMessage, kein zweiter
+  // Datenspeicher. Laeuft bei jeder Aenderung von previewImages erneut,
+  // sobald das Iframe einmal geladen hat; ein Wechsel der Vorschau-
+  // Groesse aendert nur die Iframe-Abmessungen (siehe JSX), nicht die
+  // Iframe-src -- daher kein erneutes Laden und kein Datenverlust beim
+  // Umschalten.
+  useEffect(() => {
+    if (!previewIframeReady) return
+    previewIframeRef.current?.contentWindow?.postMessage(
+      { type: HERO_WALL_PREVIEW_MESSAGE_TYPE, images: previewImages },
+      window.location.origin
+    )
+  }, [previewImages, previewIframeReady])
+
   const bandOptions = useMemo(() => [...new Set(images.map((img) => img.bandName))].sort((a, b) => a.localeCompare(b)), [images])
   // Filteroptionen ausschliesslich aus tatsaechlich vorhandenen role-Werten
   // ableiten (Auftrag: keine hartkodierte Annahme, welche der sechs
@@ -91,7 +153,15 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
   }, [images, bandFilter, roleFilter])
 
   const belowMinimum = isBelowRecommendedMinimum(selection.length)
-  const identicalColumnPairs = useMemo(() => findIdenticalHeroWallColumns(selection.map((s) => s.id)), [selection])
+  // Transparenz-Anforderung Startseiten-Hero-Redesign, jetzt Breakpoint-
+  // parametrisiert (Admin-Adaption Abschnitt 3): die neue Split-
+  // Komposition verwendet Bildplatz n = Poolbild n ohne Wrap/Wiederholung
+  // (siehe heroWallComposition.ts) -- ueberzaehlige Auswahl bleibt fuer
+  // diese Darstellung schlicht ungenutzt. "used"/"total" beziehen sich
+  // auf die AKTUELL im Vorschau-Umschalter gewaehlte Ansicht, nicht mehr
+  // pauschal auf Desktop -- dieselbe Regel wie die Homepage-Komposition
+  // selbst, keine zweite hartkodierte Zahl.
+  const slotUsage = countUsedHeroWallSlots(selection.length, previewSize)
 
   function toggleImage(id: string) {
     setSavedBanner(false)
@@ -150,7 +220,7 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
     <div className={hasStagedChanges ? 'pb-32' : ''}>
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
         <h1 className="text-2xl font-semibold text-gray-900">Hero-Bilder</h1>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-gray-600 mt-1">
           Kuratierter globaler Bildpool für die Homepage-Hero-Bildwand. {images.length}{' '}
           {images.length === 1 ? 'Bild' : 'Bilder'} insgesamt, {selection.length} aktuell ausgewählt.
         </p>
@@ -169,7 +239,7 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
             unten). */}
         <div>
           <h2 className="text-base font-semibold text-gray-900 mb-1">Alle Bilder</h2>
-          <p className="text-xs text-gray-400 mb-4">Klick auf ein Bild nimmt es in die Auswahl auf oder entfernt es.</p>
+          <p className="text-xs text-gray-600 mb-4">Klick auf ein Bild nimmt es in die Auswahl auf oder entfernt es.</p>
 
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <select
@@ -233,37 +303,100 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
             Vorschau/Pool sollen dort normal untereinander erscheinen. */}
         <div>
           <div className="flex flex-col gap-4 lg:sticky lg:top-0 lg:max-h-[100svh] lg:overflow-hidden">
-            {/* Live-Vorschau -- dieselbe Komponente wie auf der Homepage
-                (components/hero/HeroWall.tsx), gespeist aus dem aktuellen
-                lokalen Auswahl-State. Zeigt unmittelbar den Stand vor dem
-                Speichern; keine zusaetzlichen DB-Zugriffe.
-
-                WICHTIG: HeroWall wird VOLLSTAENDIG und UNVERAENDERT
-                gerendert (keine geclippte/vertikal abgeschnittene
-                Teilansicht) und nur rein visuell per CSS-Transform auf
-                ca. 50% skaliert. Der innere Canvas ist doppelt so breit
-                (w-[200%]) wie der sichtbare Bereich; scale-50 verkleinert
-                ihn wieder auf 100% sichtbare Breite. Die Aussenbox bekommt
-                exakt die Hoehe des skalierten Ergebnisses (h-[50svh] =
-                50% von HeroWalls eigener min-h-[100svh]) -- dadurch bleibt
-                kein unskalierter Leerraum stehen, und nichts wird
-                abgeschnitten, weil Aussenbox-Hoehe und skalierte
-                HeroWall-Hoehe exakt uebereinstimmen. */}
+            {/* Live-Vorschau -- eigene Route (app/admin/hero-images/preview),
+                dieselben Komponenten wie auf der Homepage
+                (components/hero/HeroWall.tsx + HeroContent.tsx), keine
+                zweite Hero-Implementierung. Läuft in einem <iframe> mit
+                ECHTER Geraetebreite/-hoehe (width/height-Attribute +
+                exakt passende CSS-Box) -- dadurch loesen Tailwinds
+                Breakpoints (md/lg/xl) innerhalb des Iframes tatsaechlich
+                aus, unabhaengig vom Browserfenster des Admins. Nur die
+                AUSSENBOX (gemeinsame Buehne fester Hoehe, siehe
+                PREVIEW_STAGE_HEIGHT unten) wird per scale() proportional
+                eingepasst (nie hochskaliert); das innere Iframe behaelt
+                seine echte Pixelgroesse (scale() aendert nur die
+                Darstellung, nicht das Layout-Viewport). Der unsaved
+                Auswahl-Stand geht
+                per postMessage hinein (siehe Effect oben) -- kein Save als
+                Vorbedingung, kein zweiter Datenspeicher.
+                pointerEvents: 'none' verhindert, dass ein Klick in der
+                Vorschau (z. B. der CTA-Link) irgendetwas auslöst. */}
             <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Live-Vorschau</h2>
-              <p className="text-xs text-gray-400 mb-2">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <h2 className="text-base font-semibold text-gray-900">Live-Vorschau</h2>
+                <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-0.5">
+                  {(Object.keys(PREVIEW_DEVICES) as PreviewSize[]).map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setPreviewSize(size)}
+                      aria-pressed={previewSize === size}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        previewSize === size ? 'bg-violet-700 text-white' : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {PREVIEW_DEVICES[size].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 mb-2">
                 Zeigt den aktuellen Bearbeitungsstand in Echtzeit, auch vor dem Speichern -- dieselbe
-                Bildwand-Komponente wie auf der Homepage, komplett und verkleinert.
+                Bildwand-Komponente wie auf der Homepage, mit einem echten {PREVIEW_DEVICES[previewSize].width}×
+                {PREVIEW_DEVICES[previewSize].height}-Viewport ({PREVIEW_DEVICES[previewSize].label}).
               </p>
 
               {selection.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
+                <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-600">
                   Noch keine Bilder ausgewählt. Die Vorschau erscheint, sobald mindestens ein Bild ausgewählt ist.
                 </div>
               ) : (
-                <div className="relative h-[50svh] w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                  <div className="w-[200%] origin-top-left scale-50">
-                    <HeroWall images={previewImages} />
+                // Gemeinsame Buehne: feste, geraeteunabhaengige Hoehe
+                // (PREVIEW_STAGE_HEIGHT) + volle Spaltenbreite. container-type:
+                // size macht BEIDE Achsen (cqw UND cqh) fuer die
+                // Skalierungsberechnung im Kind verfuegbar -- dafuer braucht die
+                // Buehne eine definite Hoehe (gegeben) UND Breite (gegeben durch
+                // den Blockkontext).
+                <div
+                  className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                  style={{ containerType: 'size', height: PREVIEW_STAGE_HEIGHT }}
+                >
+                  {/* Zentrierter, skalierter Geraete-Ausschnitt: absolute +
+                      50%/50% + negativer Rand (halbe UNSKALIERTE Breite/Hoehe)
+                      zentriert den Ausschnitt exakt in der Buehne, unabhaengig
+                      vom Skalierungsfaktor -- transform-origin bleibt der
+                      CSS-Default "center", der Skalierungspunkt faellt damit
+                      genau auf den bereits zentrierten Mittelpunkt.
+                      scale = min(1, Buehnenbreite/Geraetebreite,
+                      Buehnenhoehe/Geraetehoehe) -- nie groesser als 1, also nie
+                      Hochskalierung. Division jeweils Laenge/Laenge (px-Suffix
+                      im Divisor), nicht Laenge/Zahl -- Laenge/Zahl ergibt selbst
+                      wieder eine Laenge und macht scale() ungueltig (siehe
+                      vorherige Fehlfunktion). */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      width: PREVIEW_DEVICES[previewSize].width,
+                      height: PREVIEW_DEVICES[previewSize].height,
+                      marginTop: -PREVIEW_DEVICES[previewSize].height / 2,
+                      marginLeft: -PREVIEW_DEVICES[previewSize].width / 2,
+                      transform: `scale(min(1, calc(100cqw / ${PREVIEW_DEVICES[previewSize].width}px), calc(100cqh / ${PREVIEW_DEVICES[previewSize].height}px)))`,
+                    }}
+                  >
+                    <iframe
+                      ref={previewIframeRef}
+                      src="/admin/hero-images/preview"
+                      title={`Hero-Vorschau ${PREVIEW_DEVICES[previewSize].label}`}
+                      style={{
+                        width: PREVIEW_DEVICES[previewSize].width,
+                        height: PREVIEW_DEVICES[previewSize].height,
+                        border: 0,
+                        display: 'block',
+                        pointerEvents: 'none',
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -275,30 +408,24 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
                 Workspace innerhalb max-h-[100svh] bleibt. */}
             <div className="flex min-h-0 flex-1 flex-col">
               <h2 className="text-base font-semibold text-gray-900 mb-1 shrink-0">Ausgewählter Hero-Pool</h2>
-              <p className="text-xs text-gray-400 mb-4 shrink-0">
-                Reihenfolge bestimmt die Slot-Belegung der Hero-Bildwand (Position 0 zuerst).
+              <p className="text-xs text-gray-600 mb-1 shrink-0">
+                Reihenfolge bestimmt die Bildplatz-Belegung der Hero-Bildwand (Bildplatz 1 = erstes Bild, Bildplatz n
+                = n-tes Bild, ohne Wiederholung).
+              </p>
+              <p className="text-xs text-gray-600 mb-4 shrink-0">
+                {selection.length} ausgewählt · {slotUsage.used} im {PREVIEW_DEVICES[previewSize].label}-Hero
+                verwendet
+                {slotUsage.unused > 0
+                  ? ` · ${slotUsage.unused} weitere ausgewählt`
+                  : slotUsage.used < slotUsage.total
+                  ? ' · restliche Plätze zeigen einen Platzhalter'
+                  : ''}
               </p>
 
               {belowMinimum && (
                 <div className="shrink-0 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
                   Weniger als 10 Bilder ausgewählt ({selection.length}). Für eine überzeugende Bildwand werden
                   in der Regel 15–25 Bilder empfohlen.
-                </div>
-              )}
-
-              {identicalColumnPairs.length > 0 && (
-                <div className="shrink-0 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
-                  <p className="font-medium">
-                    {identicalColumnPairs.length === 1 ? 'Zwei Spalten wären identisch:' : 'Mehrere Spalten wären identisch:'}
-                  </p>
-                  <ul className="mt-1 list-disc list-inside">
-                    {identicalColumnPairs.map((p) => (
-                      <li key={`${p.columnIndexA}-${p.columnIndexB}`}>
-                        Spalte {p.columnIndexA + 1} und Spalte {p.columnIndexB + 1} zeigen dieselbe Bildfolge.
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-1">Empfehlung: ein Bild hinzufügen oder entfernen.</p>
                 </div>
               )}
 
@@ -313,9 +440,10 @@ export function HeroImagesEditor({ images }: { images: HeroImageAsset[] }) {
                       <SelectedRow
                         key={item.id}
                         image={img}
-                        position={index}
+                        position={index + 1}
                         heroFocus={item.heroFocus}
-                        isMobilePool={isInMobilePool(index)}
+                        isUsedInView={index < slotUsage.total}
+                        viewLabel={PREVIEW_DEVICES[previewSize].label}
                         isFirst={index === 0}
                         isLast={index === selection.length - 1}
                         onMoveUp={() => moveSelection(item.id, 'up')}
@@ -413,7 +541,8 @@ function SelectedRow({
   image,
   position,
   heroFocus,
-  isMobilePool,
+  isUsedInView,
+  viewLabel,
   isFirst,
   isLast,
   onMoveUp,
@@ -424,7 +553,8 @@ function SelectedRow({
   image: HeroImageAsset
   position: number
   heroFocus: HeroFocus
-  isMobilePool: boolean
+  isUsedInView: boolean
+  viewLabel: string
   isFirst: boolean
   isLast: boolean
   onMoveUp: () => void
@@ -434,7 +564,7 @@ function SelectedRow({
 }) {
   return (
     <div className="px-3 py-2.5 flex items-center gap-3">
-      <span className="text-xs font-mono text-gray-400 w-6 text-right shrink-0">{position}</span>
+      <span className="text-xs font-mono text-gray-600 w-6 text-right shrink-0">{position}</span>
 
       <div className="relative w-12 h-12 shrink-0 rounded-md overflow-hidden bg-gray-100">
         <Image src={image.url} alt="" fill className="object-cover" sizes="48px" />
@@ -444,9 +574,13 @@ function SelectedRow({
         <div className="flex flex-wrap items-center gap-1.5">
           <p className="text-sm font-medium text-gray-900 truncate">{image.bandName}</p>
           <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0">{image.role}</span>
-          {isMobilePool && (
+          {isUsedInView ? (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 shrink-0">
-              Mobiler Pool
+              In {viewLabel}-Ansicht verwendet
+            </span>
+          ) : (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0">
+              In {viewLabel}-Ansicht ungenutzt
             </span>
           )}
         </div>
