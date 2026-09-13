@@ -335,6 +335,10 @@ type SearchParams = Promise<{
   e_social_facebook?: string
   e_social_youtube?: string
   e_social_spotify?: string
+  e_social_instagram_followers?: string
+  e_social_facebook_followers?: string
+  e_social_youtube_followers?: string
+  e_social_followers_checked_at?: string
   e_short_description?: string
   e_slogan?: string
   e_meta_description?: string
@@ -853,6 +857,13 @@ export default async function AdminBandDetailPage({
       .eq('home_location_id', band.home_location_id)
     locationUsageCount = count ?? 0
   }
+
+  // Vorschlagswert fuer "Zahlen geprueft am" -- bewusst als serverseitig
+  // berechneter defaultValue (kein Client-JS noetig), bleibt fuer den
+  // Redakteur ueberschreibbar (Auftrag Abschnitt 3: "Vorschlag bleibt
+  // überschreibbar und muss vor dem Speichern erkennbar sein" -- ein
+  // normales <input type="date"> zeigt den Wert bereits sichtbar an).
+  const todayIso = new Date().toISOString().slice(0, 10)
 
   const showSuccess = !!sp.saved || !!sp.created
   const hasFormError = !!sp.e_form
@@ -1711,47 +1722,124 @@ export default async function AdminBandDetailPage({
                   Zuordnungen zu riskieren.
                 </p>
               ) : (
-                (
-                  [
-                    { key: 'instagram', label: 'Instagram', errorMsg: sp.e_social_instagram, hint: undefined },
-                    { key: 'facebook', label: 'Facebook', errorMsg: sp.e_social_facebook, hint: undefined },
-                    {
-                      key: 'youtube',
-                      label: 'YouTube-Kanal',
-                      errorMsg: sp.e_social_youtube,
-                      hint: 'Kanal-/Profil-Link – nicht der eingebettete Video-Link',
-                    },
-                    { key: 'spotify', label: 'Spotify', errorMsg: sp.e_social_spotify, hint: undefined },
-                  ] as const
-                ).map(({ key, label, errorMsg, hint }) => {
-                  const rows = socialProfilesByPlatform[key]
-                  const isDuplicate = rows.length > 1
-                  const currentUrl = rows.length === 1 ? rows[0].url : ''
-                  return (
-                    <div key={key}>
-                      <label htmlFor={`social_${key}`} className="block text-sm font-medium text-gray-700 mb-1">
-                        {label}
-                      </label>
-                      <input
-                        id={`social_${key}`}
-                        name={`social_${key}`}
-                        type="url"
-                        defaultValue={currentUrl}
-                        placeholder="https://"
-                        disabled={isDuplicate}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
-                      />
-                      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
-                      {isDuplicate && (
-                        <p className="mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
-                          Für diese Plattform existieren mehrere Einträge — kann hier nicht sicher
-                          bearbeitet werden. Bitte direkt in der Datenbank prüfen.
-                        </p>
-                      )}
-                      <FieldError msg={errorMsg} />
-                    </div>
-                  )
-                })
+                <>
+                  {(
+                    [
+                      {
+                        key: 'instagram',
+                        label: 'Instagram',
+                        errorMsg: sp.e_social_instagram,
+                        hint: undefined,
+                        followersLabel: 'Instagram-Follower',
+                        followersErrorMsg: sp.e_social_instagram_followers,
+                      },
+                      {
+                        key: 'facebook',
+                        label: 'Facebook',
+                        errorMsg: sp.e_social_facebook,
+                        hint: undefined,
+                        followersLabel: 'Facebook-Seiten-Follower',
+                        followersErrorMsg: sp.e_social_facebook_followers,
+                      },
+                      {
+                        key: 'youtube',
+                        label: 'YouTube-Kanal',
+                        errorMsg: sp.e_social_youtube,
+                        hint: 'Kanal-/Profil-Link – nicht der eingebettete Video-Link',
+                        followersLabel: 'YouTube-Abonnenten',
+                        followersErrorMsg: sp.e_social_youtube_followers,
+                      },
+                      { key: 'spotify', label: 'Spotify', errorMsg: sp.e_social_spotify, hint: undefined, followersLabel: undefined, followersErrorMsg: undefined },
+                    ] as const
+                  ).map(({ key, label, errorMsg, hint, followersLabel, followersErrorMsg }) => {
+                    const rows = socialProfilesByPlatform[key]
+                    const isDuplicate = rows.length > 1
+                    const currentUrl = rows.length === 1 ? rows[0].url : ''
+                    const currentFollowers = rows.length === 1 ? rows[0].current_followers : null
+                    return (
+                      <div key={key}>
+                        <label htmlFor={`social_${key}`} className="block text-sm font-medium text-gray-700 mb-1">
+                          {label}
+                        </label>
+                        <input
+                          id={`social_${key}`}
+                          name={`social_${key}`}
+                          type="url"
+                          defaultValue={currentUrl}
+                          placeholder="https://"
+                          disabled={isDuplicate}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
+                        />
+                        {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+                        {isDuplicate && (
+                          <p className="mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+                            Für diese Plattform existieren mehrere Einträge — kann hier nicht sicher
+                            bearbeitet werden. Bitte direkt in der Datenbank prüfen.
+                          </p>
+                        )}
+                        <FieldError msg={errorMsg} />
+
+                        {/* Follower-/Abonnentenzahl: nur Instagram/Facebook/YouTube,
+                            nicht Spotify. Nicht anzeigbar bei Duplikaten (dieselbe
+                            Unsicherheit wie beim URL-Feld). */}
+                        {followersLabel && !isDuplicate && (
+                          <div className="mt-2 pl-3 border-l-2 border-gray-100">
+                            <div className="flex items-end gap-3 flex-wrap">
+                              <div className="flex-1 min-w-[140px]">
+                                <label htmlFor={`social_${key}_followers`} className="block text-xs font-medium text-gray-600 mb-1">
+                                  {followersLabel}
+                                </label>
+                                <input
+                                  id={`social_${key}_followers`}
+                                  name={`social_${key}_followers`}
+                                  type="text"
+                                  inputMode="numeric"
+                                  defaultValue={currentFollowers ?? ''}
+                                  placeholder="z. B. 5173"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                />
+                              </div>
+                              <label className="flex items-center gap-1.5 text-xs text-gray-600 pb-2 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  name={`social_${key}_checked`}
+                                  value="1"
+                                  className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                                />
+                                Als geprüft bestätigen
+                              </label>
+                            </div>
+                            <FieldError msg={followersErrorMsg} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {/* Gemeinsames Pruefdatum: gilt ausschliesslich fuer Plattformen,
+                      deren Haken oben ausdruecklich gesetzt ist (Auftrag Abschnitt 3)
+                      -- kein automatisches Uebertragen auf andere Plattformen, keine
+                      erneute Pruefbestaetigung durch bloßes Speichern anderer Felder. */}
+                  <div>
+                    <label htmlFor="social_followers_checked_at" className="block text-sm font-medium text-gray-700 mb-1">
+                      Zahlen geprüft am
+                    </label>
+                    <input
+                      id="social_followers_checked_at"
+                      name="social_followers_checked_at"
+                      type="date"
+                      defaultValue={todayIso}
+                      max={todayIso}
+                      className="w-full max-w-[200px] px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    />
+                    <p className="mt-1 text-xs text-gray-400">
+                      Gilt nur für Plattformen, bei denen oben „Als geprüft bestätigen“ angehakt ist. Für eine
+                      neue oder geänderte Zahl ist die Bestätigung erforderlich; eine unveränderte Zahl kann
+                      damit ebenfalls erneut als geprüft markiert werden.
+                    </p>
+                    <FieldError msg={sp.e_social_followers_checked_at} />
+                  </div>
+                </>
               )}
             </div>
           </fieldset>

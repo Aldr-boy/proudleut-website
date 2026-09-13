@@ -28,6 +28,25 @@ export type SocialLinks = {
   youtube?: string;
 };
 
+// Rohe (ungefilterte) Kennzahl je Plattform fuer die Erweiterung "Mehr
+// von [Band]" (Follower-/Abonnentenzahlen neben den bestehenden Links).
+// Bewusst getrennt von SocialMediaStats (das bestehende, unabhaengige
+// BandSocialIndex nutzt SocialMediaStats weiterhin unveraendert/ungefiltert
+// -- diese Struktur hier traegt zusaetzlich das Pruefdatum und wird erst
+// am Renderort ueber isFollowerCountVisible (lib/socialLinks/
+// followerCountVisibility.ts) auf Sichtbarkeit geprueft, nicht bereits
+// hier vorgefiltert).
+export type SocialProfileMetric = {
+  count: number | null;
+  checkedAt: string | null;
+};
+
+export type SocialProfileMetrics = {
+  instagram?: SocialProfileMetric;
+  facebook?: SocialProfileMetric;
+  youtube?: SocialProfileMetric;
+};
+
 export type SocialMediaStats = {
   igFollowers?: number;
   igFollowing?: number;
@@ -171,6 +190,7 @@ export type Band = {
   weddingInfo?: WeddingInfo;
   socialLinks: SocialLinks;
   socialMediaStats?: SocialMediaStats;
+  socialProfileMetrics?: SocialProfileMetrics;
   referenceEvents: ReferenceEvent[];
   similarBands: SimilarBandReferences;
   documents: BandDocument[];

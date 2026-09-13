@@ -247,6 +247,18 @@ export function normalizeBandFromSupabase(row: unknown): Band {
   const fbFollowing   = typeof fbP?.current_following === 'number' ? fbP.current_following   : undefined
   const ytSubscribers = typeof ytP?.current_followers === 'number' ? ytP.current_followers   : undefined
 
+  // Rohe (ungefilterte) Kennzahl + Pruefdatum je Plattform fuer die
+  // "Mehr von [Band]"-Erweiterung (Auftrag "Social-Follower-Zahlen").
+  // Bewusst zusaetzlich zu socialMediaStats (oben, unveraendert fuer das
+  // bestehende BandSocialIndex) -- eigene, vom last_checked_at begleitete
+  // Struktur, deren Sichtbarkeit erst am Renderort (BandContactSection)
+  // ueber isFollowerCountVisible entschieden wird, nicht hier.
+  const socialProfileMetrics: Band['socialProfileMetrics'] = {
+    instagram: igP ? { count: igFollowers ?? null, checkedAt: str(igP.last_checked_at) ?? null } : undefined,
+    facebook:  fbP ? { count: fbFollowers ?? null, checkedAt: str(fbP.last_checked_at) ?? null } : undefined,
+    youtube:   ytP ? { count: ytSubscribers ?? null, checkedAt: str(ytP.last_checked_at) ?? null } : undefined,
+  }
+
   const hasSocialStats = igFollowers !== undefined || fbFollowers !== undefined || ytSubscribers !== undefined
   const socialMediaStats: Band['socialMediaStats'] = hasSocialStats
     ? { igFollowers, igFollowing, fbFollowers, fbFollowing, ytSubscribers }
@@ -371,6 +383,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     weddingInfo,
     socialLinks,
     socialMediaStats,
+    socialProfileMetrics,
     referenceEvents,
     similarBands,
     documents,
