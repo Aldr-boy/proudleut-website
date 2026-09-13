@@ -1,13 +1,15 @@
 import type { Band } from '@/lib/types/band';
 import { AnfrageButton } from './AnfrageButton';
 import { MerkButton } from './MerkButton';
+import { isFollowerCountVisible, resolveFollowerStandDisplay } from '@/lib/socialLinks/followerCountVisibility';
 
 type Props = {
   band: Band;
   websiteUrl: string | null;
 };
 
-type LinkItem = { label: string; href: string; icon: React.ReactNode };
+type FollowerMetric = { count: number; unit: string; checkedAt: string };
+type LinkItem = { label: string; href: string; icon: React.ReactNode; metric?: FollowerMetric };
 
 function GlobeIcon() {
   return (
@@ -54,18 +56,82 @@ function SpotifyIcon() {
 
 const CONTACT_EMAIL = 'alexander.dressler@proudleut.com';
 
+// Deutsche Zahlenformatierung, keine Abkuerzungen ("5,2k") -- Auftrag
+// Abschnitt 2.
+function formatFollowerCount(n: number): string {
+  return n.toLocaleString('de-DE');
+}
+
+// Feste Zeitzone UTC fuer die Formatierung: last_checked_at wird admin-
+// seitig als reines Kalenderdatum (YYYY-MM-DD, UTC-Mitternacht)
+// gespeichert (siehe lib/socialLinks/resolveSocialMetricsWrite.ts) --
+// eine Formatierung in der Betrachter-Zeitzone koennte das Datum sonst um
+// einen Tag verschieben.
+function formatStandDate(checkedAt: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(checkedAt));
+}
+
+function formatStandMonthYear(checkedAt: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(checkedAt));
+}
+
+// Zentrale Sichtbarkeitsregel (isFollowerCountVisible) entscheidet, ob
+// diese Plattform ueberhaupt eine Zahl zeigt -- ohne sichtbare Zahl bleibt
+// die Zeile ein gewoehnlicher Profillink (kein Nullwert, kein
+// Platzhalter, siehe Auftrag Abschnitt 2).
+function resolveVisibleMetric(
+  count: number | null | undefined,
+  checkedAt: string | null | undefined,
+  unit: string,
+): FollowerMetric | undefined {
+  if (!isFollowerCountVisible(count, checkedAt)) return undefined;
+  return { count: count as number, unit, checkedAt: checkedAt as string };
+}
+
 export function BandContactSection({ band, websiteUrl }: Props) {
+  const igMetric = resolveVisibleMetric(
+    band.socialProfileMetrics?.instagram?.count,
+    band.socialProfileMetrics?.instagram?.checkedAt,
+    'Follower',
+  );
+  const fbMetric = resolveVisibleMetric(
+    band.socialProfileMetrics?.facebook?.count,
+    band.socialProfileMetrics?.facebook?.checkedAt,
+    'Follower',
+  );
+  const ytMetric = resolveVisibleMetric(
+    band.socialProfileMetrics?.youtube?.count,
+    band.socialProfileMetrics?.youtube?.checkedAt,
+    'Abonnenten',
+  );
+
   const links: LinkItem[] = (
     [
       websiteUrl ? { label: 'Website', href: websiteUrl, icon: <GlobeIcon /> } : null,
-      band.socialLinks.instagram ? { label: 'Instagram', href: band.socialLinks.instagram, icon: <InstagramIcon /> } : null,
-      band.socialLinks.facebook ? { label: 'Facebook', href: band.socialLinks.facebook, icon: <FacebookIcon /> } : null,
-      band.socialLinks.youtube ? { label: 'YouTube', href: band.socialLinks.youtube, icon: <YouTubeIcon /> } : null,
+      band.socialLinks.instagram ? { label: 'Instagram', href: band.socialLinks.instagram, icon: <InstagramIcon />, metric: igMetric } : null,
+      band.socialLinks.facebook ? { label: 'Facebook', href: band.socialLinks.facebook, icon: <FacebookIcon />, metric: fbMetric } : null,
+      band.socialLinks.youtube ? { label: 'YouTube', href: band.socialLinks.youtube, icon: <YouTubeIcon />, metric: ytMetric } : null,
       band.socialLinks.spotify ? { label: 'Spotify', href: band.socialLinks.spotify, icon: <SpotifyIcon /> } : null,
     ] as (LinkItem | null)[]
   ).filter((l): l is LinkItem => l !== null);
 
   const hasLinks = links.length > 0;
+
+  // Gemeinsamer vs. plattformweiser Pruefstand -- nur aus tatsaechlich
+  // sichtbaren Metriken abgeleitet (Auftrag: "Nur Pruefstaende
+  // tatsaechlich angezeigter Kennzahlen ausweisen").
+  const standDisplay = resolveFollowerStandDisplay(
+    links.filter((l) => l.metric).map((l) => ({ checkedAt: l.metric!.checkedAt })),
+  );
 
   return (
     <section id="band-contact-section" className="bg-pl-paper border-t border-pl-soft py-12 md:py-16 px-4 sm:px-6">
@@ -79,23 +145,44 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                 Mehr von {band.name}
               </h2>
               <ul className="space-y-3">
-                {links.map(({ label, href, icon }) => (
+                {links.map(({ label, href, icon, metric }) => (
                   <li key={label}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 text-sm text-pl-text-muted
+                      aria-label={metric ? `${label}: ${formatFollowerCount(metric.count)} ${metric.unit}` : undefined}
+                      className="flex w-full items-center gap-3 text-sm text-pl-text-muted
                                  hover:text-pl-accent motion-safe:transition-colors group"
                     >
                       <span className="shrink-0 text-pl-text-muted group-hover:text-pl-accent motion-safe:transition-colors">
                         {icon}
                       </span>
-                      {label}
+                      <span>{label}</span>
+
+                      {metric && (
+                        <span className="ml-auto shrink-0 text-right leading-tight">
+                          <span className="block font-semibold text-pl-text group-hover:text-pl-accent motion-safe:transition-colors">
+                            {formatFollowerCount(metric.count)}
+                          </span>
+                          <span className="block text-xs text-pl-text-muted">{metric.unit}</span>
+                          {standDisplay.kind === 'per_platform' && (
+                            <span className="block text-[11px] text-pl-text-hint mt-0.5">
+                              Stand: {formatStandDate(metric.checkedAt)}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </a>
                   </li>
                 ))}
               </ul>
+
+              {standDisplay.kind === 'shared' && (
+                <p className="mt-3 text-xs text-pl-text-hint">
+                  Zahlenstand: {formatStandMonthYear(standDisplay.checkedAt)}
+                </p>
+              )}
             </div>
           )}
 

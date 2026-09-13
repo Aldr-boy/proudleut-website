@@ -19,6 +19,12 @@ import { compareBandDocuments } from '@/lib/bands/bandDocumentsSort'
 import { isValidUrl } from '@/lib/bandIntro/validation'
 import { MAX_LENGTHS } from '@/lib/bandIntro/constants'
 import { resolveSocialLinkWrite } from '@/lib/socialLinks/resolveSocialLinkWrite'
+import {
+  resolveSocialMetricsWrite,
+  parseNonNegativeIntOrNull,
+  parseNonFutureDateOrNull,
+  type ExistingSocialMetrics,
+} from '@/lib/socialLinks/resolveSocialMetricsWrite'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -139,11 +145,41 @@ export async function updateBandAction(formData: FormData): Promise<never> {
 
   const errors = validateEditBand(data)
 
+  // ---- Follower-Kennzahlen (Instagram/Facebook/YouTube): Format-/
+  // Bereichspruefung VOR jedem Schreibzugriff, blockiert wie die uebrigen
+  // validateEditBand-Felder die gesamte Speicherung bei ungueltiger
+  // Eingabe (kein Teil-Write bei einem Tippfehler in einem Zahlenfeld).
+  // Die eigentliche Geschaefts-Entscheidung (aendern/leeren/bestaetigen)
+  // erfolgt spaeter je Plattform ueber resolveSocialMetricsWrite. ----
+  const followersRawByPlatform = {
+    instagram: str(formData, 'social_instagram_followers'),
+    facebook: str(formData, 'social_facebook_followers'),
+    youtube: str(formData, 'social_youtube_followers'),
+  }
+  const checkedAtRaw = str(formData, 'social_followers_checked_at')
+
+  const igFollowersParsed = parseNonNegativeIntOrNull(followersRawByPlatform.instagram)
+  const fbFollowersParsed = parseNonNegativeIntOrNull(followersRawByPlatform.facebook)
+  const ytFollowersParsed = parseNonNegativeIntOrNull(followersRawByPlatform.youtube)
+  const checkedAtParsed = parseNonFutureDateOrNull(checkedAtRaw)
+
+  if (!igFollowersParsed.ok) errors.social_instagram_followers = 'Bitte eine nichtnegative ganze Zahl eingeben.'
+  if (!fbFollowersParsed.ok) errors.social_facebook_followers = 'Bitte eine nichtnegative ganze Zahl eingeben.'
+  if (!ytFollowersParsed.ok) errors.social_youtube_followers = 'Bitte eine nichtnegative ganze Zahl eingeben.'
+  if (!checkedAtParsed.ok) errors.social_followers_checked_at = 'Bitte ein gültiges, nicht in der Zukunft liegendes Datum eingeben.'
+
   if (Object.keys(errors).length > 0) {
     const p = new URLSearchParams()
     for (const [k, v] of Object.entries(errors)) p.set(`e_${k}`, v)
     redirect(`/admin/bands/${id}?${p.toString()}`)
   }
+
+  const followersParsedByPlatform: Record<'instagram' | 'facebook' | 'youtube', number | null> = {
+    instagram: igFollowersParsed.ok ? igFollowersParsed.value : null,
+    facebook: fbFollowersParsed.ok ? fbFollowersParsed.value : null,
+    youtube: ytFollowersParsed.ok ? ytFollowersParsed.value : null,
+  }
+  const checkedAtDate = checkedAtParsed.ok ? checkedAtParsed.value : null
 
   const client = createAdminClient()
 
@@ -243,6 +279,20 @@ export async function updateBandAction(formData: FormData): Promise<never> {
     spotify: 'social_spotify',
   } as const
 
+  // Follower-/Abonnentenzahl gibt es nur fuer Instagram/Facebook/YouTube,
+  // nicht Spotify (Auftrag Abschnitt 3) -- daher eine eigene, kleinere
+  // Lookup-Tabelle statt SOCIAL_PLATFORM_FIELDS zu erweitern.
+  const FOLLOWER_FIELD_BY_PLATFORM = {
+    instagram: 'social_instagram_followers',
+    facebook: 'social_facebook_followers',
+    youtube: 'social_youtube_followers',
+  } as const
+  const CHECKED_FIELD_BY_PLATFORM = {
+    instagram: 'social_instagram_checked',
+    facebook: 'social_facebook_checked',
+    youtube: 'social_youtube_checked',
+  } as const
+
   const socialErrors: Record<string, string> = {}
 
   for (const [platform, field] of Object.entries(SOCIAL_PLATFORM_FIELDS) as [
@@ -301,6 +351,67 @@ export async function updateBandAction(formData: FormData): Promise<never> {
         socialErrors[field] =
           'Link konnte nicht entfernt werden – vorhandene Statistiken/Metadaten bleiben erhalten. Bitte bei Bedarf direkt in der Datenbank anpassen.'
         break
+    }
+
+    // ---- Follower-/Abonnentenzahl (nur Instagram/Facebook/YouTube) --
+    // eigener, unabhaengiger Schritt NACH der URL-Entscheidung, damit
+    // auch eine gerade per 'insert' neu angelegte Zeile noch eine Zahl
+    // erhalten kann. Wird uebersprungen, wenn nach der URL-Operation
+    // keine eindeutige Zeile fuer diese Plattform (mehr) existiert
+    // ('delete', 'skip_duplicate') oder die URL-Operation selbst bereits
+    // fehlgeschlagen ist. ----
+    const followersField = (FOLLOWER_FIELD_BY_PLATFORM as Record<string, string>)[platform]
+    if (followersField && decision.action !== 'delete' && decision.action !== 'skip_duplicate' && !socialErrors[field]) {
+      let metricsRowId: string | null = null
+      let existingMetrics: ExistingSocialMetrics = { current_followers: null, last_checked_at: null }
+
+      if (decision.action === 'insert') {
+        // Zeile wurde soeben angelegt -- ihre id ist hier noch nicht
+        // bekannt (insert() oben liefert sie nicht zurueck), daher gezielt
+        // neu lesen. Frisch angelegte Zeile hat definitionsgemaess noch
+        // keine Metrik-Historie.
+        const { data: freshRow } = await client
+          .from('social_profiles')
+          .select('id, current_followers, last_checked_at')
+          .eq('band_id', id)
+          .eq('platform', platform)
+          .maybeSingle()
+        if (freshRow) {
+          metricsRowId = freshRow.id
+          existingMetrics = { current_followers: freshRow.current_followers, last_checked_at: freshRow.last_checked_at }
+        }
+      } else if (existingRows && existingRows.length === 1) {
+        metricsRowId = existingRows[0].id
+        existingMetrics = {
+          current_followers: existingRows[0].current_followers,
+          last_checked_at: existingRows[0].last_checked_at,
+        }
+      }
+
+      if (metricsRowId) {
+        const metricsDecision = resolveSocialMetricsWrite(existingMetrics, {
+          submittedFollowers: followersParsedByPlatform[platform as 'instagram' | 'facebook' | 'youtube'],
+          confirmChecked: formData.get((CHECKED_FIELD_BY_PLATFORM as Record<string, string>)[platform]) === '1',
+          checkedAtDate,
+        })
+
+        if (metricsDecision.action === 'set') {
+          const { error } = await client
+            .from('social_profiles')
+            .update({ current_followers: metricsDecision.current_followers, last_checked_at: metricsDecision.last_checked_at })
+            .eq('id', metricsRowId)
+          if (error) socialErrors[followersField] = `Datenbankfehler: ${error.message}`
+        } else if (metricsDecision.action === 'clear') {
+          const { error } = await client
+            .from('social_profiles')
+            .update({ current_followers: null, last_checked_at: null })
+            .eq('id', metricsRowId)
+          if (error) socialErrors[followersField] = `Datenbankfehler: ${error.message}`
+        } else if (metricsDecision.action === 'error') {
+          socialErrors[followersField] =
+            'Bitte "geprüft" bestätigen und ein gültiges Datum angeben, um eine neue oder geänderte Zahl zu speichern.'
+        }
+      }
     }
   }
 
