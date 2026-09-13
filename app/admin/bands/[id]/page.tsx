@@ -12,6 +12,7 @@ import type { SimilarBandSlotData } from './SimilarBandsSection'
 import { MoodEditorSection } from './MoodEditorSection'
 import type { BandMoodAssignment, MoodCatalogEntry } from '@/lib/moods/sortAssignments'
 import { RepertoireStyleEditorSection } from './RepertoireStyleEditorSection'
+import { LogoEditorSection } from './LogoEditorSection'
 import { HeroImageEditorSection } from './HeroImageEditorSection'
 import { ThumbnailEditorSection } from './ThumbnailEditorSection'
 import { GalleryEditorSection } from './GalleryEditorSection'
@@ -153,6 +154,23 @@ const HERO_IMAGE_ERROR_MESSAGES: Record<string, string> = {
   hero_image_ambiguous:        'Datenkonflikt: Für diese Band sind mehrere Hero-Bilder ohne eindeutige Reihenfolge hinterlegt. Bitte außerhalb dieses Editors klären.',
   hero_image_upload_failed:    'Upload fehlgeschlagen – bitte erneut versuchen.',
   hero_image_db_update_failed: 'Bild wurde hochgeladen, aber die Zuordnung konnte nicht gespeichert werden – bitte erneut versuchen.',
+  db_error:                    'Datenbankfehler – bitte erneut versuchen.',
+}
+
+const LOGO_ERROR_MESSAGES: Record<string, string> = {
+  logo_band_not_found:         'Band nicht gefunden.',
+  logo_file_required:          'Bitte eine Bilddatei auswählen.',
+  logo_empty:                  'Die ausgewählte Datei ist leer.',
+  logo_too_large:              'Die Datei ist größer als 4 MB.',
+  logo_invalid_type:           'Nur JPEG-, PNG- oder WebP-Dateien sind erlaubt.',
+  logo_invalid_image:          'Die Datei ist keine vollständig lesbare JPEG-, PNG- oder WebP-Bilddatei.',
+  logo_too_many_pixels:        'Das Bild ist zu hoch aufgelöst. Maximal erlaubt sind 25 Megapixel.',
+  logo_load_failed:            'Bestehendes Logo konnte nicht geladen werden – bitte Seite neu laden.',
+  logo_ambiguous:              'Datenkonflikt: Für diese Band sind mehrere Logos ohne eindeutige Reihenfolge hinterlegt. Bitte außerhalb dieses Editors klären.',
+  logo_upload_failed:          'Upload fehlgeschlagen – bitte erneut versuchen.',
+  logo_db_update_failed:       'Logo wurde hochgeladen, aber die Zuordnung konnte nicht gespeichert werden – bitte erneut versuchen.',
+  logo_remove_target_missing:  'Kein Logo zum Entfernen vorhanden – bitte Seite neu laden.',
+  logo_remove_failed:          'Logo konnte nicht entfernt werden – bitte erneut versuchen.',
   db_error:                    'Datenbankfehler – bitte erneut versuchen.',
 }
 
@@ -342,6 +360,9 @@ type SearchParams = Promise<{
   mood_error?: string
   repertoire_saved?: string
   repertoire_error?: string
+  logo_saved?: string
+  logo_removed?: string
+  logo_error?: string
   hero_image_saved?: string
   hero_image_error?: string
   thumbnail_saved?: string
@@ -592,6 +613,7 @@ export default async function AdminBandDetailPage({
     { data: bandMoodsRaw, error: bandMoodsError },
     { data: repertoireStyleCatalogRaw, error: repertoireStyleCatalogError },
     { data: bandRepertoireStylesRaw, error: bandRepertoireStylesError },
+    { data: logoMediaAssetsRaw, error: logoMediaAssetsError },
     { data: heroMediaAssetsRaw, error: heroMediaAssetsError },
     { data: thumbnailMediaAssetsRaw, error: thumbnailMediaAssetsError },
     { data: galleryMediaAssetsRaw, error: galleryMediaAssetsError },
@@ -638,6 +660,12 @@ export default async function AdminBandDetailPage({
       .select('repertoire_style_id, sort_order, repertoire_styles(id, name, slug, description, status, sort_order)')
       .eq('band_id', id)
       .returns<BandRepertoireStyleRow[]>(),
+    client
+      .from('media_assets')
+      .select('id, url, alt_text, role, sort_order, source_provider')
+      .eq('band_id', id)
+      .eq('role', 'logo')
+      .returns<MediaAssetRow[]>(),
     client
       .from('media_assets')
       .select('id, url, alt_text, role, sort_order, source_provider')
@@ -739,6 +767,21 @@ export default async function AdminBandDetailPage({
     }
   }
 
+  // Logo fuer die Anzeige: dieselbe Konfliktaufloesung wie im Schreibpfad
+  // (lib/bandImages/resolveMediaRow.ts) -- exakt dieselbe Regel, die auch
+  // normalizeBand.ts fuer die oeffentliche Bandseite verwendet (kleinster
+  // sort_order gewinnt), keine zweite "neuester Datensatz gewinnt"-Regel.
+  // Bei echtem sort_order-Gleichstand (ambiguous) wird defensiv kein Logo
+  // angezeigt UND der Editor sperrt schreibende Aktionen (siehe
+  // LogoEditorSection) -- anders als Hero/Thumbnail, die diesen Fall nur
+  // beim Schreibversuch selbst abfangen.
+  const logoLoadError = !!logoMediaAssetsError
+  const logoRowResolution = resolvePubliclyUsedMediaRow(logoMediaAssetsRaw ?? [])
+  const logoIsAmbiguous = logoRowResolution.kind === 'ambiguous'
+  const currentLogoImage = logoRowResolution.kind === 'resolved'
+    ? { url: logoRowResolution.row.url, alt: logoRowResolution.row.alt_text ?? `${band.name} Logo` }
+    : null
+
   // Hero-Bild fuer die Anzeige: dieselbe Konfliktaufloesung wie im
   // Schreibpfad (lib/bandImages/resolveMediaRow.ts) -- zeigt exakt die
   // Zeile, die das oeffentliche Frontend tatsaechlich anzeigen wuerde.
@@ -839,6 +882,9 @@ export default async function AdminBandDetailPage({
     : null
   const repertoireErrorMsg = sp.repertoire_error
     ? (REPERTOIRE_STYLE_ERROR_MESSAGES[sp.repertoire_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
+    : null
+  const logoErrorMsg = sp.logo_error
+    ? (LOGO_ERROR_MESSAGES[sp.logo_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
     : null
   const heroImageErrorMsg = sp.hero_image_error
     ? (HERO_IMAGE_ERROR_MESSAGES[sp.hero_image_error] ?? 'Unbekannter Fehler – bitte erneut versuchen.')
@@ -1094,32 +1140,55 @@ export default async function AdminBandDetailPage({
           errorMsg={repertoireErrorMsg ?? undefined}
         />
 
-        {/* Hero-Bild (Admin-Anzeige + Ersatz) */}
-        <HeroImageEditorSection
-          bandId={band.id}
-          heroImage={currentHeroImage}
-          loadError={heroImageLoadError}
-          successMsg={sp.hero_image_saved ? 'Hero-Bild gespeichert.' : undefined}
-          errorMsg={heroImageErrorMsg ?? undefined}
-        />
+        {/* ─── Bilder & Logo ────────────────────────
+            Gemeinsamer Bereich fuer die vier Bildeditoren dieser Band, in
+            fester Reihenfolge (Bandlogo -> Hero-Bild -> Vorschaubild ->
+            Galerie). Jeder Editor behaelt sein eigenes Formular und seine
+            eigene Speicheraktion (kein gemeinsames Formular, keine
+            Verschachtelung) -- dieser Block aendert nur die AEUSSERE
+            Gruppierung/Optik, keine der bestehenden Editor-Logiken. */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Bilder & Logo</h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Bandlogo, Hero-Bild, Vorschaubild und Galerie der öffentlichen Bandseite.
+          </p>
 
-        {/* Thumbnail (Admin-Anzeige + Ersatz, eigenstaendig vom Hero-Bild) */}
-        <ThumbnailEditorSection
-          bandId={band.id}
-          thumbnailImage={currentThumbnailImage}
-          loadError={thumbnailLoadError}
-          successMsg={sp.thumbnail_saved ? 'Thumbnail gespeichert.' : undefined}
-          errorMsg={thumbnailErrorMsg ?? undefined}
-        />
+          <div className="divide-y divide-gray-100 [&>*+*]:pt-5">
+            <LogoEditorSection
+              bandId={band.id}
+              logoImage={currentLogoImage}
+              loadError={logoLoadError}
+              isAmbiguous={logoIsAmbiguous}
+              successMsg={sp.logo_saved ? 'Logo gespeichert.' : sp.logo_removed ? 'Logo entfernt.' : undefined}
+              errorMsg={logoErrorMsg ?? undefined}
+            />
 
-        {/* Galerie (Bühnenmomente): anzeigen, hinzufuegen, loeschen, umsortieren */}
-        <GalleryEditorSection
-          bandId={band.id}
-          images={galleryImages}
-          loadError={galleryLoadError}
-          successMsg={sp.gallery_saved ? 'Galerie gespeichert.' : undefined}
-          errorMsg={galleryErrorMsg ?? undefined}
-        />
+            <HeroImageEditorSection
+              bandId={band.id}
+              heroImage={currentHeroImage}
+              loadError={heroImageLoadError}
+              successMsg={sp.hero_image_saved ? 'Hero-Bild gespeichert.' : undefined}
+              errorMsg={heroImageErrorMsg ?? undefined}
+            />
+
+            <ThumbnailEditorSection
+              bandId={band.id}
+              thumbnailImage={currentThumbnailImage}
+              loadError={thumbnailLoadError}
+              successMsg={sp.thumbnail_saved ? 'Thumbnail gespeichert.' : undefined}
+              errorMsg={thumbnailErrorMsg ?? undefined}
+            />
+
+            <GalleryEditorSection
+              bandId={band.id}
+              images={galleryImages}
+              loadError={galleryLoadError}
+              successMsg={sp.gallery_saved ? 'Galerie gespeichert.' : undefined}
+              errorMsg={galleryErrorMsg ?? undefined}
+            />
+          </div>
+        </div>
+        {/* ─── Ende Bilder & Logo ──────────────────── */}
 
         {/* Unterlagen & Präsentationen (Paket 2C): anlegen, Text/PDF/Cover
             bearbeiten, umsortieren, loeschen */}

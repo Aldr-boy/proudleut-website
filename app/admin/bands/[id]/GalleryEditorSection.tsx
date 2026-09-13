@@ -127,7 +127,7 @@ export function GalleryEditorSection({
 
   if (loadError) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+      <div>
         <h2 className="text-base font-semibold text-gray-900 mb-1">Galerie</h2>
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3 text-red-700 text-sm">
           Galerie konnte nicht geladen werden. Bitte Seite neu laden. Aus Sicherheitsgründen wird hier
@@ -140,7 +140,7 @@ export function GalleryEditorSection({
   const atLimit = images.length >= MAX_GALLERY_IMAGES
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+    <div>
       <h2 className="text-base font-semibold text-gray-900 mb-1">Galerie</h2>
       <p className="text-xs text-gray-400 mb-4">
         Diese Bilder erscheinen im Bereich „Bühnenmomente“ auf der öffentlichen Bandseite.

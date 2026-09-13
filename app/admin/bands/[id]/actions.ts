@@ -1512,6 +1512,204 @@ export async function updateBandThumbnailAction(formData: FormData): Promise<nev
 }
 
 // ─────────────────────────────────────────
+// Bandlogo (media_assets.role='logo')
+//
+// Gleicher Ablauf und dieselben rollenneutralen lib/bandImages-Module wie
+// bei Hero/Thumbnail (validateBandImageFile, buildBandImageStoragePath,
+// resolvePubliclyUsedMediaRow, deleteBandImageIfUnreferenced) -- keine
+// zweite Validierungs- oder Konfliktaufloesungslogik, keine neue Regel
+// "neuester Datensatz gewinnt". role='logo' ist bereits ein zulaessiger
+// Wert des bestehenden CHECK-Constraints (siehe supabase/proudleut-schema.sql)
+// und bereits produktiv befuellt (114 Bands, live gegen Production
+// verifiziert) -- keine Migration noetig.
+//
+// removeBandLogoAction ist neu (Hero/Thumbnail haben aktuell keine eigene
+// Entfernen-Funktion): da Logo wie Hero/Thumbnail eine Einzelzeilen-Rolle
+// ist (kein sort_order-Neudurchnummerieren wie bei der Galerie noetig),
+// genuegt ein direktes DELETE der eindeutig aufgeloesten Zeile -- keine
+// RPC noetig, kein Delete-by-role (das wuerde bei einer -- eigentlich
+// blockierten -- Ambiguitaet mehr als eine Zeile treffen).
+//
+// Revalidierung bewusst ohne BAND_CARD_REVALIDATION_PATHS: das Logo wird
+// ausschliesslich auf /band/[slug] (BandHero.tsx) gerendert, nicht auf
+// Band-Cards (siehe components/BandCard.tsx) -- gleiches Prinzip wie beim
+// Thumbnail (dort umgekehrt: Card-Routen ja, Bandseite nein), nur mit
+// vertauschten Rollen.
+// ─────────────────────────────────────────
+
+function logoErrorRedirect(bandId: string, code: string): never {
+  redirect(`/admin/bands/${bandId}?logo_error=${code}`)
+}
+
+export async function updateBandLogoAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug, name')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?logo_error=logo_band_not_found`)
+
+  // ---- 1. Datei aus dem FormData lesen ----
+  const file = formData.get('logo_image')
+  if (!(file instanceof File) || file.size === 0) {
+    logoErrorRedirect(bandRow.id, 'logo_file_required')
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const validation = await validateBandImageFile(bytes)
+  if (!validation.ok) {
+    logoErrorRedirect(bandRow.id, `logo_${validation.errorCode}`)
+  }
+
+  // ---- Bestehende logo-Zeile(n) laden ----
+  const { data: existingLogoRows, error: logoLoadError } = await client
+    .from('media_assets')
+    .select('id, url, alt_text, role, sort_order, source_provider')
+    .eq('band_id', bandRow.id)
+    .eq('role', 'logo')
+
+  if (logoLoadError) logoErrorRedirect(bandRow.id, 'logo_load_failed')
+
+  const resolution = resolvePubliclyUsedMediaRow(existingLogoRows ?? [])
+  if (resolution.kind === 'ambiguous') {
+    // Mehrere logo-Zeilen mit identischem sort_order: nicht sicher
+    // bestimmbar, welche das oeffentliche Frontend zeigt. Fail-closed --
+    // kein Upload, kein Write, keine automatische Bereinigung.
+    logoErrorRedirect(bandRow.id, 'logo_ambiguous')
+  }
+
+  // ---- 2. Upload unter neuem, eindeutigem Pfad ----
+  const uniqueSuffix = crypto.randomUUID()
+  const storagePath = buildBandImageStoragePath(bandRow.slug, 'logo', validation.ext, uniqueSuffix)
+
+  const { error: uploadError } = await client.storage
+    .from(BAND_MEDIA_BUCKET)
+    .upload(storagePath, bytes, { contentType: validation.contentType, upsert: false })
+
+  if (uploadError) logoErrorRedirect(bandRow.id, 'logo_upload_failed')
+
+  const newUrl = client.storage.from(BAND_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl
+
+  // ---- 3. Bestehende Zeile gezielt per id aktualisieren, oder genau
+  // eine neue anlegen. Kein Delete-then-Insert. ----
+  let dbError: { message: string } | null = null
+  let oldUrl: string | null = null
+
+  if (resolution.kind === 'resolved' && resolution.row) {
+    oldUrl = resolution.row.url
+    const { error } = await client
+      .from('media_assets')
+      .update({ url: newUrl })
+      .eq('id', resolution.row.id)
+    dbError = error
+  } else {
+    const { error } = await client.from('media_assets').insert({
+      band_id: bandRow.id,
+      url: newUrl,
+      role: 'logo',
+      alt_text: `${bandRow.name} Logo`,
+      source_provider: 'supabase_storage',
+      sort_order: 0,
+    })
+    dbError = error
+  }
+
+  if (dbError) {
+    // DB-Write fehlgeschlagen: bestehendes Logo bleibt referenziert. Das
+    // gerade hochgeladene, noch nicht verwendete Objekt wird best effort
+    // wieder entfernt -- ein Fehler dabei wird nur geloggt, aendert aber
+    // nichts am (weiterhin funktionierenden) alten Zustand.
+    const { error: cleanupError } = await client.storage.from(BAND_MEDIA_BUCKET).remove([storagePath])
+    if (cleanupError) {
+      console.error(`[logo-image] Cleanup nach fehlgeschlagenem DB-Update nicht moeglich (${storagePath}): ${cleanupError.message}`)
+    }
+    logoErrorRedirect(bandRow.id, 'logo_db_update_failed')
+  }
+
+  // ---- 4. Altes Storage-Objekt erst jetzt, nach erfolgreichem
+  // DB-Update, und nur ohne verbleibende Referenz entfernen (best effort;
+  // siehe deleteBandImageIfUnreferenced.ts) ----
+  if (oldUrl) {
+    await deleteBandImageIfUnreferenced(client, oldUrl, 'logo-image')
+  }
+
+  // ---- 5. Revalidieren: Admin-Seite, oeffentliche Bandseite (zeigt das
+  // Logo direkt in BandHero.tsx). Keine Card-Routen -- das Logo erscheint
+  // dort nicht. ----
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?logo_saved=1`)
+}
+
+export async function removeBandLogoAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?logo_error=logo_band_not_found`)
+
+  const { data: existingLogoRows, error: logoLoadError } = await client
+    .from('media_assets')
+    .select('id, url, alt_text, role, sort_order, source_provider')
+    .eq('band_id', bandRow.id)
+    .eq('role', 'logo')
+
+  if (logoLoadError) logoErrorRedirect(bandRow.id, 'logo_load_failed')
+
+  const resolution = resolvePubliclyUsedMediaRow(existingLogoRows ?? [])
+  if (resolution.kind === 'ambiguous') {
+    // Gleiches Fail-closed-Prinzip wie beim Upload: keine automatische
+    // Bereinigung, kein Loeschversuch bei Mehrdeutigkeit.
+    logoErrorRedirect(bandRow.id, 'logo_ambiguous')
+  }
+  if (resolution.kind !== 'resolved') {
+    // Kein Logo vorhanden -- der Entfernen-Button wird im UI nur bei
+    // vorhandenem Logo angezeigt, dies ist daher nur eine defensive
+    // Absicherung (z. B. bei veraltetem, bereits geaendertem Zustand).
+    logoErrorRedirect(bandRow.id, 'logo_remove_target_missing')
+  }
+
+  // ---- Genau die eine eindeutig aufgeloeste Zeile loeschen -- kein
+  // Delete-by-role (das koennte bei struktureller Mehrdeutigkeit mehr als
+  // eine Zeile treffen, ist hier aber ohnehin durch den Guard oben
+  // ausgeschlossen). ----
+  const { error: deleteError } = await client
+    .from('media_assets')
+    .delete()
+    .eq('id', resolution.row.id)
+
+  if (deleteError) logoErrorRedirect(bandRow.id, 'logo_remove_failed')
+
+  // ---- Storage-Objekt erst nach erfolgreichem DB-Delete und nur ohne
+  // verbleibende Referenz entfernen (best effort; siehe
+  // deleteBandImageIfUnreferenced.ts). ----
+  await deleteBandImageIfUnreferenced(client, resolution.row.url, 'logo-image')
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?logo_removed=1`)
+}
+
+// ─────────────────────────────────────────
 // Galerie (media_assets.role='gallery')
 //
 // Anders als Hero/Thumbnail sind hier mehrere Zeilen pro Band normal.

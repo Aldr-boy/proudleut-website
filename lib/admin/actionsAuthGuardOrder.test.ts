@@ -45,6 +45,8 @@ const PROTECTED_ACTIONS = [
   'updateSimilarBandsAction',
   'updateBandMoodsAction',
   'updateBandRepertoireStylesAction',
+  'updateBandLogoAction',
+  'removeBandLogoAction',
   'updateBandHeroImageAction',
   'updateBandThumbnailAction',
   'addBandGalleryImageAction',
