@@ -81,6 +81,24 @@ test('gemeinsamer Stand wird NUR aus tatsaechlich sichtbaren (bereits gefilterte
   assert.match(body, /links\.filter\(\(l\) => l\.metric\)/)
 })
 
+test('bei "shared" wird strukturell genau EINE gemeinsame Datumszeile ausserhalb der <ul> gerendert -- nicht je Metrik eine', () => {
+  // resolveFollowerStandDisplay liefert bei 'shared' genau einen
+  // checkedAt-Wert (kein Array) und es gibt im Quelltext nur EINE
+  // Stelle, die auf standDisplay.kind === 'shared' prueft und dabei ein
+  // <p> rendert -- das schliesst strukturell aus, dass bei mehreren
+  // Plattformen mit identischem Pruefdatum mehrere Zeilen entstehen.
+  const sharedGuardMatches = source.match(/standDisplay\.kind === 'shared'/g) ?? []
+  assert.equal(sharedGuardMatches.length, 1, 'genau eine "shared"-Pruefstelle erwartet')
+
+  const ulEnd = source.indexOf('</ul>')
+  assert.ok(ulEnd >= 0)
+  const afterUl = source.slice(ulEnd)
+  const sharedBlock = afterUl.match(/standDisplay\.kind === 'shared' && \(([\s\S]*?)\)\}/)
+  assert.ok(sharedBlock, 'gemeinsame Datumszeile nicht ausserhalb der <ul> gefunden')
+  const pTagsInBlock = sharedBlock![1].match(/<p\b/g) ?? []
+  assert.equal(pTagsInBlock.length, 1, 'genau ein <p> fuer den gemeinsamen Pruefstand erwartet')
+})
+
 test('Website und Spotify erhalten keine Kennzahl (kein metric-Feld in ihren LinkItems)', () => {
   const websiteLine = source.match(/websiteUrl \? \{[^}]*\}/)?.[0] ?? ''
   const spotifyLine = source.match(/band\.socialLinks\.spotify \? \{[^}]*\}/)?.[0] ?? ''

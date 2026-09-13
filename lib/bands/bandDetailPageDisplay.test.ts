@@ -29,23 +29,8 @@ test('Auftrag 4.3: ab 2 Referenzen steht BandReferenceEvents innerhalb einer bg-
   assert.match(block![1], /<BandReferenceEvents/)
 })
 
-test('mergeStageIsland-Formel entspricht "referenceCount >= 2 && hasSocialStats" (max. 2 dunkle Buehnen-Sections/Seite)', () => {
-  assert.match(pageSource, /const mergeStageIsland = referenceCount >= 2 && hasSocialStats;/)
-})
-
-test('mergeStageIsland real ausgewertet: nur ab 2 Referenzen UND vorhandenen Social-Stats aktiv', () => {
-  function mergeStageIsland(referenceCount: number, hasSocialStats: boolean) {
-    return referenceCount >= 2 && hasSocialStats
-  }
-  assert.equal(mergeStageIsland(0, true), false)
-  assert.equal(mergeStageIsland(1, true), false)
-  assert.equal(mergeStageIsland(2, false), false)
-  assert.equal(mergeStageIsland(2, true), true)
-  assert.equal(mergeStageIsland(5, true), true)
-})
-
-test('standalone Social-Stats-Section rendert nur, wenn NICHT bereits in der Buehnen-Insel zusammengefuehrt', () => {
-  assert.match(pageSource, /\{hasSocialStats && !mergeStageIsland && \(/)
+test('BandSocialIndex ("Sichtbarkeit ueber die Buehne hinaus") ist entfernt -- Social-Kennzahlen erscheinen ausschliesslich in "Mehr von [Band]"', () => {
+  assert.doesNotMatch(pageSource, /BandSocialIndex/)
 })
 
 test('BandFloatingCta wird mit heroCtaId="hero-cta" und contactSectionId="band-contact-section" eingebunden', () => {
