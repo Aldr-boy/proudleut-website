@@ -63,7 +63,7 @@ export function ThumbnailEditorSection({
 
   if (loadError) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+      <div>
         <h2 className="text-base font-semibold text-gray-900 mb-1">Thumbnail</h2>
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3 text-red-700 text-sm">
           Thumbnail konnte nicht geladen werden. Bitte Seite neu laden. Aus Sicherheitsgründen wird
@@ -75,7 +75,7 @@ export function ThumbnailEditorSection({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+    <div>
       <h2 className="text-base font-semibold text-gray-900 mb-1">Thumbnail</h2>
       <p className="text-xs text-gray-400 mb-4">
         Das Bild, das in Band-Cards verwendet wird (Übersicht, Kategorie-Seiten). Eigenständig vom

@@ -55,10 +55,28 @@ test('deleteBandGalleryImageAction: deleteBandImageIfUnreferenced() steht nach d
   assert.ok(helperCallIndex > rpcErrorGuardIndex, 'Helper-Aufruf muss nach dem rpcError-Guard stehen')
 })
 
-test('deleteBandImageIfUnreferenced wird in actions.ts importiert und in genau drei Actions verwendet', () => {
+test('updateBandLogoAction: deleteBandImageIfUnreferenced() steht nach dem dbError-Guard', () => {
+  const body = extractFunctionBody('updateBandLogoAction')
+  const dbErrorGuardIndex = body.indexOf('if (dbError)')
+  const helperCallIndex = body.indexOf('deleteBandImageIfUnreferenced(')
+  assert.ok(dbErrorGuardIndex >= 0, 'kein dbError-Guard gefunden')
+  assert.ok(helperCallIndex >= 0, 'kein Helper-Aufruf gefunden')
+  assert.ok(helperCallIndex > dbErrorGuardIndex, 'Helper-Aufruf muss nach dem dbError-Guard stehen')
+})
+
+test('removeBandLogoAction: deleteBandImageIfUnreferenced() steht nach dem deleteError-Guard', () => {
+  const body = extractFunctionBody('removeBandLogoAction')
+  const deleteErrorGuardIndex = body.indexOf('if (deleteError)')
+  const helperCallIndex = body.indexOf('deleteBandImageIfUnreferenced(')
+  assert.ok(deleteErrorGuardIndex >= 0, 'kein deleteError-Guard gefunden')
+  assert.ok(helperCallIndex >= 0, 'kein Helper-Aufruf gefunden')
+  assert.ok(helperCallIndex > deleteErrorGuardIndex, 'Helper-Aufruf muss nach dem deleteError-Guard stehen')
+})
+
+test('deleteBandImageIfUnreferenced wird in actions.ts importiert und in genau fuenf Actions verwendet', () => {
   assert.match(source, /import \{ deleteBandImageIfUnreferenced \} from ['"]@\/lib\/bandImages\/deleteBandImageIfUnreferenced['"]/)
   const occurrences = source.match(/deleteBandImageIfUnreferenced\(client,/g) ?? []
-  assert.equal(occurrences.length, 3, `erwartet genau 3 Aufrufstellen (Hero/Thumbnail/Galerie-Delete), gefunden ${occurrences.length}`)
+  assert.equal(occurrences.length, 5, `erwartet genau 5 Aufrufstellen (Logo-Update/Logo-Remove/Hero/Thumbnail/Galerie-Delete), gefunden ${occurrences.length}`)
 })
 
 test('updateBandHeroImageAction: der an den Helper uebergebene Wert ist die volle alte URL (oldUrl), kein bereits extrahierter Storage-Pfad', () => {
@@ -77,6 +95,17 @@ test('deleteBandGalleryImageAction: der an den Helper uebergebene Wert ist die v
   const body = extractFunctionBody('deleteBandGalleryImageAction')
   assert.match(body, /deleteBandImageIfUnreferenced\(client, deletedUrl, 'gallery-image'\)/)
   assert.match(body, /const deletedUrl = rpcRows\?\.\[0\]\?\.deleted_url/)
+})
+
+test('updateBandLogoAction: der an den Helper uebergebene Wert ist die volle alte URL (oldUrl)', () => {
+  const body = extractFunctionBody('updateBandLogoAction')
+  assert.match(body, /deleteBandImageIfUnreferenced\(client, oldUrl, 'logo-image'\)/)
+  assert.match(body, /oldUrl = resolution\.row\.url/)
+})
+
+test('removeBandLogoAction: der an den Helper uebergebene Wert ist die volle URL der geloeschten Zeile (resolution.row.url)', () => {
+  const body = extractFunctionBody('removeBandLogoAction')
+  assert.match(body, /deleteBandImageIfUnreferenced\(client, resolution\.row\.url, 'logo-image'\)/)
 })
 
 test('Galerie-Add und Galerie-Move rufen deleteBandImageIfUnreferenced nicht auf (unveraendert, ausserhalb des Scopes)', () => {

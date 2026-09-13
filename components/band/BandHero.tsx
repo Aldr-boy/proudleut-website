@@ -33,14 +33,26 @@ export function BandHero({ band }: Props) {
       <div className="relative z-10 flex items-end h-full min-h-[55vh] md:min-h-[65vh]">
         <div className="w-full max-w-[1140px] mx-auto px-4 sm:px-6 pb-10 md:pb-14">
           {band.logo && (
-            <div className="mb-4">
+            // Bewusst `fill` statt fester width/height-Props: Logos haben
+            // stark unterschiedliche, unbekannte Seitenverhaeltnisse (z. B.
+            // sehr breite, niedrige Wortmarken). Feste width/height-Props
+            // (vorher 200x80) setzen next/image's Intrinsic-Size-Attribute
+            // auf DIESES Seitenverhaeltnis -- ein anschliessendes
+            // `style={{width:'auto', height:'auto'}}` liess den Browser
+            // dann die BOX anhand dieser falschen 200:80-Form berechnen,
+            // nicht anhand der echten Bilddatei, wodurch z. B. ein breites,
+            // niedriges Logo unnoetig klein gerendert wurde. `fill` +
+            // object-contain in einer Box mit fester Groesse (statt fester
+            // Bild-Attribute) laesst die Box-Form die reale Bilddatei
+            // korrekt und proportional einpassen, unabhaengig vom
+            // tatsaechlichen Seitenverhaeltnis.
+            <div className="relative mb-4 w-40 h-14">
               <Image
                 src={band.logo.url}
                 alt={band.logo.alt}
-                width={200}
-                height={80}
+                fill
                 className="object-contain object-left"
-                style={{ width: 'auto', maxWidth: '160px', maxHeight: '56px', height: 'auto' }}
+                sizes="160px"
               />
             </div>
           )}
