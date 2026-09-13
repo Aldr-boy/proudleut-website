@@ -15,7 +15,6 @@ import { BandReferenceEvents } from '@/components/band/BandReferenceEvents';
 import { BandGallery } from '@/components/band/BandGallery';
 import { BandDocumentsSection } from '@/components/band/BandDocumentsSection';
 import { BandWeddingModule } from '@/components/band/BandWeddingModule';
-import { BandSocialIndex } from '@/components/band/BandSocialIndex';
 import { BandContactSection } from '@/components/band/BandContactSection';
 import { HeroCTA } from '@/components/band/HeroCTA';
 import { BandFloatingCta } from '@/components/band/BandFloatingCta';
@@ -101,14 +100,6 @@ export default async function BandPage({ params }: PageProps) {
 
 
   const referenceCount = band.referenceEvents.length;
-  const s = band.socialMediaStats;
-  const hasSocialStats = !!(s?.igFollowers || s?.fbFollowers || s?.ytSubscribers);
-  // Auftrag 4.3: bei genau einer Referenz heller, kompakter Grund (kein
-  // grosser dunkler Block) -- kann sich dadurch nicht mehr mit der
-  // dunklen Social-Stats-Buehne zu einer Insel verschmelzen lassen. Ab 2
-  // Referenzen bleibt das bestehende Merge-Verhalten (max. 2 dunkle
-  // Buehnen-Content-Sections/Seite: Hero + eine Insel).
-  const mergeStageIsland = referenceCount >= 2 && hasSocialStats;
 
   return (
     <article className="bg-pl-canvas">
@@ -129,15 +120,7 @@ export default async function BandPage({ params }: PageProps) {
 
       {referenceCount >= 2 && (
         <section className="bg-pl-stage">
-          <BandReferenceEvents band={band} compactBottom={mergeStageIsland} />
-          {mergeStageIsland && <div className="border-t border-white/10" />}
-          {mergeStageIsland && <BandSocialIndex band={band} compactTop />}
-        </section>
-      )}
-
-      {hasSocialStats && !mergeStageIsland && (
-        <section className="bg-pl-stage">
-          <BandSocialIndex band={band} />
+          <BandReferenceEvents band={band} />
         </section>
       )}
 
