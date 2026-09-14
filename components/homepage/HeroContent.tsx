@@ -28,7 +28,7 @@ export function HeroContent() {
         <span className="font-serif italic font-medium">euren Moment.</span>
       </h1>
       <p className="mt-5 text-base md:text-lg leading-relaxed text-pl-on-stage-muted max-w-md">
-        Für eure Hochzeit, Firmenfeier oder ein Fest, das in Erinnerung bleibt.
+        Für eure Hochzeit, Firmenfeier oder ein Fest, das in Erinnerung bleiben soll.
       </p>
 
       <Link

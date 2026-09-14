@@ -47,7 +47,7 @@ test('HeroContent zeigt den neuen verbindlichen Text/CTA (Eyebrow, H1, Subtext, 
   assert.match(heroContentSource, />\s*In und um Bayern\s*</)
   assert.match(heroContentSource, /Livebands für/)
   assert.match(heroContentSource, />euren Moment\.</)
-  assert.match(heroContentSource, /Für eure Hochzeit, Firmenfeier oder ein Fest, das in Erinnerung bleibt\./)
+  assert.match(heroContentSource, /Für eure Hochzeit, Firmenfeier oder ein Fest, das in Erinnerung bleiben soll\./)
   assert.match(heroContentSource, /href="\/bands"/)
   assert.match(heroContentSource, /Bands entdecken/)
 })
