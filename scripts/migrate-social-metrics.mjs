@@ -12,39 +12,39 @@
  *   node scripts/migrate-social-metrics.mjs --csv=<Pfad-zur-CSV>
  *   node scripts/migrate-social-metrics.mjs --csv=<Pfad> --out=<Vorschau-JSON-Pfad>
  *
- * Echter Lauf (erst nach Freigabe der Dry-Run-Vorschau, siehe README unten):
- *   node scripts/migrate-social-metrics.mjs --execute --plan=<Vorschau-JSON-Pfad> \
- *     --journal=<Rollback-Journal-Pfad> --confirm-bulk-execute
- *   node scripts/migrate-social-metrics.mjs --execute --plan=<Pfad> --journal=<Pfad> --band-id=<uuid>
+ * Echter Lauf (erst nach Freigabe der Dry-Run-Vorschau; schreibt alle
+ * geplanten Zeilen in einer einzigen Transaktion oder keine -- keine
+ * Pilotband-Option, siehe Auftrag):
+ *   node scripts/migrate-social-metrics.mjs --execute --plan=<Vorschau-JSON-Pfad> --confirm-bulk-execute
  *
  * Rollback eines vorherigen Execute-Laufs:
- *   node scripts/migrate-social-metrics.mjs --restore=<Rollback-Journal-Pfad>
+ *   node scripts/migrate-social-metrics.mjs --restore=<Backup-Verzeichnis>
  *
- * --- Ausfuehrungsmodell fuer --execute (bewusst ohne neue RPC) ---
- * PostgREST/Supabase-JS bieten aus diesem Stack heraus keine
- * Mehrzeilen-Transaktion ohne eigene DB-Funktion. Da keine neue RPC ohne
- * nachgewiesene Notwendigkeit angelegt werden soll, ist "atomar" hier
- * bewusst pro-Zeile verstanden (ein einzelnes UPDATE ist in Postgres
- * atomar) plus:
- *   1. Optimistic-Concurrency-Check unmittelbar vor jedem Schreiben: die
- *      Zielrow wird frisch gelesen und mit dem im Plan festgehaltenen
- *      Ausgangswert (current_followers/last_checked_at zum Dry-Run-
- *      Zeitpunkt) verglichen. Bei Abweichung wird NUR diese Zeile
- *      uebersprungen (SKIPPED_DRIFT) und NICHT geschrieben -- keine
- *      zwischenzeitliche Admin-Pflege wird ueberschrieben.
- *   2. Ein Rollback-Journal (JSON-Lines) haelt zu jeder tatsaechlich
- *      geschriebenen Zeile Vorher-/Nachherzustand fest. `--restore`
- *      liest dieses Journal und stellt exakt die festgehaltenen
- *      Ausgangswerte wieder her -- nur wenn die Zielrow seither
- *      unveraendert dem "Nachher"-Zustand entspricht (sonst Meldung statt
- *      stillem Ueberschreiben).
- *   3. Systemischer-Fehler-Stop wie in scripts/migrate-social-profiles.mjs
- *      (Permission/Schema-Fehler stoppen weitere Schreibvorgaenge sofort).
+ * --- Ausfuehrungsmodell fuer --execute (echte DB-Transaktion) ---
+ * Verwendet die bereits vorhandene direkte PostgreSQL-Verbindung aus
+ * .env.cutover-test.local (PROD_DB_URL_MIGRATION/PROD_DB_PASSWORD, aus
+ * dem urspruenglichen Cutover) statt einer neuen RPC/Migration:
+ *   1. Eine einzige DB-Transaktion (BEGIN...COMMIT) sperrt alle
+ *      betroffenen Zielzeilen per SELECT ... FOR UPDATE, vergleicht sie
+ *      mit dem im Plan festgehaltenen Ausgangs- UND Endzustand und
+ *      schreibt entweder ausnahmslos alle 100 Zeilen oder keine
+ *      einzige (siehe scripts/socialMetricsMigration/runBatchImport.mjs
+ *      + batchTransaction.mjs fuer die reine Entscheidungslogik).
+ *   2. Die Sicherung (Vorher-/Nachherzustand) wird innerhalb derselben
+ *      Transaktion, nach der Validierung und vor dem eigentlichen
+ *      Schreiben, nach $HOME/proudleut-backups/social-metrics/<Zeitstempel>/
+ *      geschrieben. Schlaegt das fehl, wird zurueckgerollt.
+ *   3. `--restore=<Backup-Verzeichnis>` stellt in einer eigenen, ebenso
+ *      atomaren Transaktion die Ausgangswerte wieder her -- nur wenn
+ *      alle betroffenen Zeilen noch exakt dem importierten Endzustand
+ *      entsprechen (sonst Abbruch ohne Teil-Restore).
  */
 
-import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'fs'
-import { resolve, dirname } from 'path'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { resolve, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+import { homedir } from 'os'
+import { Client } from 'pg'
 import { createClient } from '@supabase/supabase-js'
 import { parseCsvRecords } from './socialMetricsMigration/parseCsv.mjs'
 import {
@@ -57,6 +57,8 @@ import {
   computePreviewVisibility,
   PLATFORM_DECISION,
 } from './socialMetricsMigration/classify.mjs'
+import { loadDirectPgConfigs } from './socialMetricsMigration/pgConnection.mjs'
+import { runAtomicImport, runAtomicRestore } from './socialMetricsMigration/runBatchImport.mjs'
 
 const __dir = dirname(fileURLToPath(import.meta.url))
 
@@ -88,13 +90,21 @@ const args = process.argv.slice(2)
 const flag = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split('=')[1] ?? null
 
 const EXECUTE = args.includes('--execute')
-const RESTORE_PATH = flag('restore')
+const RESTORE_DIR = flag('restore')
 const CSV_PATH = flag('csv')
 const OUT_PATH = flag('out')
 const PLAN_PATH = flag('plan')
-const JOURNAL_PATH = flag('journal')
-const BAND_ID_SCOPE = flag('band-id')
 const CONFIRM_BULK_EXECUTE = args.includes('--confirm-bulk-execute')
+
+function backupBaseDir() {
+  return join(homedir(), 'proudleut-backups', 'social-metrics')
+}
+
+function timestampForBackupDir(now = new Date()) {
+  // "2026-09-14T18:30:45.123Z" -> "2026-09-14T183045Z" (Sekunden erhalten, Millisekunden verworfen)
+  const iso = now.toISOString()
+  return iso.slice(0, 19).replace(/:/g, '') + 'Z'
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -116,45 +126,29 @@ function projectRefFromUrl(url) {
 
 const DLINE = '─'.repeat(88)
 
-// ─── RESTORE-MODUS ────────────────────────────────────────────────────────────
+// ─── RESTORE-MODUS (atomare Transaktion) ──────────────────────────────────────
 
 async function runRestore() {
-  console.log(`\n${DLINE}\n  migrate-social-metrics.mjs --restore\n  Journal: ${RESTORE_PATH}\n${DLINE}`)
-  const lines = readFileSync(RESTORE_PATH, 'utf8').split('\n').filter((l) => l.trim())
-  const entries = lines.map((l) => JSON.parse(l))
-  console.log(`  Journal-Eintraege: ${entries.length}`)
+  console.log(`\n${DLINE}\n  migrate-social-metrics.mjs --restore\n  Backup-Verzeichnis: ${RESTORE_DIR}\n${DLINE}`)
+  const before = JSON.parse(readFileSync(join(RESTORE_DIR, 'before.json'), 'utf8'))
+  const after = JSON.parse(readFileSync(join(RESTORE_DIR, 'after.json'), 'utf8'))
+  console.log(`  Zeilen im Backup: ${before.length}`)
 
-  let restored = 0, skippedDrift = 0, failed = 0
-  for (const entry of entries) {
-    const { data: current, error } = await supabase
-      .from('social_profiles')
-      .select('id, current_followers, last_checked_at')
-      .eq('id', entry.profileId)
-      .single()
-    if (error || !current) {
-      console.log(`  ✗ FAILED    id=${entry.profileId} -- Zielrow nicht lesbar: ${error?.message}`)
-      failed++
-      continue
+  const { prod } = loadDirectPgConfigs()
+  const client = new Client(prod)
+  await client.connect()
+  try {
+    const result = await runAtomicRestore({ client, before, after })
+    if (result.outcome === 'RESTORED') {
+      console.log(`\n  ✓ RESTORED -- ${result.restoredCount} Zeilen atomar auf den Ausgangszustand zurueckgesetzt.`)
+    } else {
+      console.log(`\n  ✗ ABORT_DRIFT -- mindestens eine Zielzeile weicht seit dem Import vom erwarteten Endzustand ab, KEIN Restore ausgefuehrt:`)
+      for (const d of result.drifted) console.log(`    - ${d.profileId}: ${d.reason} ${d.actual ? JSON.stringify(d.actual) : ''}`)
+      process.exit(1)
     }
-    const matchesAfter = current.current_followers === entry.after.current_followers && current.last_checked_at === entry.after.after_last_checked_at_iso
-    if (!matchesAfter) {
-      console.log(`  ⚠ SKIPPED_DRIFT  id=${entry.profileId} -- Zielrow wurde seit dem Schreiben veraendert, kein Restore (aktuell: ${current.current_followers}/${current.last_checked_at})`)
-      skippedDrift++
-      continue
-    }
-    const { error: updErr } = await supabase
-      .from('social_profiles')
-      .update({ current_followers: entry.before.current_followers, last_checked_at: entry.before.last_checked_at })
-      .eq('id', entry.profileId)
-    if (updErr) {
-      console.log(`  ✗ FAILED    id=${entry.profileId} -- Restore-Update fehlgeschlagen: ${updErr.message}`)
-      failed++
-      continue
-    }
-    console.log(`  ✓ RESTORED  id=${entry.profileId} -> ${entry.before.current_followers}/${entry.before.last_checked_at}`)
-    restored++
+  } finally {
+    await client.end()
   }
-  console.log(`\n  restored=${restored} skipped_drift=${skippedDrift} failed=${failed}`)
 }
 
 // ─── DATEN LADEN ──────────────────────────────────────────────────────────────
@@ -323,92 +317,58 @@ function printPlan(plan) {
   console.log(`  Oeffentlich sichtbare Kennzahlen nach Import:   ${visibleCount}  (bezogen auf ${plan.generatedAt.slice(0, 10)})`)
 }
 
-// ─── EXECUTE (nur SET/UPDATE, mit Drift-Check + Rollback-Journal) ─────────────
+// ─── EXECUTE (eine einzige atomare DB-Transaktion, alle oder keine) ──────────
 
 async function runExecute() {
-  if (!PLAN_PATH || !JOURNAL_PATH) {
-    console.error('✗ --execute erfordert --plan=<Dry-Run-JSON> und --journal=<Rollback-Journal-Pfad>')
+  if (!PLAN_PATH) {
+    console.error('✗ --execute erfordert --plan=<Dry-Run-JSON>')
     process.exit(1)
   }
-  if (!BAND_ID_SCOPE && !CONFIRM_BULK_EXECUTE) {
+  if (!CONFIRM_BULK_EXECUTE) {
     console.error(`
-✗ Bulk execute blocked.
+✗ Execute blocked.
   Erst Dry Run + Freigabe der Vorschau, dann:
-    --execute --plan=<Pfad> --journal=<Pfad> --confirm-bulk-execute
-  oder auf eine Band begrenzt:
-    --execute --plan=<Pfad> --journal=<Pfad> --band-id=<uuid>
+    --execute --plan=<Pfad> --confirm-bulk-execute
 `)
     process.exit(1)
   }
 
   const plan = JSON.parse(readFileSync(PLAN_PATH, 'utf8'))
-  let writable = plan.platformRows.filter((r) => r.action === 'SET' || r.action === 'UPDATE')
-  if (BAND_ID_SCOPE) writable = writable.filter((r) => r.band.id === BAND_ID_SCOPE)
+  const planRows = plan.platformRows.filter((r) => r.action === 'SET' || r.action === 'UPDATE')
 
-  console.log(`\n${DLINE}\n  migrate-social-metrics.mjs --execute\n  Plan:    ${PLAN_PATH} (erzeugt ${plan.generatedAt})\n  Journal: ${JOURNAL_PATH}\n  Geplante Schreibvorgaenge: ${writable.length}\n${DLINE}`)
+  const backupDir = join(backupBaseDir(), timestampForBackupDir())
 
-  let written = 0, skippedDrift = 0, failed = 0
-  let systemicFailure = null
+  console.log(`\n${DLINE}\n  migrate-social-metrics.mjs --execute\n  Plan:          ${PLAN_PATH} (erzeugt ${plan.generatedAt})\n  Backup-Ziel:   ${backupDir}\n  Zeilen im Plan (SET+UPDATE): ${planRows.length}\n${DLINE}`)
 
-  for (const row of writable) {
-    if (systemicFailure) { console.log(`  ⏭ uebersprungen nach systemischem Fehler: ${row.csvBandName}/${row.platform}`); continue }
+  mkdirSync(backupDir, { recursive: true })
 
-    const { data: current, error: readErr } = await supabase
-      .from('social_profiles')
-      .select('id, current_followers, last_checked_at')
-      .eq('id', row.targetProfileId)
-      .single()
-    if (readErr || !current) {
-      console.log(`  ✗ FAILED  ${row.csvBandName}/${row.platform} -- Zielrow nicht lesbar: ${readErr?.message}`)
-      failed++
-      continue
+  const { prod } = loadDirectPgConfigs()
+  const client = new Client(prod)
+  await client.connect()
+  try {
+    const result = await runAtomicImport({ client, planRows, backupDir })
+
+    if (result.outcome === 'APPLIED') {
+      console.log(`\n  ✓ APPLIED -- ${result.appliedCount} Zeilen atomar geschrieben (eine Transaktion, alle oder keine).`)
+      console.log(`  ✓ Wiederherstellungsdaten gesichert unter: ${backupDir}`)
+    } else if (result.outcome === 'ALL_ALREADY_APPLIED') {
+      console.log(`\n  ℹ ALL_ALREADY_APPLIED -- alle Zielwerte entsprechen bereits exakt dem freigegebenen Endzustand. Kein Schreibvorgang ausgefuehrt.`)
+    } else {
+      console.log(`\n  ✗ ${result.outcome} -- Import gestoppt, KEINE Zeile geschrieben:`)
+      for (const d of result.details) {
+        console.log(`    - ${d.band.slug}/${d.platform} [${d.classification}] tatsaechlich: ${JSON.stringify(d.actual)}`)
+      }
+      process.exit(1)
     }
-    const driftedFollowers = current.current_followers !== row.previousValue
-    const driftedDate = (current.last_checked_at ?? null) !== (row.previousCheckedAt ?? null)
-    if (driftedFollowers || driftedDate) {
-      console.log(`  ⚠ SKIPPED_DRIFT  ${row.csvBandName}/${row.platform} -- Zielwert hat sich seit dem Dry-Run geaendert (jetzt: ${current.current_followers}/${current.last_checked_at}), NICHT geschrieben`)
-      skippedDrift++
-      continue
-    }
-
-    const { error: updErr } = await supabase
-      .from('social_profiles')
-      .update({ current_followers: row.proposedValue, last_checked_at: row.proposedCheckedAt })
-      .eq('id', row.targetProfileId)
-
-    if (updErr) {
-      const code = updErr.code || ''
-      const isSystemic = code === '42501' || code === '42P01' || code === '42703' || /permission denied|does not exist/i.test(updErr.message || '')
-      console.log(`  ✗ FAILED  ${row.csvBandName}/${row.platform} -- ${code} ${updErr.message}`)
-      failed++
-      if (isSystemic) systemicFailure = { code, message: updErr.message }
-      continue
-    }
-
-    appendFileSync(JOURNAL_PATH, JSON.stringify({
-      profileId: row.targetProfileId,
-      band_id: row.band.id,
-      platform: row.platform,
-      before: { current_followers: row.previousValue, last_checked_at: row.previousCheckedAt },
-      after: { current_followers: row.proposedValue, after_last_checked_at_iso: row.proposedCheckedAt },
-      writtenAt: new Date().toISOString(),
-    }) + '\n')
-
-    console.log(`  ✓ WRITTEN  ${row.csvBandName}/${row.platform}  ${row.previousValue ?? '(leer)'} → ${row.proposedValue}`)
-    written++
-  }
-
-  console.log(`\n  written=${written} skipped_drift=${skippedDrift} failed=${failed}`)
-  if (systemicFailure) {
-    console.error(`\n  ✗ Systemischer Fehler: ${systemicFailure.code} ${systemicFailure.message} -- weiterer Lauf gestoppt.`)
-    process.exit(1)
+  } finally {
+    await client.end()
   }
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  if (RESTORE_PATH) { await runRestore(); return }
+  if (RESTORE_DIR) { await runRestore(); return }
   if (EXECUTE) { await runExecute(); return }
 
   if (!CSV_PATH || !existsSync(CSV_PATH)) {
