@@ -34,7 +34,7 @@ export function HeroContent() {
       <Link
         href="/bands"
         className="inline-flex items-center gap-2 mt-8 px-7 py-3.5 rounded-full bg-pl-accent text-pl-on-accent text-base font-semibold
-                   hover:bg-pl-accent-hover motion-safe:transition-colors
+                   hover:bg-pl-accent-hover motion-safe:transition-colors active:scale-95 motion-safe:transition-transform
                    focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent-light focus-visible:ring-offset-2 focus-visible:ring-offset-pl-stage"
       >
         Bands entdecken
