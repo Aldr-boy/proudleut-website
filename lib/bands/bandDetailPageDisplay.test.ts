@@ -5,50 +5,69 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 // Strukturelle Regressionspruefung fuer app/band/[slug]/page.tsx,
-// components/band/HeroCTA.tsx, components/band/BandContactSection.tsx und
-// components/band/BandFloatingCta.tsx. Die Seite ist eine async Server
+// components/band/HeroCTA.tsx, components/band/BandFloatingCta.tsx und
+// components/band/BandContactSection.tsx. Die Seite ist eine async Server
 // Component mit await-Aufrufen -- in diesem Repo nicht per node:test
 // ausfuehrbar (keine React-/Next.js-Server-Component-Test-Infrastruktur).
 // Echte Quelldateien per readFileSync lesen und strukturell pruefen --
 // identisches, bereits etabliertes Muster wie
 // lib/admin/eventTypesPageDisplay.test.ts.
+//
+// Bandseiten-Redesign (Auftrag "Bandseiten-Redesign"): BandReferenceEvents
+// ist seit dem Redesign fuer alle Zaehlstaende selbsttragend (eigene
+// Section, kein bg-pl-stage-Wrapper mehr von der Seite -- siehe
+// lib/bands/bandReferenceEventsLayout.ts), HeroCTA ist in BandHero
+// eingebettet (kein eigener "hero-cta"-Balken mehr), BandFloatingCta nutzt
+// weiterhin heroSentinelId/finalSentinelId (nicht heroCtaId/
+// contactSectionId -- diese Test-Erwartung war bereits vor dem Redesign
+// veraltet).
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const pageSource = readFileSync(path.join(root, 'app', 'band', '[slug]', 'page.tsx'), 'utf8')
 const heroCtaSource = readFileSync(path.join(root, 'components', 'band', 'HeroCTA.tsx'), 'utf8')
-const contactSource = readFileSync(path.join(root, 'components', 'band', 'BandContactSection.tsx'), 'utf8')
+const bandHeroSource = readFileSync(path.join(root, 'components', 'band', 'BandHero.tsx'), 'utf8')
 
-test('Auftrag 4.3: bei genau 1 Referenz wird BandReferenceEvents ausserhalb jeder bg-pl-stage-Huelle gerendert (heller Grund)', () => {
-  const match = pageSource.match(/\{referenceCount === 1 && <BandReferenceEvents band=\{band\} \/>\}/)
-  assert.ok(match, 'erwartete Zeile fuer referenceCount === 1 nicht gefunden')
+test('BandReferenceEvents wird unabhaengig vom Zaehlstand ohne Wrapper-Section durch die Seite eingebunden (selbsttragend, siehe Komponente)', () => {
+  assert.match(pageSource, /<BandReferenceEvents band=\{band\} \/>/)
+  assert.doesNotMatch(pageSource, /referenceCount/)
 })
 
-test('Auftrag 4.3: ab 2 Referenzen steht BandReferenceEvents innerhalb einer bg-pl-stage-Section', () => {
-  const block = pageSource.match(/\{referenceCount >= 2 && \(([\s\S]*?)\)\}/)
-  assert.ok(block, 'erwarteter referenceCount >= 2 Block nicht gefunden')
-  assert.match(block![1], /bg-pl-stage/)
-  assert.match(block![1], /<BandReferenceEvents/)
-})
-
-test('BandSocialIndex ("Sichtbarkeit ueber die Buehne hinaus") ist entfernt -- Social-Kennzahlen erscheinen ausschliesslich in "Mehr von [Band]"', () => {
+test('BandSocialIndex ("Sichtbarkeit ueber die Buehne hinaus") bleibt entfernt -- Social-Kennzahlen erscheinen ausschliesslich in "Mehr von [Band]"', () => {
   assert.doesNotMatch(pageSource, /BandSocialIndex/)
 })
 
-test('BandFloatingCta wird mit heroCtaId="hero-cta" und contactSectionId="band-contact-section" eingebunden', () => {
+test('HeroCTA wird nicht mehr eigenstaendig auf der Seite eingebunden, sondern von BandHero uebernommen', () => {
+  assert.doesNotMatch(pageSource, /<HeroCTA/)
+  assert.match(bandHeroSource, /<HeroCTA/)
+})
+
+test('BandFloatingCta wird mit heroSentinelId="hero-cta-sentinel", finalSentinelId="final-cta-sentinel" und hasVideo eingebunden', () => {
   const block = pageSource.match(/<BandFloatingCta[\s\S]*?\/>/)
   assert.ok(block, 'BandFloatingCta-Aufruf nicht gefunden')
-  assert.match(block![0], /heroCtaId="hero-cta"/)
-  assert.match(block![0], /contactSectionId="band-contact-section"/)
+  assert.match(block![0], /heroSentinelId="hero-cta-sentinel"/)
+  assert.match(block![0], /finalSentinelId="final-cta-sentinel"/)
+  assert.match(block![0], /hasVideo=\{hasVideo\}/)
 })
 
-test('die von BandFloatingCta referenzierten IDs existieren real in HeroCTA und BandContactSection', () => {
-  assert.match(heroCtaSource, /id="hero-cta"/)
-  assert.match(contactSource, /id="band-contact-section"/)
+test('die von BandFloatingCta referenzierten Sentinel-IDs existieren real in HeroCTA und page.tsx', () => {
+  assert.match(heroCtaSource, /id="hero-cta-sentinel"/)
+  assert.match(pageSource, /id="final-cta-sentinel"/)
 })
 
-test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA', () => {
-  assert.match(pageSource, /<article className="bg-pl-canvas pb-20 md:pb-0">/)
+test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA (3-Button-Zeile, siehe BandFloatingCta)', () => {
+  assert.match(pageSource, /<article className="bg-pl-canvas pb-24 md:pb-0">/)
 })
 
 test('"Ähnliche Bands" nutzt Spacing-Stufe "large" (bewusster Szenenwechsel vor Seitenende)', () => {
   assert.match(pageSource, /Ähnliche Bands \*\/\}\s*\{similarBands\.length > 0 \? \(\s*<section className="bg-pl-canvas border-t border-pl-soft py-16 md:py-20/)
+})
+
+test('Seiten-Rhythmus: Hero vor 01 (Beschreibung) vor 02 (Video-Section) vor 03 (Tags-Section)', () => {
+  const heroIdx = pageSource.indexOf('<BandHero band={band}')
+  const descriptionIdx = pageSource.indexOf('<BandDescription band={band} />')
+  const videoIdx = pageSource.indexOf('<BandVideoSection band={band}')
+  const tagsIdx = pageSource.indexOf('<BandTagsSection band={band} />')
+  assert.ok(heroIdx >= 0 && descriptionIdx >= 0 && videoIdx >= 0 && tagsIdx >= 0, 'eine der Kernsections fehlt')
+  assert.ok(heroIdx < descriptionIdx)
+  assert.ok(descriptionIdx < videoIdx)
+  assert.ok(videoIdx < tagsIdx)
 })

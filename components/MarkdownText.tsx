@@ -7,7 +7,7 @@ type Props = {
 
 // Parst **bold** und [text](https://...) innerhalb eines einzelnen Textsegments.
 // Gibt ein Array aus Strings und React-Elementen zurück – kein dangerouslySetInnerHTML.
-function renderInline(segment: string, paraIndex: number): ReactNode[] {
+function renderInline(segment: string, paraIndex: number, lineIndex: number): ReactNode[] {
   const nodes: ReactNode[] = [];
   const pattern = /\*\*(.+?)\*\*|\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
   let lastIndex = 0;
@@ -18,7 +18,13 @@ function renderInline(segment: string, paraIndex: number): ReactNode[] {
     if (match.index > lastIndex) {
       nodes.push(segment.slice(lastIndex, match.index));
     }
-    const key = `${paraIndex}-${matchCount++}`;
+    // lineIndex ist Teil des Keys, nicht nur paraIndex+matchCount: matchCount
+    // startet bei jedem Aufruf von renderInline (= jede Zeile) wieder bei 0,
+    // ein mehrzeiliger Absatz (einfaches \n) mit **fett**/[Link] auf mehr als
+    // einer Zeile erzeugte dadurch doppelte Keys innerhalb desselben <p>
+    // (z. B. zweimal "0-0") -- React-Warnung "two children with the same
+    // key", live an Donnaweda entdeckt (Bandseiten-Redesign-Verifikation).
+    const key = `${paraIndex}-${lineIndex}-${matchCount++}`;
     if (match[1] !== undefined) {
       nodes.push(<strong key={key}>{match[1]}</strong>);
     } else if (match[2] && match[3]) {
@@ -47,7 +53,7 @@ function renderParagraph(text: string, paraIndex: number): ReactNode {
     if (lineIndex > 0) {
       content.push(<br key={`br-${paraIndex}-${lineIndex}`} />);
     }
-    content.push(...renderInline(line, paraIndex));
+    content.push(...renderInline(line, paraIndex, lineIndex));
   });
 
   return <p key={paraIndex}>{content}</p>;

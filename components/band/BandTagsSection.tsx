@@ -7,15 +7,17 @@ type Props = {
   band: Band;
 };
 
-// Ebene 1 "Klingt nach" -- emotional fuehrend, groesste/prominenteste Chips.
-const GOLDEN_CHIP =
-  'inline-flex items-center px-4 py-2 md:px-5 md:py-2.5 rounded-full text-sm md:text-base font-medium border';
-// Ebene 2 "Stil & Einflüsse" -- zweite Ebene, kleinere sekundaere Chips.
+// "Stil & Einflüsse" -- sekundaere Chips.
 const PURPLE_CHIP =
   'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-pl-accent-subtle text-pl-accent-deep';
 
+// "03 Passt sie zu eurem Anlass?" (Auftrag Abschnitt 8). "Klingt nach" ist
+// nach "02 Wie klingt sie live?" umgezogen (siehe BandVideoSection.tsx) --
+// hier bleiben die uebrigen, unveraendert bestehenden Bausteine: Stil &
+// Einfluesse, die Bandart/Herkunft/Besetzung-Faktenzeile, "Spielt bei" und
+// "Vernetzt". Keine vorhandene Bandinformation geht verloren, nur die
+// Position auf der Seite und die "Klingt nach"-Chips wandern.
 export function BandTagsSection({ band }: Props) {
-  const hasKlingtNach = band.klingtNach.length > 0;
   const hasMusikalischVerortet = band.musikalischVerortet.length > 0;
 
   const besetzung = band.weddingInfo?.bandSize || band.weddingInfo?.constellation;
@@ -36,7 +38,6 @@ export function BandTagsSection({ band }: Props) {
       band.socialLinks.youtube);
 
   if (
-    !hasKlingtNach &&
     !hasMusikalischVerortet &&
     quickFacts.length === 0 &&
     band.eventTypes.length === 0 &&
@@ -46,49 +47,29 @@ export function BandTagsSection({ band }: Props) {
   }
 
   return (
-    <section className="bg-pl-canvas py-12 md:py-16 border-b border-pl-soft px-4 sm:px-6">
+    <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
       <div className="pl-container-shell space-y-8">
 
-        {/* Klingt nach + Stil & Einflüsse */}
-        {(hasKlingtNach || hasMusikalischVerortet) && (
-          <div className="space-y-5">
-            {hasKlingtNach && (
-              <div>
-                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-                  Klingt nach
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {band.klingtNach.map((tag) => (
-                    <span
-                      key={tag}
-                      className={GOLDEN_CHIP}
-                      style={{
-                        backgroundColor: 'rgba(233,196,106,0.14)',
-                        borderColor: 'rgba(233,196,106,0.38)',
-                        color: '#8a6200',
-                      }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+        <div>
+          <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">03</p>
+          <h2 className="text-xl md:text-2xl font-bold text-pl-text">
+            Passt sie zu eurem Anlass?
+          </h2>
+        </div>
 
-            {hasMusikalischVerortet && (
-              <div>
-                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-                  Stil &amp; Einflüsse
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {band.musikalischVerortet.map((tag) => (
-                    <span key={tag} className={PURPLE_CHIP}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Stil & Einflüsse */}
+        {hasMusikalischVerortet && (
+          <div>
+            <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
+              Stil &amp; Einflüsse
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {band.musikalischVerortet.map((tag) => (
+                <span key={tag} className={PURPLE_CHIP}>
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

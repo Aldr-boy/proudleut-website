@@ -186,12 +186,19 @@ export function BandContactSection({ band, websiteUrl }: Props) {
             </div>
           )}
 
-          {/* Rechte Spalte: CTA – immer sichtbar */}
-          <div>
-            <h2 className="text-lg font-bold text-pl-text mb-3">
+          {/* Rechte Spalte: CTA – immer sichtbar. Dunkle Akzent-Karte
+              (Auftrag Abschnitt 8/PDF-Referenz "Euer Abend mit [Band]") --
+              eine einzelne Karte innerhalb einer hellen Section zaehlt
+              nicht als "dunkle Buehnen-Content-Section" im Sinne von
+              design-reference.md. */}
+          <div className="bg-pl-stage rounded-2xl px-6 py-7 sm:px-8 sm:py-9">
+            <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-2">
+              Euer Abend mit {band.name}
+            </p>
+            <h2 className="text-lg font-bold text-pl-on-stage mb-3">
               Interesse an dieser Band?
             </h2>
-            <p className="text-sm text-pl-text-muted leading-relaxed mb-5">
+            <p className="text-sm text-pl-on-stage-muted leading-relaxed mb-5">
               Deine Anfrage wird über proudleut an die Band weitergeleitet.
             </p>
 
@@ -205,14 +212,15 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                 name={band.name}
                 slug={band.slug}
                 anfrageEventTypes={band.anfrageEventTypes ?? []}
+                variant="dark"
               />
             </div>
 
-            <p className="text-xs text-pl-text-hint mt-5">
+            <p className="text-xs text-pl-on-stage-muted mt-5">
               Noch unsicher?{' '}
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="underline hover:text-pl-text-muted motion-safe:transition-colors"
+                className="underline hover:text-pl-on-stage motion-safe:transition-colors"
               >
                 Schreib mir kurz, wenn du Hilfe bei der Auswahl möchtest.
               </a>

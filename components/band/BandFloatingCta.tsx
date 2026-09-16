@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AnfrageModal } from './AnfrageModal';
+import { useAnfrageStore } from '@/stores/anfrageStore';
 import type { BandAnfrageEventType } from '@/lib/types/band';
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
   anfrageEventTypes: BandAnfrageEventType[];
   heroSentinelId: string;
   finalSentinelId: string;
+  hasVideo: boolean;
 };
 
 // Auftrag 4.6 + UX-Feintuning (Sticky-CTA-Ueberschneidung):
@@ -29,10 +31,21 @@ type Props = {
 // Viewports liegen oder bereits oberhalb passiert sein -- beide Faelle werden
 // hier bewusst unterschieden (ueber rootBounds.top bzw. den dokumentierten
 // Fallback), statt naiv "!isIntersecting" gleichzusetzen.
-export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId, finalSentinelId }: Props) {
+export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId, finalSentinelId, hasVideo }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [heroPassed, setHeroPassed] = useState(false);
   const [finalReached, setFinalReached] = useState(false);
+  const isGemerkt = useAnfrageStore((s) => s.isSelected(slug));
+  const addBand = useAnfrageStore((s) => s.addBand);
+  const removeBand = useAnfrageStore((s) => s.removeBand);
+
+  const handleMerken = () => {
+    if (isGemerkt) {
+      removeBand(slug);
+    } else {
+      addBand({ slug, name, anfrageEventTypes });
+    }
+  };
 
   useEffect(() => {
     const heroSentinel = document.getElementById(heroSentinelId);
@@ -92,11 +105,15 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
         </button>
       </div>
 
-      {/* Mobile: Sticky Bottom CTA -- nur zwischen Hero-CTA und finalem Anfragebereich sichtbar */}
+      {/* Mobile: Sticky Bottom CTA -- nur zwischen Hero-CTA und finalem Anfragebereich sichtbar.
+          z-50 statt z-40: components/band/MerklisteBar.tsx (global, app/layout.tsx) ist ebenfalls
+          "fixed bottom-0 z-40" -- ohne Anhebung wuerden beide Leisten bei aktiver Merkliste auf
+          derselben Ebene um denselben Streifen konkurrieren (nur DOM-Reihenfolge entschiede). Die
+          bandbezogene Aktionsleiste hat hier Vorrang vor der globalen Merkliste. */}
       <div
         {...hiddenInertProps}
         aria-hidden={!stickyVisible}
-        className={`md:hidden fixed inset-x-0 bottom-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
+        className={`md:hidden fixed inset-x-0 bottom-0 z-50 bg-pl-elevated/95 backdrop-blur-sm border-t
                     border-pl-soft px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
                     transition-[opacity,transform] duration-[220ms] ease-out ${
           stickyVisible
@@ -104,16 +121,42 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
             : 'opacity-0 motion-safe:translate-y-2 pointer-events-none'
         }`}
       >
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          aria-label={`${name} unverbindlich anfragen`}
-          className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-full text-sm font-semibold
-                     bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover motion-safe:transition-colors
-                     focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
-        >
-          Unverbindlich anfragen
-        </button>
+        <div className="flex items-center gap-2">
+          {hasVideo && (
+            <a
+              href="#live"
+              className="shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-full border border-pl-soft text-pl-text
+                         hover:border-pl-medium motion-safe:transition-colors
+                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+              aria-label="Live-Video ansehen"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            aria-label={`${name} unverbindlich anfragen`}
+            className="flex-1 inline-flex items-center justify-center px-6 py-3.5 rounded-full text-sm font-semibold
+                       bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover motion-safe:transition-colors
+                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+          >
+            Unverbindlich anfragen
+          </button>
+          <button
+            type="button"
+            onClick={handleMerken}
+            aria-pressed={isGemerkt}
+            aria-label={isGemerkt ? `${name} aus Anfrage entfernen` : `${name} für Anfrage merken`}
+            className="shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-full border border-pl-soft text-pl-text
+                       hover:border-pl-medium motion-safe:transition-colors
+                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+          >
+            <span aria-hidden="true">{isGemerkt ? '✓' : '♡'}</span>
+          </button>
+        </div>
       </div>
 
       <AnfrageModal
