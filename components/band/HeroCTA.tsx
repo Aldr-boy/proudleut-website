@@ -57,8 +57,7 @@ export function HeroCTA({ name, slug, anfrageEventTypes, hasVideo }: Props) {
                    hover:bg-pl-accent-hover motion-safe:transition-colors active:scale-95 motion-safe:transition-transform
                    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent-light"
       >
-        <span className="hidden sm:inline">{name}&nbsp;anfragen</span>
-        <span className="sm:hidden">Unverbindlich anfragen</span>
+        Unverbindlich anfragen
       </button>
 
       <button

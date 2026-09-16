@@ -152,8 +152,9 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={metric ? `${label}: ${formatFollowerCount(metric.count)} ${metric.unit}` : undefined}
-                      className="flex w-full items-center gap-3 text-sm text-pl-text-muted
-                                 hover:text-pl-accent motion-safe:transition-colors group"
+                      className="flex w-full items-center gap-3 rounded-sm text-sm text-pl-text-muted
+                                 hover:text-pl-accent motion-safe:transition-colors group
+                                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
                     >
                       <span className="shrink-0 text-pl-text-muted group-hover:text-pl-accent motion-safe:transition-colors">
                         {icon}
@@ -180,7 +181,7 @@ export function BandContactSection({ band, websiteUrl }: Props) {
 
               {standDisplay.kind === 'shared' && (
                 <p className="mt-3 text-xs text-pl-text-hint">
-                  Zahlenstand: {formatStandMonthYear(standDisplay.checkedAt)}
+                  Stand: {formatStandMonthYear(standDisplay.checkedAt)}
                 </p>
               )}
             </div>
@@ -196,10 +197,10 @@ export function BandContactSection({ band, websiteUrl }: Props) {
               Euer Abend mit {band.name}
             </p>
             <h2 className="text-lg font-bold text-pl-on-stage mb-3">
-              Interesse an dieser Band?
+              Interesse?
             </h2>
             <p className="text-sm text-pl-on-stage-muted leading-relaxed mb-5">
-              Deine Anfrage wird über proudleut an die Band weitergeleitet.
+              Deine Anfrage geht direkt an {band.name}.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">

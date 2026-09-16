@@ -50,7 +50,7 @@ export function MerkButton({ name, slug, anfrageEventTypes, variant = 'light' }:
               : 'border border-[var(--pl-border-medium)] text-[var(--pl-text-muted)] hover:border-[var(--pl-accent)] hover:text-[var(--pl-accent-deep)]',
         ].join(' ')}
       >
-        {selected ? '✓ Gemerkt' : '♡ Band merken'}
+        {selected ? '✓ Gemerkt' : '♡ Für Anfrage merken'}
       </button>
 
       {selected && otherCount >= 1 && (

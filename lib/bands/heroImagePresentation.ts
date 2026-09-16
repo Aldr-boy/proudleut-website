@@ -9,9 +9,11 @@ import type { ImageAsset } from '@/lib/types/image';
 // zusaetzliche Datenbankabfrage: arbeitet ausschliesslich mit bereits
 // geladenen band.heroImage/band.gallery-Werten.
 //
-// desktopObjectPosition: CSS object-position-Wert (Tailwind-Klasse), nur ab
-//   dem md-Breakpoint aktiv -- ein einzelnes <Image> reicht dafuer aus, kein
-//   zweites Bild, kein Performance-Nachteil.
+// desktopObjectPosition / mobileObjectPosition: CSS object-position-Werte
+//   (per Inline-Style gesetzt, da die konkreten Werte nicht als feste
+//   Tailwind-Klassen vorliegen) fuer dasselbe Bild auf den beiden
+//   Breakpoint-Gruppen -- ein einzelnes <Image> reicht dafuer aus, kein
+//   zweites Bild, kein Performance-Nachteil. Ohne Wert gilt object-center.
 // mobileImageUrlContains: Teilstring der URL eines bereits vorhandenen
 //   Bildes aus band.heroImage/band.gallery derselben Band (stabiler
 //   Speicherpfad, siehe lib/bandImages/storagePath.ts), das mobil anstelle
@@ -19,12 +21,20 @@ import type { ImageAsset } from '@/lib/types/image';
 //   reguelaere Hero-Bild (siehe resolveMobileHeroImage unten).
 export type HeroImagePresentationEntry = {
   desktopObjectPosition?: string;
+  mobileObjectPosition?: string;
   mobileImageUrlContains?: string;
 };
 
-// Ohne Eintrag gilt der gemeinsame Standard (object-center, dasselbe Bild
-// mobil wie desktop) -- siehe BandHero.tsx.
-const HERO_IMAGE_PRESENTATION: Record<string, HeroImagePresentationEntry> = {};
+// Werte fuer blechstreet-boys/donnaweda aus dem finalen Entwurf
+// ("Bandseite Blechstreet + Donnaweda.dc.html", Auftrag "Bandseiten-
+// Redesign Finalisierung"): dort pro Band als heroPosDesk/heroPosMob
+// hinterlegt, damit das jeweils entscheidende Bildmotiv (Instrumente bzw.
+// Feuerspucker) im sichtbaren Bildausschnitt bleibt. Ohne Eintrag gilt der
+// gemeinsame Standard (object-center, dasselbe Bild mobil wie desktop).
+const HERO_IMAGE_PRESENTATION: Record<string, HeroImagePresentationEntry> = {
+  'blechstreet-boys': { desktopObjectPosition: 'center 24%', mobileObjectPosition: '52% 24%' },
+  donnaweda: { desktopObjectPosition: 'center 30%', mobileObjectPosition: '58% 28%' },
+};
 
 export function resolveHeroImagePresentation(
   slug: string,

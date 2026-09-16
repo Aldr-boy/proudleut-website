@@ -6,10 +6,11 @@ import { HeroCTA } from './HeroCTA';
 
 type Props = { band: Band; hasVideo: boolean };
 
-// Vollflaechiger Bild-Hero (Auftrag "Bandseiten-Redesign", Abschnitt 5):
-// grosses Bandbild ueber die gesamte Breite, kraeftiger Bandname unten,
-// Kategorie/Standort klar untergeordnet, Logo ruhig oben im Bild unterhalb
-// der schwebenden Navigation (Abschnitt 6), Aktionen bereits im Einstieg
+// Vollflaechiger Bild-Hero (Auftrag "Bandseiten-Redesign"/"Bandseiten-
+// Finalisierung"): grosses Bandbild ueber die gesamte Breite, Logo klein
+// direkt ueber dem Bandnamen (Hero-Variante "Name fuehrt", siehe
+// Logo-Kommentar unten), kraeftiger Bandname bleibt die einzige H1,
+// Kategorie/Standort als Kicker darueber, Aktionen bereits im Einstieg
 // erreichbar (HeroCTA, direkt eingebettet statt eines eigenen Balkens).
 export function BandHero({ band, hasVideo }: Props) {
   const locationText = formatLocation(band.location);
@@ -29,6 +30,21 @@ export function BandHero({ band, hasVideo }: Props) {
   const desktopImageStyle = presentation.desktopObjectPosition
     ? { objectPosition: presentation.desktopObjectPosition }
     : undefined;
+  const mobileImageStyle = presentation.mobileObjectPosition
+    ? { objectPosition: presentation.mobileObjectPosition }
+    : undefined;
+  // Dasselbe Bild auf beiden Breakpoint-Gruppen, nur der Bildausschnitt
+  // unterscheidet sich (Auftrag "Bandseiten-Finalisierung", heroPosDesk/
+  // heroPosMob im finalen Entwurf) -- ein einzelnes <Image> reicht dafuer
+  // aus (siehe lib/bands/heroImagePresentation.ts), object-position wird
+  // ueber CSS-Variablen je Breakpoint umgeschaltet statt ueber ein zweites
+  // Bildelement.
+  const objectPositionVars = presentation.desktopObjectPosition || presentation.mobileObjectPosition
+    ? ({
+        '--hero-pos-mobile': presentation.mobileObjectPosition ?? presentation.desktopObjectPosition ?? 'center',
+        '--hero-pos-desktop': presentation.desktopObjectPosition ?? 'center',
+      } as React.CSSProperties)
+    : undefined;
 
   return (
     <div className="relative w-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh] bg-pl-stage overflow-hidden">
@@ -40,6 +56,7 @@ export function BandHero({ band, hasVideo }: Props) {
             fill
             priority
             className="object-cover object-center md:hidden"
+            style={mobileImageStyle}
             sizes="100vw"
           />
           {band.heroImage && (
@@ -60,8 +77,12 @@ export function BandHero({ band, hasVideo }: Props) {
             alt={band.heroImage.alt}
             fill
             priority
-            className="object-cover object-center"
-            style={desktopImageStyle}
+            className={
+              objectPositionVars
+                ? 'object-cover object-[var(--hero-pos-mobile)] md:object-[var(--hero-pos-desktop)]'
+                : 'object-cover object-center'
+            }
+            style={objectPositionVars}
             sizes="100vw"
           />
         )
@@ -76,30 +97,33 @@ export function BandHero({ band, hasVideo }: Props) {
         }}
       />
 
-      {/* Logo -- ruhig oben im Bild, unterhalb der schwebenden Navigation,
-          rechtsbuendig (Auftrag Abschnitt 6). Layout funktioniert ohne Logo
-          unveraendert -- rein bedingtes Rendering. */}
-      {band.logo && (
-        <div className="absolute inset-x-0 top-0 z-[5] px-4 sm:px-6 pt-[calc(var(--pl-nav-height)+8px)]">
-          <div className="pl-container-shell flex justify-end">
-            <div className="relative w-28 h-10 sm:w-32 sm:h-11 md:w-36 md:h-12">
+      {/* Content – bündig unten links */}
+      <div className="relative z-10 flex items-end h-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh]">
+        <div className="w-full pl-container-shell px-4 sm:px-6 pb-8 md:pb-12">
+          {/* Logo -- klein, direkt ueber dem Bandnamen verankert statt als
+              Eck-Plakette (finaler Entwurf, "Hero-Varianten & Empfehlung",
+              V1 "Name fuehrt": beide Referenzlogos sind auf Buehnenfotos
+              allein nicht zuverlaessig lesbar, der Name traegt die
+              Erkennbarkeit, das Logo liefert Persoenlichkeit daneben).
+              Groesse bewusst generisch/einheitlich gehalten (keine
+              bandspezifische Layout-Sonderabfrage) -- object-contain leitet
+              die tatsaechliche Bildform aus der Datei ab, siehe
+              bandHeroLogoAspectRatio.test.ts. Layout funktioniert ohne Logo
+              unveraendert -- rein bedingtes Rendering. */}
+          {band.logo && (
+            <div className="relative w-32 h-10 sm:w-40 sm:h-12 md:w-48 md:h-14 mb-3">
               <Image
                 src={band.logo.url}
                 alt={band.logo.alt}
                 fill
-                className="object-contain object-right"
-                sizes="144px"
+                className="object-contain object-left"
+                sizes="192px"
               />
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Content – bündig unten links */}
-      <div className="relative z-10 flex items-end h-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh]">
-        <div className="w-full pl-container-shell px-4 sm:px-6 pb-8 md:pb-12">
           {metaLine && (
-            <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-pl-on-stage-muted mb-3">
+            <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-pl-accent-light mb-3">
               {metaLine}
             </p>
           )}
@@ -109,7 +133,7 @@ export function BandHero({ band, hasVideo }: Props) {
           </h1>
 
           {subtitle && (
-            <p className="text-base md:text-lg italic text-pl-on-stage-muted max-w-2xl mb-6 leading-relaxed">
+            <p className="text-base md:text-lg text-pl-on-stage-muted max-w-2xl mb-6 leading-relaxed">
               {subtitle}
             </p>
           )}

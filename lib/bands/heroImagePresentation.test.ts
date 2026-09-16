@@ -11,9 +11,14 @@ test('resolveHeroImagePresentation: ohne Eintrag -> leeres Objekt (gemeinsamer S
   assert.deepEqual(resolveHeroImagePresentation('irgendeine-band'), {})
 })
 
-test('resolveHeroImagePresentation: vorhandener Eintrag wird zurueckgegeben', () => {
-  const presentation = { 'meine-band': { desktopObjectPosition: 'center 30%' } }
-  assert.deepEqual(resolveHeroImagePresentation('meine-band', presentation), { desktopObjectPosition: 'center 30%' })
+test('resolveHeroImagePresentation: vorhandener Eintrag wird zurueckgegeben (desktop + mobile)', () => {
+  const presentation = { 'meine-band': { desktopObjectPosition: 'center 30%', mobileObjectPosition: '58% 28%' } }
+  assert.deepEqual(resolveHeroImagePresentation('meine-band', presentation), { desktopObjectPosition: 'center 30%', mobileObjectPosition: '58% 28%' })
+})
+
+test('resolveHeroImagePresentation: reale Eintraege fuer blechstreet-boys und donnaweda (finaler Entwurf, Bandseiten-Redesign Finalisierung)', () => {
+  assert.deepEqual(resolveHeroImagePresentation('blechstreet-boys'), { desktopObjectPosition: 'center 24%', mobileObjectPosition: '52% 24%' })
+  assert.deepEqual(resolveHeroImagePresentation('donnaweda'), { desktopObjectPosition: 'center 30%', mobileObjectPosition: '58% 28%' })
 })
 
 test('resolveMobileHeroImage: ohne Konfiguration -> heroImage unveraendert', () => {

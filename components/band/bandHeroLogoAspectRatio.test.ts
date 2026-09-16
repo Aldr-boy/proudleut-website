@@ -42,11 +42,11 @@ test('kein width:auto/height:auto-Style mehr auf dem Logo-Image (verursachte die
 
 test('Logo-Box hat eine feste CSS-Groesse (position: relative-Vorfahre fuer fill) statt einer aus width/height-Attributen abgeleiteten Form', () => {
   const block = extractLogoBlock()
-  assert.match(block, /className="relative w-28 h-10 sm:w-32 sm:h-11 md:w-36 md:h-12"/)
+  assert.match(block, /className="relative w-32 h-10 sm:w-40 sm:h-12 md:w-48 md:h-14 mb-3"/)
 })
 
-test('object-contain bleibt erhalten (kein Beschnitt); object-right fuer die rechtsbuendige Platzierung oben im Hero (Redesign, Auftrag Abschnitt 6)', () => {
+test('object-contain bleibt erhalten (kein Beschnitt); object-left, da das Logo linksbuendig direkt ueber dem Bandnamen verankert ist (Bandseiten-Finalisierung, Hero-Variante "Name fuehrt")', () => {
   const block = extractLogoBlock()
   assert.match(block, /object-contain/)
-  assert.match(block, /object-right/)
+  assert.match(block, /object-left/)
 })

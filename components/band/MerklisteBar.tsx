@@ -17,6 +17,7 @@ export function MerklisteBar() {
   return (
     <>
       <div
+        id="merkliste-bar"
         className="fixed bottom-0 left-0 right-0 z-40 border-t motion-safe:animate-[slideUp_0.2s_ease]"
         style={{
           background: 'var(--pl-bg-stage)',

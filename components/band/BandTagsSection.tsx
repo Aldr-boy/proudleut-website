@@ -1,201 +1,88 @@
 import Link from 'next/link';
 import type { Band } from '@/lib/types/band';
-import { formatLocation } from '@/lib/utils/formatLocation';
 import { findCategoryForEventTypeSlug } from './bandTagsCategoryMatch';
+import { BandReferenceEvents } from './BandReferenceEvents';
+import { BandDocumentsSection } from './BandDocumentsSection';
+import { BandWeddingModule } from './BandWeddingModule';
 
 type Props = {
   band: Band;
 };
 
-// "Stil & Einflüsse" -- sekundaere Chips.
-const PURPLE_CHIP =
-  'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-pl-accent-subtle text-pl-accent-deep';
+const PILL =
+  'inline-flex items-center rounded-full border border-pl-soft bg-white px-4 py-2 text-sm font-semibold text-pl-text';
 
-// "03 Passt sie zu eurem Anlass?" (Auftrag Abschnitt 8). "Klingt nach" ist
-// nach "02 Wie klingt sie live?" umgezogen (siehe BandVideoSection.tsx) --
-// hier bleiben die uebrigen, unveraendert bestehenden Bausteine: Stil &
-// Einfluesse, die Bandart/Herkunft/Besetzung-Faktenzeile, "Spielt bei" und
-// "Vernetzt". Keine vorhandene Bandinformation geht verloren, nur die
-// Position auf der Seite und die "Klingt nach"-Chips wandern.
+// "03 Die Band für euer Event?" (Auftrag "Bandseiten-Finalisierung",
+// verbindliches Wording): zusammenhaengender Abschnitt statt vier
+// nebeneinander gestapelter Alt-Sections -- linke Spalte "Spielt bei" +
+// Referenz-Events, rechte Spalte Festwirte-Unterlagen- und
+// Hochzeitskarte (finaler Entwurf, sec-anlass). "Vernetzt"/Social-Links
+// entfallen hier vollstaendig, da sie bereits einmalig im Anfrage-Bereich
+// erscheinen (BandContactSection.tsx) -- keine Dopplung. Bandart/
+// Herkunft/Besetzung sind nach "01" umgezogen (siehe BandDescription.tsx).
 export function BandTagsSection({ band }: Props) {
-  const hasMusikalischVerortet = band.musikalischVerortet.length > 0;
+  const hasEventTypes = band.eventTypes.length > 0;
+  const hasReferenceEvents = band.referenceEvents.length > 0;
+  const hasDocuments = band.documents.length > 0;
+  const hasWedding = !!band.weddingInfo?.weddingDescription
+    || band.weddingInfo?.kidnappingBride != null
+    || band.weddingInfo?.moderation != null
+    || !!band.weddingInfo?.possiblePlaytimes;
 
-  const besetzung = band.weddingInfo?.bandSize || band.weddingInfo?.constellation;
-  const locationText = formatLocation(band.location);
+  const hasLeftColumn = hasEventTypes || hasReferenceEvents;
+  const hasRightColumn = hasDocuments || hasWedding;
 
-  const quickFacts = (
-    [
-      band.category ? { label: 'Bandart', value: band.category } : null,
-      locationText ? { label: 'Herkunft', value: locationText } : null,
-      besetzung ? { label: 'Besetzung', value: besetzung } : null,
-    ] as ({ label: string; value: string } | null)[]
-  ).filter((f): f is { label: string; value: string } => f !== null);
-
-  const hasSocialLinks =
-    !!(band.socialLinks.instagram ||
-      band.socialLinks.facebook ||
-      band.socialLinks.spotify ||
-      band.socialLinks.youtube);
-
-  if (
-    !hasMusikalischVerortet &&
-    quickFacts.length === 0 &&
-    band.eventTypes.length === 0 &&
-    !hasSocialLinks
-  ) {
-    return null;
-  }
+  if (!hasLeftColumn && !hasRightColumn) return null;
 
   return (
-    <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
-      <div className="pl-container-shell space-y-8">
+    <section id="anlass" className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav">
+      <div className="pl-container-shell">
+        <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">03</p>
+        <h2 className="text-xl md:text-2xl font-bold text-pl-text mb-8">
+          Die Band für euer Event?
+        </h2>
 
-        <div>
-          <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">03</p>
-          <h2 className="text-xl md:text-2xl font-bold text-pl-text">
-            Passt sie zu eurem Anlass?
-          </h2>
-        </div>
-
-        {/* Stil & Einflüsse */}
-        {hasMusikalischVerortet && (
-          <div>
-            <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-              Stil &amp; Einflüsse
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {band.musikalischVerortet.map((tag) => (
-                <span key={tag} className={PURPLE_CHIP}>
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Ebene 3: Bandart · Herkunft · Besetzung -- ruhige typografische
-            Faktenzeile, keine Karten, Trennung ueber "·". Labels bleiben als
-            sr-only erhalten (Auftrag: "keine vorhandene Bandinformation geht
-            verloren"), sind aber visuell bewusst nicht mehr sichtbar. */}
-        {quickFacts.length > 0 && (
-          <div className="flex flex-wrap items-baseline gap-x-3 border-t border-pl-soft pt-7 text-sm font-medium text-pl-text">
-            {quickFacts.map(({ label, value }, i) => (
-              <span key={label} className="flex items-baseline gap-x-3">
-                {i > 0 && <span className="text-pl-text-hint" aria-hidden="true">·</span>}
-                <span>
-                  <span className="sr-only">{label}: </span>
-                  {value}
-                </span>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Ebene 4 "Spielt bei" + Vernetzt -- deutlich zurueckgenommene
-            Meta-Ebene. Textliste mit "·"-Trennern statt Chip-Wolke. Bereits
-            bestehende Kategorie-Verlinkung (siehe bandTagsCategoryMatch.ts)
-            bleibt funktional erhalten -- nur die visuelle Chip-Darstellung
-            entfaellt, nicht der Linkmehrwert (interne Verlinkung/SEO). */}
-        {(band.eventTypes.length > 0 || hasSocialLinks) && (
-          <div className="flex flex-col sm:flex-row sm:items-start gap-8 border-t border-pl-soft pt-7">
-
-            {band.eventTypes.length > 0 && (
-              <div className="flex-1">
-                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-                  Spielt bei
-                </p>
-                <p className="text-sm text-pl-text-muted leading-loose">
-                  {band.eventTypes.map((et, i) => {
-                    const eventTypeSlug = band.categorySlugs?.[i];
-                    const category = eventTypeSlug ? findCategoryForEventTypeSlug(eventTypeSlug) : undefined;
-                    return (
-                      <span key={et}>
-                        {i > 0 && <span className="text-pl-text-hint" aria-hidden="true"> · </span>}
-                        {category ? (
-                          <Link
-                            href={`/veranstaltung/${category.slug}`}
-                            className="rounded-sm hover:text-pl-text motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
-                          >
-                            {et}
-                          </Link>
-                        ) : (
-                          et
-                        )}
-                      </span>
-                    );
-                  })}
-                </p>
-              </div>
-            )}
-
-            {hasSocialLinks && (
-              <div className="shrink-0">
-                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-                  Vernetzt
-                </p>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {band.socialLinks.instagram && (
-                    <a
-                      href={band.socialLinks.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Instagram von ${band.name}`}
-                      className="text-pl-text-muted hover:text-pl-accent motion-safe:transition-colors"
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <rect x="2" y="2" width="20" height="20" rx="5" />
-                        <circle cx="12" cy="12" r="4" />
-                        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
-                      </svg>
-                    </a>
-                  )}
-                  {band.socialLinks.facebook && (
-                    <a
-                      href={band.socialLinks.facebook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Facebook von ${band.name}`}
-                      className="text-pl-text-muted hover:text-pl-accent motion-safe:transition-colors"
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                      </svg>
-                    </a>
-                  )}
-                  {band.socialLinks.spotify && (
-                    <a
-                      href={band.socialLinks.spotify}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Spotify von ${band.name}`}
-                      className="text-pl-text-muted hover:text-pl-accent motion-safe:transition-colors"
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-                      </svg>
-                    </a>
-                  )}
-                  {band.socialLinks.youtube && (
-                    <a
-                      href={band.socialLinks.youtube}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`YouTube von ${band.name}`}
-                      className="text-pl-text-muted hover:text-pl-accent motion-safe:transition-colors"
-                    >
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                      </svg>
-                    </a>
-                  )}
-
+        <div className="flex flex-col lg:flex-row gap-10 lg:gap-14">
+          {hasLeftColumn && (
+            <div className="flex-[1.5] min-w-0 space-y-6">
+              {hasEventTypes && (
+                <div>
+                  <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
+                    Spielt bei
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {band.eventTypes.map((et, i) => {
+                      const eventTypeSlug = band.categorySlugs?.[i];
+                      const category = eventTypeSlug ? findCategoryForEventTypeSlug(eventTypeSlug) : undefined;
+                      return category ? (
+                        <Link
+                          key={et}
+                          href={`/veranstaltung/${category.slug}`}
+                          className={`${PILL} hover:border-pl-accent hover:text-pl-accent motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent`}
+                        >
+                          {et}
+                        </Link>
+                      ) : (
+                        <span key={et} className={PILL}>
+                          {et}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-          </div>
-        )}
+              {hasReferenceEvents && <BandReferenceEvents band={band} />}
+            </div>
+          )}
 
+          {hasRightColumn && (
+            <div className="flex-1 min-w-0 flex flex-col gap-4 lg:self-start">
+              {hasDocuments && <BandDocumentsSection band={band} />}
+              {hasWedding && <BandWeddingModule band={band} />}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

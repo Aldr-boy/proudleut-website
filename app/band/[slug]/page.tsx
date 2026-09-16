@@ -11,10 +11,6 @@ import { BandHero } from '@/components/band/BandHero';
 import { BandTagsSection } from '@/components/band/BandTagsSection';
 import { BandDescription } from '@/components/band/BandDescription';
 import { BandPeopleSection } from '@/components/band/BandPeopleSection';
-import { BandReferenceEvents } from '@/components/band/BandReferenceEvents';
-import { BandGallery } from '@/components/band/BandGallery';
-import { BandDocumentsSection } from '@/components/band/BandDocumentsSection';
-import { BandWeddingModule } from '@/components/band/BandWeddingModule';
 import { BandContactSection } from '@/components/band/BandContactSection';
 import { BandFloatingCta } from '@/components/band/BandFloatingCta';
 import { BandVideoSection } from '@/components/band/BandVideoSection';
@@ -114,18 +110,15 @@ export default async function BandPage({ params }: PageProps) {
       <BandDescription band={band} />
       <BandPeopleSection band={band} />
 
-      {/* 02 – Wie klingt sie live? (Video, Klingt nach, Buehnenbilder auf
-          einer dunklen Flaeche zusammengefuehrt -- die einzige "emotionale
-          Insel" neben dem Hero, siehe BandVideoSection.tsx) */}
+      {/* 02 – Wie klingt sie live? (Video, Klingt nach, Stil & Einfluesse,
+          vollstaendige Galerie auf einer dunklen Flaeche zusammengefuehrt --
+          die einzige "emotionale Insel" neben dem Hero, siehe
+          BandVideoSection.tsx) */}
       <BandVideoSection band={band} embedUrl={embedUrl} />
 
-      <BandGallery band={band} />
-
-      {/* 03 – Passt sie zu eurem Anlass? */}
+      {/* 03 – Die Band für euer Event? (Spielt bei, Referenz-Events,
+          Festwirte-Unterlagen, Hochzeitsinfos -- siehe BandTagsSection.tsx) */}
       <BandTagsSection band={band} />
-      <BandReferenceEvents band={band} />
-      <BandDocumentsSection band={band} />
-      <BandWeddingModule band={band} />
 
       {/* Sentinel für BandFloatingCta: markiert den Beginn des finalen Anfragebereichs,
           damit der Sticky-CTA weiss, wann er wieder ausblenden muss. */}

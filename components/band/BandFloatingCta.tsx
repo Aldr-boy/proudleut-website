@@ -35,9 +35,25 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
   const [modalOpen, setModalOpen] = useState(false);
   const [heroPassed, setHeroPassed] = useState(false);
   const [finalReached, setFinalReached] = useState(false);
+  const [merklisteBarHeight, setMerklisteBarHeight] = useState(0);
   const isGemerkt = useAnfrageStore((s) => s.isSelected(slug));
   const addBand = useAnfrageStore((s) => s.addBand);
   const removeBand = useAnfrageStore((s) => s.removeBand);
+  const merklisteBandsCount = useAnfrageStore((s) => s.bands.length);
+
+  // Echte Kollisionsloesung statt eines hoeheren z-index (Auftrag
+  // "Bandseiten-Finalisierung": "Ein hoeherer z-index allein loest die
+  // Kollision nicht") -- die globale Merkliste-Leiste (MerklisteBar.tsx,
+  // ebenfalls "fixed bottom-0") bekommt per id="merkliste-bar" eine feste
+  // Referenz, deren tatsaechlich gerenderte Hoehe hier gemessen und als
+  // bottom-Offset uebernommen wird. Beide Leisten bleiben so gleichzeitig
+  // sichtbar und gestapelt statt sich zu verdecken; merklisteBandsCount
+  // triggert die Neumessung, wenn die Merkliste ein-/ausgeblendet wird
+  // oder ihr Inhalt (und damit ihre Hoehe) sich aendert.
+  useEffect(() => {
+    const el = document.getElementById('merkliste-bar');
+    setMerklisteBarHeight(el?.offsetHeight ?? 0);
+  }, [merklisteBandsCount]);
 
   const handleMerken = () => {
     if (isGemerkt) {
@@ -82,13 +98,16 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
 
   return (
     <>
-      {/* Desktop: schwebender Anfrage-Pill */}
+      {/* Desktop: schwebender Anfrage-Pill -- bottom-Offset weicht der
+          Merkliste-Leiste aus (siehe Kommentar am merklisteBarHeight-Effekt
+          oben), statt sie per z-index zu verdecken. */}
       <div
-        className={`hidden md:block fixed bottom-6 right-6 z-40 motion-safe:transition-all motion-safe:duration-300 ${
+        className={`hidden md:block fixed right-6 z-40 motion-safe:transition-all motion-safe:duration-300 ${
           stickyVisible
             ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
+        style={{ bottom: `${24 + merklisteBarHeight}px` }}
         aria-hidden={!stickyVisible}
       >
         <button
@@ -106,20 +125,22 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
       </div>
 
       {/* Mobile: Sticky Bottom CTA -- nur zwischen Hero-CTA und finalem Anfragebereich sichtbar.
-          z-50 statt z-40: components/band/MerklisteBar.tsx (global, app/layout.tsx) ist ebenfalls
-          "fixed bottom-0 z-40" -- ohne Anhebung wuerden beide Leisten bei aktiver Merkliste auf
-          derselben Ebene um denselben Streifen konkurrieren (nur DOM-Reihenfolge entschiede). Die
-          bandbezogene Aktionsleiste hat hier Vorrang vor der globalen Merkliste. */}
+          Bei aktiver globaler Merkliste (MerklisteBar.tsx, ebenfalls "fixed bottom-0") rueckt
+          diese Leiste per bottom-Offset (merklisteBarHeight) nach oben, statt sie zu verdecken --
+          ein hoeherer z-index allein wuerde die Kollision nicht loesen, da beide Leisten dieselbe
+          volle Breite beanspruchen. Der Zugang zur Mehrband-Anfrage (Merkliste ansehen) bleibt so
+          in jedem Fall sichtbar und erreichbar. */}
       <div
         {...hiddenInertProps}
         aria-hidden={!stickyVisible}
-        className={`md:hidden fixed inset-x-0 bottom-0 z-50 bg-pl-elevated/95 backdrop-blur-sm border-t
+        className={`md:hidden fixed inset-x-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
                     border-pl-soft px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
-                    transition-[opacity,transform] duration-[220ms] ease-out ${
+                    transition-[opacity,transform,bottom] duration-[220ms] ease-out ${
           stickyVisible
             ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 motion-safe:translate-y-2 pointer-events-none'
         }`}
+        style={{ bottom: `${merklisteBarHeight}px` }}
       >
         <div className="flex items-center gap-2">
           {hasVideo && (

@@ -13,22 +13,31 @@ import path from 'node:path'
 // identisches, bereits etabliertes Muster wie
 // lib/admin/eventTypesPageDisplay.test.ts.
 //
-// Bandseiten-Redesign (Auftrag "Bandseiten-Redesign"): BandReferenceEvents
-// ist seit dem Redesign fuer alle Zaehlstaende selbsttragend (eigene
-// Section, kein bg-pl-stage-Wrapper mehr von der Seite -- siehe
-// lib/bands/bandReferenceEventsLayout.ts), HeroCTA ist in BandHero
+// Bandseiten-Finalisierung (Auftrag "Bandseiten-Finalisierung"):
+// BandReferenceEvents, BandGallery, BandDocumentsSection und
+// BandWeddingModule sind nicht mehr als eigene Sections direkt in
+// page.tsx eingebunden, sondern in BandVideoSection ("02") bzw.
+// BandTagsSection ("03") eingebettet -- "zusammenhaengende
+// Inhaltsbereiche" statt vier zusaetzlich gestapelter Alt-Sections (siehe
+// BandTagsSection.tsx, BandVideoSection.tsx). HeroCTA ist in BandHero
 // eingebettet (kein eigener "hero-cta"-Balken mehr), BandFloatingCta nutzt
-// weiterhin heroSentinelId/finalSentinelId (nicht heroCtaId/
-// contactSectionId -- diese Test-Erwartung war bereits vor dem Redesign
-// veraltet).
+// weiterhin heroSentinelId/finalSentinelId.
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const pageSource = readFileSync(path.join(root, 'app', 'band', '[slug]', 'page.tsx'), 'utf8')
 const heroCtaSource = readFileSync(path.join(root, 'components', 'band', 'HeroCTA.tsx'), 'utf8')
 const bandHeroSource = readFileSync(path.join(root, 'components', 'band', 'BandHero.tsx'), 'utf8')
+const tagsSectionSource = readFileSync(path.join(root, 'components', 'band', 'BandTagsSection.tsx'), 'utf8')
+const videoSectionSource = readFileSync(path.join(root, 'components', 'band', 'BandVideoSection.tsx'), 'utf8')
 
-test('BandReferenceEvents wird unabhaengig vom Zaehlstand ohne Wrapper-Section durch die Seite eingebunden (selbsttragend, siehe Komponente)', () => {
-  assert.match(pageSource, /<BandReferenceEvents band=\{band\} \/>/)
-  assert.doesNotMatch(pageSource, /referenceCount/)
+test('BandReferenceEvents, BandGallery, BandDocumentsSection und BandWeddingModule sind nicht mehr eigenstaendig in page.tsx eingebunden, sondern in "02"/"03" eingebettet', () => {
+  assert.doesNotMatch(pageSource, /<BandReferenceEvents/)
+  assert.doesNotMatch(pageSource, /<BandGallery/)
+  assert.doesNotMatch(pageSource, /<BandDocumentsSection/)
+  assert.doesNotMatch(pageSource, /<BandWeddingModule/)
+  assert.match(videoSectionSource, /<BandGallery band=\{band\} \/>/)
+  assert.match(tagsSectionSource, /<BandReferenceEvents band=\{band\} \/>/)
+  assert.match(tagsSectionSource, /<BandDocumentsSection band=\{band\} \/>/)
+  assert.match(tagsSectionSource, /<BandWeddingModule band=\{band\} \/>/)
 })
 
 test('BandSocialIndex ("Sichtbarkeit ueber die Buehne hinaus") bleibt entfernt -- Social-Kennzahlen erscheinen ausschliesslich in "Mehr von [Band]"', () => {

@@ -3,6 +3,11 @@ import { hasWeddingContent } from '@/lib/bands/bandWeddingContent';
 
 type Props = { band: Band };
 
+// Hochzeitsinformationen, eingebettet als helle Karte in der rechten Spalte
+// von "03 Die Band fuer euer Event?" (siehe BandTagsSection.tsx, finaler
+// Entwurf: Hochzeitskarte unter der Festwirte-PDF-Karte). weddingDescription
+// ist eine kurze, bestehende Stimmungszeile der Band (z. B. "aufregend -
+// pfundig - bewegend") -- servergerendert, keine erfundene Ergaenzung.
 export function BandWeddingModule({ band }: Props) {
   if (!hasWeddingContent(band)) return null;
 
@@ -20,57 +25,26 @@ export function BandWeddingModule({ band }: Props) {
       : null,
   ].filter((c): c is { label: string; value: string } => c !== null);
 
-  const hasText = !!info?.weddingDescription;
-  const hasCards = decisionCards.length > 0;
-
   return (
-    <section className="bg-pl-paper py-12 md:py-16 border-t border-pl-soft px-4 sm:px-6">
-      <div className="pl-container-shell">
-        <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">
-          Hochzeit
+    <div className="bg-pl-paper border border-pl-soft rounded-2xl p-5">
+      <p className="text-xs font-semibold text-pl-accent-deep uppercase tracking-wider mb-1.5">
+        Hochzeit
+      </p>
+      <h3 className="text-base font-bold text-pl-text mb-1">
+        Wenn diese Band eure Hochzeit begleitet
+      </h3>
+      {info?.weddingDescription && (
+        <p className="font-serif italic text-sm text-pl-text-muted mb-3">
+          {info.weddingDescription}
         </p>
-        <h2 className="text-xl md:text-2xl font-bold text-pl-text mb-2">
-          Wenn diese Band eure Hochzeit begleitet
-        </h2>
-        {/* Adjektivzeile (2a): bestehende "Klingt nach"-Werte der Band ins
-            Intro integriert -- kein neues Datenfeld, kein neuer Text. */}
-        <p className="text-sm text-pl-text-muted mb-10">
-          Für Paare, die Live-Musik als Teil des Tages verstehen.
-          {band.klingtNach.length > 0 && ` — ${band.klingtNach.join(' · ')}`}
-        </p>
+      )}
 
-        <div
-          className={
-            hasText && hasCards
-              ? 'xl:grid xl:grid-cols-[1fr_1fr] gap-10 xl:gap-14'
-              : ''
-          }
-        >
-          {hasText && (
-            <div className="mb-8 xl:mb-0">
-              <p className="text-pl-text leading-relaxed whitespace-pre-line">
-                {info!.weddingDescription}
-              </p>
-            </div>
-          )}
-
-          {hasCards && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {decisionCards.map(({ label, value }) => (
-                <div
-                  key={label}
-                  className="bg-pl-elevated border border-pl-soft rounded-xl p-5"
-                >
-                  <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">
-                    {label}
-                  </p>
-                  <p className="text-sm font-medium text-pl-text">{value}</p>
-                </div>
-              ))}
-            </div>
-          )}
+      {decisionCards.map(({ label, value }) => (
+        <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-sm border-t border-pl-soft">
+          <span className="text-pl-text-muted">{label}</span>
+          <strong className="text-pl-text">{value}</strong>
         </div>
-      </div>
-    </section>
+      ))}
+    </div>
   );
 }

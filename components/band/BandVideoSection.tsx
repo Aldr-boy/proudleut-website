@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
 import { VideoPlayer } from './VideoPlayer';
+import { BandGallery } from './BandGallery';
 
 type Props = {
   band: Band;
@@ -9,23 +9,29 @@ type Props = {
 
 // "02 Wie klingt sie live?" -- die eine erlaubte dunkle "emotionale Insel"
 // neben dem Hero (siehe design-reference.md, "Max. 2 dunkle Buehnen-
-// Content-Sections pro Seite"). Fuehrt Video, "Klingt nach" und ein paar
-// Buehnenbilder bewusst auf einer Flaeche zusammen (Auftrag Abschnitt 8),
-// statt sie wie zuvor auf drei getrennte helle Sections zu verteilen.
+// Content-Sections pro Seite"). Fuehrt Video, "Klingt nach", "Stil &
+// Einfluesse" (Auftrag "Bandseiten-Finalisierung": ausschliesslich hier,
+// getrennt von "Klingt nach") und die vollstaendige Galerie samt
+// Vergroesserungsfunktion (siehe BandGallery.tsx) auf einer Flaeche
+// zusammen, statt sie wie zuvor auf mehrere Sections zu verteilen.
 //
 // Rendert nur, wenn mindestens EIN Baustein tatsaechlich Inhalt hat -- kein
-// leeres Kapitel, wenn eine Band weder Video noch Moods noch Galerie hat.
+// leeres Kapitel, wenn eine Band weder Video noch Moods noch Stil noch
+// Galerie hat.
 export function BandVideoSection({ band, embedUrl }: Props) {
   const klingtNach = band.klingtNach;
-  const liveImages = band.gallery.slice(0, 3);
+  const stil = band.musikalischVerortet;
   const hasVideo = embedUrl !== null;
+  const hasGallery = band.gallery.length > 0;
 
-  if (!hasVideo && klingtNach.length === 0 && liveImages.length === 0) return null;
+  if (!hasVideo && klingtNach.length === 0 && stil.length === 0 && !hasGallery) return null;
 
   // Vorschaubild fuer den Klick-zum-Laden-Button: bewusst ein bereits
   // vorhandenes lokales Bandbild statt eines YouTube-Vorschaubilds (Auftrag:
   // "vorhandene lokale Medien bevorzugen", keine Drittanbieter-Anfrage vor
-  // der Nutzeraktion).
+  // der Nutzeraktion). thumbnailImage ist eine eigene Medienrolle, keine
+  // Kopie eines Galeriebilds -- die Galerie darunter zeigt weiterhin alle
+  // vorhandenen Bilder, keine Dopplung.
   const poster = band.thumbnailImage ?? band.heroImage ?? band.gallery[0];
 
   return (
@@ -45,39 +51,48 @@ export function BandVideoSection({ band, embedUrl }: Props) {
             </div>
           )}
 
-          {klingtNach.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
-                Klingt nach
-              </p>
-              <ul className="space-y-2.5">
-                {klingtNach.map((tag) => (
-                  <li key={tag} className="flex items-center gap-3 text-sm md:text-base text-pl-on-stage">
-                    <span className="w-1 h-4 rounded-full bg-pl-accent-light shrink-0" aria-hidden="true" />
-                    {tag}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-5 text-xs text-pl-on-stage-muted">
-                Der beste Eindruck kommt von der Bühne.
-              </p>
+          {(klingtNach.length > 0 || stil.length > 0) && (
+            <div className="flex flex-col gap-6">
+              {klingtNach.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
+                    Klingt nach
+                  </p>
+                  <ul className="space-y-2.5">
+                    {klingtNach.map((tag) => (
+                      <li key={tag} className="flex items-center gap-3 text-sm md:text-base text-pl-on-stage">
+                        <span className="w-1 h-4 rounded-full bg-pl-accent-light shrink-0" aria-hidden="true" />
+                        {tag}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {stil.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
+                    Stil &amp; Einflüsse
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {stil.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-pl-on-stage"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {liveImages.length > 0 && (
-          <div className="mt-8 grid grid-cols-3 gap-3 md:gap-4">
-            {liveImages.map((img, i) => (
-              <div key={i} className="relative aspect-[4/3] rounded-lg overflow-hidden">
-                <Image
-                  src={img.url}
-                  alt={img.alt}
-                  fill
-                  className="object-cover"
-                  sizes="(min-width: 768px) 33vw, 33vw"
-                />
-              </div>
-            ))}
+        {hasGallery && (
+          <div className="mt-10 pt-10 border-t border-white/10">
+            <BandGallery band={band} />
           </div>
         )}
       </div>
