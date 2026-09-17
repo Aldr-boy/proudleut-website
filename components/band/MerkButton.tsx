@@ -7,9 +7,14 @@ type Props = {
   name: string;
   slug: string;
   anfrageEventTypes: BandAnfrageEventType[];
+  // Optional, Default 'light' -- bestehendes Verhalten fuer alle
+  // bisherigen Aufrufstellen (BandCard, BandExplorer) unveraendert. 'dark'
+  // wird ausschliesslich von der neuen dunklen CTA-Karte in
+  // BandContactSection.tsx genutzt (Bandseiten-Redesign).
+  variant?: 'light' | 'dark';
 };
 
-export function MerkButton({ name, slug, anfrageEventTypes }: Props) {
+export function MerkButton({ name, slug, anfrageEventTypes, variant = 'light' }: Props) {
   const selected = useAnfrageStore((s) => s.isSelected(slug));
   const otherCount = useAnfrageStore(
     (s) => s.bands.filter((b) => b.slug !== slug).length
@@ -25,6 +30,8 @@ export function MerkButton({ name, slug, anfrageEventTypes }: Props) {
     }
   }
 
+  const isDark = variant === 'dark';
+
   return (
     <div className="flex flex-col gap-1.5">
       <button
@@ -34,16 +41,20 @@ export function MerkButton({ name, slug, anfrageEventTypes }: Props) {
         className={[
           'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full',
           'text-sm font-semibold motion-safe:transition-colors',
-          selected
-            ? 'bg-[var(--pl-accent-subtle)] border border-[var(--pl-accent)] text-[var(--pl-accent-deep)]'
-            : 'border border-[var(--pl-border-medium)] text-[var(--pl-text-muted)] hover:border-[var(--pl-accent)] hover:text-[var(--pl-accent-deep)]',
+          isDark
+            ? selected
+              ? 'bg-white/10 border border-pl-accent-light text-pl-on-stage'
+              : 'border border-pl-on-stage-muted text-pl-on-stage hover:border-pl-on-stage'
+            : selected
+              ? 'bg-[var(--pl-accent-subtle)] border border-[var(--pl-accent)] text-[var(--pl-accent-deep)]'
+              : 'border border-[var(--pl-border-medium)] text-[var(--pl-text-muted)] hover:border-[var(--pl-accent)] hover:text-[var(--pl-accent-deep)]',
         ].join(' ')}
       >
-        {selected ? '✓ Gemerkt' : '♡ Band merken'}
+        {selected ? '✓ Gemerkt' : '♡ Für Anfrage merken'}
       </button>
 
       {selected && otherCount >= 1 && (
-        <p className="text-xs" style={{ color: 'var(--pl-text-hint)' }}>
+        <p className={isDark ? 'text-xs text-pl-on-stage-muted' : 'text-xs'} style={isDark ? undefined : { color: 'var(--pl-text-hint)' }}>
           Schon {otherCount} {otherCount === 1 ? 'andere Band' : 'andere Bands'} gemerkt.
           Stell eine Sammelanfrage, wenn du bereit bist.
         </p>

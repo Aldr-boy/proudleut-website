@@ -11,12 +11,7 @@ import { BandHero } from '@/components/band/BandHero';
 import { BandTagsSection } from '@/components/band/BandTagsSection';
 import { BandDescription } from '@/components/band/BandDescription';
 import { BandPeopleSection } from '@/components/band/BandPeopleSection';
-import { BandReferenceEvents } from '@/components/band/BandReferenceEvents';
-import { BandGallery } from '@/components/band/BandGallery';
-import { BandDocumentsSection } from '@/components/band/BandDocumentsSection';
-import { BandWeddingModule } from '@/components/band/BandWeddingModule';
 import { BandContactSection } from '@/components/band/BandContactSection';
-import { HeroCTA } from '@/components/band/HeroCTA';
 import { BandFloatingCta } from '@/components/band/BandFloatingCta';
 import { BandVideoSection } from '@/components/band/BandVideoSection';
 import { getYouTubeEmbedUrl } from '@/lib/youtube';
@@ -97,36 +92,34 @@ export default async function BandPage({ params }: PageProps) {
   const websiteUrl = safeUrl(band.websiteUrl);
   const embedUrl = getYouTubeEmbedUrl(band.youtubeVideoUrl);
   const similarBands = getSimilarBands(band, allBands);
-
-
-  const referenceCount = band.referenceEvents.length;
+  const hasVideo = embedUrl !== null;
 
   return (
-    <article className="bg-pl-canvas">
+    <article className="bg-pl-canvas pb-24 md:pb-0">
       {/* JSON-LD – produktiv, kein Debug */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <BandHero band={band} />
-      <HeroCTA name={band.name} slug={band.slug} anfrageEventTypes={band.anfrageEventTypes ?? []} />
-      <BandTagsSection band={band} />
-      <BandVideoSection embedUrl={embedUrl} bandName={band.name} />
+      {/* Hero: vollflaechiges Bandbild, Name, Logo, Aktionen bereits im
+          Einstieg (Auftrag "Bandseiten-Redesign", Abschnitt 5) */}
+      <BandHero band={band} hasVideo={hasVideo} />
+
+      {/* 01 – Wer steht hier auf der Bühne? */}
       <BandDescription band={band} />
       <BandPeopleSection band={band} />
 
-      {referenceCount === 1 && <BandReferenceEvents band={band} />}
+      {/* 02 – Wie klingt sie live? (Video, Klingt nach, Stil & Einfluesse,
+          vollstaendige Galerie auf einer dunklen Flaeche zusammengefuehrt --
+          die einzige "emotionale Insel" neben dem Hero, siehe
+          BandVideoSection.tsx) */}
+      <BandVideoSection band={band} embedUrl={embedUrl} />
 
-      {referenceCount >= 2 && (
-        <section className="bg-pl-stage">
-          <BandReferenceEvents band={band} />
-        </section>
-      )}
+      {/* 03 – Die Band für euer Event? (Spielt bei, Referenz-Events,
+          Festwirte-Unterlagen, Hochzeitsinfos -- siehe BandTagsSection.tsx) */}
+      <BandTagsSection band={band} />
 
-      <BandGallery band={band} />
-      <BandDocumentsSection band={band} />
-      <BandWeddingModule band={band} />
       {/* Sentinel für BandFloatingCta: markiert den Beginn des finalen Anfragebereichs,
           damit der Sticky-CTA weiss, wann er wieder ausblenden muss. */}
       <div id="final-cta-sentinel" aria-hidden="true" className="h-px" />
@@ -138,6 +131,7 @@ export default async function BandPage({ params }: PageProps) {
         anfrageEventTypes={band.anfrageEventTypes ?? []}
         heroSentinelId="hero-cta-sentinel"
         finalSentinelId="final-cta-sentinel"
+        hasVideo={hasVideo}
       />
 
       {/* Ähnliche Bands */}

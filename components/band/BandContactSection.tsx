@@ -144,16 +144,17 @@ export function BandContactSection({ band, websiteUrl }: Props) {
               <h2 className="text-lg font-bold text-pl-text mb-5">
                 Mehr von {band.name}
               </h2>
-              <ul className="space-y-3">
-                {links.map(({ label, href, icon, metric }) => (
-                  <li key={label}>
+              <ul className="max-w-sm">
+                {links.map(({ label, href, icon, metric }, idx) => (
+                  <li key={label} className={idx > 0 ? 'border-t border-pl-soft' : ''}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={metric ? `${label}: ${formatFollowerCount(metric.count)} ${metric.unit}` : undefined}
-                      className="flex w-full items-center gap-3 text-sm text-pl-text-muted
-                                 hover:text-pl-accent motion-safe:transition-colors group"
+                      className="flex w-full items-center gap-3 py-3 rounded-sm text-sm text-pl-text-muted
+                                 hover:text-pl-accent motion-safe:transition-colors group
+                                 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
                     >
                       <span className="shrink-0 text-pl-text-muted group-hover:text-pl-accent motion-safe:transition-colors">
                         {icon}
@@ -161,13 +162,13 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                       <span>{label}</span>
 
                       {metric && (
-                        <span className="ml-auto shrink-0 text-right leading-tight">
-                          <span className="block font-semibold text-pl-text group-hover:text-pl-accent motion-safe:transition-colors">
-                            {formatFollowerCount(metric.count)}
+                        <span className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
+                          <span className="flex items-baseline gap-1">
+                            <span className="font-semibold text-pl-text group-hover:text-pl-accent motion-safe:transition-colors">{formatFollowerCount(metric.count)}</span>
+                            <span className="text-xs text-pl-text-muted">{metric.unit}</span>
                           </span>
-                          <span className="block text-xs text-pl-text-muted">{metric.unit}</span>
                           {standDisplay.kind === 'per_platform' && (
-                            <span className="block text-[11px] text-pl-text-hint mt-0.5">
+                            <span className="text-[11px] text-pl-text-hint">
                               Stand: {formatStandDate(metric.checkedAt)}
                             </span>
                           )}
@@ -180,19 +181,26 @@ export function BandContactSection({ band, websiteUrl }: Props) {
 
               {standDisplay.kind === 'shared' && (
                 <p className="mt-3 text-xs text-pl-text-hint">
-                  Zahlenstand: {formatStandMonthYear(standDisplay.checkedAt)}
+                  Stand: {formatStandMonthYear(standDisplay.checkedAt)}
                 </p>
               )}
             </div>
           )}
 
-          {/* Rechte Spalte: CTA – immer sichtbar */}
-          <div>
-            <h2 className="text-lg font-bold text-pl-text mb-3">
-              Interesse an dieser Band?
+          {/* Rechte Spalte: CTA – immer sichtbar. Dunkle Akzent-Karte
+              (Auftrag Abschnitt 8/PDF-Referenz "Euer Abend mit [Band]") --
+              eine einzelne Karte innerhalb einer hellen Section zaehlt
+              nicht als "dunkle Buehnen-Content-Section" im Sinne von
+              design-reference.md. */}
+          <div className="bg-pl-stage rounded-2xl px-6 py-7 sm:px-8 sm:py-9">
+            <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-2">
+              Euer Abend mit {band.name}
+            </p>
+            <h2 className="text-lg font-bold text-pl-on-stage mb-3">
+              Interesse?
             </h2>
-            <p className="text-sm text-pl-text-muted leading-relaxed mb-5">
-              Deine Anfrage wird über proudleut an die Band weitergeleitet.
+            <p className="text-sm text-pl-on-stage-muted leading-relaxed mb-5">
+              Deine Anfrage geht direkt an {band.name}.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -205,14 +213,15 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                 name={band.name}
                 slug={band.slug}
                 anfrageEventTypes={band.anfrageEventTypes ?? []}
+                variant="dark"
               />
             </div>
 
-            <p className="text-xs text-pl-text-hint mt-5">
+            <p className="text-xs text-pl-on-stage-muted mt-5">
               Noch unsicher?{' '}
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="underline hover:text-pl-text-muted motion-safe:transition-colors"
+                className="underline hover:text-pl-on-stage motion-safe:transition-colors"
               >
                 Schreib mir kurz, wenn du Hilfe bei der Auswahl möchtest.
               </a>

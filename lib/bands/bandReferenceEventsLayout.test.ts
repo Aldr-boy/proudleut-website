@@ -10,11 +10,11 @@ test('referenceEventsVariant: genau 1 Referenz -> compact-light (heller Grund, k
   assert.equal(referenceEventsVariant(1), 'compact-light')
 })
 
-test('referenceEventsVariant: 2 Referenzen -> stage-island', () => {
-  assert.equal(referenceEventsVariant(2), 'stage-island')
+test('referenceEventsVariant: 2 Referenzen -> list-light (helle Liste, Redesign: keine dunkle Buehnen-Insel mehr -- siehe Abschnitt 8)', () => {
+  assert.equal(referenceEventsVariant(2), 'list-light')
 })
 
-test('referenceEventsVariant: viele Referenzen bleiben stage-island (alle sichtbar, keine Pagination)', () => {
-  assert.equal(referenceEventsVariant(7), 'stage-island')
-  assert.equal(referenceEventsVariant(20), 'stage-island')
+test('referenceEventsVariant: viele Referenzen bleiben list-light (alle sichtbar, keine Pagination)', () => {
+  assert.equal(referenceEventsVariant(7), 'list-light')
+  assert.equal(referenceEventsVariant(20), 'list-light')
 })

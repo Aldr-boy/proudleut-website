@@ -24,7 +24,7 @@ const source = readFileSync(bandHeroPath, 'utf8')
 function extractLogoBlock(): string {
   const start = source.indexOf('{band.logo && (')
   assert.ok(start >= 0, 'band.logo-Block nicht gefunden')
-  return source.slice(start, start + 1400)
+  return source.slice(start, start + 1600)
 }
 
 test('Logo wird per fill gerendert, nicht per fixer width/height-Props', () => {
@@ -42,10 +42,10 @@ test('kein width:auto/height:auto-Style mehr auf dem Logo-Image (verursachte die
 
 test('Logo-Box hat eine feste CSS-Groesse (position: relative-Vorfahre fuer fill) statt einer aus width/height-Attributen abgeleiteten Form', () => {
   const block = extractLogoBlock()
-  assert.match(block, /className="relative mb-4 w-40 h-14"/)
+  assert.match(block, /className="relative w-32 h-10 sm:w-40 sm:h-12 md:w-48 md:h-14 mb-3"/)
 })
 
-test('object-contain bleibt erhalten (kein Beschnitt), object-left fuer linksbuendige Ausrichtung', () => {
+test('object-contain bleibt erhalten (kein Beschnitt); object-left, da das Logo linksbuendig direkt ueber dem Bandnamen verankert ist (Bandseiten-Finalisierung, Hero-Variante "Name fuehrt")', () => {
   const block = extractLogoBlock()
   assert.match(block, /object-contain/)
   assert.match(block, /object-left/)

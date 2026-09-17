@@ -1,23 +1,91 @@
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
 import { formatLocation } from '@/lib/utils/formatLocation';
+import { resolveHeroImagePresentation, resolveMobileHeroImage } from '@/lib/bands/heroImagePresentation';
+import { HeroCTA } from './HeroCTA';
 
-type Props = { band: Band };
+type Props = { band: Band; hasVideo: boolean };
 
-export function BandHero({ band }: Props) {
+// Vollflaechiger Bild-Hero (Auftrag "Bandseiten-Redesign"/"Bandseiten-
+// Finalisierung"): grosses Bandbild ueber die gesamte Breite, Logo klein
+// direkt ueber dem Bandnamen (Hero-Variante "Name fuehrt", siehe
+// Logo-Kommentar unten), kraeftiger Bandname bleibt die einzige H1,
+// Kategorie/Standort als Kicker darueber, Aktionen bereits im Einstieg
+// erreichbar (HeroCTA, direkt eingebettet statt eines eigenen Balkens).
+export function BandHero({ band, hasVideo }: Props) {
   const locationText = formatLocation(band.location);
+  const metaLine = [band.category, locationText].filter(Boolean).join(' · ');
+  const memberInfo = band.weddingInfo?.bandSize;
+  const subtitle = [band.shortDescription, memberInfo].filter(Boolean).join(' · ');
+
+  const presentation = resolveHeroImagePresentation(band.slug);
+  const mobileImage = resolveMobileHeroImage(band);
+  // Nur wenn tatsaechlich ein abweichendes mobiles Motiv konfiguriert UND
+  // gefunden wurde, werden zwei <Image>-Varianten gerendert (siehe
+  // lib/bands/heroImagePresentation.ts) -- der Standardfall (kein Eintrag,
+  // die weit ueberwiegende Mehrheit der Baender) bleibt bei einem einzigen
+  // priorisierten Bild wie zuvor, ohne Performance-Nachteil.
+  const hasDistinctMobileImage = !!mobileImage && mobileImage.url !== band.heroImage?.url;
+
+  const desktopImageStyle = presentation.desktopObjectPosition
+    ? { objectPosition: presentation.desktopObjectPosition }
+    : undefined;
+  const mobileImageStyle = presentation.mobileObjectPosition
+    ? { objectPosition: presentation.mobileObjectPosition }
+    : undefined;
+  // Dasselbe Bild auf beiden Breakpoint-Gruppen, nur der Bildausschnitt
+  // unterscheidet sich (Auftrag "Bandseiten-Finalisierung", heroPosDesk/
+  // heroPosMob im finalen Entwurf) -- ein einzelnes <Image> reicht dafuer
+  // aus (siehe lib/bands/heroImagePresentation.ts), object-position wird
+  // ueber CSS-Variablen je Breakpoint umgeschaltet statt ueber ein zweites
+  // Bildelement.
+  const objectPositionVars = presentation.desktopObjectPosition || presentation.mobileObjectPosition
+    ? ({
+        '--hero-pos-mobile': presentation.mobileObjectPosition ?? presentation.desktopObjectPosition ?? 'center',
+        '--hero-pos-desktop': presentation.desktopObjectPosition ?? 'center',
+      } as React.CSSProperties)
+    : undefined;
 
   return (
-    <div className="relative w-full min-h-[55vh] md:min-h-[65vh] bg-pl-stage overflow-hidden">
-      {band.heroImage && (
-        <Image
-          src={band.heroImage.url}
-          alt={band.heroImage.alt}
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
-        />
+    <div className="relative w-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh] bg-pl-stage overflow-hidden">
+      {hasDistinctMobileImage ? (
+        <>
+          <Image
+            src={mobileImage!.url}
+            alt={mobileImage!.alt}
+            fill
+            priority
+            className="object-cover object-center md:hidden"
+            style={mobileImageStyle}
+            sizes="100vw"
+          />
+          {band.heroImage && (
+            <Image
+              src={band.heroImage.url}
+              alt={band.heroImage.alt}
+              fill
+              className="hidden md:block object-cover"
+              style={desktopImageStyle}
+              sizes="100vw"
+            />
+          )}
+        </>
+      ) : (
+        band.heroImage && (
+          <Image
+            src={band.heroImage.url}
+            alt={band.heroImage.alt}
+            fill
+            priority
+            className={
+              objectPositionVars
+                ? 'object-cover object-[var(--hero-pos-mobile)] md:object-[var(--hero-pos-desktop)]'
+                : 'object-cover object-center'
+            }
+            style={objectPositionVars}
+            sizes="100vw"
+          />
+        )
       )}
 
       {/* Gradient overlay: dunkelt von unten, lässt oben transparent */}
@@ -25,73 +93,57 @@ export function BandHero({ band }: Props) {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(to top, rgba(18,16,26,0.93) 0%, rgba(18,16,26,0.45) 45%, rgba(18,16,26,0.1) 72%, transparent 100%)',
+            'linear-gradient(to top, rgba(18,16,26,0.93) 0%, rgba(18,16,26,0.5) 42%, rgba(18,16,26,0.12) 70%, transparent 100%)',
         }}
       />
 
       {/* Content – bündig unten links */}
-      <div className="relative z-10 flex items-end h-full min-h-[55vh] md:min-h-[65vh]">
-        <div className="w-full max-w-[1140px] mx-auto px-4 sm:px-6 pb-10 md:pb-14">
+      <div className="relative z-10 flex items-end h-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh]">
+        <div className="w-full pl-container-shell px-4 sm:px-6 pb-8 md:pb-12">
+          {/* Logo -- klein, direkt ueber dem Bandnamen verankert statt als
+              Eck-Plakette (finaler Entwurf, "Hero-Varianten & Empfehlung",
+              V1 "Name fuehrt": beide Referenzlogos sind auf Buehnenfotos
+              allein nicht zuverlaessig lesbar, der Name traegt die
+              Erkennbarkeit, das Logo liefert Persoenlichkeit daneben).
+              Groesse bewusst generisch/einheitlich gehalten (keine
+              bandspezifische Layout-Sonderabfrage) -- object-contain leitet
+              die tatsaechliche Bildform aus der Datei ab, siehe
+              bandHeroLogoAspectRatio.test.ts. Layout funktioniert ohne Logo
+              unveraendert -- rein bedingtes Rendering. */}
           {band.logo && (
-            // Bewusst `fill` statt fester width/height-Props: Logos haben
-            // stark unterschiedliche, unbekannte Seitenverhaeltnisse (z. B.
-            // sehr breite, niedrige Wortmarken). Feste width/height-Props
-            // (vorher 200x80) setzen next/image's Intrinsic-Size-Attribute
-            // auf DIESES Seitenverhaeltnis -- ein anschliessendes
-            // `style={{width:'auto', height:'auto'}}` liess den Browser
-            // dann die BOX anhand dieser falschen 200:80-Form berechnen,
-            // nicht anhand der echten Bilddatei, wodurch z. B. ein breites,
-            // niedriges Logo unnoetig klein gerendert wurde. `fill` +
-            // object-contain in einer Box mit fester Groesse (statt fester
-            // Bild-Attribute) laesst die Box-Form die reale Bilddatei
-            // korrekt und proportional einpassen, unabhaengig vom
-            // tatsaechlichen Seitenverhaeltnis.
-            <div className="relative mb-4 w-40 h-14">
+            <div className="relative w-32 h-10 sm:w-40 sm:h-12 md:w-48 md:h-14 mb-3">
               <Image
                 src={band.logo.url}
                 alt={band.logo.alt}
                 fill
                 className="object-contain object-left"
-                sizes="160px"
+                sizes="192px"
               />
             </div>
           )}
 
-          {band.category && (
-            <span className="inline-block px-3 py-1 mb-3 rounded-full text-xs font-semibold bg-pl-accent-subtle text-pl-accent-deep">
-              {band.category}
-            </span>
-          )}
-
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-pl-on-stage leading-tight mb-3">
-            {band.name}
-          </h1>
-
-          {band.shortDescription && (
-            <p className="text-base md:text-lg text-pl-on-stage-muted max-w-2xl mb-4 leading-relaxed">
-              {band.shortDescription}
+          {metaLine && (
+            <p className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-pl-accent-light mb-3">
+              {metaLine}
             </p>
           )}
 
-          {locationText && (
-            <div className="flex items-center gap-1.5 text-sm text-pl-on-stage-muted">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span>{locationText}</span>
-            </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-pl-on-stage leading-[1.03] mb-3">
+            {band.name}
+          </h1>
+
+          {subtitle && (
+            <p className="text-base md:text-lg text-pl-on-stage-muted max-w-2xl mb-6 leading-relaxed">
+              {subtitle}
+            </p>
           )}
+
+          <HeroCTA
+            name={band.name}
+            slug={band.slug}
+            anfrageEventTypes={band.anfrageEventTypes ?? []}
+            hasVideo={hasVideo}
+          />
         </div>
       </div>
     </div>
