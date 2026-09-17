@@ -1,13 +1,14 @@
 import type { Band } from '@/lib/types/band';
 import { VideoPlayer } from './VideoPlayer';
 import { BandGallery } from './BandGallery';
+import { BandChapterHeading } from './BandChapterHeading';
 
 type Props = {
   band: Band;
   embedUrl: string | null;
 };
 
-// "02 Wie klingt sie live?" -- die eine erlaubte dunkle "emotionale Insel"
+// "02 Wie klingt die Band live?" -- die eine erlaubte dunkle "emotionale Insel"
 // neben dem Hero (siehe design-reference.md, "Max. 2 dunkle Buehnen-
 // Content-Sections pro Seite"). Fuehrt Video, "Klingt nach", "Stil &
 // Einfluesse" (Auftrag "Bandseiten-Finalisierung": ausschliesslich hier,
@@ -37,12 +38,7 @@ export function BandVideoSection({ band, embedUrl }: Props) {
   return (
     <section id="live" className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav">
       <div className="pl-container-shell">
-        <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-2">
-          02
-        </p>
-        <h2 className="text-xl md:text-2xl font-bold text-pl-on-stage mb-8">
-          Wie klingt sie live?
-        </h2>
+        <BandChapterHeading number="02" title="Wie klingt die Band live?" variant="dark" />
 
         <div className={hasVideo ? 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 md:gap-12 items-start' : ''}>
           {hasVideo && (

@@ -144,15 +144,15 @@ export function BandContactSection({ band, websiteUrl }: Props) {
               <h2 className="text-lg font-bold text-pl-text mb-5">
                 Mehr von {band.name}
               </h2>
-              <ul className="space-y-3">
-                {links.map(({ label, href, icon, metric }) => (
-                  <li key={label}>
+              <ul className="max-w-sm">
+                {links.map(({ label, href, icon, metric }, idx) => (
+                  <li key={label} className={idx > 0 ? 'border-t border-pl-soft' : ''}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={metric ? `${label}: ${formatFollowerCount(metric.count)} ${metric.unit}` : undefined}
-                      className="flex w-full items-center gap-3 rounded-sm text-sm text-pl-text-muted
+                      className="flex w-full items-center gap-3 py-3 rounded-sm text-sm text-pl-text-muted
                                  hover:text-pl-accent motion-safe:transition-colors group
                                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
                     >
@@ -162,13 +162,13 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                       <span>{label}</span>
 
                       {metric && (
-                        <span className="ml-auto shrink-0 text-right leading-tight">
-                          <span className="block font-semibold text-pl-text group-hover:text-pl-accent motion-safe:transition-colors">
-                            {formatFollowerCount(metric.count)}
+                        <span className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
+                          <span className="flex items-baseline gap-1">
+                            <span className="font-semibold text-pl-text group-hover:text-pl-accent motion-safe:transition-colors">{formatFollowerCount(metric.count)}</span>
+                            <span className="text-xs text-pl-text-muted">{metric.unit}</span>
                           </span>
-                          <span className="block text-xs text-pl-text-muted">{metric.unit}</span>
                           {standDisplay.kind === 'per_platform' && (
-                            <span className="block text-[11px] text-pl-text-hint mt-0.5">
+                            <span className="text-[11px] text-pl-text-hint">
                               Stand: {formatStandDate(metric.checkedAt)}
                             </span>
                           )}

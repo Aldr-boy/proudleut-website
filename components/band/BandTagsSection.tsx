@@ -4,22 +4,30 @@ import { findCategoryForEventTypeSlug } from './bandTagsCategoryMatch';
 import { BandReferenceEvents } from './BandReferenceEvents';
 import { BandDocumentsSection } from './BandDocumentsSection';
 import { BandWeddingModule } from './BandWeddingModule';
+import { BandChapterHeading } from './BandChapterHeading';
 
 type Props = {
   band: Band;
 };
 
+// Zurueckgenommene Chip-Optik (duennere Kontur, kein weisser Fuellton, kein
+// font-semibold) -- die Anlass-Chips sollen wie Kontext wirken, nicht wie
+// gleichrangige Hauptaktionen neben "Anfragen"/"Merken" (Auftrag
+// "Bandseiten-Nachschaerfung", Abschnitt 3).
 const PILL =
-  'inline-flex items-center rounded-full border border-pl-soft bg-white px-4 py-2 text-sm font-semibold text-pl-text';
+  'inline-flex items-center rounded-full border border-pl-soft px-3.5 py-1.5 text-sm font-medium text-pl-text-muted';
 
-// "03 Die Band für euer Event?" (Auftrag "Bandseiten-Finalisierung",
-// verbindliches Wording): zusammenhaengender Abschnitt statt vier
-// nebeneinander gestapelter Alt-Sections -- linke Spalte "Spielt bei" +
-// Referenz-Events, rechte Spalte Festwirte-Unterlagen- und
-// Hochzeitskarte (finaler Entwurf, sec-anlass). "Vernetzt"/Social-Links
-// entfallen hier vollstaendig, da sie bereits einmalig im Anfrage-Bereich
-// erscheinen (BandContactSection.tsx) -- keine Dopplung. Bandart/
-// Herkunft/Besetzung sind nach "01" umgezogen (siehe BandDescription.tsx).
+// "03 Die Band für euer Event?" (Nachschaerfung, Abschnitt 3): drei
+// datengetriebene Ebenen statt eines zweispaltigen Rasters mit intern
+// nochmals zweispaltigen Referenzen -- 1) "Spielt bei" ueber die volle
+// Breite, 2) Referenz-Events links / Hochzeitskarte rechts (nur wenn
+// beide vorhanden, sonst nutzt die eine vorhandene Gruppe die volle
+// Lesebreite), 3) Festwirte-Unterlagen als flache Karte ueber die volle
+// Breite. Jede Ebene rendert nur, wenn sie tatsaechlich Inhalt hat -- keine
+// leeren Spalten/Flaechen. "Vernetzt"/Social-Links entfallen hier
+// vollstaendig, da sie bereits einmalig im Anfrage-Bereich erscheinen
+// (BandContactSection.tsx) -- keine Dopplung. Bandart/Herkunft/Besetzung
+// sind nach "01" umgezogen (siehe BandDescription.tsx).
 export function BandTagsSection({ band }: Props) {
   const hasEventTypes = band.eventTypes.length > 0;
   const hasReferenceEvents = band.referenceEvents.length > 0;
@@ -29,57 +37,69 @@ export function BandTagsSection({ band }: Props) {
     || band.weddingInfo?.moderation != null
     || !!band.weddingInfo?.possiblePlaytimes;
 
-  const hasLeftColumn = hasEventTypes || hasReferenceEvents;
-  const hasRightColumn = hasDocuments || hasWedding;
+  const hasMidTier = hasReferenceEvents || hasWedding;
+  const midTierIsSplit = hasReferenceEvents && hasWedding;
 
-  if (!hasLeftColumn && !hasRightColumn) return null;
+  const tiers = [hasEventTypes, hasMidTier, hasDocuments];
+  const firstTierIndex = tiers.findIndex(Boolean);
+
+  if (firstTierIndex === -1) return null;
 
   return (
     <section id="anlass" className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav">
       <div className="pl-container-shell">
-        <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">03</p>
-        <h2 className="text-xl md:text-2xl font-bold text-pl-text mb-8">
-          Die Band für euer Event?
-        </h2>
+        <BandChapterHeading number="03" title="Die Band für euer Event?" />
 
-        <div className="flex flex-col lg:flex-row gap-10 lg:gap-14">
-          {hasLeftColumn && (
-            <div className="flex-[1.5] min-w-0 space-y-6">
-              {hasEventTypes && (
-                <div>
-                  <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-                    Spielt bei
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {band.eventTypes.map((et, i) => {
-                      const eventTypeSlug = band.categorySlugs?.[i];
-                      const category = eventTypeSlug ? findCategoryForEventTypeSlug(eventTypeSlug) : undefined;
-                      return category ? (
-                        <Link
-                          key={et}
-                          href={`/veranstaltung/${category.slug}`}
-                          className={`${PILL} hover:border-pl-accent hover:text-pl-accent motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent`}
-                        >
-                          {et}
-                        </Link>
-                      ) : (
-                        <span key={et} className={PILL}>
-                          {et}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {hasReferenceEvents && <BandReferenceEvents band={band} />}
+        <div className="flex flex-col gap-10 md:gap-12">
+          {hasEventTypes && (
+            <div>
+              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
+                Spielt bei
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {band.eventTypes.map((et, i) => {
+                  const eventTypeSlug = band.categorySlugs?.[i];
+                  const category = eventTypeSlug ? findCategoryForEventTypeSlug(eventTypeSlug) : undefined;
+                  return category ? (
+                    <Link
+                      key={et}
+                      href={`/veranstaltung/${category.slug}`}
+                      className={`${PILL} hover:border-pl-accent hover:text-pl-accent motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent`}
+                    >
+                      {et}
+                    </Link>
+                  ) : (
+                    <span key={et} className={PILL}>
+                      {et}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {hasRightColumn && (
-            <div className="flex-1 min-w-0 flex flex-col gap-4 lg:self-start">
-              {hasDocuments && <BandDocumentsSection band={band} />}
-              {hasWedding && <BandWeddingModule band={band} />}
+          {hasMidTier && (
+            <div
+              className={`grid grid-cols-1 gap-8 ${midTierIsSplit ? 'lg:grid-cols-2 lg:gap-14 lg:items-start' : ''} ${
+                firstTierIndex === 1 ? '' : 'pt-10 md:pt-12 border-t border-pl-soft'
+              }`}
+            >
+              {hasReferenceEvents && (
+                <div className={midTierIsSplit ? '' : 'max-w-xl'}>
+                  <BandReferenceEvents band={band} />
+                </div>
+              )}
+              {hasWedding && (
+                <div className={midTierIsSplit ? '' : 'max-w-xl'}>
+                  <BandWeddingModule band={band} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {hasDocuments && (
+            <div className={firstTierIndex === 2 ? '' : 'pt-10 md:pt-12 border-t border-pl-soft'}>
+              <BandDocumentsSection band={band} />
             </div>
           )}
         </div>

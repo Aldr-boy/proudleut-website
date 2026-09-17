@@ -11,12 +11,12 @@ import path from 'node:path'
 // bereits etablierte Muster). Echte Quelldatei per readFileSync lesen und
 // strukturell pruefen.
 //
-// Bandseiten-Finalisierung: die Komponente ist jetzt eine kompakte dunkle
-// Kartenzeile (bg-pl-stage, wie die bestehende Anfrage-Karte in
-// BandContactSection.tsx), eingebettet in die rechte Spalte von
-// "03 Die Band fuer euer Event?" (siehe BandTagsSection.tsx) statt einer
-// eigenen hellen Vollbreiten-Section. 1 und mehrere Dokumente werden
-// dadurch bewusst gleich behandelt (keine Sonderbehandlung nach Anzahl).
+// Bandseiten-Nachschaerfung (Abschnitt 3): die Komponente ist eine flache,
+// helle Kartenzeile (dezente Kontur statt der frueheren dominanten
+// bg-pl-stage-Karte), eingebettet als dritte, volle Breite nutzende Ebene
+// in "03 Die Band fuer euer Event?" (siehe BandTagsSection.tsx). 1 und
+// mehrere Dokumente werden bewusst gleich behandelt (keine
+// Sonderbehandlung nach Anzahl).
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const source = readFileSync(path.join(root, 'components', 'band', 'BandDocumentsSection.tsx'), 'utf8')
 const tagsSectionSource = readFileSync(path.join(root, 'components', 'band', 'BandTagsSection.tsx'), 'utf8')
@@ -51,8 +51,17 @@ test('optionale Beschreibung wird nur bei Vorhandensein gerendert, kein Layout-F
   assert.match(source, /\{document\.description && \(/)
 })
 
-test('nutzt die bestehende dunkle Karten-Konvention (bg-pl-stage), keine neue Design-Sprache', () => {
-  assert.match(source, /bg-pl-stage/)
+test('helle, dezent umrandete Karte statt der frueheren dominanten dunklen Karte', () => {
+  assert.match(source, /bg-pl-elevated border border-pl-soft/)
+  assert.doesNotMatch(source, /bg-pl-stage/)
+})
+
+test('Beschreibung ist nicht beschnitten (kein line-clamp)', () => {
+  assert.doesNotMatch(source, /line-clamp/)
+})
+
+test('CTA ist eindeutig als "PDF ansehen" beschriftet', () => {
+  assert.match(source, />\s*PDF ansehen\s*</)
 })
 
 test('CTA verlinkt document.fileUrl, oeffnet in neuem Tab mit rel-Attribut (echter Dokumentlink, kein simulierter Button)', () => {
@@ -61,6 +70,6 @@ test('CTA verlinkt document.fileUrl, oeffnet in neuem Tab mit rel-Attribut (echt
   assert.match(source, /rel="noopener noreferrer"/)
 })
 
-test('BandTagsSection.tsx: BandDocumentsSection wird in der rechten Spalte von "03" eingebunden (nicht mehr als eigene Section in page.tsx)', () => {
+test('BandTagsSection.tsx: BandDocumentsSection wird als eigene, volle Breite nutzende Ebene von "03" eingebunden (nicht mehr als eigene Section in page.tsx)', () => {
   assert.match(tagsSectionSource, /<BandDocumentsSection band=\{band\} \/>/)
 })

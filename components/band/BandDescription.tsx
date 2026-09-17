@@ -1,6 +1,7 @@
 import { MarkdownText } from '@/components/MarkdownText';
 import type { Band } from '@/lib/types/band';
 import { formatLocation } from '@/lib/utils/formatLocation';
+import { BandChapterHeading } from './BandChapterHeading';
 
 type Props = {
   band: Band;
@@ -34,10 +35,7 @@ export function BandDescription({ band }: Props) {
   return (
     <section className="bg-pl-paper py-16 md:py-20 px-4 sm:px-6">
       <div className="pl-container-shell">
-        <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">01</p>
-        <h2 className="text-xl md:text-2xl font-bold text-pl-text mb-6">
-          Wer steht hier auf der Bühne?
-        </h2>
+        <BandChapterHeading number="01" title="Wer steht hier auf der Bühne?" />
 
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-14">
           {firstParagraph && (
