@@ -15,7 +15,11 @@ export type EventTypeGroupDef = {
 };
 
 export const EVENT_TYPE_GROUPS: EventTypeGroupDef[] = [
-  { title: 'Hochzeit', slugs: ['hochzeit', 'brautentfuehrung'] },
+  // "trauung" existiert Stand jetzt noch nicht im Katalog (bewusst kein
+  // Katalog-Insert durch diese Datei) -- solange die Zeile fehlt, liefert
+  // groupEventTypesForAdmin() unten einfach keine Checkbox dafuer, die
+  // Gruppe bleibt mit Hochzeit/Brautentfuehrung normal funktionsfaehig.
+  { title: 'Hochzeit', slugs: ['hochzeit', 'trauung', 'brautentfuehrung'] },
   { title: 'Private Feiern', slugs: ['private-feiern', 'geburtstagsfeier'] },
   { title: 'Firmenveranstaltungen', slugs: ['firmenfeier-business-event', 'messe'] },
   { title: 'Ball, Tanz & Empfang', slugs: ['ball', 'tanzveranstaltung', 'empfang'] },
