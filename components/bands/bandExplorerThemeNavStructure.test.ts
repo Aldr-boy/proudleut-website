@@ -29,8 +29,10 @@ test('Schriftgewicht der Themen-Labels ist in jedem Zustand unbedingt font-semib
   assert.match(source, /<span className=\{`text-sm font-semibold leading-snug \$\{theme\.active/)
 })
 
-test('ausgewaehlte Kachel nutzt bg-pl-accent-subtle (bestehendes Pill-/Badge-Token), keine neue Farbe', () => {
-  assert.match(source, /theme\.active \? 'bg-pl-accent-subtle' : 'hover:bg-black\/\[0\.03\]'/)
+test('aktive Themen-Kachel bleibt durch Rahmen und Haekchen vom neutralen Hover unterscheidbar', () => {
+  assert.match(source, /theme\.active \? 'border-pl-accent bg-\[color-mix/);
+  assert.match(source, /: 'border-transparent hover:bg-black\/\[0\.03\]'/);
+  assert.match(source, /\{theme\.active && \(\s*<svg[\s\S]*?aria-hidden="true"/);
 })
 
 // Nachgang "Bandfinder-Redesign": oeffnet nicht mehr direkt AnfrageModal,
