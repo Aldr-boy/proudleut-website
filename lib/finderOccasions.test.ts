@@ -15,11 +15,12 @@ test('CATEGORIES[festzelt] hat denselben engen Scope wie FINDER_OCCASIONS[festze
   assert.deepEqual(festzeltCategory!.supabaseEventTypeSlugs, ['festzelt'])
 })
 
-test('FINDER_OCCASIONS: elf Anlaesse in der vorgegebenen Reihenfolge', () => {
+test('FINDER_OCCASIONS: zwoelf Anlaesse in der vorgegebenen Reihenfolge', () => {
   assert.deepEqual(
     FINDER_OCCASIONS.map((o) => o.slug),
     [
       'hochzeit',
+      'trauung',
       'brautentfuehrung',
       'festzelt',
       'stadt-und-buergerfest',
@@ -63,9 +64,29 @@ test('Repro Free Vocals: matcht Konzert, Club & Festival (traegt sowohl konzert 
   assert.equal(bandMatchesFinderOccasion(freeVocals, konzertClubFestival), true)
 })
 
-test('Brautentführung ist ein eigener Finder-Anlass direkt nach Hochzeit -- matcht ausschliesslich brautentfuehrung', () => {
-  assert.equal(FINDER_OCCASIONS[1].slug, 'brautentfuehrung', 'Brautentfuehrung muss direkt nach Hochzeit stehen')
+test('Trauung ist ein eigener Finder-Anlass direkt nach Hochzeit und vor Brautentführung -- matcht ausschliesslich trauung', () => {
+  assert.equal(FINDER_OCCASIONS[1].slug, 'trauung', 'Trauung muss direkt nach Hochzeit stehen')
+  assert.equal(FINDER_OCCASIONS[2].slug, 'brautentfuehrung', 'Brautentfuehrung muss direkt nach Trauung stehen')
 
+  const trauung = getFinderOccasionBySlug('trauung')
+  assert.ok(trauung)
+  assert.equal(trauung!.title, 'Trauung')
+  assert.equal(trauung!.slug, 'trauung')
+  assert.deepEqual(trauung!.supabaseEventTypeSlugs, ['trauung'])
+
+  // Band A: nur trauung -> enthalten
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['trauung'] }, trauung!), true)
+  // Band B: nur hochzeit -> ausgeschlossen (keine implizite Ableitung aus Hochzeit)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['hochzeit'] }, trauung!), false)
+  // Band C: hochzeit UND trauung -> enthalten
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['hochzeit', 'trauung'] }, trauung!), true)
+
+  const hochzeit = getFinderOccasionBySlug('hochzeit')!
+  // Hochzeit selbst matcht weiterhin nicht ueber trauung (keine automatische Ableitung in die Gegenrichtung)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['trauung'] }, hochzeit), false)
+})
+
+test('Brautentführung ist ein eigener Finder-Anlass -- matcht ausschliesslich brautentfuehrung, nicht trauung', () => {
   const brautentfuehrung = getFinderOccasionBySlug('brautentfuehrung')
   assert.ok(brautentfuehrung)
   assert.equal(brautentfuehrung!.title, 'Brautentführung')
@@ -74,6 +95,7 @@ test('Brautentführung ist ein eigener Finder-Anlass direkt nach Hochzeit -- mat
 
   assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['brautentfuehrung'] }, brautentfuehrung!), true)
   assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['hochzeit'] }, brautentfuehrung!), false)
+  assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['trauung'] }, brautentfuehrung!), false)
   assert.equal(bandMatchesFinderOccasion({ categorySlugs: ['freie-trauung'] }, brautentfuehrung!), false)
 })
 

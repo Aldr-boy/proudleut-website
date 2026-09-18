@@ -30,6 +30,11 @@ test('buildOccasionNavUrl: Anlass OHNE Landingpage navigiert zu /bands?anlass=<s
   assert.equal(url, '/bands?anlass=brautentfuehrung&region=oberpfalz&mood=emotional')
 })
 
+test('buildOccasionNavUrl: Trauung hat bewusst keine eigene /veranstaltung/trauung-Landingpage -- ein Anlasswechsel von der gesperrten Hochzeits-Veranstaltungsseite navigiert zu /bands?anlass=trauung, nicht zu weiterhin nur Hochzeitsbands', () => {
+  const url = buildOccasionNavUrl('trauung', { region: 'Oberpfalz', suche: '', bandtyp: null, mood: 'emotional' })
+  assert.equal(url, '/bands?anlass=trauung&region=oberpfalz&mood=emotional')
+})
+
 test('buildOccasionNavUrl: weiterer Finder-only-Anlass (stadt-und-buergerfest) navigiert ebenfalls zu /bands?anlass=...', () => {
   const url = buildOccasionNavUrl('stadt-und-buergerfest', NO_FILTERS)
   assert.equal(url, '/bands?anlass=stadt-und-buergerfest')
