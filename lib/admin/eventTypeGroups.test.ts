@@ -89,3 +89,25 @@ test('groupEventTypesForAdmin: wirft nicht bei doppeltem Slug in der Eingabe (ev
   const input = [fx('hochzeit'), fx('hochzeit')]
   assert.doesNotThrow(() => groupEventTypesForAdmin(input))
 })
+
+test('EVENT_TYPE_GROUPS: "Hochzeit" listet trauung an zweiter Stelle zwischen hochzeit und brautentfuehrung', () => {
+  const hochzeit = EVENT_TYPE_GROUPS.find((g) => g.title === 'Hochzeit')
+  assert.ok(hochzeit)
+  assert.deepEqual(hochzeit!.slugs, ['hochzeit', 'trauung', 'brautentfuehrung'])
+})
+
+test('groupEventTypesForAdmin: sobald "trauung" im Katalog existiert, erscheint es in der Hochzeit-Gruppe zwischen Hochzeit und Brautentführung, unabhaengig von der Eingabereihenfolge', () => {
+  const input = [fx('brautentfuehrung'), fx('trauung'), fx('hochzeit')]
+  const result = groupEventTypesForAdmin(input)
+  const hochzeitGroup = result.find((g) => g.title === 'Hochzeit')
+  assert.ok(hochzeitGroup)
+  assert.deepEqual(hochzeitGroup!.types.map((t) => t.slug), ['hochzeit', 'trauung', 'brautentfuehrung'])
+})
+
+test('groupEventTypesForAdmin: ohne vorhandenen "trauung"-Katalogeintrag bleibt die Hochzeit-Gruppe mit den uebrigen zwei Typen normal funktionsfaehig (kein Platzhalter, kein Fehler)', () => {
+  const input = [fx('hochzeit'), fx('brautentfuehrung')]
+  const result = groupEventTypesForAdmin(input)
+  const hochzeitGroup = result.find((g) => g.title === 'Hochzeit')
+  assert.ok(hochzeitGroup)
+  assert.deepEqual(hochzeitGroup!.types.map((t) => t.slug), ['hochzeit', 'brautentfuehrung'])
+})
