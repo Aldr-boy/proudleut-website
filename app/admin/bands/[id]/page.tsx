@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
+import { groupEventTypesForAdmin } from '@/lib/admin/eventTypeGroups'
 import { updateBandAction, createContactAction, updateContactAction, updateBandEventTypesAction, updateBandBandTypesAction, updateBandVideoAction } from './actions'
 import { logoutAction } from '@/app/admin/actions'
 import { DeleteContactButton } from './DeleteContactButton'
@@ -249,6 +250,7 @@ const GALLERY_ERROR_MESSAGES: Record<string, string> = {
 type ActiveEventType = {
   id: string
   name: string
+  slug: string
   sort_order: number
 }
 
@@ -470,7 +472,7 @@ export default async function AdminBandDetailPage({
   ] = await Promise.all([
     client
       .from('event_types')
-      .select('id, name, sort_order')
+      .select('id, name, slug, sort_order')
       .eq('status', 'active')
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true }),
@@ -494,6 +496,10 @@ export default async function AdminBandDetailPage({
   const assignedRows = (assignedEventTypesRaw ?? []) as unknown as AssignedEventTypeRow[]
   const assignedIds = new Set(assignedRows.map(r => r.event_type_id))
   const inactiveAssigned = assignedRows.filter(r => r.event_types?.status !== 'active')
+  // Rein darstellungsseitige Gruppierung der Checkbox-Liste (Auftrag
+  // "Admin-Gruppierung Veranstaltungstypen") -- assignedIds/inactiveAssigned
+  // sowie die eigentliche Formularverarbeitung bleiben davon unberuehrt.
+  const groupedEventTypes = groupEventTypesForAdmin(allActiveEventTypes)
 
   const allActiveBandTypes = (allActiveBandTypesRaw ?? []) as ActiveBandType[]
   const assignedBandTypeRows = (assignedBandTypesRaw ?? []) as AssignedBandTypeRow[]
@@ -968,7 +974,7 @@ export default async function AdminBandDetailPage({
 
         {/* ─── Event-Types ──────────────────────────── */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Event-Types</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Veranstaltungstypen</h2>
 
           {sp.event_types_saved && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-green-700 text-sm">
@@ -985,23 +991,32 @@ export default async function AdminBandDetailPage({
             <input type="hidden" name="band_id" value={band.id} />
 
             {allActiveEventTypes.length === 0 && inactiveAssigned.length === 0 ? (
-              <p className="text-sm text-gray-400 mb-4">Keine aktiven Event-Types vorhanden.</p>
+              <p className="text-sm text-gray-400 mb-4">Keine aktiven Veranstaltungstypen vorhanden.</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 mb-4">
-                {allActiveEventTypes.map((et) => (
-                  <label
-                    key={et.id}
-                    className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      name="event_type_id"
-                      value={et.id}
-                      defaultChecked={assignedIds.has(et.id)}
-                      className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                    />
-                    {et.name}
-                  </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5 mb-4">
+                {groupedEventTypes.map((group) => (
+                  <fieldset key={group.title} className="min-w-0">
+                    <legend className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      {group.title}
+                    </legend>
+                    <div className="flex flex-col gap-1.5">
+                      {group.types.map((et) => (
+                        <label
+                          key={et.id}
+                          className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            name="event_type_id"
+                            value={et.id}
+                            defaultChecked={assignedIds.has(et.id)}
+                            className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                          />
+                          {et.name}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
                 ))}
               </div>
             )}
