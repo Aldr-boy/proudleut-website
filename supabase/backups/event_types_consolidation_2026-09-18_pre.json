@@ -1,0 +1,1497 @@
+{
+  "generated_at": "2026-09-18T09:19:19.968Z",
+  "supabase_host": "bfyucjjyarvqeftqqihm.supabase.co",
+  "source_commit": "1152dc7242922684f1e11ccab6103618eb4d0e4a",
+  "note": "Vollstaendige Sicherung der 13 betroffenen event_types-Zeilen und ihrer band_event_types-Zuordnungen vor der Konsolidierung (Auftrag \"Konsolidierung der Veranstaltungstypen\"). Restore: fuer jede Zeile hier per SQL/RPC exakt diesen Zustand wiederherstellen (status, name, anfrage_label je event_type; band_id-Liste je event_type_id in band_event_types).",
+  "event_types": [
+    {
+      "id": "163aefc8-ba73-428c-a3be-be06ef51aa4d",
+      "name": "Ball",
+      "slug": "ball",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T07:23:49.285344+00:00",
+      "updated_at": "2026-06-01T07:23:49.285344+00:00"
+    },
+    {
+      "id": "ab97edd5-dd5c-4d3c-b07c-7946d69f37f1",
+      "name": "Gala",
+      "slug": "gala",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-07-02T07:47:37.008753+00:00",
+      "updated_at": "2026-07-02T07:47:37.008753+00:00"
+    },
+    {
+      "id": "d85eefe1-b6a4-40d6-a21b-375d184787cc",
+      "name": "Abschlussfeier",
+      "slug": "abschlussfeier",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T07:23:49.285344+00:00",
+      "updated_at": "2026-08-11T22:09:02.444137+00:00"
+    },
+    {
+      "id": "787c536a-bd77-4037-b1ed-9c88cc012948",
+      "name": "Empfang",
+      "slug": "empfang",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T07:23:49.285344+00:00",
+      "updated_at": "2026-06-01T07:23:49.285344+00:00"
+    },
+    {
+      "id": "18957eb8-0ab7-4d81-a366-bcc9f33a51df",
+      "name": "Bankett",
+      "slug": "bankett",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T07:23:49.285344+00:00",
+      "updated_at": "2026-06-01T07:23:49.285344+00:00"
+    },
+    {
+      "id": "5506c9e2-f803-421c-9659-76d0220a0c38",
+      "name": "Stadt- und Bürgerfest",
+      "slug": "stadt-und-buergerfest",
+      "status": "active",
+      "anfrage_label": "Stadtfest",
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T07:23:49.285344+00:00",
+      "updated_at": "2026-08-11T19:45:21.367432+00:00"
+    },
+    {
+      "id": "e0000002-0000-0000-0000-000000000006",
+      "name": "Bürgerfest",
+      "slug": "buergerfest",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": "e0000001-0000-0000-0000-000000000002",
+      "sort_order": 6,
+      "created_at": "2026-05-28T20:30:38.199339+00:00",
+      "updated_at": "2026-05-28T20:30:38.199339+00:00"
+    },
+    {
+      "id": "4165cc4e-e49f-4d9b-a8c4-31bf0f2999aa",
+      "name": "private Feiern",
+      "slug": "private-feiern",
+      "status": "active",
+      "anfrage_label": "Private Feier",
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T07:23:49.285344+00:00",
+      "updated_at": "2026-08-11T19:45:21.367432+00:00"
+    },
+    {
+      "id": "6f284404-e009-495f-9e26-4754adf83139",
+      "name": "exklusive Privatfeiern",
+      "slug": "exklusive-privatfeiern",
+      "status": "active",
+      "anfrage_label": "Exklusive Privatfeier",
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T07:23:49.285344+00:00",
+      "updated_at": "2026-08-11T19:45:21.367432+00:00"
+    },
+    {
+      "id": "36559226-4aef-4ca1-8e2c-226cc4f67f69",
+      "name": "Geistliche Anlässe",
+      "slug": "geistliche-anlaesse",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T13:55:11.020182+00:00",
+      "updated_at": "2026-06-01T13:55:11.020182+00:00"
+    },
+    {
+      "id": "a17c2260-dcc9-4a3c-9424-5c67c2d0a4a9",
+      "name": "Benefizveranstaltung",
+      "slug": "benefizveranstaltung",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-15T14:42:53.798927+00:00",
+      "updated_at": "2026-06-15T14:42:53.798927+00:00"
+    },
+    {
+      "id": "9510336b-b9a8-4638-a545-a8fe163dae6b",
+      "name": "Award-Show",
+      "slug": "award-show",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T13:45:49.701608+00:00",
+      "updated_at": "2026-06-01T13:45:49.701608+00:00"
+    },
+    {
+      "id": "1df83eea-6e33-4a2d-b5e3-ae375d78aeef",
+      "name": "Ehrenabende",
+      "slug": "ehrenabende",
+      "status": "active",
+      "anfrage_label": null,
+      "parent_id": null,
+      "sort_order": 0,
+      "created_at": "2026-06-01T13:55:11.020182+00:00",
+      "updated_at": "2026-06-01T13:55:11.020182+00:00"
+    }
+  ],
+  "band_event_types_by_slug": {
+    "ball": [
+      {
+        "band_id": "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "name": "5toBeat",
+        "slug": "5tobeat",
+        "status": "active"
+      },
+      {
+        "band_id": "098a9022-9d58-4348-8157-ba6688f2e9bf",
+        "name": "9to5",
+        "slug": "9to5",
+        "status": "active"
+      },
+      {
+        "band_id": "8f3a30f8-9827-47a9-a558-a46c24eac370",
+        "name": "Birddogs",
+        "slug": "birddogs",
+        "status": "active"
+      },
+      {
+        "band_id": "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "name": "Bigband STEINBACH",
+        "slug": "bigband-steinbach",
+        "status": "active"
+      },
+      {
+        "band_id": "45dd9940-7eca-4f08-9d07-f119d7416ccd",
+        "name": "Cherry Pink",
+        "slug": "cherry-pink",
+        "status": "active"
+      },
+      {
+        "band_id": "82acc533-07d3-4479-82fe-31983711a3e0",
+        "name": "Entprima Live",
+        "slug": "duo-entprima",
+        "status": "active"
+      },
+      {
+        "band_id": "a8206639-65be-476f-9dfd-6de10550af6a",
+        "name": "James Band",
+        "slug": "james-band",
+        "status": "active"
+      },
+      {
+        "band_id": "a7317b3e-621e-45fb-8e5d-43e66fa6fe3c",
+        "name": "Hot Sugar",
+        "slug": "hot-sugar",
+        "status": "active"
+      },
+      {
+        "band_id": "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "name": "LPC",
+        "slug": "lpc-music",
+        "status": "active"
+      },
+      {
+        "band_id": "f8616e8f-bb6d-4368-b22a-bcb63de49e54",
+        "name": "More Candy",
+        "slug": "more-candy",
+        "status": "active"
+      },
+      {
+        "band_id": "d63cbc29-077d-4005-a296-90caec77b1bf",
+        "name": "Nice Ties",
+        "slug": "nice-ties-band",
+        "status": "active"
+      },
+      {
+        "band_id": "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "name": "May Vibes",
+        "slug": "may-vibes",
+        "status": "active"
+      },
+      {
+        "band_id": "81cc6a67-eb44-4047-b6c4-e347545c8c5f",
+        "name": "Broadway",
+        "slug": "broadway",
+        "status": "active"
+      },
+      {
+        "band_id": "b8a2281a-6941-466c-9f32-900460b48d34",
+        "name": "Coverage",
+        "slug": "coverage-band",
+        "status": "active"
+      },
+      {
+        "band_id": "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "name": "Prime Time",
+        "slug": "prime-time",
+        "status": "active"
+      },
+      {
+        "band_id": "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "name": "Silk and Sound",
+        "slug": "silk-and-sound",
+        "status": "active"
+      },
+      {
+        "band_id": "6946fed2-d09b-4f25-87e6-24c665a26e40",
+        "name": "Soiz'n'Pepper",
+        "slug": "soiznpepper",
+        "status": "active"
+      },
+      {
+        "band_id": "d4a98980-e215-454a-b6c7-8dc9395bf6d9",
+        "name": "SPOTLIGHT Eventband",
+        "slug": "spotlight-eventband",
+        "status": "active"
+      },
+      {
+        "band_id": "57ba3e53-5065-48f6-8421-64f67e641d1a",
+        "name": "Whoobers",
+        "slug": "whoobers",
+        "status": "active"
+      }
+    ],
+    "gala": [
+      {
+        "band_id": "f9baa4fc-d396-4a52-8991-dd7d63e01baf",
+        "name": "2 unplugged",
+        "slug": "2-unplugged",
+        "status": "active"
+      },
+      {
+        "band_id": "96aa49dc-755a-44ff-ab7e-cc5cb463d068",
+        "name": "The Silverhammers",
+        "slug": "the-silverhammers",
+        "status": "active"
+      }
+    ],
+    "abschlussfeier": [
+      {
+        "band_id": "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "name": "5toBeat",
+        "slug": "5tobeat",
+        "status": "active"
+      },
+      {
+        "band_id": "180c5296-8440-4540-a8f8-60ee16333259",
+        "name": "BigBeat",
+        "slug": "bigbeat-band",
+        "status": "active"
+      },
+      {
+        "band_id": "1fd5de95-6fbf-4016-8eaa-783de8eb31f0",
+        "name": "Bretterboden",
+        "slug": "partyband-bretterboden",
+        "status": "active"
+      },
+      {
+        "band_id": "45dd9940-7eca-4f08-9d07-f119d7416ccd",
+        "name": "Cherry Pink",
+        "slug": "cherry-pink",
+        "status": "active"
+      },
+      {
+        "band_id": "7303c77a-b980-4bde-85fa-5824bfffa7ec",
+        "name": "Gentle",
+        "slug": "gentle-band",
+        "status": "active"
+      },
+      {
+        "band_id": "282ba8a0-86fe-4f91-b586-11388931b622",
+        "name": "Glory Times",
+        "slug": "glory-times",
+        "status": "draft"
+      },
+      {
+        "band_id": "2ea3f8c2-742c-4675-87fa-ccd0a3de0cd5",
+        "name": "Lichtfänger",
+        "slug": "lichtfaenger-music",
+        "status": "active"
+      },
+      {
+        "band_id": "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "name": "LPC",
+        "slug": "lpc-music",
+        "status": "active"
+      },
+      {
+        "band_id": "3e8021f3-cc1d-4ff8-9714-0b6055598376",
+        "name": "Ö'ha",
+        "slug": "oeha-band",
+        "status": "active"
+      },
+      {
+        "band_id": "81cc6a67-eb44-4047-b6c4-e347545c8c5f",
+        "name": "Broadway",
+        "slug": "broadway",
+        "status": "active"
+      },
+      {
+        "band_id": "b8a2281a-6941-466c-9f32-900460b48d34",
+        "name": "Coverage",
+        "slug": "coverage-band",
+        "status": "active"
+      },
+      {
+        "band_id": "cfaca43b-a3a5-4d8f-85fc-a829a014f91f",
+        "name": "Out Of Bayern",
+        "slug": "out-of-bayern",
+        "status": "active"
+      },
+      {
+        "band_id": "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "name": "Prime Time",
+        "slug": "prime-time",
+        "status": "active"
+      },
+      {
+        "band_id": "457e37f4-b3f2-4455-bc89-a6f98baaa024",
+        "name": "Spitz af Knopf",
+        "slug": "spitzafknopf-band",
+        "status": "active"
+      },
+      {
+        "band_id": "d5f340c7-f81f-4f2b-a7e8-e2f01ec69015",
+        "name": "vier-tell-four",
+        "slug": "vier-tell-four",
+        "status": "active"
+      },
+      {
+        "band_id": "255a2c2b-ddfc-4712-b555-d84c6d9003ec",
+        "name": "Wiesnkönige",
+        "slug": "wiesnkoenige",
+        "status": "active"
+      },
+      {
+        "band_id": "d4a98980-e215-454a-b6c7-8dc9395bf6d9",
+        "name": "SPOTLIGHT Eventband",
+        "slug": "spotlight-eventband",
+        "status": "active"
+      },
+      {
+        "band_id": "e48f142c-6ff5-4eb0-854f-8a0f9fb2d88f",
+        "name": "Urwaidler",
+        "slug": "urwaidler-band",
+        "status": "active"
+      },
+      {
+        "band_id": "57ba3e53-5065-48f6-8421-64f67e641d1a",
+        "name": "Whoobers",
+        "slug": "whoobers",
+        "status": "active"
+      }
+    ],
+    "empfang": [
+      {
+        "band_id": "b0c06fee-f8e6-4c4c-84b1-9e330f44323c",
+        "name": "Bayrisch Blau",
+        "slug": "bayrisch-blau",
+        "status": "active"
+      },
+      {
+        "band_id": "45dd9940-7eca-4f08-9d07-f119d7416ccd",
+        "name": "Cherry Pink",
+        "slug": "cherry-pink",
+        "status": "active"
+      },
+      {
+        "band_id": "a8206639-65be-476f-9dfd-6de10550af6a",
+        "name": "James Band",
+        "slug": "james-band",
+        "status": "active"
+      },
+      {
+        "band_id": "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "name": "LPC",
+        "slug": "lpc-music",
+        "status": "active"
+      },
+      {
+        "band_id": "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "name": "May Vibes",
+        "slug": "may-vibes",
+        "status": "active"
+      },
+      {
+        "band_id": "81cc6a67-eb44-4047-b6c4-e347545c8c5f",
+        "name": "Broadway",
+        "slug": "broadway",
+        "status": "active"
+      },
+      {
+        "band_id": "08ae1c5a-fda9-4965-8ae0-97ba26a5e31b",
+        "name": "Free Vocals",
+        "slug": "free-vocals",
+        "status": "active"
+      },
+      {
+        "band_id": "fdf586ce-5a5f-4707-9b61-71c634c7052d",
+        "name": "Gary Rhos",
+        "slug": "gary-rhos",
+        "status": "active"
+      },
+      {
+        "band_id": "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "name": "Prime Time",
+        "slug": "prime-time",
+        "status": "active"
+      },
+      {
+        "band_id": "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "name": "Smooth'n'Groove",
+        "slug": "smooth-n-groove",
+        "status": "active"
+      },
+      {
+        "band_id": "d4a98980-e215-454a-b6c7-8dc9395bf6d9",
+        "name": "SPOTLIGHT Eventband",
+        "slug": "spotlight-eventband",
+        "status": "active"
+      },
+      {
+        "band_id": "57ba3e53-5065-48f6-8421-64f67e641d1a",
+        "name": "Whoobers",
+        "slug": "whoobers",
+        "status": "active"
+      }
+    ],
+    "bankett": [
+      {
+        "band_id": "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "name": "5toBeat",
+        "slug": "5tobeat",
+        "status": "active"
+      },
+      {
+        "band_id": "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "name": "Bigband STEINBACH",
+        "slug": "bigband-steinbach",
+        "status": "active"
+      },
+      {
+        "band_id": "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "name": "LPC",
+        "slug": "lpc-music",
+        "status": "active"
+      },
+      {
+        "band_id": "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "name": "May Vibes",
+        "slug": "may-vibes",
+        "status": "active"
+      },
+      {
+        "band_id": "81cc6a67-eb44-4047-b6c4-e347545c8c5f",
+        "name": "Broadway",
+        "slug": "broadway",
+        "status": "active"
+      },
+      {
+        "band_id": "fdf586ce-5a5f-4707-9b61-71c634c7052d",
+        "name": "Gary Rhos",
+        "slug": "gary-rhos",
+        "status": "active"
+      },
+      {
+        "band_id": "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "name": "Prime Time",
+        "slug": "prime-time",
+        "status": "active"
+      },
+      {
+        "band_id": "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "name": "Silk and Sound",
+        "slug": "silk-and-sound",
+        "status": "active"
+      },
+      {
+        "band_id": "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "name": "Smooth'n'Groove",
+        "slug": "smooth-n-groove",
+        "status": "active"
+      },
+      {
+        "band_id": "6946fed2-d09b-4f25-87e6-24c665a26e40",
+        "name": "Soiz'n'Pepper",
+        "slug": "soiznpepper",
+        "status": "active"
+      }
+    ],
+    "stadt-und-buergerfest": [
+      {
+        "band_id": "bd67b01a-8598-4a6b-b3d0-54743c33a263",
+        "name": "Aufzundn",
+        "slug": "aufzundn",
+        "status": "active"
+      },
+      {
+        "band_id": "f9baa4fc-d396-4a52-8991-dd7d63e01baf",
+        "name": "2 unplugged",
+        "slug": "2-unplugged",
+        "status": "active"
+      },
+      {
+        "band_id": "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "name": "5toBeat",
+        "slug": "5tobeat",
+        "status": "active"
+      },
+      {
+        "band_id": "a954938c-0c34-4ab3-a379-0a5e09c5b8fd",
+        "name": "Best-of-Band",
+        "slug": "best-of-band",
+        "status": "active"
+      },
+      {
+        "band_id": "8f3a30f8-9827-47a9-a558-a46c24eac370",
+        "name": "Birddogs",
+        "slug": "birddogs",
+        "status": "active"
+      },
+      {
+        "band_id": "d257d3f6-5ff8-487f-8c2c-f4b2744a6418",
+        "name": "Böhmisches Verlangen",
+        "slug": "boehmisches-verlangen",
+        "status": "active"
+      },
+      {
+        "band_id": "43e110e5-1c4f-464e-9531-9c0e9bed9d71",
+        "name": "Blechstreet Boys",
+        "slug": "blechstreet-boys",
+        "status": "active"
+      },
+      {
+        "band_id": "1fd5de95-6fbf-4016-8eaa-783de8eb31f0",
+        "name": "Bretterboden",
+        "slug": "partyband-bretterboden",
+        "status": "active"
+      },
+      {
+        "band_id": "13329eb0-11e5-4da5-85b5-746240df22ad",
+        "name": "Candy Tunes",
+        "slug": "candy-tunes",
+        "status": "active"
+      },
+      {
+        "band_id": "d7bf4672-364f-4807-a80c-8f2031d69093",
+        "name": "Countryholics",
+        "slug": "countryholics",
+        "status": "active"
+      },
+      {
+        "band_id": "e30a2d40-2624-4a1e-af6b-8769dcac9300",
+        "name": "Czech Aut",
+        "slug": "czech-aut",
+        "status": "active"
+      },
+      {
+        "band_id": "6be894ab-ffb7-416b-bd7d-90fd36b1f03e",
+        "name": "d'Rieder",
+        "slug": "d-rieder",
+        "status": "active"
+      },
+      {
+        "band_id": "b3b2d803-ba00-4aef-bb46-df5c7a3aeb4a",
+        "name": "des Brassd scho!",
+        "slug": "desbrassdscho",
+        "status": "active"
+      },
+      {
+        "band_id": "dc8d5036-dd9d-458b-a1e4-d7fadfa82177",
+        "name": "Dezent Böhmisch",
+        "slug": "dezent-boehmisch",
+        "status": "active"
+      },
+      {
+        "band_id": "a66d8a12-c6e2-45c5-a133-ca8a33409b0e",
+        "name": "Die Haumdaucher",
+        "slug": "die-haumdaucher",
+        "status": "active"
+      },
+      {
+        "band_id": "8aa5ee33-c159-4926-b222-88767aaa3791",
+        "name": "Die Lausbuba",
+        "slug": "die-lausbuba",
+        "status": "active"
+      },
+      {
+        "band_id": "92c1cb1f-402a-4fb0-b615-3988d8773e31",
+        "name": "Die WoidRocker",
+        "slug": "woidrocker-band",
+        "status": "active"
+      },
+      {
+        "band_id": "58efa1d5-7816-406a-874e-4e5e1c6c8218",
+        "name": "Donikkl Crew",
+        "slug": "donikkl-crew",
+        "status": "active"
+      },
+      {
+        "band_id": "72ee26d5-89c7-462b-b9ab-54096f39ddb4",
+        "name": "Duanix Musi",
+        "slug": "duanix-musi",
+        "status": "active"
+      },
+      {
+        "band_id": "0d81480e-bcd5-4b1b-b561-803df9bf1217",
+        "name": "Ennstal Kryner",
+        "slug": "ennstal-kryner-volksmusik",
+        "status": "active"
+      },
+      {
+        "band_id": "c8a602f8-434c-4a7f-892f-1ea65cf54b54",
+        "name": "extra … die Band!",
+        "slug": "extra-die-band",
+        "status": "active"
+      },
+      {
+        "band_id": "5696d179-4151-47e4-96ba-f65ab87c234b",
+        "name": "Let's Fetz",
+        "slug": "letsfetz-band",
+        "status": "active"
+      },
+      {
+        "band_id": "49d54169-dbd1-44c9-a39a-20d9ade54a11",
+        "name": "Gaudinockerl",
+        "slug": "gaudinockerl",
+        "status": "active"
+      },
+      {
+        "band_id": "7303c77a-b980-4bde-85fa-5824bfffa7ec",
+        "name": "Gentle",
+        "slug": "gentle-band",
+        "status": "active"
+      },
+      {
+        "band_id": "04762ee6-cd92-4694-a10d-db8804e61287",
+        "name": "Geraldino",
+        "slug": "geraldino",
+        "status": "active"
+      },
+      {
+        "band_id": "282ba8a0-86fe-4f91-b586-11388931b622",
+        "name": "Glory Times",
+        "slug": "glory-times",
+        "status": "draft"
+      },
+      {
+        "band_id": "ba000003-0000-0000-0000-000000000001",
+        "name": "Grögötz Weißbir",
+        "slug": "groegoetz-weissbir",
+        "status": "active"
+      },
+      {
+        "band_id": "1ef5a9aa-f6b6-4c63-9a42-d1b95e5062c7",
+        "name": "Hally Gally",
+        "slug": "hally-gally",
+        "status": "active"
+      },
+      {
+        "band_id": "7c1248fb-5d50-4e83-997e-96791eb7987a",
+        "name": "Heimatfieber",
+        "slug": "heimatfieber",
+        "status": "active"
+      },
+      {
+        "band_id": "65a12d3a-c654-46b7-b738-0feb94fc7e8a",
+        "name": "Hob Nou",
+        "slug": "hob-nou",
+        "status": "active"
+      },
+      {
+        "band_id": "a7317b3e-621e-45fb-8e5d-43e66fa6fe3c",
+        "name": "Hot Sugar",
+        "slug": "hot-sugar",
+        "status": "active"
+      },
+      {
+        "band_id": "6f35edf7-4144-4026-a4c5-ac6752a92d3b",
+        "name": "Jive",
+        "slug": "jive-live",
+        "status": "active"
+      },
+      {
+        "band_id": "332dfade-6e61-4f6e-b33d-23a03b610d24",
+        "name": "Herb’n Beets",
+        "slug": "herbn-beets",
+        "status": "active"
+      },
+      {
+        "band_id": "8b7872aa-7633-42d3-b0c6-4467f7ec5190",
+        "name": "Hochdruck Böhmische",
+        "slug": "hochdruck-boehmische",
+        "status": "active"
+      },
+      {
+        "band_id": "2ee55d09-46cd-4278-8882-b6273661b8cd",
+        "name": "KIZZRock",
+        "slug": "kizzrock",
+        "status": "active"
+      },
+      {
+        "band_id": "aa63f7be-6e57-4e7b-8541-b64451540c1a",
+        "name": "Limited",
+        "slug": "limited-music",
+        "status": "active"
+      },
+      {
+        "band_id": "dc9fb51a-2087-4e13-af4d-5be60fc44ff1",
+        "name": "Michael Jackts Net",
+        "slug": "michael-jackts-net",
+        "status": "active"
+      },
+      {
+        "band_id": "83dfd5ed-f78b-41a6-8750-3b756e14ad0a",
+        "name": "Moosbüffel",
+        "slug": "moosbueffel",
+        "status": "active"
+      },
+      {
+        "band_id": "6580c6c7-3f60-4980-b171-3eec4d625ede",
+        "name": "MyfriendZ",
+        "slug": "myfriendz",
+        "status": "active"
+      },
+      {
+        "band_id": "d3e75948-668c-4cfa-84b6-c98677fbd137",
+        "name": "Max Headroom",
+        "slug": "max-headroom",
+        "status": "active"
+      },
+      {
+        "band_id": "884a2d54-d652-472a-8dbb-2e57de04695d",
+        "name": "mix2max",
+        "slug": "mix2max",
+        "status": "active"
+      },
+      {
+        "band_id": "d63cbc29-077d-4005-a296-90caec77b1bf",
+        "name": "Nice Ties",
+        "slug": "nice-ties-band",
+        "status": "active"
+      },
+      {
+        "band_id": "17f4dbbf-27de-49dd-92b9-334385a2a752",
+        "name": "Onesee",
+        "slug": "onesee",
+        "status": "active"
+      },
+      {
+        "band_id": "baff31e6-2619-48d6-aaa2-cedf83c08e0d",
+        "name": "Mixtape",
+        "slug": "mixtape",
+        "status": "active"
+      },
+      {
+        "band_id": "3225d8e1-29d1-476d-b1ed-ecc1a2c08ee7",
+        "name": "Muckasäck",
+        "slug": "muckasaeck",
+        "status": "active"
+      },
+      {
+        "band_id": "9cf10b17-9190-4da6-8c8c-9b05a03469f2",
+        "name": "Non Stop",
+        "slug": "non-stop",
+        "status": "active"
+      },
+      {
+        "band_id": "b8a2281a-6941-466c-9f32-900460b48d34",
+        "name": "Coverage",
+        "slug": "coverage-band",
+        "status": "active"
+      },
+      {
+        "band_id": "08ae1c5a-fda9-4965-8ae0-97ba26a5e31b",
+        "name": "Free Vocals",
+        "slug": "free-vocals",
+        "status": "active"
+      },
+      {
+        "band_id": "aab585d3-94b6-4b6b-be4c-ff21b83fef69",
+        "name": "Nick's Nice",
+        "slug": "nicks-nice",
+        "status": "active"
+      },
+      {
+        "band_id": "cfaca43b-a3a5-4d8f-85fc-a829a014f91f",
+        "name": "Out Of Bayern",
+        "slug": "out-of-bayern",
+        "status": "active"
+      },
+      {
+        "band_id": "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "name": "Prime Time",
+        "slug": "prime-time",
+        "status": "active"
+      },
+      {
+        "band_id": "3365db14-dbcd-41a5-8801-ca535a80c3a3",
+        "name": "Psyco Dad",
+        "slug": "psyco-dad",
+        "status": "active"
+      },
+      {
+        "band_id": "6946fed2-d09b-4f25-87e6-24c665a26e40",
+        "name": "Soiz'n'Pepper",
+        "slug": "soiznpepper",
+        "status": "active"
+      },
+      {
+        "band_id": "457e37f4-b3f2-4455-bc89-a6f98baaa024",
+        "name": "Spitz af Knopf",
+        "slug": "spitzafknopf-band",
+        "status": "active"
+      },
+      {
+        "band_id": "f3ff4ac3-3889-478f-89e0-276a96d73467",
+        "name": "Sturschädl",
+        "slug": "sturschaedl-band",
+        "status": "active"
+      },
+      {
+        "band_id": "726f2390-116a-4e99-85a0-32e33fd1a1af",
+        "name": "The Stereo Show",
+        "slug": "the-stereo-show",
+        "status": "active"
+      },
+      {
+        "band_id": "255a2c2b-ddfc-4712-b555-d84c6d9003ec",
+        "name": "Wiesnkönige",
+        "slug": "wiesnkoenige",
+        "status": "active"
+      },
+      {
+        "band_id": "7aa80a7b-c424-4808-a6ad-a4f23a8edcdc",
+        "name": "Partybox",
+        "slug": "partybox-trio",
+        "status": "active"
+      },
+      {
+        "band_id": "2746335a-e267-4977-80b9-3073173c42c0",
+        "name": "Rüscherl Muse",
+        "slug": "ruescherl-muse",
+        "status": "active"
+      },
+      {
+        "band_id": "98eb2761-f188-4bee-a3f8-dafefe9d26b1",
+        "name": "Schlawindl",
+        "slug": "schlawindl",
+        "status": "active"
+      },
+      {
+        "band_id": "21530533-f0a9-409e-9d78-9af3d4ce46c2",
+        "name": "Sommerwind",
+        "slug": "sommerwind-band",
+        "status": "active"
+      },
+      {
+        "band_id": "d4a98980-e215-454a-b6c7-8dc9395bf6d9",
+        "name": "SPOTLIGHT Eventband",
+        "slug": "spotlight-eventband",
+        "status": "active"
+      },
+      {
+        "band_id": "d6c2bb7b-6c5e-400f-a8c1-e9dbf1edb328",
+        "name": "Tegernseer Tanzlmusi",
+        "slug": "tegernseer-tanzlmusi",
+        "status": "active"
+      },
+      {
+        "band_id": "1203d7f7-c198-4dd4-8086-98ab87f29a8f",
+        "name": "Tir Nan Og",
+        "slug": "tir-nan-og",
+        "status": "active"
+      },
+      {
+        "band_id": "13841f6c-eb94-44fb-ae0c-7651d095f6d7",
+        "name": "Waidler-Power",
+        "slug": "waidler-power",
+        "status": "active"
+      },
+      {
+        "band_id": "9196ffec-d07d-49f5-84b9-7ac407336949",
+        "name": "Wois Bois",
+        "slug": "woisbois-band",
+        "status": "active"
+      },
+      {
+        "band_id": "6a9a2f9d-a88d-49ce-be22-5b38243e6c57",
+        "name": "Seubersdorfer Blasmusik",
+        "slug": "seubersdorfer-blasmusik",
+        "status": "active"
+      },
+      {
+        "band_id": "e48f142c-6ff5-4eb0-854f-8a0f9fb2d88f",
+        "name": "Urwaidler",
+        "slug": "urwaidler-band",
+        "status": "active"
+      },
+      {
+        "band_id": "bc44b34b-10c1-4532-bbad-ad5602295398",
+        "name": "X'Ploushn",
+        "slug": "xploushn",
+        "status": "active"
+      },
+      {
+        "band_id": "ba000001-0000-0000-0000-000000000001",
+        "name": "Donnaweda",
+        "slug": "donnaweda",
+        "status": "active"
+      },
+      {
+        "band_id": "2098498c-35ce-494c-ba06-e349b0ce61a4",
+        "name": "Hatphones",
+        "slug": "hatphones-band",
+        "status": "active"
+      },
+      {
+        "band_id": "a8206639-65be-476f-9dfd-6de10550af6a",
+        "name": "James Band",
+        "slug": "james-band",
+        "status": "active"
+      },
+      {
+        "band_id": "12e821e1-423b-422c-a8ba-72d879518ecd",
+        "name": "Foxy Gentlemen",
+        "slug": "foxy-gentlemen",
+        "status": "active"
+      }
+    ],
+    "buergerfest": [
+      {
+        "band_id": "ba000001-0000-0000-0000-000000000001",
+        "name": "Donnaweda",
+        "slug": "donnaweda",
+        "status": "active"
+      },
+      {
+        "band_id": "ba000002-0000-0000-0000-000000000001",
+        "name": "Quertreiber",
+        "slug": "d-quertreiber",
+        "status": "active"
+      },
+      {
+        "band_id": "f9baa4fc-d396-4a52-8991-dd7d63e01baf",
+        "name": "2 unplugged",
+        "slug": "2-unplugged",
+        "status": "active"
+      },
+      {
+        "band_id": "6d21393b-0a30-4d4a-86f2-713b96c8fb46",
+        "name": "Bärntreiber",
+        "slug": "baerntreiber-band",
+        "status": "active"
+      },
+      {
+        "band_id": "aab585d3-94b6-4b6b-be4c-ff21b83fef69",
+        "name": "Nick's Nice",
+        "slug": "nicks-nice",
+        "status": "active"
+      },
+      {
+        "band_id": "a8206639-65be-476f-9dfd-6de10550af6a",
+        "name": "James Band",
+        "slug": "james-band",
+        "status": "active"
+      },
+      {
+        "band_id": "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "name": "Bigband STEINBACH",
+        "slug": "bigband-steinbach",
+        "status": "active"
+      },
+      {
+        "band_id": "36d95224-7f95-4d55-96e8-ab98563259ed",
+        "name": "Breznsalzer",
+        "slug": "breznsalzer",
+        "status": "active"
+      },
+      {
+        "band_id": "d7bf4672-364f-4807-a80c-8f2031d69093",
+        "name": "Countryholics",
+        "slug": "countryholics",
+        "status": "active"
+      },
+      {
+        "band_id": "884a2d54-d652-472a-8dbb-2e57de04695d",
+        "name": "mix2max",
+        "slug": "mix2max",
+        "status": "active"
+      },
+      {
+        "band_id": "42cbccd1-4907-457e-a985-915471ef0723",
+        "name": "De Gaudimacha",
+        "slug": "de-gaudimacha",
+        "status": "active"
+      },
+      {
+        "band_id": "e330f96c-ee21-4130-b7bb-fc6459918e94",
+        "name": "Die Gseea Wepsn",
+        "slug": "die-gseea-wepsn",
+        "status": "active"
+      },
+      {
+        "band_id": "e963743f-8520-4266-996a-d160b5d17a44",
+        "name": "Edelwuid",
+        "slug": "edelwuid",
+        "status": "active"
+      },
+      {
+        "band_id": "fd9e8fc3-2e6a-4ac6-baac-baf57c7d5a49",
+        "name": "GetThat!",
+        "slug": "getthatmusic-band",
+        "status": "active"
+      },
+      {
+        "band_id": "8a6f7ec0-0a52-46dc-a57f-a3bdcbee992a",
+        "name": "Kasplattnrocker",
+        "slug": "kasplattnrocker-band",
+        "status": "active"
+      },
+      {
+        "band_id": "3e8021f3-cc1d-4ff8-9714-0b6055598376",
+        "name": "Ö'ha",
+        "slug": "oeha-band",
+        "status": "active"
+      },
+      {
+        "band_id": "3225d8e1-29d1-476d-b1ed-ecc1a2c08ee7",
+        "name": "Muckasäck",
+        "slug": "muckasaeck",
+        "status": "active"
+      },
+      {
+        "band_id": "035f7889-83e4-4711-a15c-d625cf944a31",
+        "name": "zruck zu Dir!",
+        "slug": "zruck-zu-dir",
+        "status": "active"
+      },
+      {
+        "band_id": "3ec00d36-18d8-4c0a-b950-f8152cb37019",
+        "name": "Rotzlöffl",
+        "slug": "rotzloeffl-band",
+        "status": "active"
+      },
+      {
+        "band_id": "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "name": "5toBeat",
+        "slug": "5tobeat",
+        "status": "active"
+      },
+      {
+        "band_id": "6946fed2-d09b-4f25-87e6-24c665a26e40",
+        "name": "Soiz'n'Pepper",
+        "slug": "soiznpepper",
+        "status": "active"
+      },
+      {
+        "band_id": "457e37f4-b3f2-4455-bc89-a6f98baaa024",
+        "name": "Spitz af Knopf",
+        "slug": "spitzafknopf-band",
+        "status": "active"
+      },
+      {
+        "band_id": "dc9fb51a-2087-4e13-af4d-5be60fc44ff1",
+        "name": "Michael Jackts Net",
+        "slug": "michael-jackts-net",
+        "status": "active"
+      },
+      {
+        "band_id": "bd67b01a-8598-4a6b-b3d0-54743c33a263",
+        "name": "Aufzundn",
+        "slug": "aufzundn",
+        "status": "active"
+      }
+    ],
+    "private-feiern": [
+      {
+        "band_id": "f9baa4fc-d396-4a52-8991-dd7d63e01baf",
+        "name": "2 unplugged",
+        "slug": "2-unplugged",
+        "status": "active"
+      },
+      {
+        "band_id": "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "name": "5toBeat",
+        "slug": "5tobeat",
+        "status": "active"
+      },
+      {
+        "band_id": "34934ebb-d7a0-4a9d-980c-45bfc716d870",
+        "name": "A96 Musikanten",
+        "slug": "a96-musikanten",
+        "status": "active"
+      },
+      {
+        "band_id": "dc9fb51a-2087-4e13-af4d-5be60fc44ff1",
+        "name": "Michael Jackts Net",
+        "slug": "michael-jackts-net",
+        "status": "active"
+      },
+      {
+        "band_id": "712f40db-723f-4fea-a204-13f68f62b819",
+        "name": "Claudia Dechand",
+        "slug": "claudia-dechand",
+        "status": "active"
+      },
+      {
+        "band_id": "d7bf4672-364f-4807-a80c-8f2031d69093",
+        "name": "Countryholics",
+        "slug": "countryholics",
+        "status": "active"
+      },
+      {
+        "band_id": "e30a2d40-2624-4a1e-af6b-8769dcac9300",
+        "name": "Czech Aut",
+        "slug": "czech-aut",
+        "status": "active"
+      },
+      {
+        "band_id": "884a2d54-d652-472a-8dbb-2e57de04695d",
+        "name": "mix2max",
+        "slug": "mix2max",
+        "status": "active"
+      },
+      {
+        "band_id": "b31ecc91-fbec-4d70-befa-83fb41ac01ac",
+        "name": "Katharina Kornprobst",
+        "slug": "katharina-kornprobst",
+        "status": "active"
+      },
+      {
+        "band_id": "a66d8a12-c6e2-45c5-a133-ca8a33409b0e",
+        "name": "Die Haumdaucher",
+        "slug": "die-haumdaucher",
+        "status": "active"
+      },
+      {
+        "band_id": "72ee26d5-89c7-462b-b9ab-54096f39ddb4",
+        "name": "Duanix Musi",
+        "slug": "duanix-musi",
+        "status": "active"
+      },
+      {
+        "band_id": "5696d179-4151-47e4-96ba-f65ab87c234b",
+        "name": "Let's Fetz",
+        "slug": "letsfetz-band",
+        "status": "active"
+      },
+      {
+        "band_id": "49d54169-dbd1-44c9-a39a-20d9ade54a11",
+        "name": "Gaudinockerl",
+        "slug": "gaudinockerl",
+        "status": "active"
+      },
+      {
+        "band_id": "282ba8a0-86fe-4f91-b586-11388931b622",
+        "name": "Glory Times",
+        "slug": "glory-times",
+        "status": "draft"
+      },
+      {
+        "band_id": "7c1248fb-5d50-4e83-997e-96791eb7987a",
+        "name": "Heimatfieber",
+        "slug": "heimatfieber",
+        "status": "active"
+      },
+      {
+        "band_id": "aae2ea90-cdc5-4392-93fe-8df7af4dc934",
+        "name": "Hertz7 - Die Band",
+        "slug": "hertz7",
+        "status": "active"
+      },
+      {
+        "band_id": "65a12d3a-c654-46b7-b738-0feb94fc7e8a",
+        "name": "Hob Nou",
+        "slug": "hob-nou",
+        "status": "active"
+      },
+      {
+        "band_id": "a7317b3e-621e-45fb-8e5d-43e66fa6fe3c",
+        "name": "Hot Sugar",
+        "slug": "hot-sugar",
+        "status": "active"
+      },
+      {
+        "band_id": "8b7872aa-7633-42d3-b0c6-4467f7ec5190",
+        "name": "Hochdruck Böhmische",
+        "slug": "hochdruck-boehmische",
+        "status": "active"
+      },
+      {
+        "band_id": "e963743f-8520-4266-996a-d160b5d17a44",
+        "name": "Edelwuid",
+        "slug": "edelwuid",
+        "status": "active"
+      },
+      {
+        "band_id": "d3e75948-668c-4cfa-84b6-c98677fbd137",
+        "name": "Max Headroom",
+        "slug": "max-headroom",
+        "status": "active"
+      },
+      {
+        "band_id": "9cf10b17-9190-4da6-8c8c-9b05a03469f2",
+        "name": "Non Stop",
+        "slug": "non-stop",
+        "status": "active"
+      },
+      {
+        "band_id": "81cc6a67-eb44-4047-b6c4-e347545c8c5f",
+        "name": "Broadway",
+        "slug": "broadway",
+        "status": "active"
+      },
+      {
+        "band_id": "aab585d3-94b6-4b6b-be4c-ff21b83fef69",
+        "name": "Nick's Nice",
+        "slug": "nicks-nice",
+        "status": "active"
+      },
+      {
+        "band_id": "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "name": "Prime Time",
+        "slug": "prime-time",
+        "status": "active"
+      },
+      {
+        "band_id": "69a6ae07-88d9-496d-9e08-4eb9a456ec4d",
+        "name": "Quetschnblech",
+        "slug": "kapelle-quetschnblech",
+        "status": "active"
+      },
+      {
+        "band_id": "6946fed2-d09b-4f25-87e6-24c665a26e40",
+        "name": "Soiz'n'Pepper",
+        "slug": "soiznpepper",
+        "status": "active"
+      },
+      {
+        "band_id": "d5f340c7-f81f-4f2b-a7e8-e2f01ec69015",
+        "name": "vier-tell-four",
+        "slug": "vier-tell-four",
+        "status": "active"
+      },
+      {
+        "band_id": "7aa80a7b-c424-4808-a6ad-a4f23a8edcdc",
+        "name": "Partybox",
+        "slug": "partybox-trio",
+        "status": "active"
+      },
+      {
+        "band_id": "2746335a-e267-4977-80b9-3073173c42c0",
+        "name": "Rüscherl Muse",
+        "slug": "ruescherl-muse",
+        "status": "active"
+      },
+      {
+        "band_id": "21530533-f0a9-409e-9d78-9af3d4ce46c2",
+        "name": "Sommerwind",
+        "slug": "sommerwind-band",
+        "status": "active"
+      },
+      {
+        "band_id": "d6c2bb7b-6c5e-400f-a8c1-e9dbf1edb328",
+        "name": "Tegernseer Tanzlmusi",
+        "slug": "tegernseer-tanzlmusi",
+        "status": "active"
+      },
+      {
+        "band_id": "e0c5fff5-429a-400a-a792-6fbdb6ecd712",
+        "name": "Urner Musi",
+        "slug": "urner-musi",
+        "status": "active"
+      },
+      {
+        "band_id": "82acc533-07d3-4479-82fe-31983711a3e0",
+        "name": "Entprima Live",
+        "slug": "duo-entprima",
+        "status": "active"
+      },
+      {
+        "band_id": "1a641665-c14c-44ab-8955-9cfd867a9355",
+        "name": "Spectrum",
+        "slug": "spectrum-band",
+        "status": "active"
+      },
+      {
+        "band_id": "bc44b34b-10c1-4532-bbad-ad5602295398",
+        "name": "X'Ploushn",
+        "slug": "xploushn",
+        "status": "active"
+      },
+      {
+        "band_id": "8f3a30f8-9827-47a9-a558-a46c24eac370",
+        "name": "Birddogs",
+        "slug": "birddogs",
+        "status": "active"
+      }
+    ],
+    "exklusive-privatfeiern": [
+      {
+        "band_id": "098a9022-9d58-4348-8157-ba6688f2e9bf",
+        "name": "9to5",
+        "slug": "9to5",
+        "status": "active"
+      },
+      {
+        "band_id": "8f3a30f8-9827-47a9-a558-a46c24eac370",
+        "name": "Birddogs",
+        "slug": "birddogs",
+        "status": "active"
+      },
+      {
+        "band_id": "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "name": "Bigband STEINBACH",
+        "slug": "bigband-steinbach",
+        "status": "active"
+      },
+      {
+        "band_id": "13329eb0-11e5-4da5-85b5-746240df22ad",
+        "name": "Candy Tunes",
+        "slug": "candy-tunes",
+        "status": "active"
+      },
+      {
+        "band_id": "712f40db-723f-4fea-a204-13f68f62b819",
+        "name": "Claudia Dechand",
+        "slug": "claudia-dechand",
+        "status": "active"
+      },
+      {
+        "band_id": "ba000001-0000-0000-0000-000000000001",
+        "name": "Donnaweda",
+        "slug": "donnaweda",
+        "status": "active"
+      },
+      {
+        "band_id": "bb5bd065-cdba-4807-97f5-b0613157a3ac",
+        "name": "Königlich Bayrisches Vollgas Orchester",
+        "slug": "koeniglich-bayrisches-vollgas-orchester",
+        "status": "active"
+      },
+      {
+        "band_id": "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "name": "LPC",
+        "slug": "lpc-music",
+        "status": "active"
+      },
+      {
+        "band_id": "6580c6c7-3f60-4980-b171-3eec4d625ede",
+        "name": "MyfriendZ",
+        "slug": "myfriendz",
+        "status": "active"
+      },
+      {
+        "band_id": "e963743f-8520-4266-996a-d160b5d17a44",
+        "name": "Edelwuid",
+        "slug": "edelwuid",
+        "status": "active"
+      },
+      {
+        "band_id": "f8616e8f-bb6d-4368-b22a-bcb63de49e54",
+        "name": "More Candy",
+        "slug": "more-candy",
+        "status": "active"
+      },
+      {
+        "band_id": "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "name": "May Vibes",
+        "slug": "may-vibes",
+        "status": "active"
+      },
+      {
+        "band_id": "890d75cd-e891-443c-87ef-56adba499353",
+        "name": "Harmonic Brass",
+        "slug": "harmonic-brass",
+        "status": "active"
+      },
+      {
+        "band_id": "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "name": "Silk and Sound",
+        "slug": "silk-and-sound",
+        "status": "active"
+      },
+      {
+        "band_id": "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "name": "Smooth'n'Groove",
+        "slug": "smooth-n-groove",
+        "status": "active"
+      },
+      {
+        "band_id": "d4a98980-e215-454a-b6c7-8dc9395bf6d9",
+        "name": "SPOTLIGHT Eventband",
+        "slug": "spotlight-eventband",
+        "status": "active"
+      }
+    ],
+    "geistliche-anlaesse": [],
+    "benefizveranstaltung": [],
+    "award-show": [
+      {
+        "band_id": "8f3a30f8-9827-47a9-a558-a46c24eac370",
+        "name": "Birddogs",
+        "slug": "birddogs",
+        "status": "active"
+      },
+      {
+        "band_id": "f8616e8f-bb6d-4368-b22a-bcb63de49e54",
+        "name": "More Candy",
+        "slug": "more-candy",
+        "status": "active"
+      },
+      {
+        "band_id": "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "name": "Silk and Sound",
+        "slug": "silk-and-sound",
+        "status": "active"
+      },
+      {
+        "band_id": "098a9022-9d58-4348-8157-ba6688f2e9bf",
+        "name": "9to5",
+        "slug": "9to5",
+        "status": "active"
+      }
+    ],
+    "ehrenabende": [
+      {
+        "band_id": "dc8d5036-dd9d-458b-a1e4-d7fadfa82177",
+        "name": "Dezent Böhmisch",
+        "slug": "dezent-boehmisch",
+        "status": "active"
+      },
+      {
+        "band_id": "fdf586ce-5a5f-4707-9b61-71c634c7052d",
+        "name": "Gary Rhos",
+        "slug": "gary-rhos",
+        "status": "active"
+      },
+      {
+        "band_id": "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "name": "Smooth'n'Groove",
+        "slug": "smooth-n-groove",
+        "status": "active"
+      },
+      {
+        "band_id": "d257d3f6-5ff8-487f-8c2c-f4b2744a6418",
+        "name": "Böhmisches Verlangen",
+        "slug": "boehmisches-verlangen",
+        "status": "active"
+      }
+    ]
+  }
+}

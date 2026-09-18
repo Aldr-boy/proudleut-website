@@ -1,0 +1,574 @@
+[
+  {
+    "step": "Ball & Gala:rename",
+    "at": "2026-09-18T09:21:24.414Z",
+    "request": {
+      "p_event_type_id": "163aefc8-ba73-428c-a3be-be06ef51aa4d",
+      "p_name": "Ball & Gala",
+      "p_anfrage_label": null
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "163aefc8-ba73-428c-a3be-be06ef51aa4d",
+        "name": "Ball & Gala",
+        "slug": "ball",
+        "parent_id": null,
+        "description": null,
+        "status": "active",
+        "sort_order": 0,
+        "created_at": "2026-06-01T07:23:49.285344+00:00",
+        "updated_at": "2026-09-18T09:21:22.89048+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Ball & Gala:add",
+    "at": "2026-09-18T09:21:24.542Z",
+    "request": {
+      "p_event_type_id": "163aefc8-ba73-428c-a3be-be06ef51aa4d",
+      "p_add_band_ids": [
+        "96aa49dc-755a-44ff-ab7e-cc5cb463d068",
+        "180c5296-8440-4540-a8f8-60ee16333259",
+        "2ea3f8c2-742c-4675-87fa-ccd0a3de0cd5"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Ball & Gala:remove:gala",
+    "at": "2026-09-18T09:21:24.764Z",
+    "request": {
+      "p_event_type_id": "ab97edd5-dd5c-4d3c-b07c-7946d69f37f1",
+      "p_remove_band_ids": [
+        "f9baa4fc-d396-4a52-8991-dd7d63e01baf",
+        "96aa49dc-755a-44ff-ab7e-cc5cb463d068",
+        "679fa465-573f-41da-979e-3e943fdbb0ed",
+        "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "45dd9940-7eca-4f08-9d07-f119d7416ccd",
+        "57ba3e53-5065-48f6-8421-64f67e641d1a"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Ball & Gala:archive:gala",
+    "at": "2026-09-18T09:21:24.896Z",
+    "request": {
+      "p_event_type_id": "ab97edd5-dd5c-4d3c-b07c-7946d69f37f1"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "ab97edd5-dd5c-4d3c-b07c-7946d69f37f1",
+        "name": "Gala",
+        "slug": "gala",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-07-02T07:47:37.008753+00:00",
+        "updated_at": "2026-09-18T09:21:23.410085+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Ball & Gala:remove:abschlussfeier",
+    "at": "2026-09-18T09:21:24.998Z",
+    "request": {
+      "p_event_type_id": "d85eefe1-b6a4-40d6-a21b-375d184787cc",
+      "p_remove_band_ids": [
+        "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "180c5296-8440-4540-a8f8-60ee16333259",
+        "1fd5de95-6fbf-4016-8eaa-783de8eb31f0",
+        "45dd9940-7eca-4f08-9d07-f119d7416ccd",
+        "7303c77a-b980-4bde-85fa-5824bfffa7ec",
+        "282ba8a0-86fe-4f91-b586-11388931b622",
+        "2ea3f8c2-742c-4675-87fa-ccd0a3de0cd5",
+        "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "3e8021f3-cc1d-4ff8-9714-0b6055598376",
+        "81cc6a67-eb44-4047-b6c4-e347545c8c5f",
+        "b8a2281a-6941-466c-9f32-900460b48d34",
+        "cfaca43b-a3a5-4d8f-85fc-a829a014f91f",
+        "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "457e37f4-b3f2-4455-bc89-a6f98baaa024",
+        "d5f340c7-f81f-4f2b-a7e8-e2f01ec69015",
+        "255a2c2b-ddfc-4712-b555-d84c6d9003ec",
+        "d4a98980-e215-454a-b6c7-8dc9395bf6d9",
+        "e48f142c-6ff5-4eb0-854f-8a0f9fb2d88f",
+        "57ba3e53-5065-48f6-8421-64f67e641d1a"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Ball & Gala:archive:abschlussfeier",
+    "at": "2026-09-18T09:21:25.126Z",
+    "request": {
+      "p_event_type_id": "d85eefe1-b6a4-40d6-a21b-375d184787cc"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "d85eefe1-b6a4-40d6-a21b-375d184787cc",
+        "name": "Abschlussfeier",
+        "slug": "abschlussfeier",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-06-01T07:23:49.285344+00:00",
+        "updated_at": "2026-09-18T09:21:23.640133+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Empfang & Dinner:rename",
+    "at": "2026-09-18T09:21:25.250Z",
+    "request": {
+      "p_event_type_id": "787c536a-bd77-4037-b1ed-9c88cc012948",
+      "p_name": "Empfang & Dinner",
+      "p_anfrage_label": null
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "787c536a-bd77-4037-b1ed-9c88cc012948",
+        "name": "Empfang & Dinner",
+        "slug": "empfang",
+        "parent_id": null,
+        "description": null,
+        "status": "active",
+        "sort_order": 0,
+        "created_at": "2026-06-01T07:23:49.285344+00:00",
+        "updated_at": "2026-09-18T09:21:23.764098+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Empfang & Dinner:add",
+    "at": "2026-09-18T09:21:25.366Z",
+    "request": {
+      "p_event_type_id": "787c536a-bd77-4037-b1ed-9c88cc012948",
+      "p_add_band_ids": [
+        "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "6946fed2-d09b-4f25-87e6-24c665a26e40"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Empfang & Dinner:remove:bankett",
+    "at": "2026-09-18T09:21:25.483Z",
+    "request": {
+      "p_event_type_id": "18957eb8-0ab7-4d81-a366-bcc9f33a51df",
+      "p_remove_band_ids": [
+        "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "81cc6a67-eb44-4047-b6c4-e347545c8c5f",
+        "fdf586ce-5a5f-4707-9b61-71c634c7052d",
+        "b1c1f410-2de0-4ef3-9cf2-55044ba32bf4",
+        "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "6946fed2-d09b-4f25-87e6-24c665a26e40"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Empfang & Dinner:archive:bankett",
+    "at": "2026-09-18T09:21:25.595Z",
+    "request": {
+      "p_event_type_id": "18957eb8-0ab7-4d81-a366-bcc9f33a51df"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "18957eb8-0ab7-4d81-a366-bcc9f33a51df",
+        "name": "Bankett",
+        "slug": "bankett",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-06-01T07:23:49.285344+00:00",
+        "updated_at": "2026-09-18T09:21:24.122334+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Stadt- und Buergerfest:add",
+    "at": "2026-09-18T09:21:25.704Z",
+    "request": {
+      "p_event_type_id": "5506c9e2-f803-421c-9659-76d0220a0c38",
+      "p_add_band_ids": [
+        "ba000002-0000-0000-0000-000000000001",
+        "6d21393b-0a30-4d4a-86f2-713b96c8fb46",
+        "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "36d95224-7f95-4d55-96e8-ab98563259ed",
+        "42cbccd1-4907-457e-a985-915471ef0723",
+        "e330f96c-ee21-4130-b7bb-fc6459918e94",
+        "e963743f-8520-4266-996a-d160b5d17a44",
+        "fd9e8fc3-2e6a-4ac6-baac-baf57c7d5a49",
+        "8a6f7ec0-0a52-46dc-a57f-a3bdcbee992a",
+        "3e8021f3-cc1d-4ff8-9714-0b6055598376",
+        "035f7889-83e4-4711-a15c-d625cf944a31",
+        "3ec00d36-18d8-4c0a-b950-f8152cb37019"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Stadt- und Buergerfest:remove:buergerfest",
+    "at": "2026-09-18T09:21:25.817Z",
+    "request": {
+      "p_event_type_id": "e0000002-0000-0000-0000-000000000006",
+      "p_remove_band_ids": [
+        "ba000001-0000-0000-0000-000000000001",
+        "ba000002-0000-0000-0000-000000000001",
+        "f9baa4fc-d396-4a52-8991-dd7d63e01baf",
+        "6d21393b-0a30-4d4a-86f2-713b96c8fb46",
+        "aab585d3-94b6-4b6b-be4c-ff21b83fef69",
+        "a8206639-65be-476f-9dfd-6de10550af6a",
+        "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "36d95224-7f95-4d55-96e8-ab98563259ed",
+        "d7bf4672-364f-4807-a80c-8f2031d69093",
+        "884a2d54-d652-472a-8dbb-2e57de04695d",
+        "42cbccd1-4907-457e-a985-915471ef0723",
+        "e330f96c-ee21-4130-b7bb-fc6459918e94",
+        "e963743f-8520-4266-996a-d160b5d17a44",
+        "fd9e8fc3-2e6a-4ac6-baac-baf57c7d5a49",
+        "8a6f7ec0-0a52-46dc-a57f-a3bdcbee992a",
+        "3e8021f3-cc1d-4ff8-9714-0b6055598376",
+        "3225d8e1-29d1-476d-b1ed-ecc1a2c08ee7",
+        "035f7889-83e4-4711-a15c-d625cf944a31",
+        "3ec00d36-18d8-4c0a-b950-f8152cb37019",
+        "354e2447-41f0-487a-a46d-a2d209dc890b",
+        "6946fed2-d09b-4f25-87e6-24c665a26e40",
+        "457e37f4-b3f2-4455-bc89-a6f98baaa024",
+        "dc9fb51a-2087-4e13-af4d-5be60fc44ff1",
+        "bd67b01a-8598-4a6b-b3d0-54743c33a263",
+        "6580c6c7-3f60-4980-b171-3eec4d625ede",
+        "bc44b34b-10c1-4532-bbad-ad5602295398",
+        "d4a98980-e215-454a-b6c7-8dc9395bf6d9",
+        "2098498c-35ce-494c-ba06-e349b0ce61a4",
+        "baff31e6-2619-48d6-aaa2-cedf83c08e0d",
+        "b4a13586-3a27-4da8-ba84-2ae9b2daa20b",
+        "8f14155c-5967-4f40-98aa-84ef354c1f0c"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Stadt- und Buergerfest:archive:buergerfest",
+    "at": "2026-09-18T09:21:25.942Z",
+    "request": {
+      "p_event_type_id": "e0000002-0000-0000-0000-000000000006"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "e0000002-0000-0000-0000-000000000006",
+        "name": "Bürgerfest",
+        "slug": "buergerfest",
+        "parent_id": "e0000001-0000-0000-0000-000000000002",
+        "description": null,
+        "status": "archived",
+        "sort_order": 6,
+        "created_at": "2026-05-28T20:30:38.199339+00:00",
+        "updated_at": "2026-09-18T09:21:24.460743+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "private Feiern:add",
+    "at": "2026-09-18T09:21:26.033Z",
+    "request": {
+      "p_event_type_id": "4165cc4e-e49f-4d9b-a8c4-31bf0f2999aa",
+      "p_add_band_ids": [
+        "098a9022-9d58-4348-8157-ba6688f2e9bf",
+        "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "13329eb0-11e5-4da5-85b5-746240df22ad",
+        "ba000001-0000-0000-0000-000000000001",
+        "bb5bd065-cdba-4807-97f5-b0613157a3ac",
+        "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "6580c6c7-3f60-4980-b171-3eec4d625ede",
+        "f8616e8f-bb6d-4368-b22a-bcb63de49e54",
+        "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "890d75cd-e891-443c-87ef-56adba499353",
+        "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "d4a98980-e215-454a-b6c7-8dc9395bf6d9"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "private Feiern:remove:exklusive-privatfeiern",
+    "at": "2026-09-18T09:21:26.138Z",
+    "request": {
+      "p_event_type_id": "6f284404-e009-495f-9e26-4754adf83139",
+      "p_remove_band_ids": [
+        "098a9022-9d58-4348-8157-ba6688f2e9bf",
+        "8f3a30f8-9827-47a9-a558-a46c24eac370",
+        "236d642f-7b8d-48c0-a7cf-6e81fbac869b",
+        "13329eb0-11e5-4da5-85b5-746240df22ad",
+        "712f40db-723f-4fea-a204-13f68f62b819",
+        "ba000001-0000-0000-0000-000000000001",
+        "bb5bd065-cdba-4807-97f5-b0613157a3ac",
+        "d11f8a3a-cb64-49c6-b605-71ed8401f28c",
+        "6580c6c7-3f60-4980-b171-3eec4d625ede",
+        "e963743f-8520-4266-996a-d160b5d17a44",
+        "f8616e8f-bb6d-4368-b22a-bcb63de49e54",
+        "500351ce-3955-48ed-8bb5-41cf1ea6b71f",
+        "890d75cd-e891-443c-87ef-56adba499353",
+        "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "d4a98980-e215-454a-b6c7-8dc9395bf6d9"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "private Feiern:archive:exklusive-privatfeiern",
+    "at": "2026-09-18T09:21:26.262Z",
+    "request": {
+      "p_event_type_id": "6f284404-e009-495f-9e26-4754adf83139"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "6f284404-e009-495f-9e26-4754adf83139",
+        "name": "exklusive Privatfeiern",
+        "slug": "exklusive-privatfeiern",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-06-01T07:23:49.285344+00:00",
+        "updated_at": "2026-09-18T09:21:24.780098+00:00",
+        "anfrage_label": "Exklusive Privatfeier"
+      }
+    }
+  },
+  {
+    "step": "Geistliche Anlaesse:remove",
+    "at": "2026-09-18T09:21:26.341Z",
+    "request": {
+      "skip": true,
+      "reason": "already empty"
+    },
+    "response": {
+      "id": "36559226-4aef-4ca1-8e2c-226cc4f67f69"
+    }
+  },
+  {
+    "step": "Geistliche Anlaesse:archive",
+    "at": "2026-09-18T09:21:26.462Z",
+    "request": {
+      "p_event_type_id": "36559226-4aef-4ca1-8e2c-226cc4f67f69"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "36559226-4aef-4ca1-8e2c-226cc4f67f69",
+        "name": "Geistliche Anlässe",
+        "slug": "geistliche-anlaesse",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-06-01T13:55:11.020182+00:00",
+        "updated_at": "2026-09-18T09:21:24.979122+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Benefizveranstaltung:remove",
+    "at": "2026-09-18T09:21:26.509Z",
+    "request": {
+      "skip": true,
+      "reason": "already empty"
+    },
+    "response": {
+      "id": "a17c2260-dcc9-4a3c-9424-5c67c2d0a4a9"
+    }
+  },
+  {
+    "step": "Benefizveranstaltung:archive",
+    "at": "2026-09-18T09:21:26.618Z",
+    "request": {
+      "p_event_type_id": "a17c2260-dcc9-4a3c-9424-5c67c2d0a4a9"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "a17c2260-dcc9-4a3c-9424-5c67c2d0a4a9",
+        "name": "Benefizveranstaltung",
+        "slug": "benefizveranstaltung",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-06-15T14:42:53.798927+00:00",
+        "updated_at": "2026-09-18T09:21:25.147765+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Award-Show:remove",
+    "at": "2026-09-18T09:21:26.718Z",
+    "request": {
+      "p_event_type_id": "9510336b-b9a8-4638-a545-a8fe163dae6b",
+      "p_remove_band_ids": [
+        "8f3a30f8-9827-47a9-a558-a46c24eac370",
+        "f8616e8f-bb6d-4368-b22a-bcb63de49e54",
+        "6f8a50e6-7358-43b1-ab92-4d9023e405d1",
+        "098a9022-9d58-4348-8157-ba6688f2e9bf"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Award-Show:archive",
+    "at": "2026-09-18T09:21:26.846Z",
+    "request": {
+      "p_event_type_id": "9510336b-b9a8-4638-a545-a8fe163dae6b"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "9510336b-b9a8-4638-a545-a8fe163dae6b",
+        "name": "Award-Show",
+        "slug": "award-show",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-06-01T13:45:49.701608+00:00",
+        "updated_at": "2026-09-18T09:21:25.360876+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "Ehrenabende:remove",
+    "at": "2026-09-18T09:21:26.947Z",
+    "request": {
+      "p_event_type_id": "1df83eea-6e33-4a2d-b5e3-ae375d78aeef",
+      "p_remove_band_ids": [
+        "dc8d5036-dd9d-458b-a1e4-d7fadfa82177",
+        "fdf586ce-5a5f-4707-9b61-71c634c7052d",
+        "eaab9a7b-c5b4-481e-b78d-fd37d4654486",
+        "d257d3f6-5ff8-487f-8c2c-f4b2744a6418"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  },
+  {
+    "step": "Ehrenabende:archive",
+    "at": "2026-09-18T09:21:27.070Z",
+    "request": {
+      "p_event_type_id": "1df83eea-6e33-4a2d-b5e3-ae375d78aeef"
+    },
+    "response": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "id": "1df83eea-6e33-4a2d-b5e3-ae375d78aeef",
+        "name": "Ehrenabende",
+        "slug": "ehrenabende",
+        "parent_id": null,
+        "description": null,
+        "status": "archived",
+        "sort_order": 0,
+        "created_at": "2026-06-01T13:55:11.020182+00:00",
+        "updated_at": "2026-09-18T09:21:25.588631+00:00",
+        "anfrage_label": null
+      }
+    }
+  },
+  {
+    "step": "CORRECTION:stadt-und-buergerfest:add-missing-from-truncation-bug",
+    "at": "2026-09-18T09:25:29.009Z",
+    "request": {
+      "p_event_type_id": "5506c9e2-f803-421c-9659-76d0220a0c38",
+      "p_add_band_ids": [
+        "b4a13586-3a27-4da8-ba84-2ae9b2daa20b",
+        "8f14155c-5967-4f40-98aa-84ef354c1f0c"
+      ]
+    },
+    "response": {
+      "ok": true,
+      "status": 204,
+      "body": ""
+    }
+  }
+]
