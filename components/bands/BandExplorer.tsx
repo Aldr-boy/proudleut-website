@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import Link, { useLinkStatus } from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
 import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasions';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import { buildFinderFilterUrl, buildOccasionNavUrl } from '@/lib/bands/finderRouting';
-import { resolveBandFinderThemeNav } from '@/lib/bands/bandFinderThemes';
+import { resolveBandFinderThemeNav, resolveThemeTileActive, reduceTilePendingKey } from '@/lib/bands/bandFinderThemes';
 import type { BandFinderThemeKey } from '@/lib/bands/bandFinderThemes';
 import type { BandFinderThemeImage } from '@/lib/bands/bandFinderThemeImages';
 import { useAnfrageStore } from '@/stores/anfrageStore';
@@ -102,10 +102,74 @@ const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
 type OpenPanel = 'anlass' | 'region' | 'bandtyp' | 'mood' | null;
 
+// Bild + Label einer Themen-Kachel als eigene Kind-Komponente, NUR damit
+// useLinkStatus() aufgerufen werden kann -- der Hook liest einen Context,
+// den <Link> ausschliesslich um seine Children legt (siehe next/dist/
+// client/app-dir/link.js), ein Aufruf im <Link> selbst ist nicht moeglich.
+// Rahmen/Hintergrund/Haekchen bleiben bewusst am <Link> (siehe dort) --
+// diese Komponente traegt keine eigene Aktiv-Optik ausser der Textfarbe
+// des Labels, damit sich am Erscheinungsbild nichts verschiebt.
+function ThemeTileMedia({
+  image,
+  label,
+  isActive,
+  themeKey,
+  onPendingChange,
+}: {
+  image: BandFinderThemeImage;
+  label: string;
+  isActive: boolean;
+  themeKey: BandFinderThemeKey;
+  onPendingChange: (key: BandFinderThemeKey, pending: boolean) => void;
+}) {
+  const { pending } = useLinkStatus();
+  useEffect(() => {
+    onPendingChange(themeKey, pending);
+  }, [pending, themeKey, onPendingChange]);
+
+  return (
+    <>
+      <span className="relative w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden shrink-0 bg-pl-elevated">
+        <Image src={image.url} alt="" fill sizes="44px" className="object-cover" />
+      </span>
+      <span className={`text-sm font-semibold leading-snug ${isActive ? 'text-pl-accent-deep' : 'text-pl-text'}`}>
+        {label}
+      </span>
+    </>
+  );
+}
+
 export default function BandExplorer({ bands, regions, lockedOccasion, themeImages }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const baseRoute = lockedOccasion ? `/veranstaltung/${lockedOccasion}` : '/bands';
+
+  // Sofort-Feedback fuer die sechs Themen-Kacheln (Auftrag "Klick-/
+  // Aktivzustand im Bandfinder"): pendingTileKey haelt fest, welche Kachel
+  // gerade per useLinkStatus() als "pending" gemeldet wurde -- solange
+  // das der Fall ist, gewinnt sie die Aktiv-Optik unabhaengig vom (noch
+  // nicht aktualisierten) theme.active der Ziel-URL. onTilePendingChange
+  // ignoriert ein "false" von einer Kachel, die gar nicht mehr die
+  // aktuell haltende ist (verhindert ein Race, falls die zuvor aktive
+  // Kachel ihr eigenes idle erst NACH dem neuen Klick meldet).
+  const [pendingTileKey, setPendingTileKey] = useState<BandFinderThemeKey | null>(null);
+  const onTilePendingChange = useCallback((key: BandFinderThemeKey, isPending: boolean) => {
+    setPendingTileKey((current) => reduceTilePendingKey(current, key, isPending));
+  }, []);
+  // Reset explizit an Pathname/lockedOccasion gebunden statt an Remount
+  // (BandExplorer bleibt beim Wechsel zwischen zwei /veranstaltung/[slug]-
+  // Seiten dieselbe Client-Instanz, neue Props, kein Remount) -- bewusst
+  // als "State waehrend des Renderns anpassen" statt als useEffect
+  // (React-Standardmuster fuer "reset state when a prop changes", siehe
+  // react.dev/learn/you-might-not-need-an-effect; vermeidet zusaetzlich
+  // einen weiteren Render-Tick gegenueber einem Effect-basierten Reset).
+  const routeKey = `${pathname}::${lockedOccasion ?? ''}`;
+  const [pendingTileRouteKey, setPendingTileRouteKey] = useState(routeKey);
+  if (routeKey !== pendingTileRouteKey) {
+    setPendingTileRouteKey(routeKey);
+    setPendingTileKey(null);
+  }
 
   // Merkliste -- bestehender, globaler Store (stores/anfrageStore.ts),
   // bereits ueber components/band/MerklisteBar.tsx (in app/layout.tsx)
@@ -622,33 +686,41 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
           die Textbreite/den Umbruch veraendern -- die Auswahl wird
           stattdessen ueber Flaeche, Rahmen und Haekchen markiert. */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 mb-4 md:mb-5 pt-4 md:pt-5">
-        {themeNavItems.map((theme) => (
-          <Link
-            key={theme.key}
-            href={theme.href}
-            aria-current={theme.active ? 'page' : undefined}
-            className={`relative flex items-center gap-2.5 rounded-xl border px-2.5 py-2 pr-7 md:px-3 md:py-2.5 md:pr-8 text-left
-                       motion-safe:transition-colors focus:outline-none focus-visible:outline-2
-                       focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]
-                       ${theme.active ? 'border-pl-accent bg-[color-mix(in_srgb,var(--pl-accent)_12%,var(--pl-accent-subtle))]' : 'border-transparent hover:bg-black/[0.03]'}`}
-          >
-            <span className="relative w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden shrink-0 bg-pl-elevated">
-              <Image src={theme.image.url} alt="" fill sizes="44px" className="object-cover" />
-            </span>
-            <span className={`text-sm font-semibold leading-snug ${theme.active ? 'text-pl-accent-deep' : 'text-pl-text'}`}>
-              {theme.label}
-            </span>
-            {theme.active && (
-              <svg
-                className="absolute right-2 md:right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pl-accent"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
-              </svg>
-            )}
-          </Link>
-        ))}
+        {themeNavItems.map((theme) => {
+          // pendingTileKey (siehe oben) gewinnt sofort beim Klick, noch vor
+          // Abschluss der Navigation/des Server-Datenladens; theme.active
+          // bleibt die fachliche Wahrheit fuer URL/Filter/SSR/SEO und
+          // uebernimmt wieder, sobald pendingTileKey zurueckgesetzt ist.
+          const isActive = resolveThemeTileActive(pendingTileKey, theme.key, theme.active);
+          return (
+            <Link
+              key={theme.key}
+              href={theme.href}
+              aria-current={isActive ? 'page' : undefined}
+              className={`relative flex items-center gap-2.5 rounded-xl border px-2.5 py-2 pr-7 md:px-3 md:py-2.5 md:pr-8 text-left
+                         motion-safe:transition-colors focus:outline-none focus-visible:outline-2
+                         focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]
+                         ${isActive ? 'border-pl-accent bg-[color-mix(in_srgb,var(--pl-accent)_12%,var(--pl-accent-subtle))]' : 'border-transparent hover:bg-black/[0.03]'}`}
+            >
+              <ThemeTileMedia
+                image={theme.image}
+                label={theme.label}
+                isActive={isActive}
+                themeKey={theme.key}
+                onPendingChange={onTilePendingChange}
+              />
+              {isActive && (
+                <svg
+                  className="absolute right-2 md:right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pl-accent"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
+                </svg>
+              )}
+            </Link>
+          );
+        })}
       </div>
 
       {/* ── Finder-Bar ──────────────────────────────────────────── */}

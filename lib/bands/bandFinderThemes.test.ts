@@ -1,6 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { BAND_FINDER_THEMES, resolveBandFinderThemeNav } from './bandFinderThemes.ts'
+import {
+  BAND_FINDER_THEMES,
+  resolveBandFinderThemeNav,
+  resolveThemeTileActive,
+  reduceTilePendingKey,
+} from './bandFinderThemes.ts'
 import { buildFinderFilterUrl, buildOccasionNavUrl } from './finderRouting.ts'
 
 // Auftrag "Bandfinder-Redesign": echte Ausfuehrungstests fuer die reine
@@ -91,4 +96,43 @@ test('Klick auf ein anderes Thema im Veranstaltungsseiten-Kontext navigiert zur 
   const nav = resolveBandFinderThemeNav('hochzeit', 'hochzeit', NO_FILTER, buildFinderFilterUrl, buildOccasionNavUrl)
   const festzelt = nav.find((t) => t.key === 'festzelt')!
   assert.equal(festzelt.href, '/veranstaltung/festzelt')
+})
+
+// Auftrag "Klick-/Aktivzustand im Bandfinder": resolveThemeTileActive()
+// kombiniert theme.active (fachliche Wahrheit, s.o.) mit dem
+// clientseitigen pendingTileKey (aus useLinkStatus() der geklickten
+// Kachel) fuer sofortiges visuelles Feedback, ohne auf Navigation/
+// Server-Datenladen zu warten.
+
+test('resolveThemeTileActive: ohne pendingTileKey (null) gilt unveraendert theme.active', () => {
+  assert.equal(resolveThemeTileActive(null, 'hochzeit', true), true)
+  assert.equal(resolveThemeTileActive(null, 'hochzeit', false), false)
+})
+
+test('resolveThemeTileActive: waehrend Pending gewinnt ausschliesslich die geklickte Kachel, auch wenn eine ANDERE Kachel noch theme.active=true traegt (URL noch nicht aktualisiert)', () => {
+  // Bisher aktive Kachel "hochzeit" (theme.active=true), aber "festzelt"
+  // wurde geklickt (pendingTileKey='festzelt') -- "hochzeit" muss JETZT
+  // false liefern, "festzelt" true. Nie zwei Kacheln gleichzeitig aktiv.
+  assert.equal(resolveThemeTileActive('festzelt', 'hochzeit', true), false)
+  assert.equal(resolveThemeTileActive('festzelt', 'festzelt', false), true)
+})
+
+test('resolveThemeTileActive: Klick auf die bereits aktive Kachel bleibt durchgehend aktiv (kein sichtbarer Zustandswechsel)', () => {
+  assert.equal(resolveThemeTileActive('hochzeit', 'hochzeit', true), true)
+})
+
+test('reduceTilePendingKey: eine als pending gemeldete Kachel wird sofort zur neuen pendingTileKey', () => {
+  assert.equal(reduceTilePendingKey(null, 'festzelt', true), 'festzelt')
+  assert.equal(reduceTilePendingKey('hochzeit', 'festzelt', true), 'festzelt')
+})
+
+test('reduceTilePendingKey: ein idle-Report loescht den State nur, wenn er vom aktuellen Halter kommt', () => {
+  assert.equal(reduceTilePendingKey('festzelt', 'festzelt', false), null)
+})
+
+test('reduceTilePendingKey: ein verspaeteter idle-Report einer NICHT mehr haltenden Kachel darf den neueren pendingTileKey nicht loeschen (Race beim schnellen Kachelwechsel)', () => {
+  // Nutzer klickt schnell hintereinander "hochzeit" dann "festzelt";
+  // "hochzeit" meldet sein eigenes idle=false, nachdem "festzelt" bereits
+  // pendingTileKey haelt -- "festzelt" darf dadurch nicht verloren gehen.
+  assert.equal(reduceTilePendingKey('festzelt', 'hochzeit', false), 'festzelt')
 })
