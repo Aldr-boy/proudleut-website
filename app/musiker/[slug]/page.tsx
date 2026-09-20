@@ -118,49 +118,54 @@ export default async function MusikerPage({ params }: PageProps) {
   return (
     <article className="bg-pl-canvas">
       {/* 1 — Hero */}
-      <section className="bg-pl-paper border-b border-pl-soft px-4 sm:px-6">
-        <div className="pl-container-shell py-10 md:py-16">
-          {/* Mobile: Foto oben (4:5, gedeckelt), Name direkt danach -- Name
-              soll noch im ersten Viewport sichtbar bleiben, siehe Auftrag
-              "Musikerseite-Redesign V1", Abschnitt 1 (Hero). */}
-          <div className="md:hidden">
-            {person.imageUrl && (
-              <div className="relative w-full aspect-[4/5] max-h-[48vh] rounded-2xl overflow-hidden">
-                <Image
-                  src={person.imageUrl}
-                  alt={person.name}
-                  fill
-                  priority
-                  className="object-cover"
-                  sizes="100vw"
-                />
-              </div>
-            )}
-            <h1 className="text-4xl font-bold text-pl-text mt-6 leading-tight">{person.name}</h1>
-            {roles.length > 0 && <p className="text-lg text-pl-text-muted mt-2">{roles.join(' · ')}</p>}
-          </div>
+      {/* Vollflaechiger Buehnen-Hero, an components/band/BandHero.tsx
+          angeglichen (Auftrag "Dominik-Musikerprofil – Hero an die neuen
+          Act-/Bandseiten angleichen"). Bewusst kein eigener Baustein und keine
+          Erweiterung von lib/bands/heroImagePresentation.ts -- das bleibt
+          bandspezifisch, hier reichen zwei feste object-position-Werte per
+          CSS-Variable (identische Technik wie im Bandhero, nur ohne die
+          bandspezifische Lookup-Tabelle). Ohne Bild bleibt die Buehnenflaeche
+          einfarbig, Name/Rolle bleiben unveraendert lesbar. */}
+      <div className="relative w-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh] bg-pl-stage overflow-hidden">
+        {person.imageUrl && (
+          <Image
+            src={person.imageUrl}
+            alt={person.name}
+            fill
+            priority
+            className="object-cover object-[var(--hero-pos-mobile)] md:object-[var(--hero-pos-desktop)]"
+            style={
+              {
+                '--hero-pos-mobile': '32% center',
+                '--hero-pos-desktop': 'center 10%',
+              } as React.CSSProperties
+            }
+            sizes="100vw"
+          />
+        )}
 
-          {/* Desktop: asymmetrische Bild/Text-Komposition, unten buendig */}
-          <div className={person.imageUrl ? 'hidden md:grid md:grid-cols-[minmax(0,440px)_1fr] md:gap-16 md:items-end' : 'hidden md:block'}>
-            {person.imageUrl && (
-              <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden">
-                <Image
-                  src={person.imageUrl}
-                  alt={person.name}
-                  fill
-                  priority
-                  className="object-cover"
-                  sizes="440px"
-                />
-              </div>
+        {/* Gradient overlay: dunkelt von unten, laesst oben transparent --
+            identische Lesbarkeitsueberlagerung wie BandHero.tsx */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(to top, rgba(18,16,26,0.93) 0%, rgba(18,16,26,0.5) 42%, rgba(18,16,26,0.12) 70%, transparent 100%)',
+          }}
+        />
+
+        {/* Content – buendig unten links, wie BandHero.tsx */}
+        <div className="relative z-10 flex items-end h-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh]">
+          <div className="w-full pl-container-shell px-4 sm:px-6 pb-8 md:pb-12">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-pl-on-stage leading-[1.03] mb-3">
+              {person.name}
+            </h1>
+            {roles.length > 0 && (
+              <p className="text-base md:text-lg text-pl-on-stage-muted max-w-2xl">{roles.join(' · ')}</p>
             )}
-            <div className="pb-2">
-              <h1 className="text-5xl lg:text-6xl font-bold text-pl-text leading-tight">{person.name}</h1>
-              {roles.length > 0 && <p className="text-xl text-pl-text-muted mt-4">{roles.join(' · ')}</p>}
-            </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* 2 — Zusammengearbeitet mit */}
       {person.credits.length > 0 && (
