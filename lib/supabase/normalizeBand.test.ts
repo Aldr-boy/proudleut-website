@@ -208,8 +208,38 @@ test('normalizeBandPeople: nur sichtbare Personen (RLS liefert bereits gefiltert
     },
   ]
   assert.deepEqual(normalizeBandPeople(raw), [
-    { id: 'p1', name: 'Dominik Palmer', slug: 'dominik-palmer', role: 'Bassist & Bandleader', instruments: [], imageUrl: undefined },
+    { id: 'p1', name: 'Dominik Palmer', slug: 'dominik-palmer', role: 'Bassist & Bandleader', instruments: [], imageUrl: undefined, credits: [] },
   ])
+})
+
+test('normalizeBandPeople: Credits werden ueber normalizePersonCredits uebernommen (identische Normalisierung/Sortierung wie auf der Musikerseite)', () => {
+  const raw = [
+    {
+      role: 'Bassist',
+      sort_order: 0,
+      people: {
+        id: 'p1',
+        name: 'Dominik Palmer',
+        slug: 'dominik-palmer',
+        person_credits: [
+          { id: 'c2', name: 'Nik Kershaw', sort_order: 1 },
+          { id: 'c1', name: 'Paul Young', sort_order: 0 },
+        ],
+      },
+      band_membership_instruments: [],
+    },
+  ]
+  assert.deepEqual(normalizeBandPeople(raw)[0].credits, [
+    { id: 'c1', name: 'Paul Young' },
+    { id: 'c2', name: 'Nik Kershaw' },
+  ])
+})
+
+test('normalizeBandPeople: Person ohne person_credits -> leeres credits-Array, kein Crash', () => {
+  const raw = [
+    { role: 'x', sort_order: 0, people: { id: 'p1', name: 'Testperson', slug: 'testperson' }, band_membership_instruments: [] },
+  ]
+  assert.deepEqual(normalizeBandPeople(raw)[0].credits, [])
 })
 
 test('normalizeBandPeople: Zeile ohne people (durch RLS bereits ausgeschlossen) wird uebersprungen, kein Crash', () => {
