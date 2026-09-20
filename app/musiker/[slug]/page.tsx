@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { getPersonBySlugFromSupabase } from '@/lib/people/publicQueries';
 import { normalizePersonFromSupabase } from '@/lib/people/normalizePerson';
 import { resolvePersonHeroImagePresentation } from '@/lib/people/heroImagePresentation';
+import { BandChapterHeading } from '@/components/band/BandChapterHeading';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE, SITE_DEFAULT_DESCRIPTION } from '@/lib/seo/metadata';
 import { deriveDescriptionFromText } from '@/lib/seo/deriveDescription';
 
@@ -171,14 +172,29 @@ export default async function MusikerPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* 2 — Zusammengearbeitet mit */}
-      {person.credits.length > 0 && (
-        <section className="bg-pl-canvas py-14 md:py-20 px-4 sm:px-6 border-b border-pl-soft">
+      {/* Über [Vorname]: die persoenliche Bio steht bewusst zuerst -- sie
+          soll die nachfolgenden Credits einordnen, bevor sie erscheinen
+          (Auftrag "Musikerprofil Dominik: Inhalte unterhalb des Heros an die
+          Proudleut-Logik angleichen"). Ueberschrift ueber die gemeinsame
+          BandChapterHeading (kraeftige Typografie + feine Trennlinie, wie auf
+          den Bandseiten), aber bewusst ohne Kapitelnummer -- ein
+          Musikerprofil mit einer Handvoll Abschnitte muss nicht wie eine
+          mehrteilige Bandseite durchnummeriert werden. */}
+      {person.bio && (
+        <section className="bg-pl-paper py-16 md:py-20 px-4 sm:px-6">
           <div className="pl-container-shell max-w-[760px]">
-            <h2 className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-              Zusammengearbeitet mit
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-3 mt-6">
+            <BandChapterHeading title={`Über ${firstName}`} />
+            <p className="text-pl-text leading-8 text-lg whitespace-pre-line">{person.bio}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Zusammengearbeitet mit */}
+      {person.credits.length > 0 && (
+        <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
+          <div className="pl-container-shell max-w-[760px]">
+            <BandChapterHeading title="Zusammengearbeitet mit" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-3">
               {person.credits.map((credit) => (
                 <p key={credit.id} className="text-xl md:text-[1.4rem] font-medium text-pl-text leading-snug">
                   {credit.name}
@@ -190,24 +206,10 @@ export default async function MusikerPage({ params }: PageProps) {
         </section>
       )}
 
-      {/* 3 — Über [Vorname] */}
-      {person.bio && (
-        <section className="bg-pl-paper py-14 md:py-20 px-4 sm:px-6 border-b border-pl-soft">
-          <div className="pl-container-shell max-w-[760px]">
-            <h2 className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-6">
-              Über {firstName}
-            </h2>
-            <p className="text-pl-text leading-8 text-lg whitespace-pre-line">{person.bio}</p>
-          </div>
-        </section>
-      )}
-
-      {/* 4 — Bei Proudleut */}
-      <section className="bg-pl-canvas py-14 md:py-20 px-4 sm:px-6 border-b border-pl-soft">
+      {/* Spielt aktuell bei (vormals "Bei Proudleut") */}
+      <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
         <div className="pl-container-shell max-w-[760px]">
-          <h2 className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-6">
-            Bei Proudleut
-          </h2>
+          <BandChapterHeading title="Spielt aktuell bei" />
 
           {person.memberships.length === 0 ? (
             <p className="text-pl-text-muted">
@@ -248,13 +250,11 @@ export default async function MusikerPage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* 5 — Mehr von [Vorname] (externe Vertiefung bewusst zuletzt) */}
+      {/* Mehr von [Vorname] (externe Vertiefung bewusst zuletzt) */}
       {hasMehrVonSection && (
-        <section className="bg-pl-canvas py-14 md:py-20 px-4 sm:px-6">
+        <section className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6">
           <div className="pl-container-shell max-w-[760px]">
-            <h2 className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-4">
-              Mehr von {firstName}
-            </h2>
+            <BandChapterHeading title={`Mehr von ${firstName}`} />
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               {websiteUrl && (
                 <a

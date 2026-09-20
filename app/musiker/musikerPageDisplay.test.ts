@@ -63,23 +63,31 @@ test('zusaetzliche Links werden ueber safeUrl() gefiltert, keine neue URL-Sicher
   assert.match(source, /href: safeUrl\(link\.url\)/)
 })
 
-// ── Musikerseite-Redesign V1: bestaetigte Hierarchie ─────────────────
-// Hero -> Zusammengearbeitet mit -> Ueber [Vorname] -> Bei Proudleut ->
-// Mehr von [Vorname]. Reine Reihenfolge-Pruefung ueber die Position der
-// Abschnitts-Marker im Quelltext -- kein echter Render moeglich (siehe
-// Kommentar oben).
+// ── Musikerprofil Dominik: Inhalte unterhalb des Heros an die
+// Proudleut-Logik angleichen -- bestaetigte Hierarchie ──────────────
+// Hero -> Ueber [Vorname] -> Zusammengearbeitet mit -> Spielt aktuell bei ->
+// Mehr von [Vorname]. Die persoenliche Bio steht bewusst vor den Credits,
+// um sie einzuordnen (Auftrag "Musikerprofil Dominik: Inhalte unterhalb des
+// Heros an die Proudleut-Logik angleichen"). Reine Reihenfolge-Pruefung
+// ueber die Position der Abschnitts-Marker im Quelltext -- kein echter
+// Render moeglich (siehe Kommentar oben).
 
-test('bestaetigte Abschnittsreihenfolge: Hero -> Zusammengearbeitet mit -> Ueber -> Bei Proudleut -> Mehr von', () => {
+test('bestaetigte Abschnittsreihenfolge: Hero -> Ueber -> Zusammengearbeitet mit -> Spielt aktuell bei -> Mehr von', () => {
   const heroIdx = source.indexOf('{/* 1 — Hero */}')
+  const bioIdx = source.indexOf('Über ${firstName}')
   const creditsIdx = source.indexOf('Zusammengearbeitet mit')
-  const bioIdx = source.indexOf('Über {firstName}')
-  const proudleutIdx = source.indexOf('Bei Proudleut')
-  const mehrVonIdx = source.indexOf('Mehr von {firstName}')
-  assert.ok(heroIdx >= 0 && creditsIdx >= 0 && bioIdx >= 0 && proudleutIdx >= 0 && mehrVonIdx >= 0, 'alle fuenf Abschnitts-Marker muessen vorhanden sein')
-  assert.ok(heroIdx < creditsIdx, 'Hero muss vor Zusammengearbeitet mit stehen')
-  assert.ok(creditsIdx < bioIdx, 'Zusammengearbeitet mit muss vor Ueber stehen')
-  assert.ok(bioIdx < proudleutIdx, 'Ueber muss vor Bei Proudleut stehen')
-  assert.ok(proudleutIdx < mehrVonIdx, 'Bei Proudleut muss vor Mehr von stehen')
+  const spieltBeiIdx = source.indexOf('Spielt aktuell bei')
+  const mehrVonIdx = source.indexOf('Mehr von ${firstName}')
+  assert.ok(heroIdx >= 0 && bioIdx >= 0 && creditsIdx >= 0 && spieltBeiIdx >= 0 && mehrVonIdx >= 0, 'alle fuenf Abschnitts-Marker muessen vorhanden sein')
+  assert.ok(heroIdx < bioIdx, 'Hero muss vor Ueber stehen')
+  assert.ok(bioIdx < creditsIdx, 'Ueber muss vor Zusammengearbeitet mit stehen (Bio ordnet die Credits ein)')
+  assert.ok(creditsIdx < spieltBeiIdx, 'Zusammengearbeitet mit muss vor Spielt aktuell bei stehen')
+  assert.ok(spieltBeiIdx < mehrVonIdx, 'Spielt aktuell bei muss vor Mehr von stehen')
+})
+
+test('keine Kapitelnummern ("01"/"02"/"03") auf der Musikerseite -- BandChapterHeading wird ohne number-Prop verwendet', () => {
+  assert.match(source, /import \{ BandChapterHeading \} from ['"]@\/components\/band\/BandChapterHeading['"]/)
+  assert.ok(!/<BandChapterHeading[^>]*\bnumber=/.test(source), 'BandChapterHeading darf auf der Musikerseite keine number-Prop erhalten')
 })
 
 test('keine Einordnungszeile: kein eigenes Datenfeld/Textblock dafuer im Quelltext', () => {
@@ -101,9 +109,9 @@ test('Bandbild wird nur bedingt gerendert (kein erzwungenes Bild, kein Platzhalt
   assert.match(source, /\{m\.bandImage &&/)
 })
 
-test('"Bei Proudleut" bleibt als Section immer vorhanden (auch ohne sichtbare Membership) -- Empty State statt verstecktem Abschnitt', () => {
-  const sectionIdx = source.indexOf('Bei Proudleut')
+test('"Spielt aktuell bei" (vormals "Bei Proudleut") bleibt als Section immer vorhanden (auch ohne sichtbare Membership) -- Empty State statt verstecktem Abschnitt', () => {
+  const sectionIdx = source.indexOf('Spielt aktuell bei')
   const emptyStateIdx = source.indexOf('Aktuell keine öffentlich sichtbaren Bandzugehörigkeiten')
   assert.ok(sectionIdx >= 0 && emptyStateIdx >= 0)
-  assert.ok(sectionIdx < emptyStateIdx, 'Empty State muss Teil derselben, immer gerenderten Bei-Proudleut-Section sein')
+  assert.ok(sectionIdx < emptyStateIdx, 'Empty State muss Teil derselben, immer gerenderten Spielt-aktuell-bei-Section sein')
 })
