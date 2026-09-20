@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getPersonBySlugFromSupabase } from '@/lib/people/publicQueries';
 import { normalizePersonFromSupabase } from '@/lib/people/normalizePerson';
+import { resolvePersonHeroImagePresentation } from '@/lib/people/heroImagePresentation';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE, SITE_DEFAULT_DESCRIPTION } from '@/lib/seo/metadata';
 import { deriveDescriptionFromText } from '@/lib/seo/deriveDescription';
 
@@ -115,6 +116,8 @@ export default async function MusikerPage({ params }: PageProps) {
 
   const hasMehrVonSection = websiteUrl !== null || additionalLinks.length > 0;
 
+  const heroImagePresentation = resolvePersonHeroImagePresentation(person.slug);
+
   return (
     <article className="bg-pl-canvas">
       {/* 1 — Hero */}
@@ -122,10 +125,11 @@ export default async function MusikerPage({ params }: PageProps) {
           angeglichen (Auftrag "Dominik-Musikerprofil – Hero an die neuen
           Act-/Bandseiten angleichen"). Bewusst kein eigener Baustein und keine
           Erweiterung von lib/bands/heroImagePresentation.ts -- das bleibt
-          bandspezifisch, hier reichen zwei feste object-position-Werte per
-          CSS-Variable (identische Technik wie im Bandhero, nur ohne die
-          bandspezifische Lookup-Tabelle). Ohne Bild bleibt die Buehnenflaeche
-          einfarbig, Name/Rolle bleiben unveraendert lesbar. */}
+          bandspezifisch, die object-position-Werte kommen stattdessen aus der
+          getrennten lib/people/heroImagePresentation.ts (identische
+          CSS-Variable-Technik wie im Bandhero, eigene Lookup-Tabelle). Ohne
+          Bild bleibt die Buehnenflaeche einfarbig, Name/Rolle bleiben
+          unveraendert lesbar. */}
       <div className="relative w-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh] bg-pl-stage overflow-hidden">
         {person.imageUrl && (
           <Image
@@ -136,8 +140,8 @@ export default async function MusikerPage({ params }: PageProps) {
             className="object-cover object-[var(--hero-pos-mobile)] md:object-[var(--hero-pos-desktop)]"
             style={
               {
-                '--hero-pos-mobile': '32% center',
-                '--hero-pos-desktop': 'center 10%',
+                '--hero-pos-mobile': heroImagePresentation.mobileObjectPosition,
+                '--hero-pos-desktop': heroImagePresentation.desktopObjectPosition,
               } as React.CSSProperties
             }
             sizes="100vw"
