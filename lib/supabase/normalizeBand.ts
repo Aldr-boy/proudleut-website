@@ -13,6 +13,7 @@ import type {
 } from '../types/band'
 import { compareBandDocuments } from '../bands/bandDocumentsSort.ts'
 import { compareReferenceEvents } from '../bands/bandReferenceEventsSort.ts'
+import { normalizePersonCredits } from '../people/normalizePerson.ts'
 
 type Row = Record<string, unknown>
 
@@ -102,6 +103,11 @@ export function normalizeBandPeople(rawBandMemberships: unknown): BandPersonSumm
         role: str(bm.role),
         instruments,
         imageUrl: str(person?.image_url),
+        // Fuer die Referenzzeile auf der Personenkarte (Auftrag
+        // "Bandseiten: Musikerprofile auf den Personenkarten verlinken") --
+        // identische Normalisierung/Sortierung wie auf der Musikerseite
+        // selbst, keine eigene Auswahl-/Rankinglogik.
+        credits: normalizePersonCredits(person?.person_credits),
       }
       return summary
     })

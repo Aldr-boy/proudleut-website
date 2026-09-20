@@ -1,4 +1,5 @@
 import type { ImageAsset } from './image';
+import type { PublicPersonCredit } from '../people/normalizePerson';
 
 export type BandLocation = {
   postalCode?: string;
@@ -144,6 +145,12 @@ export type BandPersonSummary = {
   role?: string;
   instruments: BandPersonInstrument[];
   imageUrl?: string;
+  // Fuer die Referenzzeile auf der Personenkarte (Auftrag "Bandseiten:
+  // Musikerprofile auf den Personenkarten verlinken") -- identische Form
+  // und Sortierung wie auf der Musikerseite selbst, siehe
+  // lib/people/normalizePerson.ts::normalizePersonCredits. Leeres Array,
+  // wenn die Person keine oeffentlichen Credits hat.
+  credits: PublicPersonCredit[];
 };
 
 export type Band = {

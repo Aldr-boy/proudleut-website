@@ -40,7 +40,7 @@ export async function getBandFromSupabase(slug: string) {
       band_memberships (
         role,
         sort_order,
-        people ( id, name, slug, image_url ),
+        people ( id, name, slug, image_url, person_credits ( id, name, sort_order ) ),
         band_membership_instruments (
           sort_order,
           instruments ( name, slug, sort_order )
