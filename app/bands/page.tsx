@@ -6,13 +6,17 @@ import BandExplorer from '@/components/bands/BandExplorer';
 import { BandFinderPageHead } from '@/components/bands/BandFinderPageHead';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { getBandFinderThemeImages } from '@/lib/bands/bandFinderThemeImages';
+import { absoluteUrl } from '@/lib/seo/metadata';
 
 export const revalidate = 300;
 
+// Auftrag "Fehlende Canonicals vor dem Domain-Cutover beheben": bisher
+// fehlte hier alternates.canonical komplett. Title/Description unveraendert.
 export const metadata: Metadata = {
   title: 'Livebands entdecken – proudleut',
   description:
     'Entdecke Livebands und Acts für Hochzeiten, Feste, Firmenfeiern und besondere Events auf proudleut.',
+  alternates: { canonical: absoluteUrl('/bands') },
 };
 
 export default async function BandsPage() {

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getAllBandsFromSupabase, getBandFromSupabase } from '@/lib/supabase/queries';
 import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import { EVENT_TYPE_TABS, buildAuswahlStateKey } from '@/lib/homepage/eventTypeTabs';
@@ -16,8 +17,32 @@ import CuratorBlock from '@/components/homepage/CuratorBlock';
 import VeranstalterStatement from '@/components/homepage/VeranstalterStatement';
 import FAQ from '@/components/homepage/FAQ';
 import CTASection from '@/components/homepage/CTASection';
+import { absoluteUrl } from '@/lib/seo/metadata';
 
 export const revalidate = 300;
+
+// Auftrag "Fehlende Canonicals vor dem Domain-Cutover beheben": bisher
+// hatte die Startseite ueberhaupt kein eigenes metadata-Objekt (nur der
+// generische Titel/Description-Default aus app/layout.tsx). Hier wird
+// bewusst NUR alternates.canonical ergaenzt -- Title/Description bleiben
+// unangetastet und erben weiterhin vom Root-Layout, keine inhaltliche
+// SEO-Aenderung. Identisches Prinzip wie das bestehende canonicalUrl in
+// app/band|musiker|veranstaltung/[slug]/page.tsx: absoluteUrl() statt
+// hartkodierter Domain.
+//
+// Bekannte, von Next.js selbst verursachte Abweichung: absoluteUrl('/')
+// liefert "https://proudleut.com/" (mit Schraegstrich, identisch zum
+// Sitemap-Eintrag), aber Next.js' eigener Metadata-Resolver
+// (node_modules/next/dist/lib/metadata/resolvers/resolve-url.js,
+// resolveAbsoluteUrlWithPathname) gibt fuer eine aufgeloeste URL mit
+// pathname === '/' bewusst .origin statt .href zurueck -- das gerenderte
+// <link rel="canonical"> zeigt deshalb "https://proudleut.com" OHNE
+// Schraegstrich. Das betrifft ausschliesslich die Root-Route und laesst
+// sich ueber die oeffentliche metadata-API nicht umgehen (auch der
+// relative-Pfad-Stil von app/impressum/page.tsx haette denselben Effekt).
+export const metadata: Metadata = {
+  alternates: { canonical: absoluteUrl('/') },
+};
 
 // "Eine Band einschaetzen" (03) zeigt exemplarisch ein echtes, vollstaendig
 // eingeordnetes Bandprofil -- San2 and His Soul Patrol, bereits als
