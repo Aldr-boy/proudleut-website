@@ -8,6 +8,7 @@ import { resolvePersonHeroImagePresentation } from '@/lib/people/heroImagePresen
 import { BandChapterHeading } from '@/components/band/BandChapterHeading';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE, SITE_DEFAULT_DESCRIPTION } from '@/lib/seo/metadata';
 import { deriveDescriptionFromText } from '@/lib/seo/deriveDescription';
+import { generatePersonJsonLd, safeJsonLdString } from '@/lib/seo/jsonLd';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,8 +120,26 @@ export default async function MusikerPage({ params }: PageProps) {
 
   const heroImagePresentation = resolvePersonHeroImagePresentation(person.slug);
 
+  // Person-JSON-LD (Auftrag "Person-Schema für alle öffentlichen
+  // Musikerprofile ergänzen"): jobTitle uebernimmt bewusst denselben bereits
+  // oben berechneten `roles`-Wert, den auch der Hero anzeigt (siehe
+  // `roles.join(' · ')` weiter unten) -- keine eigene, abweichende
+  // Rollenlogik fuer das strukturierte Datenformat.
+  const personJsonLd = generatePersonJsonLd(person, {
+    heroRole: roles.length > 0 ? roles.join(' · ') : undefined,
+  });
+
   return (
     <article className="bg-pl-canvas">
+      {/* Person-JSON-LD -- produktiv, kein Debug. Identisches Prinzip wie
+          app/band/[slug]/page.tsx (generateBandJsonLd), aber mit
+          entschaerfter Serialisierung (safeJsonLdString), da Bio-/Namens-
+          text hier freier Nutzer-/Redaktionsinhalt sein kann. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdString(personJsonLd) }}
+      />
+
       {/* 1 — Hero */}
       {/* Vollflaechiger Buehnen-Hero, an components/band/BandHero.tsx
           angeglichen (Auftrag "Dominik-Musikerprofil – Hero an die neuen
