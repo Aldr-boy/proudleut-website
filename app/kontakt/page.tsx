@@ -1,10 +1,14 @@
 import { Metadata } from 'next'
 import KontaktFormular from '@/components/kontakt/KontaktFormular'
+import { absoluteUrl } from '@/lib/seo/metadata'
 
+// Auftrag "Fehlende Canonicals vor dem Domain-Cutover beheben": bisher
+// fehlte hier alternates.canonical komplett. Title/Description unveraendert.
 export const metadata: Metadata = {
   title: 'Kontakt – proudleut',
   description:
     'Du suchst eine Liveband, möchtest deine Band vorstellen oder hast eine Idee? Schreib mir – ich lese jede Nachricht persönlich.',
+  alternates: { canonical: absoluteUrl('/kontakt') },
 }
 
 export default function KontaktPage() {

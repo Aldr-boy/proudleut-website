@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BandIntroFormCore } from '@/components/bandIntro/BandIntroFormCore';
+import { absoluteUrl } from '@/lib/seo/metadata';
 
 // Funktionale Formularroute, keine eigene SEO-Landingpage (Auftrag
 // Abschnitt 17) -- identisches noindex-Muster wie app/admin/layout.tsx und
@@ -10,9 +11,18 @@ import { BandIntroFormCore } from '@/components/bandIntro/BandIntroFormCore';
 // pauschal blockieren. Keine eigene sitemap.ts im Projekt (siehe
 // Rechercheergebnis im Abschlussbericht) -- daher keine gesonderte
 // Sitemap-Ausschlussregel noetig.
+//
+// Eigener, self-referenzierender Canonical (Auftrag "Fehlende Canonicals
+// vor dem Domain-Cutover beheben"): das neue app/fuer-bands/layout.tsx
+// setzt fuer das gesamte Segment alternates.canonical auf /fuer-bands --
+// ohne diese eigene Angabe wuerde diese Unterseite faelschlich denselben
+// Canonical wie ihre Elternseite erben. Da die Seite ohnehin noindex ist,
+// hat das keinen Indexierungseffekt, vermeidet aber einen widerspruechlichen
+// Canonical.
 export const metadata: Metadata = {
   title: 'Band vorstellen – proudleut',
   robots: { index: false, follow: false },
+  alternates: { canonical: absoluteUrl('/fuer-bands/band-vorstellen') },
 };
 
 // Mobile-Pendant zum Desktop-Modal (components/bandIntro/BandIntroModal.tsx)
