@@ -28,6 +28,12 @@ test('/bands ist enthalten', () => {
   assert.ok(entries.some((e) => e.url === 'https://proudleut.com/bands'))
 })
 
+test('/musiker (Musikerübersicht) ist enthalten (Auftrag "Musikerübersicht unter /musiker anlegen")', () => {
+  assert.ok(STATIC_PUBLIC_PATHS.includes('/musiker'))
+  const entries = buildSitemapEntries(FIXTURE)
+  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/musiker'))
+})
+
 test('alle STATIC_PUBLIC_PATHS erscheinen genau einmal', () => {
   const entries = buildSitemapEntries(FIXTURE)
   for (const path of STATIC_PUBLIC_PATHS) {

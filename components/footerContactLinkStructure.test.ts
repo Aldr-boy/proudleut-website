@@ -13,6 +13,15 @@ test('Footer-Link "Kontakt" zeigt auf /kontakt, nicht mehr auf #', () => {
   assert.ok(!/href="#"/.test(source), 'kein href="#" mehr im Footer')
 })
 
+test('Footer enthaelt genau einen Link "Musiker hinter den Bands" auf /musiker, direkt nach "Für Bands" (Auftrag "Musikerübersicht unter /musiker anlegen")', () => {
+  const matches = source.match(/<Link href="\/musiker" className="hover:text-pl-on-stage motion-safe:transition-colors">\s*Musiker hinter den Bands\s*<\/Link>/g) ?? []
+  assert.equal(matches.length, 1)
+  const fuerBandsIdx = source.indexOf('Für Bands')
+  const musikerIdx = source.indexOf('Musiker hinter den Bands')
+  const kontaktIdx = source.indexOf('Kontakt')
+  assert.ok(fuerBandsIdx < musikerIdx && musikerIdx < kontaktIdx, 'Reihenfolge muss "Für Bands" -> "Musiker hinter den Bands" -> "Kontakt" sein')
+})
+
 test('kein anderer Footer-Link wurde veraendert', () => {
   assert.match(source, /<Link href="\/" aria-label="Zur Startseite">/)
   assert.match(source, /<Link href="\/ueber-mich" className="hover:text-pl-on-stage motion-safe:transition-colors">\r?\n\s*Über Proudleut/)

@@ -21,6 +21,50 @@ export async function getAllPublicPeopleSlugsFromSupabase() {
   return { data, error }
 }
 
+// Alle oeffentlichen Personen mit vollem Profil-Datensatz (Auftrag
+// "Musikerübersicht unter /musiker anlegen") -- identische Feldauswahl wie
+// getPersonBySlugFromSupabase unten, nur ohne .eq('slug', ...)/.single().
+// Dieselbe RLS-Policy people_public_read (status='active') als alleinige
+// Sichtbarkeitsgrenze, keine zusaetzliche Filterung hier -- identisches
+// Prinzip wie ueberall in dieser Datei. Sortierung erfolgt bewusst nicht
+// hier per .order(), sondern erst nach der Normalisierung ueber den
+// vollstaendigen, gespeicherten Namen (siehe app/musiker/page.tsx).
+export async function getAllPublicPeopleFromSupabase() {
+  const { data, error } = await supabase
+    .from('people')
+    .select(`
+      id,
+      name,
+      slug,
+      bio,
+      image_url,
+      website_url,
+      approved_at,
+      band_memberships (
+        role,
+        sort_order,
+        bands ( id, name, slug, media_assets ( url, alt_text, role, sort_order ) ),
+        band_membership_instruments (
+          sort_order,
+          instruments ( name, slug, sort_order )
+        )
+      ),
+      person_links (
+        id,
+        label,
+        url,
+        sort_order
+      ),
+      person_credits (
+        id,
+        name,
+        sort_order
+      )
+    `)
+
+  return { data, error }
+}
+
 export async function getPersonBySlugFromSupabase(slug: string) {
   const { data, error } = await supabase
     .from('people')

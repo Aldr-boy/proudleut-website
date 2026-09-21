@@ -13,6 +13,7 @@ export const STATIC_PUBLIC_PATHS = [
   '/kontakt',
   '/ueber-mich',
   '/fuer-bands',
+  '/musiker',
   '/impressum',
   '/datenschutz',
 ]
