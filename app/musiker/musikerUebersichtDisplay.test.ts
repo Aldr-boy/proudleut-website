@@ -49,10 +49,11 @@ test('Bandnamen verlinken auf /band/[slug] aus den bestehenden Membership-Daten,
   assert.ok(!/className=\{?[^}]*\b(truncate|line-clamp-\d)\b/.test(source), 'Bandnamen (und Kartentexte) duerfen nicht gekuerzt/abgeschnitten werden')
 })
 
-test('Foto und Name verlinken auf /musiker/[slug]; "Musikerprofil ansehen" ist ein separater Link mit aria-hidden-Pfeil', () => {
+test('Foto und Name verlinken auf /musiker/[slug]; "Mehr über [Name]" ist ein separater Link mit aria-hidden-Pfeil', () => {
   const profileLinkCount = (source.match(/href=\{profileHref\}/g) ?? []).length
-  assert.equal(profileLinkCount, 3, 'Foto, Name und "Musikerprofil ansehen" muessen je einen eigenen Link auf profileHref haben')
-  assert.match(source, /Musikerprofil ansehen/)
+  assert.equal(profileLinkCount, 3, 'Foto, Name und "Mehr über [Name]" muessen je einen eigenen Link auf profileHref haben')
+  assert.match(source, /Mehr über \{person\.name\}/)
+  assert.ok(!source.includes('Musikerprofil ansehen'), 'der alte Linktext darf nicht mehr vorkommen')
   assert.match(source, /<span aria-hidden="true">→<\/span>/)
 })
 
@@ -83,10 +84,19 @@ test('Personen ohne Bild erhalten dieselbe neutrale Flaeche (bg-pl-elevated), ke
   assert.ok(!/lucide|heroicons|FontAwesome|<svg/i.test(source), 'keine Icon-Bibliothek/kein SVG-Platzhalter im Bildbereich')
 })
 
-test('Kartenmasse/-typografie an BandCard angeglichen: p-4-Textbereich, Name als text-lg-Ueberschrift, Pills in bg-pl-accent-subtle/text-pl-accent-deep', () => {
+test('Kartenmasse/-typografie an BandCard angeglichen: p-4-Textbereich, Name als text-lg-Ueberschrift', () => {
   assert.match(source, /<div className="p-4 flex flex-col flex-1">/)
   assert.match(source, /<h3 className="text-pl-text font-semibold text-lg leading-snug mb-1">/)
-  assert.match(source, /bg-pl-accent-subtle px-2 py-0\.5 text-xs font-medium text-pl-accent-deep/)
+})
+
+test('Bandzugehoerigkeit als ruhige Textzeile "Spielt bei [Bandname]" statt Pill/Chip/Badge -- nur der Bandname bleibt verlinkt', () => {
+  assert.match(source, /Spielt bei\{' '\}/)
+  assert.match(
+    source,
+    /<Link\s*\r?\n\s*href=\{`\/band\/\$\{m\.bandSlug\}`\}\s*\r?\n\s*className=\{`font-medium text-pl-text hover:text-pl-accent motion-safe:transition-colors \$\{FOCUS_RING\}`\}\s*\r?\n\s*>\s*\r?\n\s*\{m\.bandName\}/,
+  )
+  assert.ok(!/rounded-full/.test(source), 'keine Pill-/Chip-/Badge-Optik (rounded-full) mehr fuer die Bandzugehoerigkeit')
+  assert.ok(!source.includes('bg-pl-accent-subtle'), 'der bisherige Pill-Hintergrund darf nicht mehr vorkommen')
 })
 
 test('Bild-sizes-Attribut entspricht dem 3/2/1-Spalten-Raster (identisch zu BandCard.tsx)', () => {
@@ -99,11 +109,13 @@ test('Seitenkopf nutzt die bestehende, unveraenderte BandFinderPageHead-Komponen
   assert.ok(!source.includes('bg-pl-stage'), 'die vormalige dunkle, zentrierte Buehnenflaeche darf nicht mehr vorkommen')
 })
 
-test('Einleitungstext wird woertlich als intro-Prop uebergeben', () => {
+test('Einleitungstext wird woertlich als intro-Prop uebergeben (H1 bleibt unveraendert)', () => {
   assert.match(
     source,
-    /intro="Wer steht bei den Bands eigentlich auf der Bühne\? Hier lernst du Musiker kennen, die bei proudleut-Bands spielen, und siehst, was sie musikalisch mitbringen\."/,
+    /intro="Bandname und Bilder erzählen nur einen Teil\. Die Menschen hinter der Musik überraschen oft – mit ihrer Erfahrung, ihrem Können und den Bühnen, auf denen sie bereits standen\."/,
   )
+  assert.match(source, /h1="Musiker hinter den Bands"/)
+  assert.ok(!source.includes('Ein Bandname ist der Anfang'), 'der alte Einleitungstext darf nicht mehr vorkommen')
 })
 
 test('metadata.title ist exakt "Musiker hinter den Bands" (globale Title-Vorlage bleibt unangetastet, kein eigener Suffix)', () => {
@@ -128,6 +140,22 @@ test('Raster: Kartenbreite je Karte folgt derselben 1/2/3-Spalten-calc()-Formel,
   assert.match(source, /sm:w-\[calc\(\(100%-1\.5rem\)\/2\)\]/)
   assert.match(source, /lg:w-\[calc\(\(100%-3rem\)\/3\)\]/)
   assert.match(source, /<div className="flex flex-wrap justify-center gap-6">/)
+})
+
+test('Abschlussteaser: woertlicher Satz am Ende, nur "Melde dich gerne" verlinkt auf /kontakt, kein neuer Button/keine neue Section', () => {
+  assert.match(
+    source,
+    /Deine Band hat ein Profil auf Proudleut und du möchtest dich hier ebenfalls zeigen\?\{' '\}/,
+  )
+  assert.match(source, /<Link\s*\r?\n\s*href="\/kontakt"/)
+  const kontaktLinkBlock = source.match(/<Link\s*\r?\n\s*href="\/kontakt"[\s\S]*?<\/Link>/)?.[0] ?? ''
+  assert.match(kontaktLinkBlock, /Melde dich gerne/)
+  assert.ok(!/<button/.test(source), 'kein neuer Button fuer den Teaser')
+  assert.ok(!/<form/.test(source), 'kein neues Formular fuer den Teaser')
+  // Der Teaser bleibt Teil derselben Section -- kein zusaetzliches
+  // <section>-Element wird ergaenzt.
+  const sectionCount = (source.match(/<section/g) ?? []).length
+  assert.equal(sectionCount, 1, 'es darf keine zusaetzliche Section fuer den Teaser entstehen')
 })
 
 test('kein zusaetzliches Schema (ItemList/CollectionPage) ergaenzt', () => {

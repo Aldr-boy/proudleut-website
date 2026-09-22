@@ -23,10 +23,11 @@ test('Name verlinkt auf /musiker/[slug], wenn ein Profil existiert', () => {
   assert.match(source, /hasProfile \? \(\s*<Link\s+href=\{`\/musiker\/\$\{person\.slug\}`\}/)
 })
 
-test('separater "Musikerprofil ansehen"-Textlink verweist ebenfalls auf /musiker/[slug]', () => {
-  assert.match(source, /Musikerprofil ansehen/)
+test('separater "Mehr über [Name]"-Textlink verweist ebenfalls auf /musiker/[slug] (identischer Wortlaut wie auf /musiker)', () => {
+  assert.match(source, /Mehr über \{person\.name\}/)
+  assert.ok(!source.includes('Musikerprofil ansehen'), 'der alte Linktext darf nicht mehr vorkommen')
   const linkBlocks = [...source.matchAll(/<Link\s+href=\{`\/musiker\/\$\{person\.slug\}`\}[^]*?<\/Link>/g)]
-  assert.equal(linkBlocks.length, 2, 'Name und "Musikerprofil ansehen" muessen zwei eigenstaendige Links sein')
+  assert.equal(linkBlocks.length, 2, 'Name und "Mehr über [Name]" muessen zwei eigenstaendige Links sein')
 })
 
 test('Pfeil ist rein dekorativ (aria-hidden), kein zusaetzliches aria-label auf den Personenkarten-Links', () => {
@@ -52,6 +53,6 @@ test('Person ohne Musikerprofil (hasProfile=false) bleibt unverlinkt -- Fallback
   assert.match(source, /<p className="font-semibold text-pl-text truncate">\{person\.name\}<\/p>/)
 })
 
-test('"Musikerprofil ansehen"-Link wird nur bei vorhandenem Profil gerendert', () => {
+test('"Mehr über [Name]"-Link wird nur bei vorhandenem Profil gerendert', () => {
   assert.match(source, /\{hasProfile && \(\s*<Link/)
 })

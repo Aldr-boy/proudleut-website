@@ -11,7 +11,9 @@ type Props = {
 // Musikerprofile auf den Personenkarten verlinken"): fuer jede Person mit
 // gueltigem Slug (RLS garantiert bereits, dass eine solche Person auch ein
 // oeffentliches /musiker/[slug]-Profil hat, siehe normalizeBandPeople)
-// werden Name und ein separater "Musikerprofil ansehen"-Link angeboten --
+// werden Name und ein separater "Mehr über [Name] →"-Link angeboten
+// (identischer Wortlaut wie auf der Musikerübersichtsseite /musiker,
+// siehe app/musiker/page.tsx) --
 // bewusst KEIN Klickbereich ueber die gesamte Karte mehr (Barrierefreiheit:
 // zwei eigenstaendige, klar unterscheidbare Links statt einem grossen
 // impliziten). Ohne Slug (defensiv, aktuell durch die Normalisierung nicht
@@ -57,7 +59,7 @@ function PersonCard({ person }: { person: BandPersonSummary }) {
             href={`/musiker/${person.slug}`}
             className={`inline-flex items-center gap-1 text-xs font-semibold text-pl-accent-deep hover:text-pl-accent motion-safe:transition-colors mt-2 ${FOCUS_RING}`}
           >
-            Musikerprofil ansehen
+            Mehr über {person.name}
             <span aria-hidden="true">→</span>
           </Link>
         )}
