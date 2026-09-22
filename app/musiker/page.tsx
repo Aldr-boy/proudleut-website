@@ -30,22 +30,25 @@ export const metadata: Metadata = {
 const FOCUS_RING =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent rounded-sm';
 
-// Personenkarte (Auftrag "Musikerübersicht /musiker nachschärfen"): Maße,
-// Raster und Typografie an components/BandCard.tsx angeglichen (Kartenrahmen
-// rounded-xl/border-pl-soft/bg-pl-elevated/shadow-pl-photo, aspect-[3/2]-
-// Bild, p-4, Name als text-lg font-semibold-Ueberschrift, Pills als
-// bg-pl-accent-subtle/text-pl-accent-deep) -- BandCard selbst bleibt dabei
-// unveraendert, nur seine Masse/Optik werden hier uebernommen, da BandCard
-// wegen des eigenen gestreckten Karten-Links (kein Klickbereich ueber die
-// gesamte Karte hier gefordert) nicht direkt wiederverwendbar ist. Inhalt/
-// Reihenfolge unveraendert: Foto, Name, Rolle, Referenzzeile (nur bei
-// vorhandenen Credits, ausschliesslich ueber formatBandPersonCreditsLine),
-// "Spielt bei" mit verlinkten Bandnamen, "Musikerprofil ansehen"-Link.
-// Bewusst KEIN Klickbereich ueber die gesamte Karte (identisches Prinzip
-// wie components/band/BandPeopleSection.tsx): Foto, Name und
-// "Musikerprofil ansehen" sind drei eigenstaendige Links auf dasselbe
-// Profil, Bandnamen eigene Links auf die jeweilige Bandseite -- Bandnamen
-// duerfen umbrechen (kein truncate/line-clamp).
+// Personenkarte (Auftrag "Musikerübersicht /musiker nachschärfen", plus
+// Nachschaerfung "Karten/Linktexte/Teaser"): Kartenrahmen weiterhin an
+// components/BandCard.tsx angeglichen (rounded-xl/border-pl-soft/
+// bg-pl-elevated/shadow-pl-photo, aspect-[3/2]-Bild, p-4, Name als text-lg
+// font-semibold-Ueberschrift) -- BandCard selbst bleibt dabei unveraendert,
+// nur seine Masse/Optik werden hier uebernommen, da BandCard wegen des
+// eigenen gestreckten Karten-Links (kein Klickbereich ueber die gesamte
+// Karte hier gefordert) nicht direkt wiederverwendbar ist. Die
+// Bandzugehoerigkeit wird bewusst NICHT mehr als Pill/Chip/Badge gezeigt,
+// sondern als ruhige Textzeile "Spielt bei [Bandname]" pro Membership, nur
+// der Bandname bleibt ein Link. Inhalt/Reihenfolge sonst unveraendert:
+// Foto, Name, Rolle, Referenzzeile (nur bei vorhandenen Credits,
+// ausschliesslich ueber formatBandPersonCreditsLine), "Spielt bei"-Zeilen,
+// "Mehr über [Name] →"-Link (identischer Wortlaut wie in
+// components/band/BandPeopleSection.tsx). Bewusst KEIN Klickbereich ueber
+// die gesamte Karte (identisches Prinzip wie dort): Foto, Name und der
+// abschliessende Link sind drei eigenstaendige Links auf dasselbe Profil,
+// Bandnamen eigene Links auf die jeweilige Bandseite -- Bandnamen duerfen
+// umbrechen (kein truncate/line-clamp).
 function MusikerCard({ person }: { person: PublicPerson }) {
   const role = derivePersonHeroRole(person);
   const creditsLine = formatBandPersonCreditsLine(person.credits);
@@ -92,21 +95,18 @@ function MusikerCard({ person }: { person: PublicPerson }) {
         {creditsLine && <p className="text-pl-text-hint text-xs mb-2">{creditsLine}</p>}
 
         {person.memberships.length > 0 && (
-          <div className="mt-1">
-            <p className="text-[11px] font-semibold text-pl-text-hint uppercase tracking-wider mb-1.5">
-              Spielt bei
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {person.memberships.map((m) => (
+          <div className="mt-1 space-y-1">
+            {person.memberships.map((m) => (
+              <p key={m.bandId} className="text-sm text-pl-text-muted">
+                Spielt bei{' '}
                 <Link
-                  key={m.bandId}
                   href={`/band/${m.bandSlug}`}
-                  className={`inline-flex items-center rounded-full bg-pl-accent-subtle px-2 py-0.5 text-xs font-medium text-pl-accent-deep hover:opacity-80 motion-safe:transition-opacity ${FOCUS_RING}`}
+                  className={`font-medium text-pl-text hover:text-pl-accent motion-safe:transition-colors ${FOCUS_RING}`}
                 >
                   {m.bandName}
                 </Link>
-              ))}
-            </div>
+              </p>
+            ))}
           </div>
         )}
 
@@ -114,7 +114,7 @@ function MusikerCard({ person }: { person: PublicPerson }) {
           href={profileHref}
           className={`mt-auto pt-3 inline-flex items-center gap-1 text-sm font-semibold text-pl-accent-deep hover:text-pl-accent motion-safe:transition-colors ${FOCUS_RING}`}
         >
-          Musikerprofil ansehen
+          Mehr über {person.name}
           <span aria-hidden="true">→</span>
         </Link>
       </div>
@@ -148,7 +148,7 @@ export default async function MusikerUebersichtPage() {
       <section className="bg-pl-canvas pb-16 px-0">
         <BandFinderPageHead
           h1="Musiker hinter den Bands"
-          intro="Wer steht bei den Bands eigentlich auf der Bühne? Hier lernst du Musiker kennen, die bei proudleut-Bands spielen, und siehst, was sie musikalisch mitbringen."
+          intro="Bandname und Bilder erzählen nur einen Teil. Die Menschen hinter der Musik überraschen oft – mit ihrer Erfahrung, ihrem Können und den Bühnen, auf denen sie bereits standen."
         />
 
         {/* Profilkarten: flex-wrap + justify-center statt bedingter
@@ -171,6 +171,22 @@ export default async function MusikerUebersichtPage() {
               <MusikerCard key={person.id} person={person} />
             ))}
           </div>
+
+          {/* Abschlussteaser: ein Satz, kein neuer Button/Formular -- nur
+              "Melde dich gerne" verlinkt auf /kontakt, im bestehenden
+              ruhigen Textlink-Stil (identische Klassen wie der "Schreib uns
+              kurz"-Link in components/bands/BandExplorer.tsx). Bleibt
+              innerhalb derselben Section, keine neue Flaeche. */}
+          <p className="text-pl-text-muted text-sm text-center mt-12">
+            Deine Band hat ein Profil auf Proudleut und du möchtest dich hier ebenfalls zeigen?{' '}
+            <Link
+              href="/kontakt"
+              className={`text-pl-accent hover:opacity-80 motion-safe:transition-opacity underline underline-offset-2 ${FOCUS_RING}`}
+            >
+              Melde dich gerne
+            </Link>
+            .
+          </p>
         </div>
       </section>
     </main>
