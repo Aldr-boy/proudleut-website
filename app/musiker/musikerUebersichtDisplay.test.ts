@@ -89,14 +89,15 @@ test('Kartenmasse/-typografie an BandCard angeglichen: p-4-Textbereich, Name als
   assert.match(source, /<h3 className="text-pl-text font-semibold text-lg leading-snug mb-1">/)
 })
 
-test('Bandzugehoerigkeit als ruhige Textzeile "Spielt bei [Bandname]" statt Pill/Chip/Badge -- nur der Bandname bleibt verlinkt', () => {
-  assert.match(source, /Spielt bei\{' '\}/)
+test('Bandzugehoerigkeit als einmalige "Spielt bei"-Ueberschrift mit allen Memberships als kompakte, gleich gestaltete Pills darunter', () => {
+  assert.match(source, /<p className="text-\[11px\] font-semibold text-pl-text-hint uppercase tracking-wider mb-1\.5">\s*\r?\n\s*Spielt bei\s*\r?\n\s*<\/p>/)
+  const headingCount = (source.match(/Spielt bei\s*\r?\n\s*<\/p>/g) ?? []).length
+  assert.equal(headingCount, 1, '"Spielt bei" darf nur einmal als Ueberschrift vorkommen, nicht pro Membership')
   assert.match(
     source,
-    /<Link\s*\r?\n\s*href=\{`\/band\/\$\{m\.bandSlug\}`\}\s*\r?\n\s*className=\{`font-medium text-pl-text hover:text-pl-accent motion-safe:transition-colors \$\{FOCUS_RING\}`\}\s*\r?\n\s*>\s*\r?\n\s*\{m\.bandName\}/,
+    /<Link\s*\r?\n\s*key=\{m\.bandId\}\s*\r?\n\s*href=\{`\/band\/\$\{m\.bandSlug\}`\}\s*\r?\n\s*className=\{`inline-flex items-center rounded-full bg-pl-accent-subtle px-2 py-0\.5 text-xs font-medium text-pl-accent-deep hover:opacity-80 motion-safe:transition-opacity \$\{FOCUS_RING\}`\}\s*\r?\n\s*>\s*\r?\n\s*\{m\.bandName\}/,
   )
-  assert.ok(!/rounded-full/.test(source), 'keine Pill-/Chip-/Badge-Optik (rounded-full) mehr fuer die Bandzugehoerigkeit')
-  assert.ok(!source.includes('bg-pl-accent-subtle'), 'der bisherige Pill-Hintergrund darf nicht mehr vorkommen')
+  assert.match(source, /<div className="flex flex-wrap gap-1\.5">/)
 })
 
 test('Bild-sizes-Attribut entspricht dem 3/2/1-Spalten-Raster (identisch zu BandCard.tsx)', () => {
