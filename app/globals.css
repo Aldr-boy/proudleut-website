@@ -226,3 +226,44 @@ body {
     transform: none !important;
   }
 }
+
+/* ── Hero-Logozeile: gleichmaessiger Rechts-nach-links-Lauf ──
+   components/hero/HeroLogoMarquee.tsx. Identisches Prinzip wie die
+   Paternoster-Bewegung oben: die Spur enthaelt die Logo-Liste zweimal
+   hintereinander, translate3d(0,0,0) -> translate3d(-50%,0,0) ergibt
+   dadurch einen harten, aber unsichtbaren Reset (keine Luecke, kein
+   Sprung). Bewusst sehr lange Dauer (90s) fuer eine ruhige, langsame
+   Bewegung. Nutzt dieselbe [data-hero-wall-paused]-Steuerung wie
+   .pl-hero-float (identischer Pause-Button in HeroWall.tsx, keine
+   zweite Steuerung). */
+@keyframes pl-logo-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.pl-logo-marquee {
+  animation: pl-logo-marquee 90s linear infinite;
+  will-change: transform;
+}
+[data-hero-wall-paused='true'] .pl-logo-marquee {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-logo-marquee { animation: none !important; }
+}
+
+/* Weicher Ein-/Auslauf an beiden Raendern der Logozeile (Nachbesserung
+   "Feinschliff Bandzeile", reale Werte aus der Entwurfsdatei: 36px
+   Mobile, 90px Desktop). Maskiert den FESTEN Viewport-Rahmen der Zeile
+   (components/hero/HeroLogoMarquee.tsx), nicht die darunter laufende
+   .pl-logo-marquee-Spur selbst -- Logos blenden dadurch weich ein/aus,
+   ohne dass die Spur ihre Geschwindigkeit/Position aendert. */
+.pl-logo-fade-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+}
+@media (min-width: 768px) {
+  .pl-logo-fade-mask {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 90px, #000 calc(100% - 90px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 90px, #000 calc(100% - 90px), transparent 100%);
+  }
+}

@@ -9,7 +9,6 @@ import { toAuswahlBandSummary, type AuswahlBandSummary } from '@/components/home
 import { HeroWall } from '@/components/hero/HeroWall';
 import { HeroContent } from '@/components/homepage/HeroContent';
 import { fetchHeroWallPool } from '@/lib/heroWall/fetchHeroWallPool';
-import LogoStrip from '@/components/homepage/LogoStrip';
 import AuswahlSection from '@/components/homepage/AuswahlSection';
 import Explainer from '@/components/homepage/Explainer';
 import BandEinschaetzen from '@/components/homepage/BandEinschaetzen';
@@ -111,7 +110,6 @@ export default async function HomePage() {
       <HeroWall images={heroPool}>
         <HeroContent />
       </HeroWall>
-      <LogoStrip />
       <AuswahlSection tabs={EVENT_TYPE_TABS} bandsByState={bandsByState} />
       <Explainer />
       {einschaetzenBand && <BandEinschaetzen band={einschaetzenBand} />}
