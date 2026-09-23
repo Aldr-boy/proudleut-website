@@ -14,23 +14,31 @@ type Props = {
   hasVideo: boolean;
 };
 
-// Auftrag 4.6 + UX-Feintuning (Sticky-CTA-Ueberschneidung):
+// Auftrag 4.6 + UX-Feintuning (Sticky-CTA-Ueberschneidung) + Fix "fest
+// positionierte Leisten ueberdecken den Footer":
 // Desktop -- dezenter schwebender Anfrage-Pill unten rechts.
 // Mobile -- Sticky Bottom CTA, ebenfalls nur im Zwischenbereich sichtbar
 // (nicht mehr durchgaengig), damit er sich am ersten Screen nicht mit dem
 // Hero-CTA ueberschneidet und am Ende nicht mit dem finalen Anfragebereich
 // konkurriert.
 //
-// Sichtbarkeit wird ausschliesslich ueber zwei IntersectionObserver auf
-// dedizierten 1px-Sentinels abgeleitet (kein Scroll-Listener):
 //   heroPassed   -- der Hero-Sentinel liegt bereits oberhalb der Observer-Grenze
-//   finalReached -- der Final-Sentinel ist sichtbar oder bereits passiert
+//   finalReached -- der Final-Sentinel liegt innerhalb oder oberhalb des Viewports
 //   stickyVisible = heroPassed && !finalReached
 //
-// Ein Sentinel mit isIntersecting === false kann entweder noch unterhalb des
-// Viewports liegen oder bereits oberhalb passiert sein -- beide Faelle werden
-// hier bewusst unterschieden (ueber rootBounds.top bzw. den dokumentierten
-// Fallback), statt naiv "!isIntersecting" gleichzusetzen.
+// heroPassed bleibt unveraendert ueber einen IntersectionObserver bestimmt.
+// finalReached wird bewusst NICHT mehr ueber einen IntersectionObserver
+// bestimmt: Ein Observer feuert nur, wenn ein tatsaechlich beobachteter
+// Frame eine Grenzueberquerung zeigt. Ein grosser, unstetiger Scroll-Sprung
+// (Scrollbar-Klick/-Drag, Pos1/Ende-Taste, interner Sprunglink, schnelles
+// Trackpad-Fling) kann den 1px-Sentinel in einem einzigen Frame ueberspringen
+// -- in beide Richtungen --, wodurch der Callback nie feuert und finalReached
+// auf einem veralteten Wert haengen bleibt (siehe Analysebericht "Fix fest
+// positionierte Leisten"). Stattdessen wird die tatsaechliche Geometrie bei
+// jedem Scroll/Resize (per requestAnimationFrame gedrosselt, kein Layout-
+// Thrashing) direkt ausgewertet: erreicht, sobald
+// sentinel.getBoundingClientRect().top < window.innerHeight gilt -- das
+// entspricht immer dem echten Zustand, unabhaengig vom Scroll-Pfad.
 export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId, finalSentinelId, hasVideo }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [heroPassed, setHeroPassed] = useState(false);
@@ -70,26 +78,38 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
 
     // rootMargin '-8px 0px 0px 0px' gilt ausschliesslich fuer den Hero-Observer --
     // bewusst kein pixelgenauer Nachbau der Navigationshoehe, nur eine kleine
-    // deterministische Toleranz.
+    // deterministische Toleranz. Unveraendert gegenueber dem bisherigen Stand.
     const heroObserver = new IntersectionObserver(([entry]) => {
       const boundary = entry.rootBounds ? entry.rootBounds.top : 8;
       const isAboveBoundary = entry.boundingClientRect.top < boundary;
       setHeroPassed(!entry.isIntersecting && isAboveBoundary);
     }, { rootMargin: '-8px 0px 0px 0px' });
-
-    // Final-Observer nutzt den Default-rootMargin.
-    const finalObserver = new IntersectionObserver(([entry]) => {
-      const boundary = entry.rootBounds ? entry.rootBounds.top : 0;
-      const isAboveBoundary = entry.boundingClientRect.top < boundary;
-      setFinalReached(entry.isIntersecting || isAboveBoundary);
-    });
-
     heroObserver.observe(heroSentinel);
-    finalObserver.observe(finalSentinel);
+
+    // finalReached: deterministische Geometrie-Pruefung statt Observer-
+    // Crossing-Erkennung (siehe Kommentar oben) -- bei jedem Scroll/Resize
+    // per requestAnimationFrame gedrosselt neu ausgewertet, zusaetzlich
+    // einmal sofort nach dem Mount (z. B. Reload waehrend die Seite bereits
+    // bis ans Ende gescrollt ist).
+    let rafScheduled = false;
+    const evaluateFinalSentinel = () => {
+      rafScheduled = false;
+      setFinalReached(finalSentinel.getBoundingClientRect().top < window.innerHeight);
+    };
+    const scheduleEvaluateFinalSentinel = () => {
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(evaluateFinalSentinel);
+    };
+
+    scheduleEvaluateFinalSentinel();
+    window.addEventListener('scroll', scheduleEvaluateFinalSentinel, { passive: true });
+    window.addEventListener('resize', scheduleEvaluateFinalSentinel);
 
     return () => {
       heroObserver.disconnect();
-      finalObserver.disconnect();
+      window.removeEventListener('scroll', scheduleEvaluateFinalSentinel);
+      window.removeEventListener('resize', scheduleEvaluateFinalSentinel);
     };
   }, [heroSentinelId, finalSentinelId]);
 
