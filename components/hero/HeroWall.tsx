@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import type { ReactNode } from 'react'
 import {
@@ -385,8 +385,41 @@ function HeroImageWall({ images }: { images: HeroWallImage[] }) {
   )
 }
 
+// Review-Fix #1 (PR #107, Codex "Let the desktop hero grow with its
+// text"): Hoehe der Logozeile, die die Textflaeche ab md ueber
+// `bottom-14` freihalten muss (siehe unten) -- als Konstante, damit sie
+// nicht als magische Zahl an zwei Stellen (Klasse + JS-Messung)
+// auseinanderlaeuft.
+const LOGO_ROW_HEIGHT_PX = 56
+
 export function HeroWall({ images, children }: { images: HeroWallImage[]; children?: ReactNode }) {
   const [paused, setPaused] = useState(false)
+  // Review-Fix #1 (PR #107, Codex): auf kurzen md/lg/xl-Viewports (z.B.
+  // 800x400) reichte die rein svh-basierte Mindesthoehe nicht aus --
+  // Text/CTA wurden vom aeusseren overflow-hidden abgeschnitten und
+  // ueberlagerten die Logozeile. Fix: der tatsaechlich benoetigte
+  // Platz des Text-Inhalts wird per ResizeObserver gemessen (die innere
+  // Wrapper-Div ist trotz absoluter, hoehenbegrenzter Eltern-Box selbst
+  // NICHT hoehenbegrenzt -- align-items:center sizet sie auf ihre
+  // intrinsische Hoehe) und als Mindesthoehe fuer den Szenencontainer
+  // durchgereicht (`max(<svh-Wert>, <gemessene Hoehe> + Logozeile)`) --
+  // der Hero waechst dadurch mit dem Inhalt, statt ihn abzuschneiden.
+  // Bei 1440x900 (Auftrag: Komposition bleibt unveraendert) liegt die
+  // gemessene Hoehe immer deutlich unter 100svh, `max()` greift dort
+  // also nie ein.
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [contentMinHeightPx, setContentMinHeightPx] = useState<number | null>(null)
+
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) setContentMinHeightPx(Math.ceil(entry.contentRect.height) + LOGO_ROW_HEIGHT_PX)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <section className="relative overflow-hidden bg-pl-stage">
@@ -398,10 +431,13 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
           jeweilige Komposition (weniger Spuren auf Tablet) bekommt nur
           so viel Hoehe, wie sie tatsaechlich braucht (Auftrag Abschnitt
           3) -- volle Viewporthoehe bleibt dem eigentlichen Desktop (xl)
-          vorbehalten. */}
+          vorbehalten. `max(<svh>, var(--pl-hero-content-min-h))` je
+          Breakpoint (Review-Fix #1): waechst ueber den svh-Wert hinaus,
+          wenn der gemessene Text-Inhalt mehr Platz braucht. */}
       <div
-        className="relative flex flex-col md:block md:min-h-[68svh] lg:min-h-[80svh] xl:min-h-[100svh]"
+        className="relative flex flex-col md:block md:min-h-[max(68svh,var(--pl-hero-content-min-h,0px))] lg:min-h-[max(80svh,var(--pl-hero-content-min-h,0px))] xl:min-h-[max(100svh,var(--pl-hero-content-min-h,0px))]"
         data-hero-wall-paused={paused}
+        style={contentMinHeightPx != null ? { ['--pl-hero-content-min-h' as string]: `${contentMinHeightPx}px` } : undefined}
       >
         {/* Textfläche: auf Mobile ein normaler Flow-Block, per CSS
             `order` NACH der Bildwelt (Nachbesserung "Feinschliff
@@ -429,7 +465,14 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
             sich dadurch unabhaengig vom Inhalt nie mit der Zeile
             ueberlagern, keine Kollisionspruefung zur Laufzeit noetig. */}
         <div className="relative z-20 order-2 md:order-none w-full md:absolute md:top-0 md:bottom-14 md:left-0 md:w-[46%] lg:w-[44%] xl:w-[42%] flex items-center px-4 sm:px-6 md:pl-8 lg:pl-12 xl:pl-16 pt-10 pb-16 md:pt-0 md:pb-0">
-          <div className="w-full max-w-xl md:max-w-none mx-auto md:mx-0">{children}</div>
+          {/* ref hier (nicht am aeusseren, hoehenbegrenzten Flex-Container):
+              diese Div ist Kind eines `items-center`-Flex-Containers und
+              deshalb NICHT auf dessen Hoehe gestreckt -- ihre eigene Hoehe
+              bleibt intrinsisch (Inhaltshoehe), unabhaengig davon, ob sie
+              gerade sichtbar Platz hat oder vom aeusseren overflow-hidden
+              abgeschnitten wuerde. Genau diese ungestreckte Hoehe braucht
+              der ResizeObserver oben. */}
+          <div ref={contentRef} className="w-full max-w-xl md:max-w-none mx-auto md:mx-0">{children}</div>
         </div>
 
         {/* Bilderwelt: auf Mobile ein normaler Flow-Block mit eigener

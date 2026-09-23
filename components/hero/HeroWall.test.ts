@@ -27,9 +27,13 @@ test('Section: relative, overflow-hidden, bg-pl-stage -- keine feste vh-Hoehe au
   assert.doesNotMatch(sectionTag, /\bh-screen\b/)
 })
 
-test('xl:min-h-[100svh] sitzt auf der Flex-Zeile (waechst mit Inhalt/Textvergroesserung, keine Deckel-Hoehe) -- erst ab Desktop erzwungen, Tablet bleibt inhaltsbestimmt ohne kuenstliche Leerflaeche', () => {
-  assert.match(source, /xl:min-h-\[100svh\]/)
-  assert.doesNotMatch(source, /\bmd:min-h-\[100svh\]/, 'volle Viewporthoehe darf nicht schon ab Tablet erzwungen werden (Leerflaechen-Risiko bei weniger Tracks)')
+test('xl:min-h-[...100svh...] sitzt auf der Flex-Zeile (waechst mit Inhalt/Textvergroesserung, keine Deckel-Hoehe) -- erst ab Desktop erzwungen, Tablet bleibt inhaltsbestimmt ohne kuenstliche Leerflaeche', () => {
+  // Review-Fix #1 (PR #107): der svh-Wert steckt jetzt in einem
+  // max(<svh>, var(--pl-hero-content-min-h)) -- die Zeile darf ueber den
+  // svh-Wert HINAUSWACHSEN, wenn der Inhalt mehr Platz braucht, aber der
+  // svh-Wert selbst (68/80/100) bleibt je Breakpoint unveraendert.
+  assert.match(source, /xl:min-h-\[max\(100svh,var\(--pl-hero-content-min-h,0px\)\)\]/)
+  assert.doesNotMatch(source, /\bmd:min-h-\[max\(100svh/, 'volle Viewporthoehe darf nicht schon ab Tablet erzwungen werden (Leerflaechen-Risiko bei weniger Tracks)')
   assert.doesNotMatch(source, /max-h-\[100svh\]/, 'keine Hoehenbegrenzung nach oben auf der Hero-Section')
 })
 

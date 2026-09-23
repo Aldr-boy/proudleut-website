@@ -247,8 +247,35 @@ body {
 [data-hero-wall-paused='true'] .pl-logo-marquee {
   animation-play-state: paused;
 }
+/* Review-Fix #2 (PR #107, Codex): solange ein Logo-Link innerhalb der
+   Zeile den Tastaturfokus haelt, pausiert die Animation zusaetzlich zur
+   bestehenden [data-hero-wall-paused]-Steuerung -- unabhaengig davon, ob
+   Bildwand/Logozeile gerade laufen. `animation: none` (nicht nur
+   animation-play-state) UND `transform: none` setzen die Spur auf ihre
+   normale Fluss-Position zurueck: dadurch wird .pl-logo-fade-mask (siehe
+   dort) zu einem gewoehnlichen Scrollcontainer ohne CSS-Transform-Versatz,
+   und die native "fokussiertes Element in Sicht scrollen"-Funktion der
+   Browser bringt den fokussierten Link zuverlaessig in den sichtbaren
+   Bereich (siehe .pl-logo-fade-mask:focus-within).
+   !important, damit dies auch waehrend [data-hero-wall-paused='false']
+   greift. */
+.pl-logo-fade-mask:focus-within .pl-logo-marquee {
+  animation: none !important;
+  transform: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   .pl-logo-marquee { animation: none !important; }
+  /* Review-Fix #3 (PR #107, Codex): bei reduzierter Bewegung bleibt die
+     Spur bei transform:none (Ausgangsposition) stehen -- ohne Scroll-
+     Moeglichkeit waeren die meisten der 15 echten Logos (viel breiter als
+     der maskierte Ausschnitt) weder sichtbar noch per Tastatur erreichbar.
+     .pl-logo-fade-mask wird deshalb hier zu einem regulaeren horizontalen
+     Scrollcontainer; die technischen Duplikate (siehe pl-logo-marquee-dup
+     in HeroLogoMarquee.tsx) werden vollstaendig aus Layout UND
+     Accessibility-Tree entfernt (display:none), damit Scroll/Tab
+     ausschliesslich durch die 15 echten Logos fuehrt. */
+  .pl-logo-fade-mask { overflow-x: auto; }
+  .pl-logo-marquee-dup { display: none; }
 }
 
 /* Weicher Ein-/Auslauf an beiden Raendern der Logozeile (Nachbesserung
@@ -256,8 +283,16 @@ body {
    Mobile, 90px Desktop). Maskiert den FESTEN Viewport-Rahmen der Zeile
    (components/hero/HeroLogoMarquee.tsx), nicht die darunter laufende
    .pl-logo-marquee-Spur selbst -- Logos blenden dadurch weich ein/aus,
-   ohne dass die Spur ihre Geschwindigkeit/Position aendert. */
+   ohne dass die Spur ihre Geschwindigkeit/Position aendert.
+   `overflow: hidden` steht bewusst hier als eigene CSS-Regel (nicht als
+   Tailwind-Utility-Klasse im Markup) -- ein unbedingtes Tailwind
+   `overflow-hidden` haette dieselbe von der internen Utility-Reihenfolge
+   abhaengige Spezifitaets-Konkurrenz erzeugt, die bereits beim
+   Pause-Button zu einem realen Bug fuehrte (siehe PauseButton in
+   HeroWall.tsx): die :focus-within- und reduced-motion-Overrides unten
+   koennen dadurch zuverlaessig auf overflow-x:auto umschalten. */
 .pl-logo-fade-mask {
+  overflow: hidden;
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
 }
@@ -266,4 +301,24 @@ body {
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 90px, #000 calc(100% - 90px), transparent 100%);
     mask-image: linear-gradient(90deg, transparent 0, #000 90px, #000 calc(100% - 90px), transparent 100%);
   }
+}
+/* :focus-within schaltet Overflow zusaetzlich zum animation/transform-
+   Reset oben auf scrollbar um (siehe Kommentar dort) -- dezente,
+   erkennbare Scrollbar statt komplett ausgeblendet. */
+.pl-logo-fade-mask:focus-within {
+  overflow-x: auto;
+}
+.pl-logo-fade-mask {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(196, 168, 216, 0.35) transparent;
+}
+.pl-logo-fade-mask::-webkit-scrollbar {
+  height: 4px;
+}
+.pl-logo-fade-mask::-webkit-scrollbar-thumb {
+  background: rgba(196, 168, 216, 0.35);
+  border-radius: 2px;
+}
+.pl-logo-fade-mask::-webkit-scrollbar-track {
+  background: transparent;
 }
