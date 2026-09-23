@@ -4,11 +4,17 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
-// Strukturelle Regressionspruefung fuer die drei Anlass-Pills im
-// Startseiten-Hero (components/homepage/HeroMosaic.tsx). Gleiches Muster
-// wie andere strukturelle Tests in diesem Verzeichnis -- echte Quelldatei
-// per readFileSync lesen, keine React-Testing-Infrastruktur noetig, da nur
-// auf statische href-/Label-Werte geprueft wird.
+// Strukturelle Regressionspruefung fuer die drei Anlass-Pills und den
+// zentralen Content im Startseiten-Hero (components/homepage/HeroMosaic.tsx).
+// Gleiches Muster wie andere strukturelle Tests in diesem Verzeichnis --
+// echte Quelldatei per readFileSync lesen, keine React-Testing-
+// Infrastruktur noetig.
+//
+// Auftrag "Dichtes Mosaik + klarer Einstieg": die fruehere Pointer-Drag-/
+// Schwebe-Animations-Mechanik wurde bewusst vollstaendig entfernt
+// (Abschnitt 15, "erst die statische Komposition sauber loesen") --
+// die zugehoerigen frueheren Tests dieser Datei sind deshalb ersetzt,
+// nicht nur angepasst.
 const sourcePath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   '..', '..', 'components', 'homepage', 'HeroMosaic.tsx'
@@ -38,97 +44,84 @@ test('Hero enthaelt genau die drei festgelegten Anlass-Pills in dieser Reihenfol
   )
 })
 
-test('H1 lautet exakt "Livebands für dein Event."', () => {
+test('H1 lautet exakt "Livebands für dein Event." ohne zusaetzliches Akzent-Element', () => {
   assert.match(source, />\s*Livebands für dein Event\.\s*</)
+  // Kein separater <span> (z. B. fuer einen violetten Akzentpunkt) direkt
+  // im H1-Block -- Ueberschrift ist reiner Text.
+  const h1Start = source.indexOf('<h1')
+  const h1End = source.indexOf('</h1>', h1Start)
+  const h1Block = source.slice(h1Start, h1End)
+  assert.doesNotMatch(h1Block, /<span/)
 })
 
-test('"Alle Bands ansehen" verlinkt weiterhin auf /bands', () => {
+test('"Alle Bands ansehen" verlinkt weiterhin auf /bands, jetzt wieder MIT Pfeil (Auftrag "Webflow-Prinzip + Next.js-Einstieg", Abschnitt 11)', () => {
   const idx = source.indexOf('Alle Bands ansehen')
   assert.ok(idx >= 0, '"Alle Bands ansehen"-Link nicht gefunden')
   const before = source.slice(0, idx)
   const hrefIdx = before.lastIndexOf('href="/bands"')
   assert.ok(hrefIdx >= 0 && idx - hrefIdx < 400, 'Link zeigt nicht auf /bands')
+  const linkEnd = source.indexOf('</Link>', idx)
+  const linkBody = source.slice(idx, linkEnd)
+  assert.match(linkBody, /→/, '"Alle Bands ansehen" soll seit Auftrag 11 wieder einen Pfeil enthalten')
 })
 
-// Regressionsschutz: das fruehere "Hover auf Anlass-Pill hebt zugehoerige
-// Fotos hervor"-Verhalten (wirkte wie Zittern) darf nicht zurueckkehren --
-// die Pills duerfen keine onMouseEnter/onFocus-Handler mehr auf Fotos
-// ausloesen. Stattdessen: echtes Pointer-Drag je Foto.
-test('Anlass-Pills loesen keine Hover-/Focus-Handler auf den Hero-Fotos mehr aus', () => {
-  assert.doesNotMatch(source, /onMouseEnter=\{?\(?\)?\s*=>\s*onEnterZone/)
-  assert.doesNotMatch(source, /onEnterZone|onLeaveZone|activeZone/)
+test('Anlass-Pills enthalten keinen Pfeil mehr', () => {
+  const mapStart = source.indexOf('{ANLASS_PILLS.map(')
+  const mapEnd = source.indexOf('))}', mapStart)
+  assert.ok(mapStart >= 0 && mapEnd > mapStart, 'ANLASS_PILLS.map(...) nicht gefunden')
+  const mapBody = source.slice(mapStart, mapEnd)
+  assert.doesNotMatch(mapBody, /→/, 'Anlass-Pills duerfen keinen Pfeil mehr enthalten')
 })
 
-test('Hero-Fotos sind per Pointer-Events verschiebbar (grab/grabbing)', () => {
-  assert.match(source, /onPointerDown=/)
-  assert.match(source, /onPointerMove=/)
-  assert.match(source, /onPointerUp=/)
-  assert.match(source, /cursor-grab/)
-  assert.match(source, /cursor-grabbing/)
+test('Eyebrow "In und um Bayern" wieder in Grossbuchstaben mit moderatem Tracking (Auftrag "Webflow-Prinzip + Next.js-Einstieg", Abschnitt 10), Label "Was hast du vor?" bleibt normale Schreibweise', () => {
+  assert.match(source, />\s*In und um Bayern\s*</)
+  assert.match(source, />\s*Was hast du vor\?\s*</)
+
+  const eyebrowIdx = source.indexOf('In und um Bayern')
+  const eyebrowTagStart = source.lastIndexOf('<p', eyebrowIdx)
+  const eyebrowTagEnd = source.indexOf('>', eyebrowTagStart)
+  const eyebrowClass = source.slice(eyebrowTagStart, eyebrowTagEnd)
+  assert.match(eyebrowClass, /uppercase/, 'Eyebrow soll seit Auftrag 10 wieder uppercase sein')
+  // Nur normales bis leicht erhoehtes Tracking -- keine extreme
+  // Buchstabensperrung (kein tracking-widest, kein grosser Arbitrary-Value).
+  assert.doesNotMatch(eyebrowClass, /tracking-widest/)
+  assert.doesNotMatch(eyebrowClass, /tracking-\[0\.(1|2|3|4|5|6|7|8|9)/)
+
+  const labelIdx = source.indexOf('Was hast du vor?')
+  const labelTagStart = source.lastIndexOf('<p', labelIdx)
+  const labelTagEnd = source.indexOf('>', labelTagStart)
+  const labelClass = source.slice(labelTagStart, labelTagEnd)
+  assert.doesNotMatch(labelClass, /uppercase/)
+  assert.doesNotMatch(labelClass, /tracking-\[/)
+
+  // Beide Labels sollen sich nicht exakt dasselbe typografische Muster
+  // teilen (Auftrag 9 der vorherigen Runde: "nicht mehrfach direkt
+  // untereinander verwenden") -- gilt unveraendert weiter.
+  assert.notEqual(eyebrowClass, labelClass)
 })
 
-// Nachschaerfung: die Drag-Grenze ist der gesamte Hero-Container, nicht ein
-// kleiner Radius um die jeweilige Ausgangsposition. Kein per-Bild
-// dragConstraints-Konstrukt mehr, stattdessen ein gegen containerRect
-// geclamptes Ziel (containerRect.width/height fliessen in die Rechnung ein).
-test('Drag-Begrenzung bezieht sich auf den gesamten Hero-Container, nicht auf einen Radius um die Startposition', () => {
-  assert.doesNotMatch(source, /DRAG_LIMIT_PX/)
-  assert.match(source, /containerRect\.width/)
-  assert.match(source, /containerRect\.height/)
-  assert.match(source, /OVERFLOW_RATIO/)
+test('keine Pointer-Drag-Mechanik mehr vorhanden (statische Komposition)', () => {
+  assert.doesNotMatch(source, /onPointerDown=|onPointerMove=|onPointerUp=|cursor-grab/)
 })
 
-// Ebenen: Fotos (10/20 waehrend Drag) muessen unter dem Hero-Content (30)
-// liegen -- Navigation ist eine eigene, feste Komponente und bleibt
-// unangetastet (eigener Stacking-Context, hoeher als alles hier).
-test('Z-Index-Ebenen: Fotos bleiben unter dem zentralen Hero-Content', () => {
-  assert.match(source, /zIndex:\s*isDragging\s*\?\s*20\s*:\s*10/)
-  assert.match(source, /className="absolute inset-0 z-30/)
+test('keine automatische Schwebe-/Mosaik-Animation mehr vorhanden', () => {
+  assert.doesNotMatch(source, /pl-hero-float/)
+  assert.doesNotMatch(source, /animationPlayState|animationDuration|animationDelay/)
 })
 
-// Schutz der zentralen Flaeche erfolgt ueber Pointer-Events-Layering, nicht
-// ueber eine raeumliche Kollisionsgrenze: der volle Hero-Content-Wrapper
-// blockt keine Pointer-Events (Fotos dahinter bleiben greifbar), nur der
-// tatsaechliche Text-/Button-Block selbst ist interaktiv.
-test('Zentraler Hero-Content bleibt bedienbar, blockiert aber keine Pointer-Events ausserhalb von Text/Buttons', () => {
-  assert.match(source, /pointer-events-none/)
-  assert.match(source, /pointer-events-auto/)
+test('kein Slider/Carousel/Parallax/Hover-Zoom auf einzelnen Hero-Fotos', () => {
+  assert.doesNotMatch(source, /useSwipeable|Swiper|Carousel|IntersectionObserver/)
+  assert.doesNotMatch(source, /hover:scale|group-hover:scale/)
 })
 
-// Nachschaerfung "Ausgangspositionen naeher an die Mitte": die vier
-// vormals am staerksten an den absoluten Bildschirmrand gepinnten Fotos
-// (feste negative Pixelwerte bzw. eine an calc(50% - 720px) gekoppelte
-// Viewport-Rand-Formel) duerfen nicht zurueckkehren -- Positionen muessen
-// prozentual und damit containerbreiten-relativ verankert sein.
-test('Fotopositionen sind prozentual verankert, nicht mehr an feste Pixel-Randwerte oder eine Viewport-Rand-Formel gepinnt', () => {
-  const arrayStart = source.indexOf('const FRAMING_IMAGES: FramingImage[] = [')
-  assert.ok(arrayStart >= 0, 'FRAMING_IMAGES nicht gefunden')
-  const arrayEnd = source.indexOf('\n];', arrayStart)
-  const arrayLiteral = source.slice(arrayStart, arrayEnd)
-
-  assert.doesNotMatch(arrayLiteral, /calc\(50%/, 'alte Viewport-Rand-Formel darf nicht zurueckkehren')
-  assert.doesNotMatch(
-    arrayLiteral,
-    /(left|right):\s*'-\d+px'/,
-    'Fotos duerfen nicht mehr per festem negativem Pixelwert an den absoluten Rand gepinnt sein'
-  )
-})
-
-// Nachschaerfung "fluessigeres Dragging": die eigentliche Bewegung waehrend
-// des Ziehens darf keinen React-Re-Render pro pointermove mehr ausloesen
-// (das war das Ruckeln) -- stattdessen rAF-gedrosseltes, direktes
-// DOM-Update per ref, translate3d fuer Compositing, will-change waehrend
-// der aktiven Geste, keine CSS-Transition auf transform.
-test('Live-Bewegung waehrend des Ziehens ist von React-State entkoppelt (rAF + direktes DOM-Update per ref)', () => {
-  const moveStart = source.indexOf('function handlePointerMove(')
-  const moveEnd = source.indexOf('function endDrag(', moveStart)
-  assert.ok(moveStart >= 0 && moveEnd > moveStart, 'handlePointerMove nicht gefunden')
-  const moveBody = source.slice(moveStart, moveEnd)
-
-  assert.doesNotMatch(moveBody, /setOffsets\(/, 'handlePointerMove darf pro pointermove kein setOffsets() mehr aufrufen')
-  assert.match(moveBody, /requestAnimationFrame\(/)
-
-  assert.match(source, /translate3d\(/)
-  assert.match(source, /willChange\s*=\s*'transform'/)
-  assert.doesNotMatch(source, /transition-\[filter,transform\]|transition-transform/, 'keine CSS-Transition auf transform')
+test('Mosaik-Bilder sind rein dekorativ (leeres alt), kein Screenreader-Laerm durch zwoelf Bildbeschreibungen', () => {
+  // Alle Bilderwand-Spalten (Desktop wie Mobil) rendern ueber eine einzige
+  // gemeinsame <Image>-Stelle in der MosaicColumns-Hilfskomponente -- ein
+  // einziges alt="" dort deckt saemtliche Bilder ab, keine zwoelf
+  // einzelnen alt=""-Vorkommen mehr noetig.
+  const imageStart = source.indexOf('<Image')
+  const imageEnd = source.indexOf('/>', imageStart)
+  const imageTag = source.slice(imageStart, imageEnd)
+  assert.match(imageTag, /alt=""/, 'Mosaik-<Image> muss dekorativ sein (alt="")')
+  assert.equal((source.match(/<Image/g) ?? []).length, 1, 'erwartet genau eine gemeinsame <Image>-Stelle fuer alle Mosaik-Kacheln (kein Duplikat pro Bild)')
 })
