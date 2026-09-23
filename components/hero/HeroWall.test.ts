@@ -27,9 +27,13 @@ test('Section: relative, overflow-hidden, bg-pl-stage -- keine feste vh-Hoehe au
   assert.doesNotMatch(sectionTag, /\bh-screen\b/)
 })
 
-test('xl:min-h-[100svh] sitzt auf der Flex-Zeile (waechst mit Inhalt/Textvergroesserung, keine Deckel-Hoehe) -- erst ab Desktop erzwungen, Tablet bleibt inhaltsbestimmt ohne kuenstliche Leerflaeche', () => {
-  assert.match(source, /xl:min-h-\[100svh\]/)
-  assert.doesNotMatch(source, /\bmd:min-h-\[100svh\]/, 'volle Viewporthoehe darf nicht schon ab Tablet erzwungen werden (Leerflaechen-Risiko bei weniger Tracks)')
+test('xl:min-h-[...100svh...] sitzt auf der Flex-Zeile (waechst mit Inhalt/Textvergroesserung, keine Deckel-Hoehe) -- erst ab Desktop erzwungen, Tablet bleibt inhaltsbestimmt ohne kuenstliche Leerflaeche', () => {
+  // Review-Fix #1 (PR #107): der svh-Wert steckt jetzt in einem
+  // max(<svh>, var(--pl-hero-content-min-h)) -- die Zeile darf ueber den
+  // svh-Wert HINAUSWACHSEN, wenn der Inhalt mehr Platz braucht, aber der
+  // svh-Wert selbst (68/80/100) bleibt je Breakpoint unveraendert.
+  assert.match(source, /xl:min-h-\[max\(100svh,var\(--pl-hero-content-min-h,0px\)\)\]/)
+  assert.doesNotMatch(source, /\bmd:min-h-\[max\(100svh/, 'volle Viewporthoehe darf nicht schon ab Tablet erzwungen werden (Leerflaechen-Risiko bei weniger Tracks)')
   assert.doesNotMatch(source, /max-h-\[100svh\]/, 'keine Hoehenbegrenzung nach oben auf der Hero-Section')
 })
 
@@ -46,7 +50,7 @@ test('Textflaeche steht im Dokumentfluss vor der Bilderwelt (Mobile: Text zuerst
 // bleibt die Bildwelt weiterhin ein normaler Flow-Block ohne jede
 // absolute/fixed Positionierung (unpräfigierte Basisklassen).
 test('Bilderwelt-Wrapper: auf Mobile normaler Flow-Block mit eigener Mindesthoehe (kein unpräfigiertes absolute/fixed), ab md bewusst absolute (überlappende Ebene)', () => {
-  const wallWrapperMatch = source.match(/<div className="relative w-full min-h-\[42svh\][^"]*">/)
+  const wallWrapperMatch = source.match(/<div className="relative order-1 md:order-none w-full min-h-\[42svh\][^"]*">/)
   assert.ok(wallWrapperMatch, 'Bilderwelt-Wrapper-Div nicht gefunden')
   const classes = wallWrapperMatch[0]
   assert.match(classes, /min-h-\[42svh\]/, 'Bilderwelt braucht eine eigene Mindesthoehe auf Mobile (Dokumentfluss statt fester Position)')
@@ -55,6 +59,10 @@ test('Bilderwelt-Wrapper: auf Mobile normaler Flow-Block mit eigener Mindesthoeh
   // Ab md bewusst absolute -- Kernbestandteil der Ueberlappungs-/Gradient-Loesung.
   assert.match(classes, /md:absolute/)
   assert.match(classes, /md:inset-y-0/)
+  // Nachbesserung "Feinschliff Bandzeile": auf Mobile per CSS `order`
+  // VOR der Textflaeche (Mosaik oben, Text darunter), ab md wirkungslos.
+  assert.match(classes, /order-1/)
+  assert.match(classes, /md:order-none/)
 })
 
 test('children (HeroContent) wird unveraendert als Slot eingehaengt -- HeroWall selbst rendert keinen eigenen Text', () => {
@@ -103,9 +111,18 @@ test('Rotation der gesamten Bildwand sitzt auf einem eigenen Vorfahren-Element, 
 
 test('Pause-Button: aria-pressed, verstaendlicher aria-label, steuert data-hero-wall-paused', () => {
   assert.match(source, /aria-pressed=\{paused\}/)
-  assert.match(source, /aria-label=\{paused \? 'Bewegung der Bildwand fortsetzen' : 'Bewegung der Bildwand pausieren'\}/)
+  // Nachgang "Hero-Logozeile": Pause-Button steuert jetzt zusaetzlich die
+  // Logozeile (dieselbe Instanz, kein zweiter Regler) -- aria-label
+  // benennt beide Bewegungen.
+  assert.match(source, /aria-label=\{paused \? 'Bewegung der Bildwand und Logozeile fortsetzen' : 'Bewegung der Bildwand und Logozeile pausieren'\}/)
   assert.match(source, /data-hero-wall-paused=\{paused\}/)
-  assert.match(source, /onClick=\{\(\) => setPaused\(\(p\) => !p\)\}/)
+  // Nachbesserung "Feinschliff Bandzeile Runde 2": onClick sitzt jetzt in
+  // der geteilten PauseButton-Funktion (onClick={onToggle}), beide
+  // Renderstellen reichen denselben Toggle-Handler als `onToggle` durch.
+  assert.match(source, /onClick=\{onToggle\}/)
+  assert.match(source, /onToggle=\{\(\) => setPaused\(\(p\) => !p\)\}/g)
+  const toggleCount = source.match(/onToggle=\{\(\) => setPaused\(\(p\) => !p\)\}/g) ?? []
+  assert.equal(toggleCount.length, 2, 'beide Pause-Button-Instanzen (Mobile auf dem Mosaik, ab md am Szenencontainer) muessen denselben Toggle-Handler bekommen')
 })
 
 test('Pause-Button ist per Tastatur erreichbar (<button>) und hat sichtbaren Fokus (focus-visible:ring)', () => {
@@ -127,9 +144,19 @@ test('kein pauschales overflow-x:hidden auf body/html -- Clipping bleibt lokal a
 // ── Nachgang "Komposition & weiche Übergänge" ──────────────────────────
 
 test('Textfläche: ab md eine eigene absolute Ebene links, unabhängig von der Bildwelt-Position (löst die harte Flex-Spalten-Kante ab)', () => {
-  const textDivMatch = source.match(/<div className="relative z-20 w-full md:absolute[^"]*">/)
+  const textDivMatch = source.match(/<div className="relative z-20 order-2 md:order-none w-full md:absolute[^"]*">/)
   assert.ok(textDivMatch, 'Text-Ebene mit md:absolute nicht gefunden')
-  assert.match(textDivMatch[0], /md:inset-y-0/)
+  // Nachbesserung "Feinschliff Bandzeile": auf Mobile per CSS `order`
+  // NACH der Bildwelt (Mosaik oben, Text darunter), ab md wirkungslos.
+  assert.match(textDivMatch[0], /order-2/)
+  assert.match(textDivMatch[0], /md:order-none/)
+  // Nachgang "Hero-Logozeile": statt voller Hoehe (md:inset-y-0) reserviert
+  // die Textflaeche jetzt bewusst NICHT den unteren Streifen (md:bottom-14
+  // = 56px = Hoehe von HeroLogoMarquee), damit die vertikal zentrierte
+  // Textflaeche die Logozeile auf keinem Viewport ueberlappen kann.
+  assert.match(textDivMatch[0], /md:top-0/)
+  assert.match(textDivMatch[0], /md:bottom-14/)
+  assert.doesNotMatch(textDivMatch[0], /md:inset-y-0/, 'volle Hoehe wuerde mit der Logozeile kollidieren')
   assert.match(textDivMatch[0], /md:left-0/)
 })
 
@@ -181,8 +208,48 @@ test('sechs Seitenverhältnisse (reale Studio-Referenzwerte) statt vier -- sicht
   assert.equal(entries.length, 6)
 })
 
-test('Pause-Button: genau eine gemeinsame Instanz für alle Breakpoint-TrackSets, am Szenencontainer verankert (nicht mehr pro Bildwelt-Ebene dupliziert)', () => {
+test('Pause-Button: EINE gemeinsame Implementierung (PauseButton), unabhängig von der Anzahl sichtbarer Breakpoint-Ebenen', () => {
   const buttonMatches = source.match(/aria-pressed=\{paused\}/g) ?? []
-  assert.equal(buttonMatches.length, 1, 'erwartet genau einen Pause-Button, unabhängig von der Anzahl sichtbarer Breakpoint-Ebenen')
+  assert.equal(buttonMatches.length, 1, 'erwartet genau eine Pause-Button-Implementierung (geteilte Funktion), unabhängig von der Anzahl sichtbarer Breakpoint-Ebenen')
+  assert.match(source, /function PauseButton\(/)
   assert.match(source, /const \[paused, setPaused\] = useState\(false\)/)
+})
+
+// Nachbesserung "Feinschliff Bandzeile Runde 2", Abschnitt 2: Der
+// Pause-Button stand auf Mobile bisher am Szenencontainer, direkt neben
+// CTA/Logozeile. Jetzt zwei Renderstellen derselben PauseButton-Funktion
+// -- je eine per CSS-Breakpoint sichtbar, nie beide gleichzeitig --,
+// Zustand/Handler/Label bleiben aus EINER Quelle.
+test('Pause-Button: Mobile-Instanz auf dem Mosaik (oberhalb des dunklen Auslaufs), ab md unveraendert am Szenencontainer -- nie beide gleichzeitig sichtbar', () => {
+  const mobileClassName = 'absolute top-[32%] right-4 z-30 flex md:hidden'
+  const desktopClassName = 'absolute bottom-20 right-4 z-30 hidden md:flex'
+  const mobileIdx = source.indexOf(mobileClassName)
+  const desktopIdx = source.indexOf(desktopClassName)
+  assert.ok(mobileIdx >= 0, 'Mobile-Pause-Button (auf dem Mosaik, ab md ausgeblendet) nicht gefunden')
+  assert.ok(desktopIdx >= 0, 'Desktop-Pause-Button (unveraenderte Position, auf Mobile ausgeblendet) nicht gefunden')
+  // Beide Positionsklassen muessen tatsaechlich an einer <PauseButton
+  // .../>-Stelle haengen, nicht irgendwo sonst im Text vorkommen.
+  assert.match(source.slice(Math.max(0, mobileIdx - 200), mobileIdx), /<PauseButton/)
+  assert.match(source.slice(Math.max(0, desktopIdx - 200), desktopIdx), /<PauseButton/)
+  // Die Mobile-Instanz ist Kind der Bildspalte (siehe MobileEdgeFade-Kind-
+  // Kommentar) -- `top-[32%]` bezieht sich dadurch auf deren tatsaechliche
+  // Hoehe, nicht auf den ganzen Szenencontainer. Die Desktop-Instanz bleibt
+  // danach, am Szenencontainer verankert.
+  const imageColumnStart = source.indexOf('<HeroImageWall')
+  assert.ok(mobileIdx > imageColumnStart, 'Mobile-Pause-Button muss Kind der Bildspalte sein')
+  assert.ok(desktopIdx > mobileIdx, 'Desktop-Instanz bleibt danach, am Szenencontainer verankert')
+})
+
+// Regressionsschutz fuer einen real aufgetretenen Bug: die PauseButton-
+// Funktion setzte zuvor selbst ein unbedingtes `inline-flex`, das mit
+// dem unbedingten `hidden` einer Aufrufstelle um dieselbe display-
+// Eigenschaft konkurrierte -- mit von der Tailwind-internen Utility-
+// Reihenfolge abhaengigem Ausgang (real beobachtet: Desktop-Instanz
+// blieb dadurch auch auf Mobile sichtbar). Jede Aufrufstelle muss die
+// display-Utility deshalb selbst und vollstaendig mitbringen.
+test('PauseButton setzt selbst kein unbedingtes flex/inline-flex -- display kommt ausschliesslich von der Aufrufstelle', () => {
+  const start = source.indexOf('function PauseButton(')
+  const end = source.indexOf('\n}', source.indexOf('return (', start))
+  const body = source.slice(start, end)
+  assert.doesNotMatch(body, /className=\{`(?:(?!\$\{className\})[\s\S])*\b(?:inline-flex|flex)\b/, 'PauseButton darf display nur ueber die uebergebene className setzen')
 })

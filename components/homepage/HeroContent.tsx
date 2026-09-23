@@ -17,15 +17,28 @@ import Link from 'next/link'
 // Import) plus italic, um die betonte Wortgruppe von der sonst fetten
 // Proudleut-Displayschrift (bestehende sans-Schrift, hier ueber
 // font-extrabold) abzusetzen -- keine globale Schriftumstellung.
+//
+// Zeilenumbruch (Nachbesserung "Feinschliff Bandzeile Runde 2",
+// Abschnitt 1): fester <br /> statt eines normalen Leerzeichens --
+// vorher brach die Headline auf manchen Mobile-Breiten (z.B. ~480px)
+// stattdessen MITTEN in "euren Moment." um ("Livebands für euren" /
+// "Moment."), weil der natuerliche Textumbruch dort zufaellig frueher
+// als gewuenscht griff. `whitespace-nowrap` auf dem Span verhindert
+// zusaetzlich, dass "euren Moment." selbst je intern umbricht. Bei
+// 360px (kleinste geforderte Breite) passt "euren Moment." bei der
+// bestehenden Schriftgroesse noch ohne Ueberlauf -- siehe
+// `max-[360px]:text-[2rem]` als gezielte, nur dort wirksame
+// Sicherheitsmarge (2rem statt der clamp-Untergrenze 2.25rem).
 export function HeroContent() {
   return (
     <div className="text-left">
       <p className="font-mono text-xs tracking-[0.14em] uppercase text-pl-accent-light">
         In und um Bayern
       </p>
-      <h1 className="mt-4 text-[clamp(2.25rem,1rem+3.4vw,6rem)] font-extrabold leading-[1.05] tracking-tight text-pl-on-stage">
-        Livebands für{' '}
-        <span className="font-serif italic font-medium">euren Moment.</span>
+      <h1 className="mt-4 max-[360px]:text-[2rem] text-[clamp(2.25rem,1rem+3.4vw,6rem)] font-extrabold leading-[1.05] tracking-tight text-pl-on-stage">
+        Livebands für
+        <br />
+        <span className="font-serif italic font-medium whitespace-nowrap">euren Moment.</span>
       </h1>
       <p className="mt-5 text-base md:text-lg leading-relaxed text-pl-on-stage-muted max-w-md">
         Für eure Hochzeit, Firmenfeier oder ein Fest, das in Erinnerung bleiben soll.

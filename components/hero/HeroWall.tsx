@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import type { ReactNode } from 'react'
 import {
@@ -10,15 +10,19 @@ import {
   type HeroWallSlot,
 } from '@/lib/heroWall/heroWallComposition'
 import { resolveHeroFocus } from '@/lib/heroWall/resolveHeroFocus'
+import { HeroLogoMarquee } from './HeroLogoMarquee'
 
 // Startseiten-Hero-Redesign, Nachgang "Komposition & weiche Übergänge":
 // Text und Bildwelt sind keine zwei nebeneinander liegenden Flex-Spalten
 // mit hartem Rand mehr, sondern zwei sich überlappende, absolut
 // positionierte Ebenen in EINEM gemeinsamen Szenencontainer (ab md) --
 // eine dazwischenliegende, ungedrehte Verlaufsebene blendet den
-// Übergang weich. Auf Mobile bleibt die bisherige, einfache
-// Stapel-Anordnung (Text zuerst, Bilder im Fluss darunter) erhalten --
-// dort gibt es keine seitliche Schnittkante, siehe Auftrag Abschnitt 3.
+// Übergang weich. Auf Mobile bleibt die einfache Stapel-Anordnung im
+// Dokumentfluss erhalten (keine seitliche Schnittkante) -- visuell
+// jetzt Bildwelt zuerst, Text darunter, Logozeile unten (Nachbesserung
+// "Feinschliff Bandzeile", Abschnitt 2), technisch aber weiterhin per
+// CSS `order` auf Basis von Text-vor-Bildern im JSX, siehe Kommentare an
+// den beiden Spalten unten.
 //
 // children (HeroContent) wird weiterhin von einer Server-Component
 // (app/page.tsx) hereingereicht -- dieselbe children-Slot-Technik wie
@@ -201,10 +205,49 @@ function PlayIcon() {
   )
 }
 
+// Pause-Button als geteilte Render-Funktion (Nachbesserung "Feinschliff
+// Bandzeile Runde 2", Abschnitt 2): Funktion/Label/Fokuszustand kommen
+// dadurch garantiert aus EINER Quelle, nur `className` unterscheidet die
+// beiden Instanzen (Mobile: auf dem Mosaik, ab md: unveraendert am
+// Szenencontainer) -- keine zweite, abweichende Implementierung.
+// `className` MUSS an jeder Aufrufstelle eine eigene display-Utility
+// mitbringen (z.B. `flex md:hidden` / `hidden md:flex`) -- die
+// Funktion selbst setzt bewusst KEIN unbedingtes `flex`/`inline-flex`
+// mehr. Grund: ein unbedingtes `inline-flex` hier wuerde mit dem
+// unbedingten `hidden` einer Aufrufstelle um dieselbe CSS-Eigenschaft
+// (display) konkurrieren, mit von der Tailwind-internen Utility-
+// Reihenfolge abhaengigem, nicht garantiertem Ausgang (beobachtet: die
+// Desktop-Instanz blieb dadurch faelschlich auch auf Mobile sichtbar).
+function PauseButton({
+  paused,
+  onToggle,
+  className,
+}: {
+  paused: boolean
+  onToggle: () => void
+  className: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={paused}
+      aria-label={paused ? 'Bewegung der Bildwand und Logozeile fortsetzen' : 'Bewegung der Bildwand und Logozeile pausieren'}
+      className={`items-center justify-center w-9 h-9 rounded-full
+                  bg-pl-stage-elevated/80 text-pl-on-stage border border-pl-border-stage backdrop-blur-sm
+                  hover:bg-pl-stage-elevated motion-safe:transition-colors
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent-light focus-visible:ring-offset-2 focus-visible:ring-offset-pl-stage
+                  ${className}`}
+    >
+      {paused ? <PlayIcon /> : <PauseIcon />}
+    </button>
+  )
+}
+
 // Verlaufsebene (Auftrag Abschnitt 1+2A): EINE ungedrehte Ebene über der
 // gesamten Szene (z-10, zwischen Bildwelt z-0 und Text z-20), blendet
-// den Übergang zur Textfläche weich aus statt ihn hart zu clippen.
-// Prozentangaben sind relativ zur GESAMTEN Szenenbreite/-höhe (wie im
+// den seitlichen Übergang zur Textfläche weich aus statt ihn hart zu
+// clippen. Prozentangaben sind relativ zur GESAMTEN Szenenbreite (wie im
 // Studio-Original) -- nicht zur Bildwelt-Box selbst. Farbstufen aus dem
 // vorhandenen --pl-bg-stage (rgb(18,16,26)) abgeleitet, NICHT die
 // Studio-Originalfarbe #281e2c übernommen. Nur ab md aktiv: auf Mobile
@@ -212,51 +255,44 @@ function PlayIcon() {
 // Desktop-Verlaufsebene wuerde dort die gesamte Bildwelt verdecken
 // (Auftrag Abschnitt 3). pointer-events-none, damit die Ebene keine
 // Klicks abfaengt.
+//
+// Der vormals hier enthaltene VERTIKALE (0deg) Verlauf ist entfernt
+// (Nachbesserung "Feinschliff Bandzeile", Abschnitt 1): er bezog seine
+// Prozent-Stops auf die GESAMTE Szenenhoehe (Text+Bild), wodurch die
+// Bildspalte auf sehr breiten Screens am unteren Rand ungedaempft blieb.
+// Der untere Bild-Auslauf sitzt jetzt in ImageBottomFade, als eigenes
+// KIND der Bildspalte -- siehe dort.
 function GradientOverlay() {
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 z-10 hidden md:block"
       style={{
-        background: [
+        background:
           'linear-gradient(90deg,' +
-            'rgba(18,16,26,1) 0%,' +
-            'rgba(18,16,26,1) 39%,' +
-            'rgba(18,16,26,0.96) 44%,' +
-            'rgba(18,16,26,0.61) 50%,' +
-            'rgba(18,16,26,0) 61%)',
-          'linear-gradient(0deg,' +
-            'rgba(18,16,26,1) 0%,' +
-            'rgba(18,16,26,0.5) 8%,' +
-            'rgba(18,16,26,0) 25%,' +
-            'rgba(18,16,26,0) 88%,' +
-            'rgba(18,16,26,0.55) 100%)',
-        ].join(', '),
+          'rgba(18,16,26,1) 0%,' +
+          'rgba(18,16,26,1) 39%,' +
+          'rgba(18,16,26,0.96) 44%,' +
+          'rgba(18,16,26,0.61) 50%,' +
+          'rgba(18,16,26,0) 61%)',
       }}
     />
   )
 }
 
-// Mobiler Übergang zwischen Text-/CTA-Bereich und Bildwelt (Nachbesserung
-// "Komposition & weiche Übergänge", Abschnitt 1). Ursache der zuvor
-// sichtbaren harten Kante: diese Ebene lag als GESCHWISTER des gesamten
-// Szenencontainers (Text + Bilder zusammen) und ihre Prozent-Stops
-// bezogen sich deshalb auf die GESAMTE Container-Höhe -- die eigentliche
-// Naht zwischen Text und Bildern liegt aber irgendwo in der Mitte dieser
-// Höhe, weit entfernt von den 0%/100%-Rändern des Verlaufs. Der Verlauf
-// berührte die Naht dadurch nie.
-//
-// Fix: diese Ebene ist jetzt ein KIND der Bilderwelt-Spalte selbst
-// (gerendert direkt darin, siehe HeroWall), ihr inset-0 bezieht sich
-// dadurch nur noch auf die Bildspalte. Der obere Übergang (die eigentliche
-// Naht zum Text) nutzt einen FESTEN Pixelwert (~96px, im geforderten
-// Rahmen 80-120px) statt einer Prozentangabe, damit die Übergangstiefe
-// unabhängig von der tatsächlichen Spaltenhöhe funktioniert -- die
-// obersten Bildpixel sind dadurch vollständig deckend (identische Farbe
-// wie die Textfläche darüber) und blenden über ~96px zur ersten
-// erkennbaren Bildkante aus. Der untere Übergang (Auslaufen Richtung
-// LogoStrip) bleibt als kleinerer, prozentualer Fade erhalten. Kein
-// filter:blur() -- reine Farbüberlagerung.
+// Unterer Mosaik-Auslauf auf Mobile (Nachbesserung "Feinschliff
+// Bandzeile", Abschnitt 1+2): seit der Bandzeile steht das Mosaik auf
+// Mobile jetzt ZUERST (per CSS `order`, siehe Bildwelt-Spalte unten),
+// direkt unter dem Header -- eine obere Nahtblende zum Text (frueher
+// hier notwendig, als der Text noch vor dem Mosaik stand) entfaellt
+// dadurch. Es bleibt ein einziger unterer Verlauf: Prozent-Stops relativ
+// zur eigenen Spaltenhoehe (dieselbe KIND-of-Spalte-Technik wie zuvor),
+// dadurch automatisch proportional zur tatsaechlichen Mosaik-Hoehe.
+// Beginnt bei ca. 40% der Mosaikhoehe (= 60%-Stop in dieser 0deg-Notation,
+// 0% = unterer Spaltenrand) und blendet bis zum unteren Rand vollstaendig
+// auf die Hero-Hintergrundfarbe ab -- die Logozeile darunter (siehe
+// HeroLogoMarquee) steht dadurch auf durchgehend dunklem Grund, nicht auf
+// dem Foto. Kein filter:blur() -- reine Farbüberlagerung.
 function MobileEdgeFade() {
   return (
     <div
@@ -265,9 +301,41 @@ function MobileEdgeFade() {
       style={{
         background:
           'linear-gradient(0deg,' +
-          'rgba(18,16,26,0.85) 0px,' +
-          'rgba(18,16,26,0) 56px,' +
-          'rgba(18,16,26,0) calc(100% - 96px),' +
+          'rgba(18,16,26,1) 0%,' +
+          'rgba(18,16,26,0) 60%,' +
+          'rgba(18,16,26,0) 100%)',
+      }}
+    />
+  )
+}
+
+// Unterer Mosaik-Auslauf ab md (Nachbesserung "Feinschliff Bandzeile",
+// Abschnitt 1): ersetzt den vormals in GradientOverlay enthaltenen
+// vertikalen Verlauf, der sich auf die GESAMTE Szenenhoehe (Text+Bild)
+// bezog -- auf sehr breiten Screens (ab ca. 1800px) blieb die Bildspalte
+// dadurch am unteren Rand ungedaempft, die Logozeile lag direkt auf dem
+// Foto. Fix: eigenes KIND der Bildspalte (wie MobileEdgeFade), Prozent-
+// Stops relativ zur tatsaechlichen Spaltenhoehe -- funktioniert dadurch
+// unabhaengig von Viewportbreite/-hoehe. Werte aus der Entwurfsdatei
+// (300px hoher Verlauf bei einer 810px hohen Referenz-Buehne: transparent
+// bis 55% ~82% Deckkraft, ab 82% voll deckend) auf Spaltenanteile
+// umgerechnet: der 300px-Block beginnt bei ca. 63% der Spaltenhoehe, die
+// 55%/82%-Marken innerhalb dieses Blocks liegen bei ca. 83%/93% der
+// Gesamthoehe. Liegt hinter Text (z-20) und Logozeile (z-20) -- beide
+// sind eigenstaendige, spaeter gerenderte Elemente außerhalb dieser
+// Spalte und werden dadurch selbst nicht abgedunkelt.
+function ImageBottomFade() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-10 hidden md:block"
+      style={{
+        background:
+          'linear-gradient(180deg,' +
+          'rgba(18,16,26,0) 0%,' +
+          'rgba(18,16,26,0) 63%,' +
+          'rgba(18,16,26,0.82) 83%,' +
+          'rgba(18,16,26,1) 93%,' +
           'rgba(18,16,26,1) 100%)',
       }}
     />
@@ -317,8 +385,41 @@ function HeroImageWall({ images }: { images: HeroWallImage[] }) {
   )
 }
 
+// Review-Fix #1 (PR #107, Codex "Let the desktop hero grow with its
+// text"): Hoehe der Logozeile, die die Textflaeche ab md ueber
+// `bottom-14` freihalten muss (siehe unten) -- als Konstante, damit sie
+// nicht als magische Zahl an zwei Stellen (Klasse + JS-Messung)
+// auseinanderlaeuft.
+const LOGO_ROW_HEIGHT_PX = 56
+
 export function HeroWall({ images, children }: { images: HeroWallImage[]; children?: ReactNode }) {
   const [paused, setPaused] = useState(false)
+  // Review-Fix #1 (PR #107, Codex): auf kurzen md/lg/xl-Viewports (z.B.
+  // 800x400) reichte die rein svh-basierte Mindesthoehe nicht aus --
+  // Text/CTA wurden vom aeusseren overflow-hidden abgeschnitten und
+  // ueberlagerten die Logozeile. Fix: der tatsaechlich benoetigte
+  // Platz des Text-Inhalts wird per ResizeObserver gemessen (die innere
+  // Wrapper-Div ist trotz absoluter, hoehenbegrenzter Eltern-Box selbst
+  // NICHT hoehenbegrenzt -- align-items:center sizet sie auf ihre
+  // intrinsische Hoehe) und als Mindesthoehe fuer den Szenencontainer
+  // durchgereicht (`max(<svh-Wert>, <gemessene Hoehe> + Logozeile)`) --
+  // der Hero waechst dadurch mit dem Inhalt, statt ihn abzuschneiden.
+  // Bei 1440x900 (Auftrag: Komposition bleibt unveraendert) liegt die
+  // gemessene Hoehe immer deutlich unter 100svh, `max()` greift dort
+  // also nie ein.
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [contentMinHeightPx, setContentMinHeightPx] = useState<number | null>(null)
+
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) setContentMinHeightPx(Math.ceil(entry.contentRect.height) + LOGO_ROW_HEIGHT_PX)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <section className="relative overflow-hidden bg-pl-stage">
@@ -330,54 +431,108 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
           jeweilige Komposition (weniger Spuren auf Tablet) bekommt nur
           so viel Hoehe, wie sie tatsaechlich braucht (Auftrag Abschnitt
           3) -- volle Viewporthoehe bleibt dem eigentlichen Desktop (xl)
-          vorbehalten. */}
+          vorbehalten. `max(<svh>, var(--pl-hero-content-min-h))` je
+          Breakpoint (Review-Fix #1): waechst ueber den svh-Wert hinaus,
+          wenn der gemessene Text-Inhalt mehr Platz braucht. */}
       <div
-        className="relative flex flex-col md:block md:min-h-[68svh] lg:min-h-[80svh] xl:min-h-[100svh]"
+        className="relative flex flex-col md:block md:min-h-[max(68svh,var(--pl-hero-content-min-h,0px))] lg:min-h-[max(80svh,var(--pl-hero-content-min-h,0px))] xl:min-h-[max(100svh,var(--pl-hero-content-min-h,0px))]"
         data-hero-wall-paused={paused}
+        style={contentMinHeightPx != null ? { ['--pl-hero-content-min-h' as string]: `${contentMinHeightPx}px` } : undefined}
       >
-        {/* Textfläche: auf Mobile normaler Flow-Block (zuerst, vor der
-            Bildwelt). Ab md eine eigene absolute Ebene links, vertikal
-            zentriert innerhalb der Container-Hoehe -- Breite bewusst
-            unabhaengig von der Bildwelt-Position, da deren Ueberlappung
-            jetzt ueber die Verlaufsebene geloest wird, nicht mehr ueber
-            eine harte Spaltengrenze. */}
-        <div className="relative z-20 w-full md:absolute md:inset-y-0 md:left-0 md:w-[46%] lg:w-[44%] xl:w-[42%] flex items-center px-4 sm:px-6 md:pl-8 lg:pl-12 xl:pl-16 pt-28 pb-10 md:py-0">
-          <div className="w-full max-w-xl md:max-w-none mx-auto md:mx-0">{children}</div>
+        {/* Textfläche: auf Mobile ein normaler Flow-Block, per CSS
+            `order` NACH der Bildwelt (Nachbesserung "Feinschliff
+            Bandzeile", Abschnitt 2: Mosaik oben, Text/CTA in der Mitte,
+            Logozeile unten -- einheitlich fuer den gesamten
+            Mobile-Bereich bis zum Tablet-Umbruch). Bewusst `order`
+            statt vertauschtem JSX: die semantische/Vorlese-Reihenfolge
+            (Text vor Bildern) bleibt dadurch unveraendert, nur die
+            visuelle Reihenfolge dreht sich um -- ohne Fokus-/
+            Tab-Reihenfolge-Aenderung (Bildkacheln sind ohnehin nicht
+            fokussierbar). Ab md `order-none`: dort greift die absolute
+            Positionierung, `order` waere wirkungslos. `pb-16` statt
+            vormals `pb-10` auf Mobile: reserviert exakt die 56px hohe
+            Logozeile (h-14) am Ende des Fliesstexts, damit sie CTA nicht
+            ueberlagert (ab md wieder `md:py-0`, dort uebernimmt
+            `md:bottom-14` diese Aufgabe). Ab md eine eigene absolute
+            Ebene links, vertikal zentriert innerhalb der Container-Hoehe
+            -- Breite bewusst unabhaengig von der Bildwelt-Position, da
+            deren Ueberlappung jetzt ueber die Verlaufsebene geloest
+            wird, nicht mehr ueber eine harte Spaltengrenze. Ab md
+            bewusst `top-0 bottom-14` statt `inset-y-0` (Auftrag
+            "Hero-Bandzeile"): die vertikale Zentrierung wirkt dadurch
+            nur noch innerhalb der Hoehe OBERHALB der 56px hohen
+            Logozeile (siehe HeroLogoMarquee, `h-14`) -- Text/CTA koennen
+            sich dadurch unabhaengig vom Inhalt nie mit der Zeile
+            ueberlagern, keine Kollisionspruefung zur Laufzeit noetig. */}
+        <div className="relative z-20 order-2 md:order-none w-full md:absolute md:top-0 md:bottom-14 md:left-0 md:w-[46%] lg:w-[44%] xl:w-[42%] flex items-center px-4 sm:px-6 md:pl-8 lg:pl-12 xl:pl-16 pt-10 pb-16 md:pt-0 md:pb-0">
+          {/* ref hier (nicht am aeusseren, hoehenbegrenzten Flex-Container):
+              diese Div ist Kind eines `items-center`-Flex-Containers und
+              deshalb NICHT auf dessen Hoehe gestreckt -- ihre eigene Hoehe
+              bleibt intrinsisch (Inhaltshoehe), unabhaengig davon, ob sie
+              gerade sichtbar Platz hat oder vom aeusseren overflow-hidden
+              abgeschnitten wuerde. Genau diese ungestreckte Hoehe braucht
+              der ResizeObserver oben. */}
+          <div ref={contentRef} className="w-full max-w-xl md:max-w-none mx-auto md:mx-0">{children}</div>
         </div>
 
         {/* Bilderwelt: auf Mobile ein normaler Flow-Block mit eigener
-            Mindesthöhe (folgt der Texthöhe, keine feste Position). Ab md
+            Mindesthöhe (folgt der Texthöhe, keine feste Position), per
+            CSS `order` VOR der Textflaeche (siehe Kommentar dort). Ab md
             absolute, ueberlappt bewusst in die Textzone hinein (verifizierte
             Studio-Referenz: left 47%/width 60% Basis, 48%/58% ab 1700px --
             hier anteilig auf unsere Breakpoints uebertragen). */}
-        <div className="relative w-full min-h-[42svh] sm:min-h-[48svh] overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-[44%] md:w-[64%] lg:left-[46%] lg:w-[62%] xl:left-[48%] xl:w-[58%]">
+        <div className="relative order-1 md:order-none w-full min-h-[42svh] sm:min-h-[48svh] overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-[44%] md:w-[64%] lg:left-[46%] lg:w-[62%] xl:left-[48%] xl:w-[58%]">
           <HeroImageWall images={images} />
-          {/* Kind DIESER Spalte (nicht des gesamten Szenencontainers) --
-              siehe MobileEdgeFade-Kommentar: nur so bezieht sich die
-              Übergangstiefe auf die tatsächliche Bildspalten-Höhe. */}
+          {/* Kinder DIESER Spalte (nicht des gesamten Szenencontainers)
+              -- nur so beziehen sich die Uebergangstiefen auf die
+              tatsaechliche Bildspalten-Hoehe, siehe jeweilige
+              Funktionskommentare. */}
           <MobileEdgeFade />
+          <ImageBottomFade />
+          {/* Pause-Button, Mobile-Position (Nachbesserung "Feinschliff
+              Bandzeile Runde 2", Abschnitt 2): auf Mobile stand der
+              Button bisher am Szenencontainer (bottom-20 right-4) direkt
+              neben CTA/Logozeile und konkurrierte visuell mit dem CTA.
+              Jetzt: Kind DIESER Bildspalte, `top-[32%]` -- ein Prozentwert
+              relativ zur tatsaechlichen Spaltenhoehe (min-h-[42svh]/
+              [48svh], keine feste Content-Hoehe sonst) und damit bewusst
+              VOR dem bei 40% beginnenden dunklen Auslauf (MobileEdgeFade)
+              positioniert: der Button sitzt dadurch klar auf dem
+              Bildbereich, nicht im abgedunkelten Streifen. `md:hidden` --
+              ab md uebernimmt die zweite, unveraenderte Instanz weiter
+              unten am Szenencontainer (siehe dort). */}
+          <PauseButton
+            paused={paused}
+            onToggle={() => setPaused((p) => !p)}
+            className="absolute top-[32%] right-4 z-30 flex md:hidden"
+          />
         </div>
 
         <GradientOverlay />
 
-        {/* Pause-Button: eine gemeinsame Instanz fuer alle Breakpoints,
-            am aeusseren Szenencontainer verankert (nicht mehr innerhalb
-            der jetzt ueberlappenden Bildwelt-Ebene), steuert ueber
+        {/* Bodenlinie (Auftrag "Proudleut-Homepage-Hero Bandzeile"):
+            letztes Kind DIESES Containers, nicht des aeusseren
+            <section> -- nur so liegt sie innerhalb derselben
+            data-hero-wall-paused-Ebene und wird vom bestehenden
+            Pause-Button mitgesteuert (siehe [data-hero-wall-paused]
+            .pl-logo-marquee in app/globals.css). */}
+        <HeroLogoMarquee />
+
+        {/* Pause-Button, ab md (Nachbesserung "Feinschliff Bandzeile
+            Runde 2", Abschnitt 2: Position unveraendert gegenueber vorher --
+            `hidden md:flex` statt vormals immer sichtbar, da auf
+            Mobile jetzt die zweite Instanz auf dem Mosaik greift, siehe
+            dort). Am aeusseren Szenencontainer verankert, steuert ueber
             data-hero-wall-paused (siehe app/globals.css) alle Tracks
-            gleichzeitig, unabhaengig davon, welches Breakpoint-TrackSet
-            gerade sichtbar ist. */}
-        <button
-          type="button"
-          onClick={() => setPaused((p) => !p)}
-          aria-pressed={paused}
-          aria-label={paused ? 'Bewegung der Bildwand fortsetzen' : 'Bewegung der Bildwand pausieren'}
-          className="absolute bottom-4 right-4 z-30 inline-flex items-center justify-center w-9 h-9 rounded-full
-                     bg-pl-stage-elevated/80 text-pl-on-stage border border-pl-border-stage backdrop-blur-sm
-                     hover:bg-pl-stage-elevated motion-safe:transition-colors
-                     focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent-light focus-visible:ring-offset-2 focus-visible:ring-offset-pl-stage"
-        >
-          {paused ? <PlayIcon /> : <PauseIcon />}
-        </button>
+            UND die Logozeile gleichzeitig, unabhaengig davon, welches
+            Breakpoint-TrackSet gerade sichtbar ist. `bottom-20` statt
+            `bottom-4`, damit der Button oberhalb der 56px hohen
+            Logozeile schwebt statt sie zu ueberlagern. */}
+        <PauseButton
+          paused={paused}
+          onToggle={() => setPaused((p) => !p)}
+          className="absolute bottom-20 right-4 z-30 hidden md:flex"
+        />
       </div>
     </section>
   )
