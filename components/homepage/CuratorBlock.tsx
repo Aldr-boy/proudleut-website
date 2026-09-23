@@ -15,7 +15,7 @@ export default function CuratorBlock() {
             </h2>
             <p className="mt-5 text-base leading-relaxed text-pl-text-muted max-w-[480px]">
               Ich bin Alex. Ich arbeite seit vielen Jahren mit Livebands und Veranstaltern —
-              Booking, Bandmanagement und alles, was zwischen Zusage und Auftritt passiert.
+              Booking, Bandmanagement und alles, was zwischen Anfrage, Zusage und Auftritt passiert.
             </p>
             <p className="mt-3.5 text-base leading-relaxed text-pl-text-muted max-w-[480px]">
               Wenn du bei der Auswahl hängst, erzähl mir kurz, was du planst: Anlass, Ort, Datum,

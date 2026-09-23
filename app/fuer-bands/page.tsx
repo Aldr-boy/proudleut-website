@@ -47,7 +47,7 @@ const BENEFITS = [
   {
     n: '01',
     title: 'Sichtbar werden',
-    desc: 'Dein Profil erscheint in Kategorien und Regionen, die zu deiner Band passen — nicht versteckt in einer Datenbank, sondern als eigenständige Präsentation.',
+    desc: 'Dein Profil erscheint in Kategorien und Regionen, die zu deiner Band passen, nicht versteckt in einer Datenbank, sondern als eigenständige Präsentation.',
   },
   {
     n: '02',
@@ -70,7 +70,7 @@ const STEPS = [
   {
     n: '02',
     title: 'Kurz kennenlernen',
-    desc: 'Bevor eine Band auf proudleut kommt, telefonieren wir einmal miteinander. Kein Bewerbungsgespräch — ich möchte einfach wissen, wer hinter der Band steckt.',
+    desc: 'Bevor eine Band auf proudleut kommt, telefonieren wir einmal miteinander. Ein Kennenlernen, um einfach zu wissen, wer hinter der Band steckt.',
   },
   {
     n: '03',
@@ -138,7 +138,7 @@ export default function FuerBandsPage() {
           </h1>
           <p className="mt-9 md:mt-11 text-[17px] md:text-xl leading-relaxed text-pl-on-stage-muted max-w-[560px]">
             Eine eigene Bandseite, gute Bilder und Videos und eine Einordnung, die Veranstaltern
-            zeigt, wofür ihr steht – und ob ihr zu ihrem Event passt.
+            zeigt, wofür ihr steht und ob ihr zu ihrem Event passt.
           </p>
           <div className="mt-11 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
             <BandIntroTrigger
@@ -151,7 +151,7 @@ export default function FuerBandsPage() {
               Bandseite anfragen
             </BandIntroTrigger>
             <span className="text-[15px] text-pl-on-stage-muted">
-              Direkter Kontakt&nbsp;&nbsp;·&nbsp;&nbsp;Keine Buchungsplattform
+              Direkter Kontakt zum Veranstalter&nbsp;&nbsp;·&nbsp;&nbsp;Keine Buchungsplattform
             </span>
           </div>
         </div>
@@ -285,7 +285,7 @@ export default function FuerBandsPage() {
                   Aus Musiker-Sicht
                 </p>
                 <p className="mt-3 text-sm md:text-base italic leading-relaxed text-pl-text">
-                  „Mit Alex zu arbeiten ist angenehm — strukturiert, entspannt und zuverlässig.
+                  „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
                   Er behält den Überblick, reagiert schnell und bleibt menschlich."
                 </p>
                 <Link
@@ -370,10 +370,10 @@ export default function FuerBandsPage() {
               </p>
               <p className="mt-7 text-[18px] leading-[1.7] text-pl-text">
                 Ein Profil entsteht auf proudleut nicht per Formular und Klick auf
-                „Veröffentlichen". Ich schaue mir die Band vorher an, und wir telefonieren einmal
+                „Veröffentlichen". Ich schaue mir die Band vorher an, und wir telefonieren
                 miteinander. Mir ist wichtig zu wissen, wer hinter einem Act steckt, bevor ich ihn
                 auf proudleut vorstelle. Danach bauen wir gemeinsam ein Profil, das deine Band so
-                zeigt, wie sie wirklich ist, und Veranstaltern hilft, sie richtig einzuordnen.
+                zeigt, wie sie wirklich ist und Veranstaltern hilft, sie richtig einzuordnen.
               </p>
             </div>
 

@@ -84,7 +84,7 @@ export default function UeberProudleutPage() {
             <span className="text-pl-on-stage-muted">Das ist nicht das Problem.</span>
           </h1>
           <p className="mt-9 md:mt-11 text-[17px] md:text-xl leading-relaxed text-pl-on-stage-muted max-w-[540px]">
-            Das Problem ist herauszufinden, welche davon zu deinem Event passt — und welche eher
+            Das Problem ist herauszufinden, welche davon zu deinem Event passt und welche eher
             nicht. Genau dafür gibt es proudleut.
           </p>
 
@@ -186,7 +186,7 @@ export default function UeberProudleutPage() {
                 Noch lange nicht fertig.
               </h3>
               <p className="mt-5 text-base md:text-[17px] leading-[1.7] text-pl-text-muted">
-                Heute zeigt proudleut einen Ausschnitt dessen, was an guten Bands in und um
+                Heute zeigt proudleut einen kleinen Ausschnitt dessen, was an guten Bands in und um
                 Bayern unterwegs ist. Dieser Ausschnitt soll wachsen — mit neuen Bands, neuen
                 Stilrichtungen und neuen Regionen. Das Ziel ist nicht, irgendwann möglichst
                 viele Namen auf einer Seite zu haben.
@@ -279,7 +279,7 @@ export default function UeberProudleutPage() {
           <div>
             <ChapterEyebrow n="05" label="Wie proudleut gedacht ist" />
             <h2 className="mt-7 text-3xl md:text-[38px] leading-[1.15] font-extrabold tracking-tight text-pl-text">
-              Was mir bei Proudleut wichtig ist.
+              Was mir bei proudleut wichtig ist.
             </h2>
           </div>
           <div>
@@ -298,7 +298,7 @@ export default function UeberProudleutPage() {
             </div>
             <p className="mt-8 text-[15px] leading-[1.65] text-pl-text-muted max-w-[520px]">
               Du spielst selbst in einer Band? Auf „Für Bands" erzähle ich genauer, wie proudleut
-              mit Bands arbeitet — und wie der Weg hierher aussieht.{' '}
+              mit Bands arbeitet und wie der Weg hierher aussieht.{' '}
               <Link
                 href="/fuer-bands"
                 className="font-semibold text-pl-accent border-b border-pl-accent/40 hover:border-pl-accent motion-safe:transition-colors whitespace-nowrap"

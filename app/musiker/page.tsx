@@ -186,7 +186,7 @@ export default async function MusikerUebersichtPage() {
               kurz"-Link in components/bands/BandExplorer.tsx). Bleibt
               innerhalb derselben Section, keine neue Flaeche. */}
           <p className="text-pl-text-muted text-sm text-center mt-12">
-            Deine Band hat ein Profil auf Proudleut und du möchtest dich hier ebenfalls zeigen?{' '}
+            Deine Band hat ein Profil auf proudleut und du möchtest dich hier ebenfalls zeigen?{' '}
             <Link
               href="/kontakt"
               className={`text-pl-accent hover:opacity-80 motion-safe:transition-opacity underline underline-offset-2 ${FOCUS_RING}`}
