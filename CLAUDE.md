@@ -242,6 +242,13 @@ Wenn eine Aufgabe URL-Struktur, Routing, Sitemap oder Deployment betrifft:
 - Nur die Dateien anfassen, die für die Aufgabe wirklich relevant sind
 - Keine Änderungen außerhalb des Auftrags
 - Nach der Aufgabe kurz zusammenfassen: was wurde geändert und warum (Completion Report)
+- Dev-Server immer per PID beenden (ein normales Stoppen des Hintergrund-Tasks beendet den
+  Node-Prozessbaum nicht zuverlässig). Vor jedem `git worktree remove` die node-/next-Prozesse
+  mit Bezug zum Worktree-Pfad prüfen und gezielt per PID beenden.
+- Worktrees nur unter `C:\Users\aldre\proudleut-worktrees\` anlegen, nie unter
+  `AppData\Local\Temp` (Windows leert diese Verzeichnisse). Nach dem Merge eines PRs den
+  zugehörigen Worktree entfernen. Lokale Branches nach Squash-Merges nur nach inhaltlichem
+  Diff-Check löschen.
 
 ---
 
