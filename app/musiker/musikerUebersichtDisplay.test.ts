@@ -146,7 +146,7 @@ test('Raster: Kartenbreite je Karte folgt derselben 1/2/3-Spalten-calc()-Formel,
 test('Abschlussteaser: woertlicher Satz am Ende, nur "Melde dich gerne" verlinkt auf /kontakt, kein neuer Button/keine neue Section', () => {
   assert.match(
     source,
-    /Deine Band hat ein Profil auf Proudleut und du möchtest dich hier ebenfalls zeigen\?\{' '\}/,
+    /Deine Band hat ein Profil auf proudleut und du möchtest dich hier ebenfalls zeigen\?\{' '\}/,
   )
   assert.match(source, /<Link\s*\r?\n\s*href="\/kontakt"/)
   const kontaktLinkBlock = source.match(/<Link\s*\r?\n\s*href="\/kontakt"[\s\S]*?<\/Link>/)?.[0] ?? ''

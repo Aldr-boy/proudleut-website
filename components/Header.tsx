@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ProudleutLogo } from './ProudleutLogo';
 
 const NAV_LINKS = [
-  { label: 'Über Proudleut', href: '/ueber-mich' },
+  { label: 'Über proudleut', href: '/ueber-mich' },
   { label: 'Für Bands', href: '/fuer-bands' },
   { label: 'Kontakt', href: '/kontakt' },
 ] as const;

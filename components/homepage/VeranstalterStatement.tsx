@@ -13,7 +13,7 @@ export default function VeranstalterStatement() {
       <div className="pl-container-shell border-t border-pl-soft pt-8">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-6 md:gap-16 items-start">
           <p className="text-sm md:text-base font-medium text-pl-text">
-            Eine Rückmeldung
+            Feedback
           </p>
 
           <figure>
@@ -22,7 +22,7 @@ export default function VeranstalterStatement() {
                 „Bei Alex steht nicht der persönliche Profit im Vordergrund, sondern der
                 individuelle Kundenwunsch. Durch seine Empfehlungen konnte ich für unsere
                 Firmenweihnachtsfeier eine tolle Band finden und für uns gewinnen. Meine
-                uneingeschränkte Weiterempfehlung für Proudleut.“
+                uneingeschränkte Weiterempfehlung für proudleut.“
               </p>
             </blockquote>
             <figcaption className="mt-4">

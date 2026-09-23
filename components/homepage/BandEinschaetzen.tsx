@@ -52,7 +52,7 @@ export default function BandEinschaetzen({ band }: { band: Band }) {
           Welche Band passt wirklich zu uns?
         </h2>
         <p className="mt-4 text-base md:text-lg leading-relaxed text-pl-on-stage-muted max-w-[560px]">
-          Ein Foto allein beantwortet das nicht. Deshalb ordnet jede Bandseite auf proudleut ein:
+          Ein Foto allein beantwortet das meist nicht. Deshalb ordnet jede Bandseite auf proudleut ein:
           wie eine Band klingt, wofür sie spielt und wie sie live aussieht.
         </p>
 
