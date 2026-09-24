@@ -208,6 +208,38 @@ test('sechs Seitenverhältnisse (reale Studio-Referenzwerte) statt vier -- sicht
   assert.equal(entries.length, 6)
 })
 
+// Vorschlag aus dem Abschlussbericht "Kontrollierte Experimente zur
+// Bildschärfe der Homepage-Hero-Wall" (Variante C): ASPECT_RATIO_BY_POSITION
+// ist eine numerische Entsprechung zu den aspect-[X/Y]-Klassen in
+// ASPECT_BY_POSITION -- fuer die sizes-Berechnung, weil Tailwind fuer die
+// aspect-Klassen eine statische Literal-Liste braucht, sizes hier aber ein
+// normales, berechenbares React-Attribut ist. Beide Arrays muessen an
+// jeder Position denselben Seitenverhältniswert tragen, sonst weicht die
+// berechnete sizes-Breite vom tatsaechlichen Kachel-Seitenverhaeltnis ab.
+test('ASPECT_RATIO_BY_POSITION stimmt positionsgenau mit den aspect-[X/Y]-Klassen in ASPECT_BY_POSITION überein', () => {
+  const classStart = source.indexOf('const ASPECT_BY_POSITION = [')
+  assert.ok(classStart >= 0, 'ASPECT_BY_POSITION nicht gefunden')
+  const classEnd = source.indexOf('\n]', classStart)
+  const classBlock = source.slice(classStart, classEnd)
+  const classRatios = [...classBlock.matchAll(/aspect-\[([\d.]+)(?:\/([\d.]+))?\]/g)].map(
+    ([, num, den]) => Number(num) / (den ? Number(den) : 1)
+  )
+
+  const numStart = source.indexOf('const ASPECT_RATIO_BY_POSITION = [')
+  assert.ok(numStart >= 0, 'ASPECT_RATIO_BY_POSITION nicht gefunden')
+  const numEnd = source.indexOf(']', numStart)
+  const numBlock = source.slice(numStart, numEnd)
+  const numRatios = [...numBlock.matchAll(/[\d.]+/g)].map(Number)
+
+  assert.equal(numRatios.length, classRatios.length, 'beide Arrays muessen dieselbe Laenge haben')
+  for (let i = 0; i < classRatios.length; i++) {
+    assert.ok(
+      Math.abs(numRatios[i] - classRatios[i]) < 0.001,
+      `Position ${i}: ASPECT_RATIO_BY_POSITION=${numRatios[i]} weicht von ASPECT_BY_POSITION (${classRatios[i]}) ab`
+    )
+  }
+})
+
 test('Pause-Button: EINE gemeinsame Implementierung (PauseButton), unabhängig von der Anzahl sichtbarer Breakpoint-Ebenen', () => {
   const buttonMatches = source.match(/aria-pressed=\{paused\}/g) ?? []
   assert.equal(buttonMatches.length, 1, 'erwartet genau eine Pause-Button-Implementierung (geteilte Funktion), unabhängig von der Anzahl sichtbarer Breakpoint-Ebenen')

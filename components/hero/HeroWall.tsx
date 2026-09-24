@@ -155,10 +155,60 @@ const BREAKPOINT_SIZES: Record<HeroWallBreakpoint, string> = {
   desktop: '12vw',
 }
 
+// EXPERIMENT Variante G ("sizes-Korrektur nur fuer Nicht-Mobil-
+// Breakpoints"): uebernommen aus dem verworfenen Worktree
+// fix/hero-wall-sizes (dort wurde auch der Mobile-Breakpoint
+// vergroessert und verschlechterte dadurch den mobilen LCP-Median
+// deutlich) -- hier bewusst nur fuer tablet/tabletWide/desktop
+// angewendet. `mobile` bleibt exakt beim Baseline-Wert '33vw' (siehe
+// BREAKPOINT_SIZES.mobile oben, unveraendert). Nur in diesem isolierten
+// Worktree.
+//
+// Numerische Entsprechung zu den aspect-[X/Y]-Klassen in
+// ASPECT_BY_POSITION -- muss exakt dazu passen (siehe
+// HeroWall.test.ts, Test "ASPECT_RATIO_BY_POSITION..."). Parallele
+// Arrays, weil Tailwind fuer die aspect-Klassen eine statische
+// Literal-Liste braucht, sizes hier aber ein normales, berechenbares
+// React-Attribut ist.
+const ASPECT_RATIO_BY_POSITION = [1.18, 0.7, 0.93, 0.79, 1.05, 1.00]
+
+// Real gemessene Slot-Basisbreite je Nicht-Mobil-Breakpoint (Playwright,
+// offsetWidth -- NICHT getBoundingClientRect, da die -6deg-Rotation des
+// Bildwelt-Containers die Bounding-Box vergroessert, ohne die
+// tatsaechliche Layoutbreite zu aendern), uebernommen unveraendert aus
+// fix/hero-wall-sizes. `mobile` bewusst NICHT hier drin -- Auftragsgrenze.
+const MEASURED_BASE_VW: Record<'tablet' | 'tabletWide' | 'desktop', number> = {
+  tablet: 25.2,
+  tabletWide: 18.2,
+  desktop: 13.5,
+}
+
+// object-cover-Bedarf (siehe fix/hero-wall-sizes fuer die volle
+// Herleitung): requiredWidth = boxWidth * (sourceAspect / boxAspect).
+// 1,7 ist der haeufigste real gemessene Seitenverhaeltnis-Wert der
+// Bandfotos, nicht das beobachtete Maximum -- bewusster Kompromiss fuer
+// den typischen Fall.
+const REPRESENTATIVE_SOURCE_ASPECT = 1.7
+
+function sizesForBreakpoint(baseVw: number): string[] {
+  return ASPECT_RATIO_BY_POSITION.map((boxAspect) => {
+    const coverMultiplier = Math.max(1, REPRESENTATIVE_SOURCE_ASPECT / boxAspect)
+    return `${(baseVw * coverMultiplier).toFixed(1)}vw`
+  })
+}
+
+const SIZES_BY_POSITION_NON_MOBILE: Record<'tablet' | 'tabletWide' | 'desktop', string[]> = {
+  tablet: sizesForBreakpoint(MEASURED_BASE_VW.tablet),
+  tabletWide: sizesForBreakpoint(MEASURED_BASE_VW.tabletWide),
+  desktop: sizesForBreakpoint(MEASURED_BASE_VW.desktop),
+}
+
 function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint: HeroWallBreakpoint }) {
   const tracks = buildHeroWallTracks(images, breakpoint)
   const offsets = TRACK_OFFSET_PX[breakpoint]
-  const sizes = BREAKPOINT_SIZES[breakpoint]
+  const isMobile = breakpoint === 'mobile'
+  const flatSizes = BREAKPOINT_SIZES[breakpoint]
+  const sizesByPosition = isMobile ? null : SIZES_BY_POSITION_NON_MOBILE[breakpoint]
   return (
     <div className={`${BREAKPOINT_WRAPPER_CLASS[breakpoint]} items-center h-full w-full gap-3 md:gap-4`}>
       {tracks.map((track, t) => (
@@ -179,7 +229,7 @@ function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint:
               // LCP-Element -- daher hier gezielt das erste Bild der
               // ersten beiden Tracks fuer jeden Nicht-Mobile-Breakpoint.
               preload={breakpoint !== 'mobile' && t < 2 && p === 0}
-              sizes={sizes}
+              sizes={isMobile ? flatSizes : sizesByPosition![p % sizesByPosition!.length]}
             />
           ))}
         </div>
