@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { getAllBandsFromSupabase, getBandFromSupabase } from '@/lib/supabase/queries';
 import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
-import { EVENT_TYPE_TABS, buildAuswahlStateKey } from '@/lib/homepage/eventTypeTabs';
+import { EVENT_TYPE_TABS, ALL_BANDS_TAB_KEY, buildAuswahlStateKey, type EventTypeTab } from '@/lib/homepage/eventTypeTabs';
 import { pickRotatingItems, getDayIndex } from '@/lib/homepage/bandRotation';
 import { bandMatchesMood } from '@/lib/moods/bandMoodFilter';
+import { computeMostFrequentMoods } from '@/lib/homepage/moodFrequency';
 import type { Band } from '@/lib/types/band';
 import { toAuswahlBandSummary, type AuswahlBandSummary } from '@/components/homepage/AuswahlBandCard';
 import { HeroWall } from '@/components/hero/HeroWall';
@@ -71,22 +72,51 @@ export default async function HomePage() {
 
   const dayIndex = getDayIndex(new Date());
 
+  // "Alle Bands"-Tab (Auftrag "Alle-Bands-Pill"): erste, vorausgewaehlte
+  // Pill vor den 4 kuratierten Anlass-Tabs. supabaseEventTypeSlugs bleibt
+  // leer -- der Pool fuer diesen Tab ist unten bewusst NICHT ueber
+  // bandMatchesTab gefiltert (siehe Schleife), sondern immer "alle aktiven
+  // Baender". finderAnlassSlug: null -> AuswahlSection verlinkt ungefiltert
+  // auf /bands (siehe dortiges buildFinderHref). moods: datengetrieben
+  // statt fest kuratiert, exakt dieselbe Anzahl (4) wie bei den Anlass-Tabs.
+  const ALL_BANDS_MOOD_COUNT = 4;
+  const allBandsTab: EventTypeTab = {
+    key: ALL_BANDS_TAB_KEY,
+    label: 'Alle Bands',
+    supabaseEventTypeSlugs: [],
+    finderAnlassSlug: null,
+    finderLinkLabel: 'Alle Bands entdecken',
+    moods: computeMostFrequentMoods(activeBands, ALL_BANDS_MOOD_COUNT),
+  };
+  const tabsWithAllBands = [allBandsTab, ...EVENT_TYPE_TABS];
+
   // Pro Tab: Pool = alle aktiven Baender, die diesem Anlass laut echten
   // Event-Type-Zuordnungen (categorySlugs) tatsaechlich zugeordnet sind --
-  // keine Heuristik, keine feste Liste. Zusaetzlich pro Tab je einer der 4
-  // kuratierten "Klingt nach"-Moods (Nachfass-Paket "Kuratierte
-  // Klingt-nach-Filter"): derselbe Anlass-Pool, zusaetzlich per bestehendem
+  // keine Heuristik, keine feste Liste. Fuer den "Alle Bands"-Tab ist der
+  // Pool bewusst IMMER "alle aktiven Baender", ohne bandMatchesTab-Filter
+  // (Auftrag: "ohne Anlassfilter und ohne feste Bevorzugung"). Zusaetzlich
+  // pro Tab je einer der kuratierten bzw. (fuer "Alle Bands") daten-
+  // getriebenen "Klingt nach"-Moods (Nachfass-Paket "Kuratierte
+  // Klingt-nach-Filter"): derselbe Pool, zusaetzlich per bestehendem
   // bandMatchesMood gefiltert. Alle Zustaende (unfiltered + je Mood) werden
   // serverseitig deterministisch fuer den aktuellen Kalendertag berechnet
   // (lib/homepage/bandRotation.ts, poolKey via buildAuswahlStateKey um
-  // Anlass+Mood erweitert), damit clientseitig kein Math.random() und keine
-  // Hydration-Diskrepanz noetig ist. Payload-Reduktion: erst auf den vollen
-  // Band-Objekten filtern/rotieren, dann auf das schlanke
+  // Anlass+Mood erweitert) -- das gilt AUCH fuer "Alle Bands": dieser
+  // Tageswert dient dort nur als hydrationssicherer Startzustand vor dem
+  // Mount, danach mischt AuswahlSection.tsx clientseitig echt zufaellig aus
+  // allBandsPool neu (siehe dort, lib/homepage/allBandsSelection.ts) --
+  // ohne diesen Tagesfallback wuerde die allererste, noch nicht hydrierte
+  // Bildschirmausgabe entweder leer bleiben oder dieselben ersten Baender
+  // aus der Datenreihenfolge dauerhaft bevorzugen. Payload-Reduktion: erst
+  // auf den vollen Band-Objekten filtern/rotieren, dann auf das schlanke
   // AuswahlBandSummary-Format mappen (nur Felder, die AuswahlBandCard
   // tatsaechlich rendert).
   const bandsByState: Record<string, AuswahlBandSummary[]> = {};
-  for (const tab of EVENT_TYPE_TABS) {
-    const pool = activeBands.filter((band) => bandMatchesTab(band, tab.supabaseEventTypeSlugs));
+  for (const tab of tabsWithAllBands) {
+    const pool =
+      tab.key === ALL_BANDS_TAB_KEY
+        ? activeBands
+        : activeBands.filter((band) => bandMatchesTab(band, tab.supabaseEventTypeSlugs));
     const unfilteredKey = buildAuswahlStateKey(tab.key, null);
     bandsByState[unfilteredKey] = pickRotatingItems(pool, (b) => b.id, unfilteredKey, dayIndex, 3).map(
       toAuswahlBandSummary
@@ -101,6 +131,13 @@ export default async function HomePage() {
     }
   }
 
+  // Voller, schlanker Bandbestand fuer die echte (post-Mount) Zufallsauswahl
+  // von "Alle Bands" (siehe AuswahlSection.tsx) -- dieselbe AuswahlBandSummary-
+  // Form wie bandsByState, keine zusaetzlichen Felder. BandGrid.tsx erhaelt
+  // auf der Startseite aktuell keinen Bandbestand (dort ungenutzt), es gibt
+  // also keine doppelte Uebertragung desselben Bestands zu vermeiden.
+  const allBandsPool = activeBands.map(toAuswahlBandSummary);
+
   const einschaetzenBand = einschaetzenResult.data
     ? normalizeBandFromSupabase(einschaetzenResult.data)
     : null;
@@ -110,7 +147,7 @@ export default async function HomePage() {
       <HeroWall images={heroPool}>
         <HeroContent />
       </HeroWall>
-      <AuswahlSection tabs={EVENT_TYPE_TABS} bandsByState={bandsByState} />
+      <AuswahlSection tabs={tabsWithAllBands} bandsByState={bandsByState} allBandsPool={allBandsPool} />
       <Explainer />
       {einschaetzenBand && <BandEinschaetzen band={einschaetzenBand} />}
       <CuratorBlock />

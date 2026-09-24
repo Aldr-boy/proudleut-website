@@ -1,43 +1,84 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { buildAuswahlStateKey, type EventTypeTab } from '@/lib/homepage/eventTypeTabs';
+import { ALL_BANDS_TAB_KEY, buildAuswahlStateKey, type EventTypeTab } from '@/lib/homepage/eventTypeTabs';
+import { shuffleBands, selectAllBandsCards } from '@/lib/homepage/allBandsSelection';
 import AuswahlBandCard, { type AuswahlBandSummary } from './AuswahlBandCard';
 
 type Props = {
   tabs: EventTypeTab[];
   bandsByState: Record<string, AuswahlBandSummary[]>;
+  // Voller, schlanker Bandbestand fuer den "Alle Bands"-Tab (Auftrag
+  // "Alle-Bands-Pill") -- nur hier gebraucht, alle anderen Tabs kommen
+  // ausschliesslich ueber bandsByState. Siehe useEffect unten.
+  allBandsPool: AuswahlBandSummary[];
 };
 
 // Baut das Finder-Linkziel fuer die aktuelle Anlass-/Mood-Auswahl. Spiegelt
 // bewusst dasselbe URLSearchParams-Pattern wie buildUrl() in
 // components/bands/BandExplorer.tsx (dort nicht exportiert, daher hier
 // nicht importiert, aber identisch gehalten) statt fragiler
-// String-Konkatenation.
-function buildFinderHref(anlassSlug: string, moodSlug: string | null): string {
+// String-Konkatenation. anlassSlug ist nullable (Auftrag "Alle-Bands-
+// Pill"): "Alle Bands" hat keinen Anlassfilter, ?anlass= wird dann
+// bewusst NICHT gesetzt, exakt wie buildUrl() es fuer
+// anlass: null bereits handhabt -- /bands ohne den Parameter zeigt in
+// BandExplorer.tsx bereits heute ungefiltert alle Baender.
+function buildFinderHref(anlassSlug: string | null, moodSlug: string | null): string {
   const p = new URLSearchParams();
-  p.set('anlass', anlassSlug);
+  if (anlassSlug) p.set('anlass', anlassSlug);
   if (moodSlug) p.set('mood', moodSlug);
-  return `/bands?${p.toString()}`;
+  const query = p.toString();
+  return query ? `/bands?${query}` : '/bands';
 }
 
 // Tabs + Moods + Cards fuer "01 -- Auswahl". Die drei sichtbaren Bands je
-// Zustand (Anlass, optional + Mood) werden bereits serverseitig
+// Anlass-Zustand (Anlass, optional + Mood) werden bereits serverseitig
 // (app/page.tsx, lib/homepage/bandRotation.ts) deterministisch fuer den
 // aktuellen Kalendertag berechnet und komplett als Props hereingereicht --
-// dieser Client-Component schaltet nur zwischen den bereits fertigen
-// Arrays um. Kein clientseitiges Nachladen, kein Math.random(), keine
-// Hydration-Diskrepanz moeglich.
-export default function AuswahlSection({ tabs, bandsByState }: Props) {
+// dieser Client-Component schaltet dafuer nur zwischen den bereits
+// fertigen Arrays um, kein clientseitiges Nachladen, kein Math.random(),
+// keine Hydration-Diskrepanz moeglich.
+//
+// Ausnahme: der "Alle Bands"-Tab (ALL_BANDS_TAB_KEY, Auftrag "Alle-Bands-
+// Pill"). Die Startseite ist ISR-gecacht (revalidate = 300 in
+// app/page.tsx) -- eine dort serverseitig "zufaellig" gezogene Auswahl
+// waere in Wirklichkeit nur zufaellig pro 5-Minuten-Cache-Generierung,
+// nicht pro Seitenaufruf. Deshalb bekommt "Alle Bands" zusaetzlich den
+// vollen Bandbestand (allBandsPool) und mischt ihn EINMAL pro Mount in
+// einem useEffect (siehe unten) -- vor dem Mount zeigt derselbe
+// serverseitig fuer den Kalendertag berechnete bandsByState-Eintrag wie
+// bei jedem anderen Tab (identisch Server/Client, kein Hydration-
+// Mismatch), danach uebernimmt die echte, geloste Reihenfolge.
+export default function AuswahlSection({ tabs, bandsByState, allBandsPool }: Props) {
   const [activeKey, setActiveKey] = useState(tabs[0]?.key ?? '');
   const [selectedMoodSlug, setSelectedMoodSlug] = useState<string | null>(null);
+  const [shuffledAllBandsPool, setShuffledAllBandsPool] = useState<AuswahlBandSummary[] | null>(null);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
+  // Nur einmal pro Mount echt zufaellig mischen (nicht bei jedem Klick auf
+  // einen "Klingt nach"-Chip) -- die Chips filtern danach nur noch aus
+  // dieser einen gemischten Reihenfolge, siehe activeBands unten.
+  useEffect(() => {
+    setShuffledAllBandsPool(shuffleBands(allBandsPool));
+  }, [allBandsPool]);
+
   const activeTab = tabs.find((t) => t.key === activeKey) ?? tabs[0];
-  const activeBands = activeTab
-    ? (bandsByState[buildAuswahlStateKey(activeTab.key, selectedMoodSlug)] ?? [])
-    : [];
+  const activeBands = !activeTab
+    ? []
+    : activeTab.key === ALL_BANDS_TAB_KEY && shuffledAllBandsPool
+      ? selectAllBandsCards(shuffledAllBandsPool, selectedMoodSlug, 3)
+      : (bandsByState[buildAuswahlStateKey(activeTab.key, selectedMoodSlug)] ?? []);
+
+  // Weiches Einblenden (Vorlage: components/homepage/BandGrid.tsx, dortiges
+  // `visible`-Pattern) NUR fuer den einen Wechsel von der hydrationssicheren
+  // Tagesauswahl zur echten Zufallsauswahl direkt nach dem Mount -- nicht bei
+  // jedem Tab- oder Mood-Chip-Klick. shuffledAllBandsPool ist ausschliesslich
+  // in den ersten Render-Zyklen (vor dem einmaligen useEffect oben) noch
+  // `null`; danach bleibt es fuer den Rest der Sitzung gesetzt, weshalb diese
+  // Bedingung nach dem ersten Mischen dauerhaft `false` bleibt, auch wenn
+  // spaeter erneut zu "Alle Bands" gewechselt wird.
+  const isAllBandsFadingIn = activeTab?.key === ALL_BANDS_TAB_KEY && shuffledAllBandsPool === null;
 
   function selectTab(key: string) {
     setActiveKey(key);
@@ -186,10 +227,14 @@ export default function AuswahlSection({ tabs, bandsByState }: Props) {
               Aktuell sind hier noch keine passenden Bands hinterlegt.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {activeBands.map((band, i) => (
-                <AuswahlBandCard key={band.slug} band={band} priority={i === 0} />
-              ))}
+            <div
+              className={`transition-opacity duration-500 ${isAllBandsFadingIn ? 'opacity-0' : 'opacity-100'}`}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {activeBands.map((band, i) => (
+                  <AuswahlBandCard key={band.slug} band={band} priority={i === 0} />
+                ))}
+              </div>
             </div>
           )}
 
