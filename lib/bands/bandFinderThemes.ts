@@ -65,3 +65,40 @@ export function resolveBandFinderThemeNav(
     return { ...theme, href, active }
   })
 }
+
+// Sofort-Feedback beim Klick (Auftrag "Klick-/Aktivzustand im Bandfinder"):
+// reine, framework-unabhaengige Kombinationslogik aus BandExplorer.tsx
+// ausgelagert, damit sie direkt (ohne React/DOM/useLinkStatus-Mock)
+// testbar ist -- identisches Architekturmuster wie resolveBandFinderThemeNav
+// oben. pendingTileKey kommt aus useLinkStatus() der einzelnen Kachel
+// (siehe components/bands/BandExplorer.tsx::ThemeTileMedia), theme.active
+// bleibt unveraendert die fachliche Wahrheit aus resolveBandFinderThemeNav.
+//
+// Regel: Solange irgendeine Kachel als "pending" gemeldet wurde, gewinnt
+// ausschliesslich sie die Aktiv-Optik (auch wenn theme.active fuer eine
+// ANDERE Kachel noch true ist, weil die Ziel-URL/Server-Daten noch nicht
+// aktualisiert sind) -- nie zwei Kacheln gleichzeitig aktiv. Ohne
+// pendingTileKey (null) gilt unveraendert theme.active.
+export function resolveThemeTileActive(
+  pendingTileKey: BandFinderThemeKey | null,
+  themeKey: BandFinderThemeKey,
+  themeActive: boolean
+): boolean {
+  return pendingTileKey === null ? themeActive : pendingTileKey === themeKey
+}
+
+// Reducer fuer den pendingTileKey-State: eine Kachel, die "pending" meldet,
+// wird sofort zur neuen pendingTileKey (der zuletzt geklickte Link gewinnt).
+// Ein "idle"(false)-Report wird nur uebernommen, wenn er von der Kachel
+// kommt, die den State aktuell haelt -- verhindert ein Race, falls die
+// zuvor aktive/gerade verlassene Kachel ihr eigenes idle erst NACH einem
+// neuen Klick auf eine andere Kachel meldet (sonst wuerde dieses spaete
+// idle den neuen, korrekten pendingTileKey faelschlich wieder loeschen).
+export function reduceTilePendingKey(
+  current: BandFinderThemeKey | null,
+  key: BandFinderThemeKey,
+  isPending: boolean
+): BandFinderThemeKey | null {
+  if (isPending) return key
+  return current === key ? null : current
+}
