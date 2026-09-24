@@ -110,7 +110,6 @@
 /* ── Border-Utilities ── */
 @utility border-pl-soft   { border-color: var(--pl-border-soft);   }
 @utility border-pl-medium { border-color: var(--pl-border-medium); }
-@utility border-pl-stage  { border-color: var(--pl-border-stage);  }
 /* border-pl-stage kollidiert mit der von @theme automatisch erzeugten
    Utility gleichen Namens (aus --color-pl-stage, Zeile 87) -- die
    Theme-Utility gewinnt, wodurch border-pl-stage bisher unbeabsichtigt

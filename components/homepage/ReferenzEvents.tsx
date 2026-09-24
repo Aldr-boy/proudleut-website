@@ -19,7 +19,7 @@ export default function ReferenzEvents() {
           {referenzEvents.map((ev) => (
             <article
               key={ev.event}
-              className="bg-pl-stage-elevated border border-pl-stage rounded-lg overflow-hidden hover:border-pl-accent-light/30 transition-colors"
+              className="bg-pl-stage-elevated border border-pl-stage-divider rounded-lg overflow-hidden hover:border-pl-accent-light/30 transition-colors"
             >
               <div className="relative aspect-[3/2]">
                 <Image

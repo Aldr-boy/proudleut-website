@@ -88,7 +88,7 @@ export default function UeberProudleutPage() {
             nicht. Genau dafür gibt es proudleut.
           </p>
 
-          <div className="mt-14 md:mt-20 pt-6 border-t border-pl-stage flex flex-wrap gap-x-9 gap-y-2">
+          <div className="mt-14 md:mt-20 pt-6 border-t border-pl-stage-divider flex flex-wrap gap-x-9 gap-y-2">
             {CHAPTERS.map(({ n, label }) => (
               <span key={n} className="font-mono text-xs text-pl-on-stage-muted">
                 <span className="text-pl-accent-light">{n}</span>&nbsp;&nbsp;{label}
