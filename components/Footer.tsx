@@ -130,7 +130,7 @@ export default function Footer() {
           </nav>
         </div>
 
-        <div className="mt-12 md:mt-16 border-t border-pl-stage">
+        <div className="mt-12 md:mt-16 border-t border-pl-stage-divider">
           <div className="py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
             <div className="flex gap-6">
               <Link

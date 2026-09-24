@@ -111,6 +111,14 @@
 @utility border-pl-soft   { border-color: var(--pl-border-soft);   }
 @utility border-pl-medium { border-color: var(--pl-border-medium); }
 @utility border-pl-stage  { border-color: var(--pl-border-stage);  }
+/* border-pl-stage kollidiert mit der von @theme automatisch erzeugten
+   Utility gleichen Namens (aus --color-pl-stage, Zeile 87) -- die
+   Theme-Utility gewinnt, wodurch border-pl-stage bisher unbeabsichtigt
+   die opake Buehnenhintergrundfarbe statt der hier definierten
+   halbtransparenten Border-Farbe ergab. border-pl-stage-divider hat
+   keinen kollidierenden Theme-Namen und liefert zuverlaessig
+   --pl-border-stage. */
+@utility border-pl-stage-divider { border-color: var(--pl-border-stage); }
 
 /* ── Gradient-Utilities ── */
 @utility bg-pl-gradient-stage     { background: var(--pl-gradient-stage);     }
