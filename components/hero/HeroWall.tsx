@@ -11,6 +11,7 @@ import {
 } from '@/lib/heroWall/heroWallComposition'
 import { resolveHeroFocus } from '@/lib/heroWall/resolveHeroFocus'
 import { HeroLogoMarquee } from './HeroLogoMarquee'
+import { buildHeroWallPreloadDescriptors } from './heroWallPreloadLinks'
 
 // Startseiten-Hero-Redesign, Nachgang "Komposition & weiche Übergänge":
 // Text und Bildwelt sind keine zwei nebeneinander liegenden Flex-Spalten
@@ -114,12 +115,10 @@ function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
 function Tile({
   slot,
   aspectClass,
-  preload,
   sizes,
 }: {
   slot: HeroWallSlot<HeroWallImage>
   aspectClass: string
-  preload: boolean
   sizes: string
 }) {
   if (!slot.image) return <PlaceholderTile aspectClass={aspectClass} />
@@ -128,14 +127,19 @@ function Tile({
     focus === 'top' ? 'object-top' : focus === 'bottom' ? 'object-bottom' : 'object-center'
   return (
     <div className={`relative ${aspectClass} rounded-md overflow-hidden bg-pl-stage-elevated`}>
+      {/* EXPERIMENT Variante S: kein next/image-`preload`-Prop mehr auf
+          irgendeiner Kachel -- alle Kacheln bleiben `loading="lazy"`
+          (Vorgabe: kein Bild auf `loading="eager"` stellen). Das fruehe
+          Laden der vormals eager gesetzten Kacheln uebernehmen jetzt
+          ausschliesslich die media-gebundenen <link rel="preload">-
+          Elemente aus heroWallPreloadLinks.ts (siehe HeroImageWall). */}
       <Image
         src={slot.image.url}
         alt=""
         fill
         className={`object-cover ${objectPositionClass}`}
         sizes={sizes}
-        preload={preload}
-        loading={preload ? undefined : 'lazy'}
+        loading="lazy"
       />
     </div>
   )
@@ -203,6 +207,18 @@ const SIZES_BY_POSITION_NON_MOBILE: Record<'tablet' | 'tabletWide' | 'desktop', 
   desktop: sizesForBreakpoint(MEASURED_BASE_VW.desktop),
 }
 
+// EXPERIMENT Variante S: `sizes`-Wert, den die vormals eager geladene
+// Kachel an Position p=0 je Breakpoint tatsaechlich verwendet (siehe
+// TrackSet unten) -- muss 1:1 dem entsprechen, was buildHeroWallPreloadDescriptors
+// fuer die media-gebundenen <link rel="preload">-Elemente verwendet,
+// sonst waeren srcSet von Preload und echter Kachel nicht identisch.
+const PRELOAD_SIZES_BY_BREAKPOINT: Record<HeroWallBreakpoint, string> = {
+  mobile: BREAKPOINT_SIZES.mobile,
+  tablet: SIZES_BY_POSITION_NON_MOBILE.tablet[0],
+  tabletWide: SIZES_BY_POSITION_NON_MOBILE.tabletWide[0],
+  desktop: SIZES_BY_POSITION_NON_MOBILE.desktop[0],
+}
+
 function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint: HeroWallBreakpoint }) {
   const tracks = buildHeroWallTracks(images, breakpoint)
   const offsets = TRACK_OFFSET_PX[breakpoint]
@@ -222,13 +238,6 @@ function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint:
               key={slot.index}
               slot={slot}
               aspectClass={ASPECT_BY_POSITION[p % ASPECT_BY_POSITION.length]}
-              // Reale LCP-Messung (PerformanceObserver, siehe
-              // Abschlussbericht) zeigt: auf Mobile gewinnt die H1 das
-              // LCP-Rennen (kein Bild-Preload noetig), ab Tablet (>=768px)
-              // ist durchgehend eine Bildkachel das tatsaechliche
-              // LCP-Element -- daher hier gezielt das erste Bild der
-              // ersten beiden Tracks fuer jeden Nicht-Mobile-Breakpoint.
-              preload={breakpoint !== 'mobile' && t < 2 && p === 0}
               sizes={isMobile ? flatSizes : sizesByPosition![p % sizesByPosition!.length]}
             />
           ))}
@@ -392,6 +401,9 @@ function ImageBottomFade() {
   )
 }
 
+// EXPERIMENT Variante S: media-gebundene Preloads statt next/images
+// nicht Media-Query-faehiger `preload`-Injektion (siehe heroWallPreloadLinks.ts).
+// React 19 hebt <link> unabhaengig von der Baumposition in den <head>.
 function HeroImageWall({ images }: { images: HeroWallImage[] }) {
   return (
     // absolute inset-0 statt h-full w-full: der direkte Elternteil (die
@@ -409,6 +421,9 @@ function HeroImageWall({ images }: { images: HeroWallImage[] }) {
     // bleibt overflow-hidden lokal bestehen, dort ist die Bildwelt ein
     // eigener, nicht ueberlappender Block im Dokumentfluss.
     <div className="absolute inset-0 overflow-hidden md:overflow-visible">
+      {buildHeroWallPreloadDescriptors(images, PRELOAD_SIZES_BY_BREAKPOINT).map((d) => (
+        <link key={d.key} rel="preload" as="image" media={d.media} imageSrcSet={d.imageSrcSet} imageSizes={d.imageSizes} fetchPriority="high" />
+      ))}
       {/* Rotationscontainer: eigenes, ueberdimensioniertes Element (10-12%
           groesser als der sichtbare Bereich), damit nach der Rotation
           keine Luecken an den Raendern entstehen. Traegt AUSSCHLIESSLICH

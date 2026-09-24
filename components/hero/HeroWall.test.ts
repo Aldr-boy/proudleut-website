@@ -132,9 +132,28 @@ test('Pause-Button ist per Tastatur erreichbar (<button>) und hat sichtbaren Fok
   assert.match(source.slice(buttonTagStart, buttonStart + 600), /focus-visible:ring-2/)
 })
 
-test('next/image: preload nur gezielt (reale LCP-Messung: Bildkachel ab Tablet, H1 auf Mobile), lazy fuer alle uebrigen Kacheln', () => {
-  assert.match(source, /preload=\{breakpoint !== 'mobile' && t < 2 && p === 0\}/)
-  assert.match(source, /loading=\{preload \? undefined : 'lazy'\}/)
+// EXPERIMENT Variante S ("Media-Query-Preloads"): ersetzt den vormals
+// hier geprueften next/image-`preload`-Prop (t<2 && p===0), der keine
+// Media-Query-Bindung unterstuetzt (siehe heroWallPreloadLinks.ts) und
+// dadurch alle 6 zugehoerigen Bilder bei JEDEM Seitenaufruf lud,
+// unabhaengig vom tatsaechlichen Breakpoint.
+test('kein automatischer next/image-Preload mehr auf irgendeiner Hero-Wall-Kachel -- alle Kacheln bleiben loading="lazy"', () => {
+  assert.doesNotMatch(source, /preload=\{/, 'next/images automatische Preload-Injektion (kein media-Attribut moeglich) darf hier nicht mehr verwendet werden')
+  assert.doesNotMatch(source, /\bpriority(?:=|\s*:)/, 'auch das aeltere priority-Aequivalent darf nicht verwendet werden')
+  const tileStart = source.indexOf('function Tile(')
+  const tileImageStart = source.indexOf('<Image', tileStart)
+  const tileImageEnd = source.indexOf('/>', tileImageStart)
+  const tileImageTag = source.slice(tileImageStart, tileImageEnd)
+  assert.match(tileImageTag, /loading="lazy"/, 'die Tile-Kachel muss unconditional loading="lazy" verwenden')
+  assert.doesNotMatch(tileImageTag, /loading=\{/, 'loading darf nicht mehr bedingt (preload-abhaengig) gesetzt werden')
+})
+
+test('media-gebundene <link rel="preload" as="image"> ersetzen den automatischen next/image-Preload, mit zueinander exklusiven, lueckenlosen Media-Queries', () => {
+  assert.match(source, /import \{ buildHeroWallPreloadDescriptors \} from '\.\/heroWallPreloadLinks'/)
+  assert.match(source, /<link[\s\S]{0,80}rel="preload"[\s\S]{0,80}as="image"/, 'kein <link rel="preload" as="image"> im JSX gefunden')
+  assert.match(source, /media=\{d\.media\}/)
+  assert.match(source, /imageSrcSet=\{d\.imageSrcSet\}/)
+  assert.match(source, /imageSizes=\{d\.imageSizes\}/)
 })
 
 test('kein pauschales overflow-x:hidden auf body/html -- Clipping bleibt lokal am Szenencontainer gekapselt', () => {
