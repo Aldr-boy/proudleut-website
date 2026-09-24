@@ -433,7 +433,7 @@ boxShadow: {
 
 ```
 Bühnen-Section:       bg-pl-stage text-pl-on-stage
-Card auf Bühne:       bg-pl-stage-elevated border-pl-stage
+Card auf Bühne:       bg-pl-stage-elevated border-pl-stage-divider
 Warme Section:        bg-pl-paper text-pl-text
 Funktionale Section:  bg-pl-canvas text-pl-text
 Card auf Hell:        bg-pl-elevated border-pl-soft
