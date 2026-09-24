@@ -47,14 +47,23 @@ export type EventTypeTab = {
   supabaseEventTypeSlugs: string[];
   // Linkziel -- immer der bestehende, funktionierende Band-Explorer mit
   // ?anlass=<slug>. Der Slug muss ein gueltiger Finder-Anlass sein (siehe
-  // lib/finderOccasions.ts FINDER_OCCASIONS).
-  finderAnlassSlug: string;
+  // lib/finderOccasions.ts FINDER_OCCASIONS). null bedeutet "kein
+  // Anlassfilter" (ungefilterter Band-Explorer, siehe ALL_BANDS_TAB_KEY).
+  finderAnlassSlug: string | null;
   // Sichtbares Link-Wording. Bewusst ohne "Finder" -- fuer Besucher nicht
   // selbsterklaerend, deshalb "... entdecken" statt "... im Finder".
   finderLinkLabel: string;
   // Genau 4 fest kuratierte "Klingt nach"-Chips fuer diesen Anlass.
   moods: HomepageMood[];
 };
+
+// Schluessel des zusaetzlichen, ungefilterten "Alle Bands"-Tabs (Auftrag
+// "Alle-Bands-Pill"). EVENT_TYPE_TABS selbst bleibt unveraendert -- das
+// synthetische Tab-Objekt dafuer wird in app/page.tsx gebaut (moods dort
+// datengetrieben per computeMostFrequentMoods statt fest kuratiert) und
+// dieser Schluessel dient beiden Seiten (app/page.tsx, AuswahlSection.tsx)
+// als gemeinsame Erkennung, ohne einen zweiten String zu duplizieren.
+export const ALL_BANDS_TAB_KEY = 'alle-bands';
 
 export const EVENT_TYPE_TABS: EventTypeTab[] = [
   {
