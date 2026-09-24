@@ -319,8 +319,8 @@ function PauseButton({
 // (Nachbesserung "Feinschliff Bandzeile", Abschnitt 1): er bezog seine
 // Prozent-Stops auf die GESAMTE Szenenhoehe (Text+Bild), wodurch die
 // Bildspalte auf sehr breiten Screens am unteren Rand ungedaempft blieb.
-// Der untere Bild-Auslauf sitzt jetzt in ImageBottomFade, als eigenes
-// KIND der Bildspalte -- siehe dort.
+// Der untere Bild-Auslauf sitzt jetzt in ImageBottomFade, als Geschwister-
+// Ebene auf Szenenebene -- siehe dort.
 function GradientOverlay() {
   return (
     <div
@@ -373,21 +373,36 @@ function MobileEdgeFade() {
 // vertikalen Verlauf, der sich auf die GESAMTE Szenenhoehe (Text+Bild)
 // bezog -- auf sehr breiten Screens (ab ca. 1800px) blieb die Bildspalte
 // dadurch am unteren Rand ungedaempft, die Logozeile lag direkt auf dem
-// Foto. Fix: eigenes KIND der Bildspalte (wie MobileEdgeFade), Prozent-
-// Stops relativ zur tatsaechlichen Spaltenhoehe -- funktioniert dadurch
-// unabhaengig von Viewportbreite/-hoehe. Werte aus der Entwurfsdatei
-// (300px hoher Verlauf bei einer 810px hohen Referenz-Buehne: transparent
-// bis 55% ~82% Deckkraft, ab 82% voll deckend) auf Spaltenanteile
-// umgerechnet: der 300px-Block beginnt bei ca. 63% der Spaltenhoehe, die
-// 55%/82%-Marken innerhalb dieses Blocks liegen bei ca. 83%/93% der
-// Gesamthoehe. Liegt hinter Text (z-20) und Logozeile (z-20) -- beide
-// sind eigenstaendige, spaeter gerenderte Elemente außerhalb dieser
-// Spalte und werden dadurch selbst nicht abgedunkelt.
-function ImageBottomFade() {
+// Foto. Werte aus der Entwurfsdatei (300px hoher Verlauf bei einer 810px
+// hohen Referenz-Buehne: transparent bis 55%, ~82% Deckkraft, ab 82%
+// voll deckend) auf Anteile umgerechnet: der 300px-Block beginnt bei ca.
+// 63%, die 55%/82%-Marken darin liegen bei ca. 83%/93% der Gesamthoehe.
+//
+// Fix "harte senkrechte Kante hinter der Logozeile": urspruenglich als
+// KIND der Bildspalte gerendert (Prozent-Stops relativ zur Spaltenhoehe,
+// analog MobileEdgeFade). Die Bildspalte ist ab md aber schmaler als die
+// Szene, und HeroImageWall hat bewusst md:overflow-visible, damit
+// rotierte Kacheln optisch nach links ueber die Spaltengrenze hinaus in
+// GradientOverlay's Zone reichen (siehe dortiger Kommentar). Als
+// Spalten-Kind endete dieser Verlauf exakt an der -- senkrechten --
+// Spaltengrenze: Kacheln, die optisch darueber hinausragen, bekamen am
+// unteren Rand nur GradientOverlay's horizontalen Verlauf, nicht diese
+// vertikale Bodenabdunkelung, sichtbar als harte Kante. Jetzt Geschwister
+// von GradientOverlay auf Szenenebene (volle Szenenbreite). Die Prozent-
+// Stops bleiben dabei unveraendert gueltig: ab md hat die Bildspalte
+// durch md:inset-y-0 exakt dieselbe Hoehe wie die Szene, "Spaltenhoehe"
+// und "Szenenhoehe" sind hier also identisch. Endfarbe rgba(18,16,26,1)
+// entspricht exakt --pl-bg-stage/bg-pl-stage (Hero-Hintergrund) -- kein
+// Farbsprung, genau wie GradientOverlay's eigene opake Stufe links.
+//
+// `className` steuert die Sichtbarkeit (siehe Aufrufstelle unten in
+// HeroWall, auf Szenenebene neben GradientOverlay): hidden md:block, wie
+// zuvor -- weiterhin nur ab md aktiv, auf Mobile unveraendert unsichtbar.
+function ImageBottomFade({ className }: { className: string }) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10 hidden md:block"
+      className={`pointer-events-none absolute inset-0 z-10 ${className}`}
       style={{
         background:
           'linear-gradient(180deg,' +
@@ -548,12 +563,13 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
             hier anteilig auf unsere Breakpoints uebertragen). */}
         <div className="relative order-1 md:order-none w-full min-h-[42svh] sm:min-h-[48svh] overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-[44%] md:w-[64%] lg:left-[46%] lg:w-[62%] xl:left-[48%] xl:w-[58%]">
           <HeroImageWall images={images} />
-          {/* Kinder DIESER Spalte (nicht des gesamten Szenencontainers)
-              -- nur so beziehen sich die Uebergangstiefen auf die
-              tatsaechliche Bildspalten-Hoehe, siehe jeweilige
-              Funktionskommentare. */}
+          {/* Kind DIESER Spalte (nicht des gesamten Szenencontainers) --
+              nur so bezieht sich die Uebergangstiefe auf die tatsaechliche
+              (auf Mobile variable) Bildspalten-Hoehe, siehe Funktions-
+              kommentar. ImageBottomFade (der untere Auslauf ab md) rendert
+              NICHT hier, sondern auf Szenenebene neben GradientOverlay --
+              siehe dort. */}
           <MobileEdgeFade />
-          <ImageBottomFade />
           {/* Pause-Button, Mobile-Position (Nachbesserung "Feinschliff
               Bandzeile Runde 2", Abschnitt 2): auf Mobile stand der
               Button bisher am Szenencontainer (bottom-20 right-4) direkt
@@ -574,6 +590,10 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
         </div>
 
         <GradientOverlay />
+        {/* Aktive Instanz des unteren Mosaik-Auslaufs (siehe Funktions-
+            kommentar oben): auf Szenenebene statt als Spalten-Kind, damit
+            sie dieselbe volle Breite wie GradientOverlay abdeckt. */}
+        <ImageBottomFade className="hidden md:block" />
 
         {/* Bodenlinie (Auftrag "Proudleut-Homepage-Hero Bandzeile"):
             letztes Kind DIESES Containers, nicht des aeusseren
