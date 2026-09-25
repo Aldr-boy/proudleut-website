@@ -62,13 +62,16 @@ const GENERIC_FALLBACK: BandFinderThemeImage = {
   alt: '',
 }
 
-// Zielverhaeltnis der Variante-1c-Kachel (~356x116 im Design-Mockup).
-// Sanitys eigener hotspot-bewusster Zuschnitt (crop+hotspot sind fuer
-// hochzeit/festzelt in Sanity gepflegt) uebernimmt damit direkt die
-// passende Bildausrichtung -- kein zusaetzliches CSS object-position
-// noetig (siehe BandFinderThemeImage.objectPosition-Kommentar oben).
-const SANITY_TILE_WIDTH = 360
-const SANITY_TILE_HEIGHT = 118
+// Zielverhaeltnis der Variante-1c-Kachel (~356x116 im Design-Mockup),
+// hier bei doppelter Aufloesung angefordert (2x fuer Retina-Bildschirme
+// -- die Kachel selbst bleibt in derselben CSS-Groesse, next/image
+// skaliert das groessere Bild lediglich herunter). Sanitys eigener
+// hotspot-bewusster Zuschnitt (crop+hotspot sind fuer hochzeit/festzelt
+// in Sanity gepflegt) uebernimmt damit direkt die passende
+// Bildausrichtung -- kein zusaetzliches CSS object-position noetig
+// (siehe BandFinderThemeImage.objectPosition-Kommentar oben).
+const SANITY_TILE_WIDTH = 720
+const SANITY_TILE_HEIGHT = 236
 
 async function resolveSanityThemeImage(slug: string): Promise<BandFinderThemeImage> {
   const hero = await fetchEventCategoryHero(slug)
