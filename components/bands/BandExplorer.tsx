@@ -633,7 +633,14 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                        ${theme.active ? 'border-pl-accent bg-[color-mix(in_srgb,var(--pl-accent)_12%,var(--pl-accent-subtle))]' : 'border-transparent hover:bg-black/[0.03]'}`}
           >
             <span className="relative w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden shrink-0 bg-pl-elevated">
-              <Image src={theme.image.url} alt="" fill sizes="44px" className="object-cover" />
+              <Image
+                src={theme.image.url}
+                alt={theme.image.alt}
+                fill
+                sizes="(min-width: 768px) 44px, 40px"
+                className="object-cover"
+                style={{ objectPosition: theme.image.objectPosition ?? 'center' }}
+              />
             </span>
             <span className={`text-sm font-semibold leading-snug ${theme.active ? 'text-pl-accent-deep' : 'text-pl-text'}`}>
               {theme.label}

@@ -2,44 +2,69 @@ import { fetchEventCategoryHero } from '@/sanity/lib/fetchEventCategoryHero'
 import { urlFor } from '@/sanity/lib/image'
 import type { BandFinderThemeKey } from './bandFinderThemes'
 
-export type BandFinderThemeImage = { url: string; alt: string }
+export type BandFinderThemeImage = {
+  url: string
+  alt: string
+  // Optionale CSS object-position fuer die 44px-Quadrat-Kachel (Auftrag
+  // "Bandfinder-Bildwechsel"). Nur gesetzt, wenn der Standard-Mittenausschnitt
+  // (object-cover, Position 50% 50%) das Motiv erkennbar schneidet -- siehe
+  // Kommentare je Eintrag unten. undefined -> BandExplorer.tsx nutzt 'center'.
+  objectPosition?: string
+}
 
-// Vorlaeufige, zentral austauschbare Motive pro Themenkasten (Auftrag
-// "Bandfinder-Redesign", Abschnitt 4 "Themenbilder und Zustaende").
+// Endgueltige Motive pro Themenkasten (Auftrag "Bandfinder-Bildwechsel"),
+// liegen lokal unter public/images/bandfinder/ -- ersetzt die vorherigen
+// Supabase-Platzhalterfotos fuer alle vier Themen ausser Hochzeit/Festzelt.
 //
-// Hochzeit/Festzelt nutzen unten das bereits bestehende, real gepflegte
-// Sanity-eventCategoryHero-Bild -- identische Quelle, die zuvor den
-// grossen Veranstaltungsseiten-Hero speiste (sanity/lib/fetchEventCategoryHero.ts).
+// Hochzeit/Festzelt nutzen weiterhin unveraendert das bereits bestehende,
+// real gepflegte Sanity-eventCategoryHero-Bild -- identische Quelle, die
+// auch den grossen Veranstaltungsseiten-Hero speist
+// (sanity/lib/fetchEventCategoryHero.ts). Bewusst nicht auf eine lokale
+// Kopie umgestellt, damit diese beiden Kacheln weiterhin redaktionell
+// ueber Sanity pflegbar bleiben, ohne Code-Aenderung.
 //
-// Fuer die uebrigen vier Themen existiert aktuell kein eigenes Sanity-
-// Motiv (read-only gegen das Sanity-Dataset geprueft: nur "hochzeit" und
-// "festzelt" haben einen eventCategoryHero-Datensatz). Deshalb hier je ein
-// real vorhandenes Bandfoto (Supabase Storage band-media, dieselbe
-// Bildquelle wie jede Bandkarte) einer Band, die dem jeweiligen Anlass
-// tatsaechlich zugeordnet ist (read-only gegen Produktion ermittelt):
-//   - Firmenfeier: 5toBeat (event_type firmenfeier-business-event)
-//   - Stadt- & Buergerfest: 2 unplugged (event_type stadt-und-buergerfest)
-//   - Konzert, Club & Festival: A96 Musikanten (event_type festival)
-//   - Alle Bands: 9to5 (alphabetisch erste aktive Band, neutrale Wahl)
-// Der Betreiber waehlt die finalen Motive spaeter aus -- bis dahin an
-// dieser einen Stelle zentral austauschbar. Die Bilder sind rein
-// dekorativ (Label daneben traegt die Bedeutung) -- alt bewusst leer.
-const SUPABASE_BAND_MEDIA = 'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media'
-
+// Alle vier lokalen Dateien sind bereits quadratisch (256x256, per sharp
+// vorab zugeschnitten -- Auftrag "Bandfinder-Bilder quadratisch machen"):
+// vorher lieferte next/image bei einem Querformat-Original zur Kachelgroesse
+// passende, aber NICHT quadratische Antworten (z. B. 96x64 statt 96x96),
+// die der Browser fuer object-cover zusaetzlich vertikal hochskalieren
+// musste. Der bisher per object-position gewaehlte Ausschnitt steckt jetzt
+// direkt in der Bilddatei -- objectPosition ist dadurch fuer alle vier
+// nicht mehr noetig (object-cover auf einem bereits quadratischen Bild ist
+// ein No-op). Die Typ-Unterstuetzung fuer objectPosition bleibt bestehen,
+// falls ein kuenftiges Motiv wieder ein Nicht-Quadrat ist.
+//
+// Die Bilder sind rein dekorativ (Kachel-Label daneben traegt die
+// Bedeutung) -- alt bewusst leer, identisch zur bisherigen Praxis dieser
+// Kacheln.
 const STATIC_IMAGES: Record<
   Exclude<BandFinderThemeKey, 'hochzeit' | 'festzelt'>,
   BandFinderThemeImage
 > = {
-  alle: { url: `${SUPABASE_BAND_MEDIA}/9to5/thumbnail.webp`, alt: '' },
-  firmenfeier: { url: `${SUPABASE_BAND_MEDIA}/5tobeat/thumbnail.webp`, alt: '' },
-  'stadt-und-buergerfest': { url: `${SUPABASE_BAND_MEDIA}/2-unplugged/thumbnail.webp`, alt: '' },
-  'konzert-club-festival': { url: `${SUPABASE_BAND_MEDIA}/a96-musikanten/thumbnail.webp`, alt: '' },
+  alle: { url: '/images/bandfinder/bandfinder-alle-bands-donnaweda.webp', alt: '' },
+  firmenfeier: { url: '/images/bandfinder/bandfinder-firmenfeier-lpc.webp', alt: '' },
+  'stadt-und-buergerfest': {
+    url: '/images/bandfinder/bandfinder-stadt-buergerfest-michael-jackts-net.webp',
+    alt: '',
+  },
+  'konzert-club-festival': {
+    url: '/images/bandfinder/bandfinder-konzert-club-festival-san2-soul-patrol.webp',
+    alt: '',
+  },
 }
 
 // Generischer Notfall-Fallback, falls der Sanity-Aufruf fuer Hochzeit/
 // Festzelt ausnahmsweise leer bleibt (z. B. Sanity kurzzeitig nicht
 // erreichbar) -- reales Bandfoto statt eines leeren/kaputten Bildes.
-const GENERIC_FALLBACK: BandFinderThemeImage = STATIC_IMAGES.alle
+// Bewusst NICHT von STATIC_IMAGES.alle abgeleitet (Fund aus PR #112-Preview:
+// dadurch zeigte dieser Fallback zwischenzeitlich faelschlich dasselbe
+// Donnaweda-Motiv wie die "Alle Bands"-Kachel, wann immer Sanity kein
+// Hochzeit-/Festzelt-Bild lieferte) -- eigener, unabhaengiger Wert wie
+// zuvor auf main: Thumbnail der Band 9to5.
+const GENERIC_FALLBACK: BandFinderThemeImage = {
+  url: 'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media/9to5/thumbnail.webp',
+  alt: '',
+}
 
 async function resolveSanityThemeImage(slug: string): Promise<BandFinderThemeImage> {
   const hero = await fetchEventCategoryHero(slug)
