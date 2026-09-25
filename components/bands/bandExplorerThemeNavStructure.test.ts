@@ -29,10 +29,23 @@ test('Schriftgewicht der Themen-Labels ist in jedem Zustand unbedingt font-semib
   assert.match(source, /<span className=\{`text-sm font-semibold leading-snug \$\{theme\.active/)
 })
 
-test('aktive Themen-Kachel bleibt durch Rahmen und Haekchen vom neutralen Hover unterscheidbar', () => {
-  assert.match(source, /theme\.active \? 'border-pl-accent bg-\[color-mix/);
-  assert.match(source, /: 'border-transparent hover:bg-black\/\[0\.03\]'/);
+// Aktualisiert fuer "Anlass-Kacheln Variante 1c" (grosses Bild oben, eigene
+// helle Beschriftungsflaeche darunter): Auswahl-Erkennbarkeit (Rahmen +
+// getoente Flaeche + Haekchen) und sichtbarer Tastaturfokus bleiben
+// dieselben Anforderungen wie zuvor, nur auf die neuen Klassen/Werte
+// aktualisiert -- die vorherige einzeilige Kachel (border-transparent /
+// hover:bg-black) existiert nicht mehr.
+test('aktive Themen-Kachel bleibt durch Rahmen und getoente Flaeche vom neutralen/Hover-Zustand unterscheidbar', () => {
+  assert.match(source, /theme\.active\s*\r?\n\s*\? 'border-pl-accent bg-\[color-mix/);
+  assert.match(source, /: 'border-pl-soft bg-pl-elevated md:hover:border-pl-accent\/50'/);
   assert.match(source, /\{theme\.active && \(\s*<svg[\s\S]*?aria-hidden="true"/);
+})
+
+test('Tastaturfokus der Themen-Kachel bleibt sichtbar (focus-visible-Outline auf dem Link)', () => {
+  assert.match(
+    source,
+    /rounded-xl overflow-hidden border text-left\s*\r?\n\s*motion-safe:transition-colors focus:outline-none focus-visible:outline-2\s*\r?\n\s*focus-visible:outline-offset-2 focus-visible:outline-\[var\(--pl-accent\)\]/
+  );
 })
 
 // Nachgang "Bandfinder-Redesign": oeffnet nicht mehr direkt AnfrageModal,
