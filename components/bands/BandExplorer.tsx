@@ -612,48 +612,62 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
       <div className="bg-pl-paper pb-6 md:pb-8">
         <div className="pl-container-shell px-4 sm:px-6">
       {/* ── Themen-Suchkopf ─────────────────────────────────────── */}
-      {/* Sechs Themen-Einstiege (Auftrag "Bandfinder-Redesign"): echte
-          Links (next/link, kein reines onClick) mit aria-current fuer den
-          aktiven Einstieg. Desktop 3 Spalten/2 Reihen, Mobil 2 Spalten/3
-          Reihen -- Standard-Tailwind-Grid, keine eigene Breakpoint-Logik.
-          Schriftgewicht bewusst konstant (font-semibold in jedem Zustand):
-          ein gewichtsabhaengiger Wechsel wuerde bei den beiden langen
-          Bezeichnungen ("Stadt- & Buergerfest", "Konzert, Club & Festival")
-          die Textbreite/den Umbruch veraendern -- die Auswahl wird
-          stattdessen ueber Flaeche, Rahmen und Haekchen markiert. */}
+      {/* Sechs Themen-Einstiege (Auftrag "Anlass-Kacheln Variante 1c"):
+          grosses Bild oben, eigene helle Beschriftungsflaeche darunter --
+          echte Links (next/link, kein reines onClick) mit aria-current
+          fuer den aktiven Einstieg. Zustaende (Standard/Hover/Auswahl/
+          Tastaturfokus) aus dem Claude-Design-Mockup "Anlass-Kacheln
+          Varianten" (Variante 1c) uebernommen, dabei auf bereits
+          bestehende Design-Tokens/Klassen dieser Datei abgebildet statt
+          neuer Rohwerte -- Auswahl-Flaeche/-Rahmen und text-pl-accent-deep
+          sind exakt das Muster, das diese Kachel zuvor schon fuer den
+          aktiven Zustand nutzte. Hover nur auf Desktop (md:hover:), da
+          Touch-Geraete keinen echten Hover-Zustand haben und ein globales
+          hover: dort nach Antippen haften bliebe. Desktop 3 Spalten/2
+          Reihen, Mobil 2 Spalten/3 Reihen -- Standard-Tailwind-Grid,
+          unveraendert. Schriftgewicht bewusst konstant (font-semibold in
+          jedem Zustand): ein gewichtsabhaengiger Wechsel wuerde bei den
+          beiden langen Bezeichnungen ("Stadt- & Buergerfest", "Konzert,
+          Club & Festival") die Textbreite/den Umbruch veraendern -- die
+          Auswahl wird stattdessen ueber Flaeche, Rahmen und Haekchen in
+          der Beschriftungsflaeche markiert. */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 mb-4 md:mb-5 pt-4 md:pt-5">
         {themeNavItems.map((theme) => (
           <Link
             key={theme.key}
             href={theme.href}
             aria-current={theme.active ? 'page' : undefined}
-            className={`relative flex items-center gap-2.5 rounded-xl border px-2.5 py-2 pr-7 md:px-3 md:py-2.5 md:pr-8 text-left
+            className={`flex flex-col rounded-xl overflow-hidden border text-left
                        motion-safe:transition-colors focus:outline-none focus-visible:outline-2
                        focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]
-                       ${theme.active ? 'border-pl-accent bg-[color-mix(in_srgb,var(--pl-accent)_12%,var(--pl-accent-subtle))]' : 'border-transparent hover:bg-black/[0.03]'}`}
+                       ${theme.active
+                         ? 'border-pl-accent bg-[color-mix(in_srgb,var(--pl-accent)_12%,var(--pl-accent-subtle))]'
+                         : 'border-pl-soft bg-pl-elevated md:hover:border-pl-accent/50'}`}
           >
-            <span className="relative w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden shrink-0 bg-pl-elevated">
+            <span className="relative block w-full h-20 md:h-24 overflow-hidden shrink-0 bg-pl-stage">
               <Image
                 src={theme.image.url}
                 alt={theme.image.alt}
                 fill
-                sizes="(min-width: 768px) 44px, 40px"
+                sizes="(min-width: 768px) 33vw, 50vw"
                 className="object-cover"
                 style={{ objectPosition: theme.image.objectPosition ?? 'center' }}
               />
             </span>
-            <span className={`text-sm font-semibold leading-snug ${theme.active ? 'text-pl-accent-deep' : 'text-pl-text'}`}>
-              {theme.label}
+            <span className="flex items-center justify-between gap-2 px-3.5 py-2.5 md:py-3">
+              <span className={`text-sm font-semibold leading-snug ${theme.active ? 'text-pl-accent-deep' : 'text-pl-text'}`}>
+                {theme.label}
+              </span>
+              {theme.active && (
+                <svg
+                  className="w-4 h-4 flex-shrink-0 text-pl-accent"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
+                </svg>
+              )}
             </span>
-            {theme.active && (
-              <svg
-                className="absolute right-2 md:right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-pl-accent"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
-              </svg>
-            )}
           </Link>
         ))}
       </div>
