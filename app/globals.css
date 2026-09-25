@@ -196,6 +196,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .pl-hero-float { animation: none !important; }
 }
+/* Mobiler Startseiten-Hero (unterhalb md = 768px): Mindesthöhe = kleinster
+   Viewport (svh), 100vh als Fallback für Browser ohne svh. Bewusst min-height,
+   keine feste Höhe -- auf kleinen Geräten wächst der Hero mit dem Inhalt.
+   Kein dvh, damit das Layout beim Ein-/Ausfahren der Browserleisten nicht
+   springt. Der Header ist position:fixed und liegt über dem Hero. */
+@media (max-width: 767.98px) {
+  .pl-hero-scene {
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+}
 
 /* ── Hero-Bildwand: Paternoster-Bewegung ──
    Reale Vermessung der Webflow-Referenz (proudleut.com, siehe
