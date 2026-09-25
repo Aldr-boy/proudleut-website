@@ -146,6 +146,19 @@ body {
   margin-inline: auto;
 }
 
+/* Lesbarer Fließtext auf den abschließenden Fotosektionen. Der Cremeton
+   entspricht der Headerfläche; der weiche Schatten gibt den Buchstaben
+   Halt, ohne das Foto zusätzlich abzudunkeln. */
+.pl-photo-copy {
+  color: color-mix(in srgb, var(--pl-bg-paper) 88%, transparent);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
+}
+
+.pl-photo-copy-link:hover {
+  color: var(--pl-bg-paper);
+  border-color: currentColor;
+}
+
 /* ── Seiten-Typografie: Display-Stufen ──
    "Für Bands" Art-Direction-Pass. Zwei Leitmoment-Größen, je zweimal auf
    der Seite verwendet (Hero + Finale bzw. Haltung + Acts) -- deshalb als

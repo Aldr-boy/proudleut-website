@@ -36,8 +36,7 @@ export default function CTASection() {
           Und was feiert ihr so?
         </h2>
         <p
-          className="mt-8 text-lg leading-relaxed text-pl-on-stage-muted max-w-[480px] mx-auto"
-          style={{ textShadow: '0 1px 16px rgba(18,16,26,0.6)' }}
+          className="pl-photo-copy mt-8 text-lg leading-relaxed max-w-[480px] mx-auto"
         >
           Hochzeit, Firmenfeier oder Festzelt.
           Schaut euch in Ruhe um und entdeckt, welche Bands zu eurem Anlass passen.
