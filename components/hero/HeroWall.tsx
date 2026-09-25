@@ -515,7 +515,7 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
           Breakpoint (Review-Fix #1): waechst ueber den svh-Wert hinaus,
           wenn der gemessene Text-Inhalt mehr Platz braucht. */}
       <div
-        className="relative flex flex-col md:block md:min-h-[max(68svh,var(--pl-hero-content-min-h,0px))] lg:min-h-[max(80svh,var(--pl-hero-content-min-h,0px))] xl:min-h-[max(100svh,var(--pl-hero-content-min-h,0px))]"
+        className="pl-hero-scene relative flex flex-col md:block md:min-h-[max(68svh,var(--pl-hero-content-min-h,0px))] lg:min-h-[max(80svh,var(--pl-hero-content-min-h,0px))] xl:min-h-[max(100svh,var(--pl-hero-content-min-h,0px))]"
         data-hero-wall-paused={paused}
         style={contentMinHeightPx != null ? { ['--pl-hero-content-min-h' as string]: `${contentMinHeightPx}px` } : undefined}
       >
@@ -561,7 +561,7 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
             absolute, ueberlappt bewusst in die Textzone hinein (verifizierte
             Studio-Referenz: left 47%/width 60% Basis, 48%/58% ab 1700px --
             hier anteilig auf unsere Breakpoints uebertragen). */}
-        <div className="relative order-1 md:order-none w-full min-h-[42svh] sm:min-h-[48svh] overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-[44%] md:w-[64%] lg:left-[46%] lg:w-[62%] xl:left-[48%] xl:w-[58%]">
+        <div className="relative order-1 md:order-none w-full min-h-[42svh] sm:min-h-[48svh] flex-1 md:flex-none overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-[44%] md:w-[64%] lg:left-[46%] lg:w-[62%] xl:left-[48%] xl:w-[58%]">
           <HeroImageWall images={images} />
           {/* Kind DIESER Spalte (nicht des gesamten Szenencontainers) --
               nur so bezieht sich die Uebergangstiefe auf die tatsaechliche
