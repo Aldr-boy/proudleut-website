@@ -5,10 +5,10 @@ import type { BandFinderThemeKey } from './bandFinderThemes'
 export type BandFinderThemeImage = {
   url: string
   alt: string
-  // Optionale CSS object-position fuer die 44px-Quadrat-Kachel (Auftrag
-  // "Bandfinder-Bildwechsel"). Nur gesetzt, wenn der Standard-Mittenausschnitt
-  // (object-cover, Position 50% 50%) das Motiv erkennbar schneidet -- siehe
-  // Kommentare je Eintrag unten. undefined -> BandExplorer.tsx nutzt 'center'.
+  // Optionale CSS object-position fuer die Querformat-Kachel (Variante 1c,
+  // ~3,07:1). Nur gesetzt, wenn der Standard-Mittenausschnitt (object-cover,
+  // 50% 50%) das Motiv erkennbar schneidet -- siehe Kommentare je Eintrag
+  // unten. undefined -> BandExplorer.tsx nutzt 'center'.
   objectPosition?: string
 }
 
@@ -23,16 +23,12 @@ export type BandFinderThemeImage = {
 // Kopie umgestellt, damit diese beiden Kacheln weiterhin redaktionell
 // ueber Sanity pflegbar bleiben, ohne Code-Aenderung.
 //
-// Alle vier lokalen Dateien sind bereits quadratisch (256x256, per sharp
-// vorab zugeschnitten -- Auftrag "Bandfinder-Bilder quadratisch machen"):
-// vorher lieferte next/image bei einem Querformat-Original zur Kachelgroesse
-// passende, aber NICHT quadratische Antworten (z. B. 96x64 statt 96x96),
-// die der Browser fuer object-cover zusaetzlich vertikal hochskalieren
-// musste. Der bisher per object-position gewaehlte Ausschnitt steckt jetzt
-// direkt in der Bilddatei -- objectPosition ist dadurch fuer alle vier
-// nicht mehr noetig (object-cover auf einem bereits quadratischen Bild ist
-// ein No-op). Die Typ-Unterstuetzung fuer objectPosition bleibt bestehen,
-// falls ein kuenftiges Motiv wieder ein Nicht-Quadrat ist.
+// Alle vier lokalen Dateien sind bereits im Kachel-Seitenverhaeltnis von
+// Variante 1c zugeschnitten (~3,07:1, per sharp aus hoeher aufgeloesten
+// Quellen neu geschnitten -- Auftrag "Anlass-Kacheln Variante 1c"). Der
+// vertikale Bildausschnitt steckt damit direkt in der Datei; objectPosition
+// bleibt als Typ-Unterstuetzung erhalten, falls ein kuenftiges Motiv wieder
+// nicht im passenden Seitenverhaeltnis vorliegt.
 //
 // Die Bilder sind rein dekorativ (Kachel-Label daneben traegt die
 // Bedeutung) -- alt bewusst leer, identisch zur bisherigen Praxis dieser
@@ -66,11 +62,23 @@ const GENERIC_FALLBACK: BandFinderThemeImage = {
   alt: '',
 }
 
+// Zielverhaeltnis der Variante-1c-Kachel (~356x116 im Design-Mockup).
+// Sanitys eigener hotspot-bewusster Zuschnitt (crop+hotspot sind fuer
+// hochzeit/festzelt in Sanity gepflegt) uebernimmt damit direkt die
+// passende Bildausrichtung -- kein zusaetzliches CSS object-position
+// noetig (siehe BandFinderThemeImage.objectPosition-Kommentar oben).
+const SANITY_TILE_WIDTH = 360
+const SANITY_TILE_HEIGHT = 118
+
 async function resolveSanityThemeImage(slug: string): Promise<BandFinderThemeImage> {
   const hero = await fetchEventCategoryHero(slug)
   if (!hero) return GENERIC_FALLBACK
   return {
-    url: urlFor(hero.heroImage).width(120).height(120).fit('crop').url(),
+    url: urlFor(hero.heroImage)
+      .width(SANITY_TILE_WIDTH)
+      .height(SANITY_TILE_HEIGHT)
+      .fit('crop')
+      .url(),
     alt: '',
   }
 }
