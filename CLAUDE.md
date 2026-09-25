@@ -128,6 +128,35 @@ unreflektiert als finale Produktionslösung.
 
 ---
 
+## Supabase-Migrationen, Grants und Zugangsdaten
+
+1. Jede neue Migration im Schema `public` enthält explizite Grants pro Rolle (`anon`,
+   `authenticated`, `service_role`) nach dem Prinzip minimaler Rechte. Grants werden
+   gemeinsam mit RLS-Aktivierung und Policies in derselben Migration geprüft, nicht
+   nachträglich in einer separaten Datei. Neue Views verwenden `security_invoker`. Neue
+   Funktionen erhalten `REVOKE EXECUTE ... FROM PUBLIC` und danach gezielte
+   `GRANT EXECUTE` nur für die tatsächlich benötigten Rollen.
+
+2. Der Status-Kommentar einer Migration („ausgeführt" / „nicht ausgeführt") wird erst nach
+   ihrer tatsächlichen Ausführung gegen Produktion aktualisiert, nie vorab beim Verfassen.
+
+3. Claude Code liest, durchsucht oder öffnet `.env*`-Dateien niemals und schließt sie aus
+   Datei- und Suchmustern aus. Das gilt auch für Shell-Befehle wie `cat`, `type`, `grep`,
+   `rg` oder `Select-String` sowie für eigene Skripte, die solche Dateien direkt einlesen
+   (einzige Ausnahme: siehe unten).
+
+   Die Deny-Regel in `.claude/settings.json` schützt Datei- und Suchwerkzeuge, ist aber
+   keine vollständige technische Sperre für beliebige Shell-Befehle oder Prozesse. Deshalb
+   gilt das Verbot zusätzlich als Arbeitsregel.
+
+   Der einzige zulässige Weg, Zugangsdaten zu verwenden: Ein Prozess lädt sie selbst, z. B.
+   `node --env-file=.env.local <skript>`, und das Skript liest nur `process.env`. Das ist
+   nur in Aufträgen erlaubt, die Datenbank- oder API-Zugriff ausdrücklich vorsehen. Werte
+   dürfen dabei weder ausgegeben noch in Befehlszeilen oder Logs sichtbar gemacht werden.
+   Fehlermeldungen mit Connection-Strings werden nur ohne Zugangsdaten wiedergegeben.
+
+---
+
 ## Design-Prinzipien
 
 - Das Design soll warm, kuratiert und vertrauenswürdig wirken – kein kaltes Tech-Produkt
