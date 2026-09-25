@@ -56,7 +56,15 @@ const STATIC_IMAGES: Record<
 // Generischer Notfall-Fallback, falls der Sanity-Aufruf fuer Hochzeit/
 // Festzelt ausnahmsweise leer bleibt (z. B. Sanity kurzzeitig nicht
 // erreichbar) -- reales Bandfoto statt eines leeren/kaputten Bildes.
-const GENERIC_FALLBACK: BandFinderThemeImage = STATIC_IMAGES.alle
+// Bewusst NICHT von STATIC_IMAGES.alle abgeleitet (Fund aus PR #112-Preview:
+// dadurch zeigte dieser Fallback zwischenzeitlich faelschlich dasselbe
+// Donnaweda-Motiv wie die "Alle Bands"-Kachel, wann immer Sanity kein
+// Hochzeit-/Festzelt-Bild lieferte) -- eigener, unabhaengiger Wert wie
+// zuvor auf main: Thumbnail der Band 9to5.
+const GENERIC_FALLBACK: BandFinderThemeImage = {
+  url: 'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media/9to5/thumbnail.webp',
+  alt: '',
+}
 
 async function resolveSanityThemeImage(slug: string): Promise<BandFinderThemeImage> {
   const hero = await fetchEventCategoryHero(slug)
