@@ -493,11 +493,10 @@ export default function FuerBandsPage() {
       <section id="kontakt" className="bg-pl-stage pt-24 md:pt-40 pb-16 md:pb-24 px-4 sm:px-6 text-center">
         <div className="max-w-[900px] mx-auto">
           <h2 className="pl-display-1 text-pl-on-stage max-w-[16ch] mx-auto text-balance">
-            Du möchtest deine Band auf proudleut zeigen?
+            Du möchtest deine Band bei proudleut vorstellen?
           </h2>
           <p className="mt-9 text-[17px] md:text-xl leading-relaxed text-pl-on-stage-muted max-w-[46ch] mx-auto">
-            Schick mir ein paar Infos und Links zu deiner Band. Ich schaue sie mir in Ruhe an und
-            melde mich bei dir.
+            Dann erzähl mir einfach kurz von euch.
           </p>
           <div className="mt-12">
             <BandIntroTrigger
@@ -507,16 +506,16 @@ export default function FuerBandsPage() {
                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                          focus-visible:outline-[var(--pl-accent)]"
             >
-              Bandseite anfragen
+              Band vorstellen
             </BandIntroTrigger>
           </div>
           <p className="mt-9 text-sm text-pl-on-stage-muted">
-            Wer dahintersteckt und warum es proudleut gibt{' '}
+            Wer steckt hinter proudleut?<br />
             <Link
               href="/ueber-mich"
               className="text-pl-accent-light font-medium hover:text-pl-on-stage motion-safe:transition-colors"
             >
-              — Über proudleut
+              Über proudleut
             </Link>
           </p>
         </div>
