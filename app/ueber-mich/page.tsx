@@ -344,8 +344,7 @@ export default function UeberProudleutPage() {
             Schau dich in Ruhe um.
           </h2>
           <p
-            className="mt-8 text-lg leading-relaxed text-pl-on-stage-muted max-w-[480px] mx-auto"
-            style={{ textShadow: '0 1px 16px rgba(18,16,26,0.6)' }}
+            className="pl-photo-copy mt-8 text-lg leading-relaxed max-w-[480px] mx-auto"
           >
             Und wenn du bei der Auswahl nicht weiterkommst: Erzähl mir kurz, was du planst. Ich
             melde mich persönlich.
@@ -363,8 +362,7 @@ export default function UeberProudleutPage() {
             </Link>
             <a
               href="mailto:alexander.dressler@proudleut.com"
-              className="text-base font-semibold text-pl-on-stage-muted border-b border-transparent hover:text-pl-on-stage hover:border-pl-on-stage-muted motion-safe:transition-colors"
-              style={{ textShadow: '0 1px 16px rgba(18,16,26,0.6)' }}
+              className="pl-photo-copy pl-photo-copy-link text-base font-semibold border-b border-transparent motion-safe:transition-colors"
             >
               Kontakt aufnehmen
             </a>
