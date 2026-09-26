@@ -497,7 +497,7 @@ export default function FuerBandsPage() {
           Bassdrum-Logo nie im Bild erscheint. objectPosition: der x-Wert wirkt
           nur mobil (hochkantes Feld, Bild wird auf die Hoehe skaliert), der
           y-Wert nur auf dem Desktop (Bild wird auf die Breite skaliert). */}
-      <section id="kontakt" className="relative overflow-hidden bg-pl-stage pt-24 md:pt-40 pb-16 md:pb-24 px-4 sm:px-6 text-center">
+      <section id="kontakt" className="relative overflow-hidden bg-pl-stage pt-24 md:pt-36 pb-16 md:pb-24 px-4 sm:px-6 text-center">
         <Image
           src="/images/fuer-bands/fuer-bands-hundskrippl-tuba.jpg"
           alt=""
@@ -521,10 +521,10 @@ export default function FuerBandsPage() {
           >
             Deine Band bei proudleut?
           </h2>
-          <p className="pl-photo-copy mt-9 text-[17px] md:text-xl leading-relaxed max-w-[46ch] mx-auto">
+          <p className="pl-photo-copy mt-8 text-[17px] md:text-xl leading-relaxed max-w-[46ch] mx-auto">
             Ich bin gespannt, wie ihr klingt.
           </p>
-          <div className="mt-12">
+          <div className="mt-11">
             <BandIntroTrigger
               className="items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
                          bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
