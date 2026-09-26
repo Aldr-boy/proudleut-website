@@ -489,14 +489,40 @@ export default function FuerBandsPage() {
         </div>
       </section>
 
-      {/* 08 — Finale (Leitmoment, Spiegel des Heros: pl-display-1, zentriert) */}
-      <section id="kontakt" className="bg-pl-stage pt-24 md:pt-40 pb-16 md:pb-24 px-4 sm:px-6 text-center">
-        <div className="max-w-[900px] mx-auto">
-          <h2 className="pl-display-1 text-pl-on-stage max-w-[16ch] mx-auto text-balance">
-            Du möchtest deine Band bei proudleut vorstellen?
+      {/* 08 — Finale (Leitmoment, Spiegel des Heros: pl-display-1, zentriert).
+          Hundskrippln-Livefoto als Hintergrund, gleiches Prinzip wie der
+          Abschluss auf /ueber-mich (San2-Foto) und components/homepage/
+          CTASection.tsx: volles Bild + radialer Dunkel-Verlauf + Text darueber.
+          Datei ist vorab auf die oberen 1020 Zeilen zugeschnitten, damit das
+          Bassdrum-Logo nie im Bild erscheint. objectPosition: der x-Wert wirkt
+          nur mobil (hochkantes Feld, Bild wird auf die Hoehe skaliert), der
+          y-Wert nur auf dem Desktop (Bild wird auf die Breite skaliert). */}
+      <section id="kontakt" className="relative overflow-hidden bg-pl-stage pt-24 md:pt-40 pb-16 md:pb-24 px-4 sm:px-6 text-center">
+        <Image
+          src="/images/fuer-bands/fuer-bands-hundskrippl-tuba.jpg"
+          alt=""
+          fill
+          className="object-cover pointer-events-none"
+          style={{ objectPosition: '38% 50%' }}
+          sizes="100vw"
+          quality={80}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse 62% 78% at 50% 42%, rgba(18,16,26,0.72) 0%, rgba(18,16,26,0.46) 55%, rgba(18,16,26,0.18) 100%)',
+          }}
+        />
+        <div className="relative z-10 max-w-[900px] mx-auto">
+          <h2
+            className="pl-display-1 text-pl-on-stage max-w-[16ch] mx-auto text-balance"
+            style={{ textShadow: '0 2px 24px rgba(18,16,26,0.6)' }}
+          >
+            Deine Band bei proudleut?
           </h2>
-          <p className="mt-9 text-[17px] md:text-xl leading-relaxed text-pl-on-stage-muted max-w-[46ch] mx-auto">
-            Dann erzähl mir einfach kurz von euch.
+          <p className="pl-photo-copy mt-9 text-[17px] md:text-xl leading-relaxed max-w-[46ch] mx-auto">
+            Ich bin gespannt, wie ihr klingt.
           </p>
           <div className="mt-12">
             <BandIntroTrigger
@@ -509,7 +535,7 @@ export default function FuerBandsPage() {
               Band vorstellen
             </BandIntroTrigger>
           </div>
-          <p className="mt-9 text-sm text-pl-on-stage-muted">
+          <p className="pl-photo-copy mt-9 text-sm">
             Wer steckt hinter proudleut?<br />
             <Link
               href="/ueber-mich"
@@ -519,6 +545,12 @@ export default function FuerBandsPage() {
             </Link>
           </p>
         </div>
+        <p
+          className="absolute left-4 sm:left-6 bottom-3 z-10 font-mono text-[11px] font-normal text-pl-on-stage/70"
+          style={{ textShadow: '0 1px 8px rgba(18,16,26,0.6)' }}
+        >
+          D&apos;Hundskrippln — live.
+        </p>
       </section>
 
     </main>
