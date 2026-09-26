@@ -265,6 +265,17 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     youtube:   ytP ? { count: ytSubscribers ?? null, checkedAt: str(ytP.last_checked_at) ?? null } : undefined,
   }
 
+  // Spotify "Monatliche Hörer*innen": eigene Kennzahl (nicht Follower),
+  // nur wenn ein Spotify-Profil existiert. Rohwert + Erfassungsdatum,
+  // Sichtbarkeit wird am Renderort entschieden.
+  const spP = byPlatform('spotify')
+  const spotifyMonthlyListeners: Band['spotifyMonthlyListeners'] = spP
+    ? {
+        count: typeof spP.monthly_listeners === 'number' ? spP.monthly_listeners : null,
+        asOf: str(spP.monthly_listeners_as_of) ?? null,
+      }
+    : undefined
+
   const hasSocialStats = igFollowers !== undefined || fbFollowers !== undefined || ytSubscribers !== undefined
   const socialMediaStats: Band['socialMediaStats'] = hasSocialStats
     ? { igFollowers, igFollowing, fbFollowers, fbFollowing, ytSubscribers }
@@ -390,6 +401,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     socialLinks,
     socialMediaStats,
     socialProfileMetrics,
+    spotifyMonthlyListeners,
     referenceEvents,
     similarBands,
     documents,

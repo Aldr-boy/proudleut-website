@@ -9,7 +9,12 @@ type Props = {
 };
 
 type FollowerMetric = { count: number; unit: string; checkedAt: string };
-type LinkItem = { label: string; href: string; icon: React.ReactNode; metric?: FollowerMetric };
+// Spotify "Monatliche Hörer*innen": eigene Kennzahl, bewusst NICHT als
+// FollowerMetric modelliert -- sie fliesst nie in den gemeinsamen Stand der
+// Follower ein und traegt immer ihr eigenes Erfassungsdatum (rollierender
+// 28-Tage-Wert).
+type ListenersMetric = { count: number; asOf: string };
+type LinkItem = { label: string; href: string; icon: React.ReactNode; metric?: FollowerMetric; listeners?: ListenersMetric };
 
 function GlobeIcon() {
   return (
@@ -114,13 +119,24 @@ export function BandContactSection({ band, websiteUrl }: Props) {
     'Abonnenten',
   );
 
+  // Gleiche 12-Monats-Sichtbarkeitsregel wie bei den Follower-Zahlen
+  // (unveraendert wiederverwendet); Ergebnis bleibt getrennt von den
+  // Follower-Metriken.
+  const spotifyListenersRaw = band.spotifyMonthlyListeners;
+  const spotifyListeners: ListenersMetric | undefined = isFollowerCountVisible(
+    spotifyListenersRaw?.count,
+    spotifyListenersRaw?.asOf,
+  )
+    ? { count: spotifyListenersRaw!.count as number, asOf: spotifyListenersRaw!.asOf as string }
+    : undefined;
+
   const links: LinkItem[] = (
     [
       websiteUrl ? { label: 'Website', href: websiteUrl, icon: <GlobeIcon /> } : null,
       band.socialLinks.instagram ? { label: 'Instagram', href: band.socialLinks.instagram, icon: <InstagramIcon />, metric: igMetric } : null,
       band.socialLinks.facebook ? { label: 'Facebook', href: band.socialLinks.facebook, icon: <FacebookIcon />, metric: fbMetric } : null,
       band.socialLinks.youtube ? { label: 'YouTube', href: band.socialLinks.youtube, icon: <YouTubeIcon />, metric: ytMetric } : null,
-      band.socialLinks.spotify ? { label: 'Spotify', href: band.socialLinks.spotify, icon: <SpotifyIcon /> } : null,
+      band.socialLinks.spotify ? { label: 'Spotify', href: band.socialLinks.spotify, icon: <SpotifyIcon />, listeners: spotifyListeners } : null,
     ] as (LinkItem | null)[]
   ).filter((l): l is LinkItem => l !== null);
 
@@ -145,13 +161,19 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                 Mehr von {band.name}
               </h2>
               <ul className="max-w-sm">
-                {links.map(({ label, href, icon, metric }, idx) => (
+                {links.map(({ label, href, icon, metric, listeners }, idx) => (
                   <li key={label} className={idx > 0 ? 'border-t border-pl-soft' : ''}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label={metric ? `${label}: ${formatFollowerCount(metric.count)} ${metric.unit}` : undefined}
+                      aria-label={
+                        metric
+                          ? `${label}: ${formatFollowerCount(metric.count)} ${metric.unit}`
+                          : listeners
+                            ? `${label}: ${formatFollowerCount(listeners.count)} Monatliche Hörer*innen, Stand ${formatStandDate(listeners.asOf)}`
+                            : undefined
+                      }
                       className="flex w-full items-center gap-3 py-3 rounded-sm text-sm text-pl-text-muted
                                  hover:text-pl-accent motion-safe:transition-colors group
                                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
@@ -172,6 +194,18 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                               Stand: {formatStandDate(metric.checkedAt)}
                             </span>
                           )}
+                        </span>
+                      )}
+
+                      {listeners && (
+                        <span className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
+                          <span className="flex items-baseline gap-1">
+                            <span className="font-semibold text-pl-text group-hover:text-pl-accent motion-safe:transition-colors">{formatFollowerCount(listeners.count)}</span>
+                            <span className="text-xs text-pl-text-muted">Monatliche Hörer*innen</span>
+                          </span>
+                          <span className="text-[11px] text-pl-text-hint">
+                            Stand: {formatStandDate(listeners.asOf)}
+                          </span>
                         </span>
                       )}
                     </a>

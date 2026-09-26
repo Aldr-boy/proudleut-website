@@ -48,6 +48,16 @@ export type SocialProfileMetrics = {
   youtube?: SocialProfileMetric;
 };
 
+// Spotify "Monatliche Hörer*innen" (rollierender 28-Tage-Wert) mit
+// Erfassungsdatum. Bewusst getrennt von SocialProfileMetrics/
+// SocialMediaStats: kein Follower-Wert, wird nie mit Follower-Zahlen
+// verrechnet oder als Follower bezeichnet. Sichtbarkeit (12-Monats-Regel)
+// wird erst am Renderort entschieden.
+export type SpotifyMonthlyListeners = {
+  count: number | null;
+  asOf: string | null;
+};
+
 export type SocialMediaStats = {
   igFollowers?: number;
   igFollowing?: number;
@@ -198,6 +208,7 @@ export type Band = {
   socialLinks: SocialLinks;
   socialMediaStats?: SocialMediaStats;
   socialProfileMetrics?: SocialProfileMetrics;
+  spotifyMonthlyListeners?: SpotifyMonthlyListeners;
   referenceEvents: ReferenceEvent[];
   similarBands: SimilarBandReferences;
   documents: BandDocument[];
