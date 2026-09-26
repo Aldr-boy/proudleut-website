@@ -497,13 +497,13 @@ export default function FuerBandsPage() {
           Bassdrum-Logo nie im Bild erscheint. objectPosition: der x-Wert wirkt
           nur mobil (hochkantes Feld, Bild wird auf die Hoehe skaliert), der
           y-Wert nur auf dem Desktop (Bild wird auf die Breite skaliert). */}
-      <section id="kontakt" className="relative overflow-hidden bg-pl-stage pt-24 md:pt-40 pb-16 md:pb-24 px-4 sm:px-6 text-center">
+      <section id="kontakt" className="relative overflow-hidden bg-pl-stage pt-24 md:pt-36 pb-16 md:pb-24 px-4 sm:px-6 text-center">
         <Image
           src="/images/fuer-bands/fuer-bands-hundskrippl-tuba.jpg"
           alt=""
           fill
           className="object-cover pointer-events-none"
-          style={{ objectPosition: '38% 50%' }}
+          style={{ objectPosition: '38% 40%' }}
           sizes="100vw"
           quality={80}
         />
@@ -516,15 +516,15 @@ export default function FuerBandsPage() {
         />
         <div className="relative z-10 max-w-[900px] mx-auto">
           <h2
-            className="pl-display-1 text-pl-on-stage max-w-[16ch] mx-auto text-balance"
+            className="text-4xl md:text-6xl font-extrabold tracking-tight text-pl-on-stage max-w-[16ch] mx-auto text-balance"
             style={{ textShadow: '0 2px 24px rgba(18,16,26,0.6)' }}
           >
             Deine Band bei proudleut?
           </h2>
-          <p className="pl-photo-copy mt-9 text-[17px] md:text-xl leading-relaxed max-w-[46ch] mx-auto">
+          <p className="pl-photo-copy mt-8 text-[17px] md:text-xl leading-relaxed max-w-[46ch] mx-auto">
             Ich bin gespannt, wie ihr klingt.
           </p>
-          <div className="mt-12">
+          <div className="mt-11">
             <BandIntroTrigger
               className="items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
                          bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
@@ -536,12 +536,12 @@ export default function FuerBandsPage() {
             </BandIntroTrigger>
           </div>
           <p className="pl-photo-copy mt-9 text-sm">
-            Wer steckt hinter proudleut?<br />
+            Wer steckt hinter proudleut?{' '}
             <Link
               href="/ueber-mich"
               className="text-pl-accent-light font-medium hover:text-pl-on-stage motion-safe:transition-colors"
             >
-              Über proudleut
+              Mehr über mich →
             </Link>
           </p>
         </div>
