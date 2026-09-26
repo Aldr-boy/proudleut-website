@@ -2,6 +2,7 @@ import type { Band } from '@/lib/types/band';
 import { AnfrageButton } from './AnfrageButton';
 import { MerkButton } from './MerkButton';
 import { isFollowerCountVisible, resolveFollowerStandDisplay } from '@/lib/socialLinks/followerCountVisibility';
+import { shouldShowOwnListenersStand } from '@/lib/socialLinks/listenersStandDisplay';
 
 type Props = {
   band: Band;
@@ -149,6 +150,13 @@ export function BandContactSection({ band, websiteUrl }: Props) {
     links.filter((l) => l.metric).map((l) => ({ checkedAt: l.metric!.checkedAt })),
   );
 
+  // Eigenes Spotify-Datum nur zeigen, wenn es nicht ohnehin im gemeinsamen
+  // Stand (gleicher Monat) steckt -- reine Anzeigeregel, der gemeinsame
+  // Follower-Stand bleibt davon unberuehrt.
+  const showListenersOwnStand = spotifyListeners
+    ? shouldShowOwnListenersStand(spotifyListeners.asOf, standDisplay)
+    : false;
+
   return (
     <section id="band-contact-section" className="bg-pl-paper border-t border-pl-soft py-12 md:py-16 px-4 sm:px-6">
       <div className="pl-container-shell">
@@ -203,9 +211,11 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                             <span className="font-semibold text-pl-text group-hover:text-pl-accent motion-safe:transition-colors">{formatFollowerCount(listeners.count)}</span>
                             <span className="text-xs text-pl-text-muted">Monatliche Hörer*innen</span>
                           </span>
-                          <span className="text-[11px] text-pl-text-hint">
-                            Stand: {formatStandDate(listeners.asOf)}
-                          </span>
+                          {showListenersOwnStand && (
+                            <span className="text-[11px] text-pl-text-hint">
+                              Stand: {formatStandDate(listeners.asOf)}
+                            </span>
+                          )}
                         </span>
                       )}
                     </a>
