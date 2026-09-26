@@ -519,10 +519,10 @@ export default function FuerBandsPage() {
             className="pl-display-1 text-pl-on-stage max-w-[16ch] mx-auto text-balance"
             style={{ textShadow: '0 2px 24px rgba(18,16,26,0.6)' }}
           >
-            Du möchtest deine Band bei proudleut vorstellen?
+            Deine Band bei proudleut?
           </h2>
           <p className="pl-photo-copy mt-9 text-[17px] md:text-xl leading-relaxed max-w-[46ch] mx-auto">
-            Dann erzähl mir einfach kurz von euch.
+            Ich bin gespannt, wie ihr klingt.
           </p>
           <div className="mt-12">
             <BandIntroTrigger
