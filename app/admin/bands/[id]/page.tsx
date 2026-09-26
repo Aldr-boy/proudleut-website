@@ -341,6 +341,8 @@ type SearchParams = Promise<{
   e_social_facebook_followers?: string
   e_social_youtube_followers?: string
   e_social_followers_checked_at?: string
+  e_social_spotify_monthly_listeners?: string
+  e_social_spotify_monthly_listeners_as_of?: string
   e_short_description?: string
   e_slogan?: string
   e_meta_description?: string
@@ -614,6 +616,8 @@ export default async function AdminBandDetailPage({
     current_followers: number | null
     current_following: number | null
     last_checked_at: string | null
+    monthly_listeners: number | null
+    monthly_listeners_as_of: string | null
   }
 
   const [
@@ -707,7 +711,7 @@ export default async function AdminBandDetailPage({
       .returns<ReferenceEventRow[]>(),
     client
       .from('social_profiles')
-      .select('id, platform, url, current_followers, current_following, last_checked_at')
+      .select('id, platform, url, current_followers, current_following, last_checked_at, monthly_listeners, monthly_listeners_as_of')
       .eq('band_id', id)
       .returns<SocialProfileRow[]>(),
   ])
@@ -1793,6 +1797,52 @@ export default async function AdminBandDetailPage({
                           </p>
                         )}
                         <FieldError msg={errorMsg} />
+
+                        {/* Spotify "Monatliche Hörer*innen": eigene Kennzahl mit
+                            eigenem Erfassungsdatum (rollierender 28-Tage-Wert),
+                            unabhängig vom gemeinsamen Follower-Prüfdatum. Datum
+                            vorbelegt mit heute (bzw. gespeichertem Datum),
+                            editierbar für Nachträge von Screenshots. Leeren des
+                            Werts entfernt Wert und Datum gemeinsam. */}
+                        {key === 'spotify' && !isDuplicate && (
+                          <div className="mt-2 pl-3 border-l-2 border-gray-100">
+                            <div className="flex items-end gap-3 flex-wrap">
+                              <div className="flex-1 min-w-[140px]">
+                                <label htmlFor="social_spotify_monthly_listeners" className="block text-xs font-medium text-gray-600 mb-1">
+                                  Monatliche Hörer*innen
+                                </label>
+                                <input
+                                  id="social_spotify_monthly_listeners"
+                                  name="social_spotify_monthly_listeners"
+                                  type="text"
+                                  inputMode="numeric"
+                                  defaultValue={rows.length === 1 ? (rows[0].monthly_listeners ?? '') : ''}
+                                  placeholder="z. B. 12686"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor="social_spotify_monthly_listeners_as_of" className="block text-xs font-medium text-gray-600 mb-1">
+                                  Stand (Erfassungsdatum)
+                                </label>
+                                <input
+                                  id="social_spotify_monthly_listeners_as_of"
+                                  name="social_spotify_monthly_listeners_as_of"
+                                  type="date"
+                                  defaultValue={rows.length === 1 && rows[0].monthly_listeners_as_of ? rows[0].monthly_listeners_as_of.slice(0, 10) : todayIso}
+                                  max={todayIso}
+                                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400">
+                              Spotify zählt über 28 Tage rollierend — der Stand ist das Datum der Ansicht bei
+                              Spotify. Zuerst den Spotify-Link speichern. Zahl leeren entfernt Wert und Datum.
+                            </p>
+                            <FieldError msg={sp.e_social_spotify_monthly_listeners} />
+                            <FieldError msg={sp.e_social_spotify_monthly_listeners_as_of} />
+                          </div>
+                        )}
 
                         {/* Follower-/Abonnentenzahl: nur Instagram/Facebook/YouTube,
                             nicht Spotify. Nicht anzeigbar bei Duplikaten (dieselbe

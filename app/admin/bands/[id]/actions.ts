@@ -25,6 +25,7 @@ import {
   parseNonFutureDateOrNull,
   type ExistingSocialMetrics,
 } from '@/lib/socialLinks/resolveSocialMetricsWrite'
+import { resolveSpotifyListenersWrite } from '@/lib/socialLinks/resolveSpotifyListenersWrite'
 
 function str(fd: FormData, key: string): string {
   return ((fd.get(key) as string) ?? '').trim()
@@ -168,6 +169,14 @@ export async function updateBandAction(formData: FormData): Promise<never> {
   if (!ytFollowersParsed.ok) errors.social_youtube_followers = 'Bitte eine nichtnegative ganze Zahl eingeben.'
   if (!checkedAtParsed.ok) errors.social_followers_checked_at = 'Bitte ein gültiges, nicht in der Zukunft liegendes Datum eingeben.'
 
+  // ---- Spotify "Monatliche Hörer*innen" (eigene Kennzahl, eigenes
+  // Erfassungsdatum, getrennt von den Follower-Zahlen): gleiche Format-/
+  // Bereichsprüfung vor jedem Schreibzugriff. ----
+  const spotifyListenersParsed = parseNonNegativeIntOrNull(str(formData, 'social_spotify_monthly_listeners'))
+  const spotifyAsOfParsed = parseNonFutureDateOrNull(str(formData, 'social_spotify_monthly_listeners_as_of'))
+  if (!spotifyListenersParsed.ok) errors.social_spotify_monthly_listeners = 'Bitte eine nichtnegative ganze Zahl eingeben.'
+  if (!spotifyAsOfParsed.ok) errors.social_spotify_monthly_listeners_as_of = 'Bitte ein gültiges, nicht in der Zukunft liegendes Datum eingeben.'
+
   if (Object.keys(errors).length > 0) {
     const p = new URLSearchParams()
     for (const [k, v] of Object.entries(errors)) p.set(`e_${k}`, v)
@@ -180,6 +189,8 @@ export async function updateBandAction(formData: FormData): Promise<never> {
     youtube: ytFollowersParsed.ok ? ytFollowersParsed.value : null,
   }
   const checkedAtDate = checkedAtParsed.ok ? checkedAtParsed.value : null
+  const spotifyListeners = spotifyListenersParsed.ok ? spotifyListenersParsed.value : null
+  const spotifyAsOf = spotifyAsOfParsed.ok ? spotifyAsOfParsed.value : null
 
   const client = createAdminClient()
 
@@ -303,7 +314,7 @@ export async function updateBandAction(formData: FormData): Promise<never> {
 
     const { data: existingRows, error: readError } = await client
       .from('social_profiles')
-      .select('id, url, current_followers, current_following, last_checked_at')
+      .select('id, url, current_followers, current_following, last_checked_at, monthly_listeners, monthly_listeners_as_of')
       .eq('band_id', id)
       .eq('platform', platform)
 
@@ -411,6 +422,60 @@ export async function updateBandAction(formData: FormData): Promise<never> {
           socialErrors[followersField] =
             'Bitte "geprüft" bestätigen und ein gültiges Datum angeben, um eine neue oder geänderte Zahl zu speichern.'
         }
+      }
+    }
+  }
+
+  // ---- Spotify "Monatliche Hörer*innen" (nur Plattform spotify) --------
+  // Eigener Schritt NACH der URL-Schleife: erst dann steht fest, ob eine
+  // eindeutige Spotify-Zeile existiert (auch eine gerade neu angelegte).
+  // Ohne Spotify-Zeile (kein Link erfasst, oder Duplikate) kann kein Wert
+  // gespeichert werden -- monthly_listeners haengt an social_profiles und
+  // die Zeile braucht eine URL (NOT NULL). Wert und Datum werden immer
+  // gemeinsam gesetzt oder gemeinsam geleert (CHECK in der Datenbank
+  // erzwingt das zusätzlich). Kein Bezug zu current_followers.
+  if (!socialErrors.social_spotify) {
+    const { data: spotifyRows, error: spotifyReadError } = await client
+      .from('social_profiles')
+      .select('id, monthly_listeners, monthly_listeners_as_of')
+      .eq('band_id', id)
+      .eq('platform', 'spotify')
+
+    if (spotifyReadError) {
+      socialErrors.social_spotify_monthly_listeners = `Datenbankfehler beim Lesen: ${spotifyReadError.message}`
+    } else if (!spotifyRows || spotifyRows.length !== 1) {
+      if (spotifyListeners !== null) {
+        socialErrors.social_spotify_monthly_listeners =
+          spotifyRows && spotifyRows.length > 1
+            ? 'Für Spotify existieren mehrere Einträge — bitte direkt in der Datenbank prüfen.'
+            : 'Bitte zuerst den Spotify-Link erfassen, dann die Monatlichen Hörer*innen eintragen.'
+      }
+    } else {
+      const listenersDecision = resolveSpotifyListenersWrite(
+        {
+          monthly_listeners: spotifyRows[0].monthly_listeners,
+          monthly_listeners_as_of: spotifyRows[0].monthly_listeners_as_of,
+        },
+        { submittedListeners: spotifyListeners, submittedAsOf: spotifyAsOf },
+      )
+
+      if (listenersDecision.action === 'set') {
+        const { error } = await client
+          .from('social_profiles')
+          .update({
+            monthly_listeners: listenersDecision.monthly_listeners,
+            monthly_listeners_as_of: listenersDecision.monthly_listeners_as_of,
+          })
+          .eq('id', spotifyRows[0].id)
+        if (error) socialErrors.social_spotify_monthly_listeners = `Datenbankfehler: ${error.message}`
+      } else if (listenersDecision.action === 'clear') {
+        const { error } = await client
+          .from('social_profiles')
+          .update({ monthly_listeners: null, monthly_listeners_as_of: null })
+          .eq('id', spotifyRows[0].id)
+        if (error) socialErrors.social_spotify_monthly_listeners = `Datenbankfehler: ${error.message}`
+      } else if (listenersDecision.action === 'error') {
+        socialErrors.social_spotify_monthly_listeners_as_of = 'Bitte ein Erfassungsdatum angeben, um den Wert zu speichern.'
       }
     }
   }

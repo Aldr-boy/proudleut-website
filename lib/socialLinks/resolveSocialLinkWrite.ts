@@ -10,13 +10,18 @@
 // Unique Constraint. Ein leeres Formularfeld kann eine bestehende Zeile
 // deshalb nicht einfach auf url=null setzen -- die Entscheidung haengt
 // davon ab, ob die Zeile erhaltenswerte Metadaten (current_followers/
-// current_following/last_checked_at) traegt.
+// current_following/last_checked_at sowie die Spotify-Kennzahl
+// monthly_listeners/monthly_listeners_as_of) traegt.
 export type ExistingSocialProfileRow = {
   id: string
   url: string
   current_followers: number | null
   current_following: number | null
   last_checked_at: string | null
+  // Optional: nur Spotify-Zeilen tragen diese Felder. Fehlen sie (aeltere
+  // Aufrufer/Tests), zaehlt das wie "nicht gesetzt".
+  monthly_listeners?: number | null
+  monthly_listeners_as_of?: string | null
 }
 
 export type SocialLinkWriteDecision =
@@ -28,7 +33,13 @@ export type SocialLinkWriteDecision =
   | { action: 'blocked_has_metadata'; rowId: string }
 
 function hasPreservableMetadata(row: ExistingSocialProfileRow): boolean {
-  return row.current_followers !== null || row.current_following !== null || row.last_checked_at !== null
+  return (
+    row.current_followers !== null ||
+    row.current_following !== null ||
+    row.last_checked_at !== null ||
+    (row.monthly_listeners ?? null) !== null ||
+    (row.monthly_listeners_as_of ?? null) !== null
+  )
 }
 
 // submittedUrl: null bedeutet "Feld wurde geleert" (bereits getrimmt und
