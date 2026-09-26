@@ -33,9 +33,10 @@
 --
 -- Bestehende Zeilen: beide Spalten bleiben NULL (kein Backfill).
 --
--- Rollout-Umfang dieser Datei: AUSSCHLIESSLICH Test
--- (jqzqpizykymjdjumwdoj) -- Phase 2A. Production (bfyucjjyarvqeftqqihm)
--- bleibt unveraendert bis zur separaten Freigabe 2B.
+-- Rollout: wird manuell im SQL-Editor der Production
+-- (bfyucjjyarvqeftqqihm) ausgefuehrt. Das ist eine bewusste Ausnahme
+-- vom ueblichen 2A/2B-Ablauf (Test -> Production): die TEST-Datenbank
+-- wird fuer diese kleine, rein ergaenzende Aenderung nicht verwendet.
 --
 -- Idempotent: Spalten per IF NOT EXISTS, Constraints nur wenn noch nicht
 -- vorhanden.
