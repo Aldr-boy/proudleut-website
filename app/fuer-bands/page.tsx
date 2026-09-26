@@ -541,7 +541,7 @@ export default function FuerBandsPage() {
               href="/ueber-mich"
               className="text-pl-accent-light font-medium hover:text-pl-on-stage motion-safe:transition-colors"
             >
-              Über proudleut
+              Mehr über mich →
             </Link>
           </p>
         </div>
