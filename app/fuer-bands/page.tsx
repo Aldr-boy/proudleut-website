@@ -503,7 +503,7 @@ export default function FuerBandsPage() {
           alt=""
           fill
           className="object-cover pointer-events-none"
-          style={{ objectPosition: '38% 50%' }}
+          style={{ objectPosition: '38% 40%' }}
           sizes="100vw"
           quality={80}
         />
@@ -516,7 +516,7 @@ export default function FuerBandsPage() {
         />
         <div className="relative z-10 max-w-[900px] mx-auto">
           <h2
-            className="pl-display-1 text-pl-on-stage max-w-[16ch] mx-auto text-balance"
+            className="text-4xl md:text-6xl font-extrabold tracking-tight text-pl-on-stage max-w-[16ch] mx-auto text-balance"
             style={{ textShadow: '0 2px 24px rgba(18,16,26,0.6)' }}
           >
             Deine Band bei proudleut?
@@ -536,7 +536,7 @@ export default function FuerBandsPage() {
             </BandIntroTrigger>
           </div>
           <p className="pl-photo-copy mt-9 text-sm">
-            Wer steckt hinter proudleut?<br />
+            Wer steckt hinter proudleut?{' '}
             <Link
               href="/ueber-mich"
               className="text-pl-accent-light font-medium hover:text-pl-on-stage motion-safe:transition-colors"
