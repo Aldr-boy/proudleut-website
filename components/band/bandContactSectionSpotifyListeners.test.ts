@@ -19,10 +19,13 @@ test('eigene Zeile mit Bezeichnung "Monatliche Hörer*innen", nie als Follower/A
   assert.doesNotMatch(block, /Follower(?!Count)|Abonnenten/)
 })
 
-test('Spotify-Kennzahl hat IMMER ihr eigenes Datum (nicht an standDisplay gekoppelt)', () => {
+test('eigenes Spotify-Datum nur ueber die Anzeigeregel shouldShowOwnListenersStand (keine Doppelung mit dem gemeinsamen Stand)', () => {
   const idx = source.indexOf('{listeners && (')
   const block = source.slice(idx, source.indexOf('</a>', idx))
+  assert.match(block, /\{showListenersOwnStand && \(/)
   assert.match(block, /Stand: \{formatStandDate\(listeners\.asOf\)\}/)
+  assert.match(source, /shouldShowOwnListenersStand\(spotifyListeners\.asOf, standDisplay\)/)
+  // Die Regel selbst haengt nicht am Follower-Stand-Ergebnis im JSX-Block.
   assert.doesNotMatch(block, /standDisplay/)
 })
 
