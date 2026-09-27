@@ -47,7 +47,18 @@ export function BandHero({ band, hasVideo }: Props) {
     : undefined;
 
   return (
-    <div className="relative w-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh] bg-pl-stage overflow-hidden">
+    // Unter md (Mobile) uebernimmt die bestehende .pl-hero-scene-Klasse
+    // (app/globals.css, urspruenglich fuer den Startseiten-Hero/PR #115)
+    // die Mindesthoehe: min-height 100svh mit 100vh-Fallback, damit die
+    // naechste Section beim ersten Laden nicht unten hervorschaut. Ersetzt
+    // das vorherige min-h-[80vh] direkt (kein Nebeneinander, keine
+    // Kollision). Ab md unveraendert bei den bisherigen festen vh-Werten
+    // (82vh/86vh) -- Desktop ist nicht Teil dieses Auftrags. Beide Divs
+    // hier (dieses und der Content-Flow-Block weiter unten) tragen die
+    // Klasse, weil der Content-Block als einziges Flow-Kind des relativ
+    // positionierten Hero-Containers dessen gerenderte Hoehe bestimmt (die
+    // absolut positionierten Bild-/Verlaufsebenen tragen dazu nichts bei).
+    <div className="pl-hero-scene relative w-full md:min-h-[82vh] lg:min-h-[86vh] bg-pl-stage overflow-hidden">
       {hasDistinctMobileImage ? (
         <>
           <Image
@@ -98,7 +109,7 @@ export function BandHero({ band, hasVideo }: Props) {
       />
 
       {/* Content – bündig unten links */}
-      <div className="relative z-10 flex items-end h-full min-h-[80vh] md:min-h-[82vh] lg:min-h-[86vh]">
+      <div className="pl-hero-scene relative z-10 flex items-end h-full md:min-h-[82vh] lg:min-h-[86vh]">
         <div className="w-full pl-container-shell px-4 sm:px-6 pb-8 md:pb-12">
           {/* Logo -- klein, direkt ueber dem Bandnamen verankert statt als
               Eck-Plakette (finaler Entwurf, "Hero-Varianten & Empfehlung",
