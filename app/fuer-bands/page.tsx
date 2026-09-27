@@ -1,7 +1,21 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import type { Band } from '@/lib/types/band';
 import { BandIntroTrigger } from '@/components/bandIntro/BandIntroTrigger';
+import { getBandFromSupabase } from '@/lib/supabase/queries';
+import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
+import { formatLocation } from '@/lib/utils/formatLocation';
+import { getYouTubeEmbedUrl } from '@/lib/youtube';
+import { BandEventTypesPills } from '@/components/band/BandEventTypesPills';
+
+// Profil-Demo (Sektion 02) laedt das echte San2-Profil ueber denselben Weg
+// wie /band/[slug] -- ISR wie bei der Homepage-Section "Eine Band
+// einschaetzen" (app/page.tsx), da die Seite dadurch einen echten DB-Read
+// bekommt statt komplett statisch zu sein.
+export const revalidate = 300;
+
+const DEMO_BAND_SLUG = 'san2-and-his-soul-patrol';
 
 export const metadata: Metadata = {
   title: 'Für Bands – proudleut',
@@ -14,34 +28,6 @@ export const metadata: Metadata = {
     type: 'website',
   },
 };
-
-// San2-Beispielprofil (Profil-Demo, Sektion 02) -- reale, geprüfte Werte
-// von /band/san2-and-his-soul-patrol, siehe vorherige Korrekturrunde.
-const SAN2_KLINGT_NACH = ['Konzertant & hochwertig', 'Authentisch und handgemacht', 'Generationenverbindend'];
-// Zweite Ebene "Stil & Einflüsse" -- identisch zu den Werten, die auf der
-// echten Bandseite unter derselben Überschrift stehen (siehe
-// components/band/BandTagsSection.tsx, band.musikalischVerortet).
-const SAN2_STIL_EINFLUESSE = ['Soul, Blues & R&B', 'Bebop-Einflüsse', 'Akustik & Unplugged'];
-const SAN2_META = [
-  { label: 'Besetzung', value: 'Liveband' },
-  { label: 'Herkunft', value: 'München' },
-  { label: 'Spielt bei', value: 'Konzert, Festival, Open Air' },
-];
-
-const PROFILE_POINTS = [
-  {
-    title: 'Atmosphäre statt Datenblatt',
-    desc: 'Fotos, Video und Text zeigen, wer hinter der Band steckt.',
-  },
-  {
-    title: 'Passend eingeordnet',
-    desc: 'Anlass, Stil, Region und „Klingt nach" helfen bei der Einordnung.',
-  },
-  {
-    title: 'Direkter Kontakt',
-    desc: 'Eine Anfrage landet direkt bei der Band.',
-  },
-];
 
 const BENEFITS = [
   {
@@ -118,7 +104,109 @@ function StepNumber({ n }: { n: string }) {
   return <p className="text-[15px] font-bold text-pl-accent tracking-[0.08em]">{n}</p>;
 }
 
-export default function FuerBandsPage() {
+// "Klingt nach" / "Stil & Einflüsse" / "Spielt bei" der Profil-Demo-Karte --
+// identischer Inhalt und identische Reihenfolge in beiden Kartenlayouts
+// (Bild-Hintergrund ab xl, gestapelt darunter), nur die Textgroessen
+// unterscheiden sich (Entwurf "1b — Bild als Hintergrund": Desktop 1440 vs.
+// Mobile 390). Kein eigener Breakpoint-Wechsel innerhalb dieser Komponente,
+// weil beide Elternlayouts bereits per xl:hidden / hidden xl:block exklusiv
+// sind (siehe FuerBandsPage).
+function DemoSoundInfo({ band, size }: { band: Band; size: 'mobile' | 'desktop' }) {
+  const isDesktop = size === 'desktop';
+  const labelClass = `font-semibold uppercase tracking-wider text-pl-on-stage-muted mb-2.5 ${
+    isDesktop ? 'text-[11.5px]' : 'text-[11px]'
+  }`;
+
+  return (
+    <>
+      {band.klingtNach.length > 0 && (
+        <div>
+          <p className={labelClass}>Klingt nach</p>
+          <ul className="flex flex-col gap-2">
+            {band.klingtNach.map((tag) => (
+              <li
+                key={tag}
+                className={`flex items-center gap-3 text-pl-on-stage ${isDesktop ? 'text-base' : 'text-[15px]'}`}
+              >
+                <span className="w-[3px] h-4 rounded-sm bg-pl-accent-light shrink-0" aria-hidden="true" />
+                {tag}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {band.musikalischVerortet.length > 0 && (
+        <div>
+          <p className={labelClass}>Stil &amp; Einflüsse</p>
+          <div className="flex flex-wrap gap-2">
+            {band.musikalischVerortet.map((tag) => (
+              <span
+                key={tag}
+                className={`inline-flex items-center rounded-full bg-white/10 font-semibold text-pl-on-stage px-3 py-1.5 ${
+                  isDesktop ? 'text-[13px]' : 'text-xs'
+                }`}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {band.eventTypes.length > 0 && (
+        <div>
+          <p className={labelClass}>Spielt bei</p>
+          <BandEventTypesPills eventTypes={band.eventTypes} categorySlugs={band.categorySlugs} variant="dark" />
+        </div>
+      )}
+    </>
+  );
+}
+
+// "Live-Video"-Pill auf dem Kartenbild (Entwurf 1b) -- rechts unten im
+// Bild-Hintergrund-Layout (ab xl), rechts oben im gestapelten Layout
+// (darunter). Rendert nur, wenn die Band ein Video hat (siehe Aufrufer);
+// verlinkt auf die echte Bandseite mit Sprungmarke zum Video-Abschnitt --
+// die echte Bandseite traegt an ihrer Video-Section bereits id="live",
+// unveraendert -- keine Aenderung dort noetig.
+function LiveVideoPill({ href, position, size }: { href: string; position: string; size: 'sm' | 'md' }) {
+  const isSmall = size === 'sm';
+  return (
+    <Link
+      href={href}
+      className={`absolute ${position} inline-flex items-center rounded-full bg-[rgba(18,16,26,0.72)] border border-white/20 font-semibold text-pl-on-stage motion-safe:transition-colors hover:border-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent-light ${
+        isSmall ? 'gap-2 pl-1.5 pr-3.5 py-1.5 text-[13px]' : 'gap-2.5 pl-2 pr-4 py-2 text-sm'
+      }`}
+    >
+      <span
+        className={`flex items-center justify-center rounded-full bg-pl-on-stage text-pl-stage ${
+          isSmall ? 'w-7 h-7' : 'w-[30px] h-[30px]'
+        }`}
+      >
+        <svg width={isSmall ? 12 : 14} height={isSmall ? 12 : 14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </span>
+      Live-Video
+    </Link>
+  );
+}
+
+export default async function FuerBandsPage() {
+  // Nicht gefunden / nicht aktiv (getBandFromSupabase filtert bereits auf
+  // status='active') -> demoBand bleibt null, die Profil-Demo-Section
+  // entfaellt weiter unten sauber, keine Fehlerseite (Auftrag "Profil-Demo
+  // an neues Bandprofil angleichen").
+  const { data: demoBandData } = await getBandFromSupabase(DEMO_BAND_SLUG);
+  const demoBand = demoBandData ? normalizeBandFromSupabase(demoBandData) : null;
+  const demoEmbedUrl = demoBand ? getYouTubeEmbedUrl(demoBand.youtubeVideoUrl) : null;
+  const demoHasVideo = demoEmbedUrl !== null;
+  const demoVideoHref = demoBand ? `/band/${demoBand.slug}#live` : '';
+  const demoLocationLabel = demoBand
+    ? [demoBand.category, formatLocation(demoBand.location)].filter(Boolean).join(' · ')
+    : '';
+
   return (
     <main>
 
@@ -167,149 +255,141 @@ export default function FuerBandsPage() {
             So kann deine Band auf proudleut aussehen.
           </h2>
 
-          {/* pl-media-wide: San2-Beispielprofil als breiter Medienmoment.
-              Mobile full-bleed (negative Section-Padding), Desktop innerhalb
-              des Containers mit Radius. Regelt Format/Crop/Overlay -- nicht
-              die Farbigkeit des Fotos (Original ist schwarzweiß). */}
-          <div className="mt-9 md:mt-14 relative -mx-4 sm:-mx-6 md:mx-0 aspect-[4/3] md:aspect-[8/3] md:rounded-[20px] overflow-hidden">
-            <Image
-              src="/images/fuer-bands/profil-mockup-live.jpg"
-              alt="San2 and His Soul Patrol live – Beispielprofil auf proudleut"
-              fill
-              className="object-cover"
-              style={{ objectPosition: 'center 45%' }}
-              sizes="(max-width: 768px) 100vw, 1140px"
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background: 'linear-gradient(180deg, rgba(20,14,29,0) 40%, rgba(20,14,29,0.85) 100%)',
-              }}
-            />
-            <div className="absolute left-6 right-6 md:left-11 md:right-11 bottom-5 md:bottom-9 flex flex-col items-start gap-2 md:gap-3">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-pl-elevated text-pl-text">
-                Blues
-              </span>
-              <p className="text-2xl md:text-4xl font-extrabold text-pl-on-stage leading-tight">
-                San2 and His Soul Patrol
-              </p>
-              <p className="text-sm md:text-base text-pl-on-stage-muted">
-                Bayern · München und Umgebung
-              </p>
-            </div>
-          </div>
+          {/* Profilkarte "1b — Bild als Hintergrund" -- echtes San2-Profil
+              ueber denselben Datenpfad wie /band/[slug] geladen (kein
+              eigenes Profil-Datenmodell, keine Anfrage-/Merklisten-Logik,
+              kein H1). Wird die Band nicht gefunden oder ist sie nicht
+              aktiv (getBandFromSupabase filtert bereits auf
+              status='active'), entfaellt die gesamte Demo sauber.
 
-          <div className="mt-14 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 lg:gap-[72px]">
-            {/* Bandprofil-Inhalt */}
-            <div>
-              <p className="italic text-lg md:text-[22px] leading-relaxed text-pl-text max-w-[34ch]">
-                „San2 zählt zu den markantesten Soul- und Bluessängern Deutschlands."
-              </p>
-
-              <p className="mt-8 md:mt-9 text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                Klingt nach
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2.5">
-                {SAN2_KLINGT_NACH.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border"
+              Ab xl liegt das Bandbild rechtsbuendig als Hintergrund in der
+              vollen Kartenhoehe (620px), mit einem Verlauf ins Dunkle, auf
+              dem links die Infospalte sitzt (Entwurfsmasse: 470px Spalte,
+              Verlauf 0/33/40/48/58%). Darunter (inkl. dem ~1024px-Bereich,
+              wo Infospalte + Bild nicht mehr nebeneinander passen, siehe
+              pl-container-shell = 1140px vs. benoetigte ~1300px) greift
+              stattdessen die gestapelte Mobile-Anordnung aus dem Entwurf:
+              Bild oben in voller Breite, Infos darunter auf dunklem Grund.
+              Der Wechsel erfolgt deshalb bewusst erst bei xl (1280px) statt
+              bei lg (1024px) -- bei lg waere die Infospalte noch zu breit
+              fuer den verbleibenden Platz neben dem Bild. */}
+          {demoBand && (
+            <>
+              <div className="mt-9 md:mt-14 rounded-3xl overflow-hidden bg-pl-stage">
+                <div className="hidden xl:block relative h-[620px]">
+                  {demoBand.heroImage && (
+                    <div className="absolute right-0 top-0 h-full aspect-[4/3]">
+                      <Image
+                        src={demoBand.heroImage.url}
+                        alt={demoBand.heroImage.alt}
+                        fill
+                        className="object-cover"
+                        sizes="827px"
+                      />
+                    </div>
+                  )}
+                  <div
+                    className="absolute inset-0"
                     style={{
-                      backgroundColor: 'rgba(233,196,106,0.14)',
-                      borderColor: 'rgba(233,196,106,0.38)',
-                      color: '#8a6200',
+                      background:
+                        'linear-gradient(90deg, #12101a 0%, #12101a 33%, rgba(18,16,26,0.88) 40%, rgba(18,16,26,0.45) 48%, rgba(18,16,26,0) 58%)',
                     }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Stil & Einflüsse -- zweite, zurueckhaltendere Ebene unter
-                  "Klingt nach". Gleiche Chip-Darstellung wie auf der echten
-                  Bandseite (components/band/BandTagsSection.tsx, PURPLE_CHIP). */}
-              <p className="mt-6 text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                Stil &amp; Einflüsse
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {SAN2_STIL_EINFLUESSE.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-pl-accent-subtle text-pl-accent-deep"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-9 md:mt-10 pt-6 border-t border-pl-soft grid grid-cols-1 sm:grid-cols-3 gap-x-8 divide-y divide-pl-soft sm:divide-y-0">
-                {SAN2_META.map(({ label, value }) => (
-                  <div key={label} className="flex items-baseline justify-between py-3 sm:block sm:py-0">
-                    <p className="text-[10px] uppercase tracking-wider text-pl-text-muted sm:mb-1.5">
-                      {label}
-                    </p>
-                    <p className="text-sm font-bold text-pl-text">{value}</p>
+                  />
+                  <div className="absolute inset-y-0 left-0 w-[470px] max-w-full flex flex-col justify-center gap-6 px-14">
+                    <div>
+                      <p className="text-[40px] font-extrabold tracking-tight leading-[1.02] text-pl-on-stage">
+                        {demoBand.name}
+                      </p>
+                      {demoLocationLabel && (
+                        <p className="mt-2.5 text-[15px] font-medium text-pl-accent-light">{demoLocationLabel}</p>
+                      )}
+                    </div>
+                    <DemoSoundInfo band={demoBand} size="desktop" />
                   </div>
-                ))}
+                  {demoHasVideo && <LiveVideoPill href={demoVideoHref} position="right-6 bottom-6" size="md" />}
+                </div>
+
+                <div className="xl:hidden">
+                  <div className="relative">
+                    {demoBand.heroImage && (
+                      <div className="relative w-full aspect-[4/3]">
+                        <Image
+                          src={demoBand.heroImage.url}
+                          alt={demoBand.heroImage.alt}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 1279px) 100vw, 1140px"
+                        />
+                      </div>
+                    )}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          'linear-gradient(180deg, rgba(18,16,26,0) 45%, rgba(18,16,26,0.75) 78%, #12101a 100%)',
+                      }}
+                    />
+                    {demoHasVideo && <LiveVideoPill href={demoVideoHref} position="right-3 top-3" size="sm" />}
+                    <div className="absolute left-[22px] right-[22px] bottom-1">
+                      <p className="text-[28px] font-extrabold tracking-tight leading-[1.05] text-pl-on-stage">
+                        {demoBand.name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="px-[22px] pt-2 pb-[26px] flex flex-col gap-[22px]">
+                    {demoLocationLabel && (
+                      <p className="text-sm font-medium text-pl-accent-light">{demoLocationLabel}</p>
+                    )}
+                    <DemoSoundInfo band={demoBand} size="mobile" />
+                  </div>
+                </div>
               </div>
 
-              {/* Demonstration -- keine echten Buttons, siehe aria-hidden */}
-              <div className="mt-8 md:mt-9 flex flex-wrap gap-3.5">
-                <div
-                  className="inline-flex items-center px-6 py-3 rounded-full text-sm font-semibold
-                             bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
-                  aria-hidden="true"
-                >
-                  Band über proudleut anfragen
-                </div>
-                <div
-                  className="inline-flex items-center px-6 py-3 rounded-full text-sm font-medium
-                             text-pl-text-muted border border-pl-medium"
-                  aria-hidden="true"
-                >
-                  ♡ Band merken
-                </div>
-              </div>
-            </div>
-
-            {/* pl-aside: proudleut-Erklärung, bewusst getrennt vom Bandprofil */}
-            <div className="bg-pl-canvas border-l border-pl-soft rounded-2xl px-6 md:px-8 py-7 md:py-9 flex flex-col gap-6 md:gap-8">
-              {PROFILE_POINTS.map(({ title, desc }) => (
-                <div key={title}>
-                  <p className="text-base font-bold text-pl-text">{title}</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-pl-text-muted">{desc}</p>
-                </div>
-              ))}
-              <div className="pt-6 md:pt-7 border-t border-pl-soft">
-                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                  Aus Musiker-Sicht
-                </p>
-                <p className="mt-3 text-sm md:text-base italic leading-relaxed text-pl-text">
-                  „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
-                  Er behält den Überblick, reagiert schnell und bleibt menschlich."
-                </p>
+              {/* Zeile direkt unter der Karte: ab md Link und Fussnote auf
+                  einer Grundlinie nebeneinander, darunter (unter md
+                  gestapelt: Link, dann Fussnote). */}
+              <div className="mt-8 md:mt-10 flex flex-col md:flex-row md:items-baseline md:justify-between gap-2 md:gap-8">
                 <Link
-                  href="/musiker/dominik-palmer"
-                  className="mt-3 inline-block rounded-sm text-sm font-bold text-pl-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+                  href={`/band/${demoBand.slug}`}
+                  className="inline-block rounded-sm text-sm font-semibold text-pl-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
                 >
-                  Dominik Palmer
+                  Ganzes Profil von {demoBand.name} ansehen →
                 </Link>
-                <p className="text-xs text-pl-text-muted mt-0.5">
-                  Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
+                <p className="text-xs text-pl-text-muted">
+                  Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.
                 </p>
-                <Link
-                  href="/musiker/dominik-palmer"
-                  className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
-                >
-                  Musikerprofil ansehen →
-                </Link>
               </div>
-            </div>
-          </div>
 
-          <p className="mt-9 md:mt-12 text-xs text-pl-text-muted">
-            Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.
-          </p>
+              {/* "Aus Musiker-Sicht" (Entwurf 1b): heller Kasten mit feinem
+                  umlaufenden Rahmen, ab lg zweispaltig (links Label+Zitat,
+                  rechts Name/Rolle/Link), vertikal zentriert. */}
+              <div className="mt-6 md:mt-8 bg-pl-canvas border border-pl-soft rounded-[20px] px-5 py-[22px] md:px-9 md:py-7">
+                <div className="lg:grid lg:grid-cols-[1.4fr_1fr] lg:gap-14 lg:items-center">
+                  <div>
+                    <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                      Aus Musiker-Sicht
+                    </p>
+                    <p className="mt-2.5 text-sm md:text-base italic leading-relaxed text-pl-text max-w-[70ch]">
+                      „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
+                      Er behält den Überblick, reagiert schnell und bleibt menschlich.“
+                    </p>
+                  </div>
+                  <div className="mt-4 lg:mt-0">
+                    <p className="text-[15px] md:text-base font-semibold text-pl-text">Dominik Palmer</p>
+                    <p className="text-[13px] md:text-sm text-pl-text-muted mt-0.5">
+                      Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
+                    </p>
+                    <Link
+                      href="/musiker/dominik-palmer"
+                      className="mt-2 md:mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
+                    >
+                      Musikerprofil ansehen →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -370,7 +450,7 @@ export default function FuerBandsPage() {
               </p>
               <p className="mt-7 text-[18px] leading-[1.7] text-pl-text">
                 Ein Profil entsteht auf proudleut nicht per Formular und Klick auf
-                „Veröffentlichen". Ich schaue mir die Band vorher an, und wir telefonieren
+                „Veröffentlichen“. Ich schaue mir die Band vorher an, und wir telefonieren
                 miteinander. Mir ist wichtig zu wissen, wer hinter einem Act steckt, bevor ich ihn
                 auf proudleut vorstelle. Danach bauen wir gemeinsam ein Profil, das deine Band so
                 zeigt, wie sie wirklich ist und Veranstaltern hilft, sie richtig einzuordnen.
