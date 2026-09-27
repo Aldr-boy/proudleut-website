@@ -73,3 +73,49 @@ test('Link am Ende der Demo fuehrt auf das echte Profil', () => {
 test('Fussnote "Beispielprofil" bleibt erhalten', () => {
   assert.match(source, /Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut\./)
 })
+
+// ── Block "Demo-Karte in die Breite ziehen" ──────────────────────────
+
+test('Demo-Karte nutzt die volle Container-Breite -- keine rechte Aside-Spalte mehr', () => {
+  assert.doesNotMatch(source, /lg:grid-cols-\[1fr_380px\]/)
+})
+
+test('Bildbanner ist ab md deutlich flacher (aspect-\\[4\\/1\\] statt aspect-\\[8\\/3\\]), Mobile unveraendert bei aspect-\\[4\\/3\\]', () => {
+  assert.match(source, /aspect-\[4\/3\] md:aspect-\[4\/1\]/)
+  assert.doesNotMatch(source, /aspect-\[8\/3\]/)
+})
+
+test('"Spielt bei" + Presse-\\/Booking-Karte stehen erst ab lg nebeneinander, nur wenn beide vorhanden sind', () => {
+  assert.match(
+    source,
+    /const demoEventsAndDocsBothPresent =\s*\n?\s*!!demoBand && demoBand\.eventTypes\.length > 0 && demoBand\.documents\.length > 0;/
+  )
+  assert.match(source, /demoEventsAndDocsBothPresent \? 'lg:grid-cols-2 lg:items-start' : ''/)
+})
+
+test('"Aus Musiker-Sicht" ist NICHT mehr Teil der Profil-Demo-Karte (bg-pl-stage-Block)', () => {
+  const demoCardStart = source.indexOf("{demoBand && (")
+  const demoCardEnd = source.indexOf('Ganzes Profil von {demoBand.name} ansehen')
+  assert.ok(demoCardStart >= 0 && demoCardEnd > demoCardStart)
+  const demoCardSource = source.slice(demoCardStart, demoCardEnd)
+  assert.doesNotMatch(demoCardSource, /Aus Musiker-Sicht/)
+})
+
+test('"Aus Musiker-Sicht" steht in Section 04 unter dem persoenlichen Fließtext, Dominik Palmer als reiner Text (nicht verlinkt)', () => {
+  const idx = source.indexOf('Aus Musiker-Sicht')
+  assert.ok(idx >= 0, '"Aus Musiker-Sicht" fehlt komplett')
+  const sectionTextIdx = source.indexOf('Ich baue und pflege proudleut persönlich')
+  assert.ok(sectionTextIdx >= 0 && sectionTextIdx < idx, 'muss nach dem persoenlichen Fließtext in Section 04 stehen')
+
+  const block = source.slice(idx, source.indexOf('Musikerprofil ansehen', idx) + 40)
+  assert.match(block, />Dominik Palmer<\/p>/, 'Name muss reiner Text sein, kein <Link>')
+  assert.doesNotMatch(block.slice(0, block.indexOf('Dominik Palmer')), /<Link/, 'kein Link vor/um den Namen')
+})
+
+test('Zitat schliesst mit typografisch korrektem Anfuehrungszeichen (U+201C), nicht mit "', () => {
+  const quoteIdx = source.indexOf('Mit Alex zu arbeiten')
+  assert.ok(quoteIdx >= 0)
+  const quoteBlock = source.slice(quoteIdx, quoteIdx + 200)
+  assert.match(quoteBlock, /bleibt menschlich\.“/)
+  assert.doesNotMatch(quoteBlock, /bleibt menschlich\."/)
+})

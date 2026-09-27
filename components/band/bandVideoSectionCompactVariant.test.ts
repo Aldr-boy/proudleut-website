@@ -40,9 +40,13 @@ test('Galerie wird in compact nie gerendert (hasGallery ist fest false), auf der
   assert.match(source, /<BandGallery band=\{band\} \/>/)
 })
 
-test('Video- und Klingt-nach/Stil-Grid ist in compact und default identisch (dieselbe JSX-Variable "content")', () => {
+test('Video- und Klingt-nach/Stil-Grid ist in compact und default derselbe JSX-Block ("content"), nur das Spaltenverhaeltnis unterscheidet sich', () => {
   const contentDeclIdx = source.indexOf('const content = (')
   assert.ok(contentDeclIdx >= 0, 'gemeinsamer content-Block fehlt -- compact und default duerfen keine getrennten Kopien des Grids pflegen')
-  const gridIdx = source.indexOf("grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 md:gap-12 items-start")
+  const gridIdx = source.indexOf('grid grid-cols-1 ${videoGridClass} gap-8 md:gap-12 items-start')
   assert.ok(gridIdx > contentDeclIdx, 'Video/Klingt-nach-Grid muss Teil des gemeinsamen content-Blocks sein')
+})
+
+test('videoGridClass: default bleibt 2fr/1fr unveraendert, compact nutzt ab md ein 1:1-Verhaeltnis (md:grid-cols-2)', () => {
+  assert.match(source, /const videoGridClass = isCompact \? 'md:grid-cols-2' : 'md:grid-cols-\[2fr_1fr\]';/)
 })

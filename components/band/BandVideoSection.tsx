@@ -43,9 +43,15 @@ export function BandVideoSection({ band, embedUrl, variant = 'default' }: Props)
   // vorhandenen Bilder, keine Dopplung.
   const poster = band.thumbnailImage ?? band.heroImage ?? band.gallery[0];
 
+  // Spaltenverhaeltnis Video/"Klingt nach"+"Stil": Standardfall (echte
+  // Bandseite) bleibt 2fr/1fr unveraendert. compact (Profil-Demo) nutzt ab
+  // md ein 1:1-Verhaeltnis, damit Video und Liste bei voller Kartenbreite
+  // etwa gleich hoch sind (Auftrag "Demo-Karte in die Breite ziehen").
+  const videoGridClass = isCompact ? 'md:grid-cols-2' : 'md:grid-cols-[2fr_1fr]';
+
   const content = (
     <>
-      <div className={hasVideo ? 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 md:gap-12 items-start' : ''}>
+      <div className={hasVideo ? `grid grid-cols-1 ${videoGridClass} gap-8 md:gap-12 items-start` : ''}>
         {hasVideo && (
           <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-pl-stage-elevated">
             <VideoPlayer embedUrl={embedUrl} bandName={band.name} poster={poster} />

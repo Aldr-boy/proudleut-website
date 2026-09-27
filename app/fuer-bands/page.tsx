@@ -122,6 +122,8 @@ export default async function FuerBandsPage() {
   const demoHasVideoBlock =
     !!demoBand && (demoEmbedUrl !== null || demoBand.klingtNach.length > 0 || demoBand.musikalischVerortet.length > 0);
   const demoHasEventsOrDocs = !!demoBand && (demoBand.eventTypes.length > 0 || demoBand.documents.length > 0);
+  const demoEventsAndDocsBothPresent =
+    !!demoBand && demoBand.eventTypes.length > 0 && demoBand.documents.length > 0;
   const demoTiers = [demoHasQuote, demoHasVideoBlock, demoHasEventsOrDocs];
   const demoFirstTierIndex = demoTiers.findIndex(Boolean);
   const demoDivider = 'mt-9 md:mt-10 pt-8 border-t border-white/10';
@@ -182,116 +184,101 @@ export default async function FuerBandsPage() {
               entfaellt die gesamte Demo sauber. */}
           {demoBand && (
             <>
-              <div className="mt-9 md:mt-14 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10 lg:gap-[72px] items-start">
-                <div className="bg-pl-stage rounded-[20px] overflow-hidden">
-                  {/* Bild + Name + Bandart/Herkunft -- wie im echten Profil
-                      (BandHero.tsx), aber als kompakter Kartenkopf statt
-                      Vollbild-Hero: kein eigenes H1-Element, keine
-                      Anfrage-CTA. */}
-                  <div className="relative aspect-[4/3] md:aspect-[8/3] bg-pl-stage-elevated">
-                    {demoBand.heroImage && (
-                      <Image
-                        src={demoBand.heroImage.url}
-                        alt={demoBand.heroImage.alt}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 700px"
-                      />
-                    )}
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: 'linear-gradient(180deg, rgba(20,14,29,0) 40%, rgba(20,14,29,0.85) 100%)',
-                      }}
+              <div className="mt-9 md:mt-14 bg-pl-stage rounded-[20px] overflow-hidden">
+                {/* Bild + Name + Bandart/Herkunft -- wie im echten Profil
+                    (BandHero.tsx), aber als kompakter Kartenkopf statt
+                    Vollbild-Hero: kein eigenes H1-Element, keine
+                    Anfrage-CTA. Ab md deutlich flacher (4:1 statt der
+                    frueheren 8:3-Teilspalte), da die Karte jetzt die volle
+                    Container-Breite nutzt. */}
+                <div className="relative aspect-[4/3] md:aspect-[4/1] bg-pl-stage-elevated">
+                  {demoBand.heroImage && (
+                    <Image
+                      src={demoBand.heroImage.url}
+                      alt={demoBand.heroImage.alt}
+                      fill
+                      className="object-cover"
+                      style={{ objectPosition: 'center 30%' }}
+                      sizes="(max-width: 768px) 100vw, 1140px"
                     />
-                    <div className="absolute left-6 right-6 md:left-11 md:right-11 bottom-5 md:bottom-9">
-                      <p className="text-2xl md:text-4xl font-extrabold text-pl-on-stage leading-tight">
-                        {demoBand.name}
-                      </p>
-                      {[demoBand.category, formatLocation(demoBand.location)].filter(Boolean).length > 0 && (
-                        <p className="mt-2 text-sm md:text-base font-semibold text-pl-accent-light">
-                          {[demoBand.category, formatLocation(demoBand.location)].filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {(demoHasQuote || demoHasVideoBlock || demoHasEventsOrDocs) && (
-                    <div className="px-6 md:px-11 py-8 md:py-10">
-                      {/* 01 verdichtet: nur der kurze Zitatsatz, aus
-                          short_description/slogan -- NIE der gekuerzte
-                          main_text-Fallback (siehe shortDescriptionExplicit
-                          in lib/supabase/normalizeBand.ts). Ohne gepflegten
-                          Wert entfaellt die Zeile einfach. */}
-                      {demoHasQuote && (
-                        <p
-                          className={`italic text-lg md:text-[22px] leading-relaxed text-pl-on-stage max-w-[34ch] ${
-                            demoFirstTierIndex === 0 ? '' : demoDivider
-                          }`}
-                        >
-                          „{demoBand.shortDescriptionExplicit}&rdquo;
-                        </p>
-                      )}
-
-                      {/* 02: Video + Klingt nach + Stil & Einfluesse in
-                          derselben Anordnung wie auf der echten Bandseite
-                          (Desktop nebeneinander, Mobile untereinander) --
-                          variant="compact" laesst nur Section-Rahmen,
-                          Kapitelueberschrift und Galerie weg. */}
-                      {demoHasVideoBlock && (
-                        <div className={demoFirstTierIndex === 1 ? '' : demoDivider}>
-                          <BandVideoSection band={demoBand} embedUrl={demoEmbedUrl} variant="compact" />
-                        </div>
-                      )}
-
-                      {/* 03 verdichtet: nur Spielt bei + Presse-/Booking-PDF,
-                          keine Referenz-Events, kein Hochzeitsmodul. */}
-                      {demoHasEventsOrDocs && (
-                        <div className={`flex flex-col gap-8 ${demoFirstTierIndex === 2 ? '' : demoDivider}`}>
-                          {demoBand.eventTypes.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
-                                Spielt bei
-                              </p>
-                              <BandEventTypesPills
-                                eventTypes={demoBand.eventTypes}
-                                categorySlugs={demoBand.categorySlugs}
-                                variant="dark"
-                              />
-                            </div>
-                          )}
-                          {demoBand.documents.length > 0 && <BandDocumentsSection band={demoBand} />}
-                        </div>
-                      )}
-                    </div>
                   )}
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(20,14,29,0) 40%, rgba(20,14,29,0.85) 100%)',
+                    }}
+                  />
+                  <div className="absolute left-6 right-6 md:left-11 md:right-11 bottom-5 md:bottom-9">
+                    <p className="text-2xl md:text-4xl font-extrabold text-pl-on-stage leading-tight">
+                      {demoBand.name}
+                    </p>
+                    {[demoBand.category, formatLocation(demoBand.location)].filter(Boolean).length > 0 && (
+                      <p className="mt-2 text-sm md:text-base font-semibold text-pl-accent-light">
+                        {[demoBand.category, formatLocation(demoBand.location)].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* pl-aside: proudleut-Erklärung, bewusst getrennt vom Bandprofil */}
-                <div className="bg-pl-canvas border-l border-pl-soft rounded-2xl px-6 md:px-8 py-7 md:py-9">
-                  <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                    Aus Musiker-Sicht
-                  </p>
-                  <p className="mt-3 text-sm md:text-base italic leading-relaxed text-pl-text">
-                    „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
-                    Er behält den Überblick, reagiert schnell und bleibt menschlich."
-                  </p>
-                  <Link
-                    href="/musiker/dominik-palmer"
-                    className="mt-3 inline-block rounded-sm text-sm font-bold text-pl-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
-                  >
-                    Dominik Palmer
-                  </Link>
-                  <p className="text-xs text-pl-text-muted mt-0.5">
-                    Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
-                  </p>
-                  <Link
-                    href="/musiker/dominik-palmer"
-                    className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
-                  >
-                    Musikerprofil ansehen →
-                  </Link>
-                </div>
+                {(demoHasQuote || demoHasVideoBlock || demoHasEventsOrDocs) && (
+                  <div className="px-6 md:px-11 py-8 md:py-10">
+                    {/* 01 verdichtet: nur der kurze Zitatsatz, aus
+                        short_description/slogan -- NIE der gekuerzte
+                        main_text-Fallback (siehe shortDescriptionExplicit
+                        in lib/supabase/normalizeBand.ts). Ohne gepflegten
+                        Wert entfaellt die Zeile einfach. */}
+                    {demoHasQuote && (
+                      <p
+                        className={`italic text-lg md:text-[22px] leading-relaxed text-pl-on-stage max-w-[34ch] ${
+                          demoFirstTierIndex === 0 ? '' : demoDivider
+                        }`}
+                      >
+                        „{demoBand.shortDescriptionExplicit}&rdquo;
+                      </p>
+                    )}
+
+                    {/* 02: Video + Klingt nach + Stil & Einfluesse --
+                        variant="compact" laesst Section-Rahmen,
+                        Kapitelueberschrift und Galerie weg und nutzt ab md
+                        ein 1:1-Spaltenverhaeltnis (statt 2fr/1fr auf der
+                        echten Bandseite), damit Video und Liste bei voller
+                        Kartenbreite etwa gleich hoch sind. */}
+                    {demoHasVideoBlock && (
+                      <div className={demoFirstTierIndex === 1 ? '' : demoDivider}>
+                        <BandVideoSection band={demoBand} embedUrl={demoEmbedUrl} variant="compact" />
+                      </div>
+                    )}
+
+                    {/* 03 verdichtet: nur Spielt bei + Presse-/Booking-PDF,
+                        keine Referenz-Events, kein Hochzeitsmodul. Erst ab
+                        lg nebeneinander (BandDocumentsSection braucht auf
+                        md noch die volle Breite fuer ihre eigene
+                        Thumbnail+Text+Button-Zeile), darunter gestapelt --
+                        und nur, wenn beide Ebenen vorhanden sind (gleiches
+                        Muster wie midTierIsSplit in BandTagsSection.tsx). */}
+                    {demoHasEventsOrDocs && (
+                      <div
+                        className={`grid grid-cols-1 gap-8 ${
+                          demoEventsAndDocsBothPresent ? 'lg:grid-cols-2 lg:items-start' : ''
+                        } ${demoFirstTierIndex === 2 ? '' : demoDivider}`}
+                      >
+                        {demoBand.eventTypes.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
+                              Spielt bei
+                            </p>
+                            <BandEventTypesPills
+                              eventTypes={demoBand.eventTypes}
+                              categorySlugs={demoBand.categorySlugs}
+                              variant="dark"
+                            />
+                          </div>
+                        )}
+                        {demoBand.documents.length > 0 && <BandDocumentsSection band={demoBand} />}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <Link
@@ -371,6 +358,31 @@ export default async function FuerBandsPage() {
                 auf proudleut vorstelle. Danach bauen wir gemeinsam ein Profil, das deine Band so
                 zeigt, wie sie wirklich ist und Veranstaltern hilft, sie richtig einzuordnen.
               </p>
+
+              {/* "Aus Musiker-Sicht" -- aus der Profil-Demo hierher verlegt
+                  (Auftrag "Demo-Karte in die Breite ziehen"): zurueckhaltender
+                  Textblock mit oberer Trennlinie statt eigener Karte, damit
+                  er nicht mit "Kurz gesagt" rechts konkurriert. Inhalt/Links
+                  unveraendert. */}
+              <div className="mt-9 md:mt-10 pt-7 md:pt-8 border-t border-pl-soft">
+                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                  Aus Musiker-Sicht
+                </p>
+                <p className="mt-3 text-base md:text-lg italic leading-relaxed text-pl-text">
+                  „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
+                  Er behält den Überblick, reagiert schnell und bleibt menschlich.“
+                </p>
+                <p className="mt-3 text-sm font-bold text-pl-text">Dominik Palmer</p>
+                <p className="text-xs text-pl-text-muted mt-0.5">
+                  Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
+                </p>
+                <Link
+                  href="/musiker/dominik-palmer"
+                  className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
+                >
+                  Musikerprofil ansehen →
+                </Link>
+              </div>
             </div>
 
             {/* "Kurz gesagt" -- freie Hairline-Liste, bewusst kein Kasten/Schatten */}
