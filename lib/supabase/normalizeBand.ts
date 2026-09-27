@@ -333,8 +333,12 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     manual3: str((relations[2]?.target_band as Row)?.name),
   }
 
+  // shortDescriptionExplicit: nur tatsaechlich gepflegte Werte, OHNE
+  // main_text-Fallback (siehe lib/types/band.ts).
+  const shortDescriptionExplicit = str(profile.short_description) ?? str(profile.slogan)
+
   // shortDescription: short_description → slogan → truncated main_text (markdown stripped)
-  const shortDescription = str(profile.short_description) ?? str(profile.slogan) ?? (() => {
+  const shortDescription = shortDescriptionExplicit ?? (() => {
     const main = str(profile.main_text)
     if (!main) return undefined
     const stripped = main
@@ -384,6 +388,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     musikalischVerortet,
 
     shortDescription,
+    shortDescriptionExplicit,
     description:     str(profile.main_text),
     metaDescription: str(profile.meta_description),
 

@@ -192,6 +192,15 @@ export type Band = {
   musikalischVerortet: string[];
 
   shortDescription?: string;
+  // Wie shortDescription, aber OHNE den main_text-Kuerzungs-Fallback -- nur
+  // gesetzt, wenn short_description oder slogan tatsaechlich gepflegt sind.
+  // Ausschliesslich fuer den Bandprofil-Hero (BandHero.tsx): dort soll ohne
+  // gepflegten Slogan lieber gar kein Text stehen als ein algorithmisch
+  // gekuerzter main_text-Ausschnitt. shortDescription selbst bleibt fuer
+  // alle anderen Konsumenten (BandCard, AuswahlBandCard, Explorer-Suche,
+  // Meta-/OG-Description) unveraendert. Nur fuer Supabase-normalisierte
+  // Baender befuellt.
+  shortDescriptionExplicit?: string;
   description?: string;
   metaDescription?: string;
 
