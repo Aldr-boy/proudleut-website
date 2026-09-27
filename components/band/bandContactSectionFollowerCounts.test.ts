@@ -107,6 +107,44 @@ test('bei "shared" wird strukturell genau EINE gemeinsame Datumszeile ausserhalb
   assert.equal(pTagsInBlock.length, 1, 'genau ein <p> fuer den gemeinsamen Pruefstand erwartet')
 })
 
+test('Einordnungssatz unter den Zahlen: nur sichtbar, wenn mindestens eine Kennzahl (Follower ODER Hoerer*innen) tatsaechlich sichtbar ist', () => {
+  assert.match(
+    source,
+    /const hasVisibleMetric = links\.some\(\(l\) => l\.metric \|\| l\.listeners\)/,
+    'hasVisibleMetric muss aus bereits sichtbar entschiedenen Metriken/Listeners abgeleitet werden, nicht aus hasLinks (das waere schon bei reinen Links ohne Werte wahr)'
+  )
+
+  const idx = source.indexOf('{hasVisibleMetric && (')
+  assert.ok(idx >= 0, 'Satz muss ueber {hasVisibleMetric && (...)} gerendert werden')
+  const block = source.slice(idx, source.indexOf(')}', idx) + 2)
+  assert.match(
+    block,
+    /Die Zahlen zeigen die Online-Präsenz, nicht die Qualität einer Band oder wie gut sie zu eurem Fest passt\./
+  )
+  assert.match(block, /text-xs text-pl-text-hint/, 'gleiche Groesse/Farbe wie die Stand-Zeile')
+  assert.doesNotMatch(block, /font-semibold/, 'bleibt so zurueckhaltend wie die Stand-Zeile, nicht hervorgehoben')
+
+  // Direkt unter der Stand-Zeile: der Satz-Block folgt im Quelltext auf den
+  // "shared"-Stand-Block, beide innerhalb derselben "Mehr von [Band]"-Spalte.
+  const sharedIdx = source.indexOf("standDisplay.kind === 'shared' && (")
+  assert.ok(sharedIdx >= 0)
+  assert.ok(idx > sharedIdx, 'Einordnungssatz muss im Quelltext nach der Stand-Zeile stehen')
+})
+
+test('Stand-Zeile und Einordnungssatz sind rechtsbuendig und auf die Breite der Zahlenspalte begrenzt', () => {
+  const sharedIdx = source.indexOf("standDisplay.kind === 'shared' && (")
+  assert.ok(sharedIdx >= 0)
+  const sharedBlock = source.slice(sharedIdx, source.indexOf(')}', sharedIdx) + 2)
+  assert.match(sharedBlock, /max-w-sm/, 'Stand-Zeile muss auf die Breite der Zahlenspalte (wie <ul>) begrenzt sein')
+  assert.match(sharedBlock, /text-right/, 'Stand-Zeile muss rechtsbuendig sein')
+
+  const hintIdx = source.indexOf('{hasVisibleMetric && (')
+  assert.ok(hintIdx >= 0)
+  const hintBlock = source.slice(hintIdx, source.indexOf(')}', hintIdx) + 2)
+  assert.match(hintBlock, /max-w-sm/, 'Einordnungssatz muss auf die Breite der Zahlenspalte (wie <ul>) begrenzt sein')
+  assert.match(hintBlock, /text-right/, 'Einordnungssatz muss rechtsbuendig sein, buendig mit der Zahlenspalte')
+})
+
 test('Website und Spotify erhalten keine Kennzahl (kein metric-Feld in ihren LinkItems)', () => {
   const websiteLine = source.match(/websiteUrl \? \{[^}]*\}/)?.[0] ?? ''
   const spotifyLine = source.match(/band\.socialLinks\.spotify \? \{[^}]*\}/)?.[0] ?? ''
