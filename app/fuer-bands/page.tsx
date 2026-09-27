@@ -369,7 +369,7 @@ export default async function FuerBandsPage() {
                     <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
                       Aus Musiker-Sicht
                     </p>
-                    <p className="mt-2.5 text-base md:text-[18px] italic leading-relaxed text-pl-text max-w-[70ch]">
+                    <p className="mt-2.5 text-sm md:text-base italic leading-relaxed text-pl-text max-w-[70ch]">
                       „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
                       Er behält den Überblick, reagiert schnell und bleibt menschlich.“
                     </p>
