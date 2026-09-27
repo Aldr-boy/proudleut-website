@@ -13,6 +13,11 @@ type Props = {
   // Demo-Karte den Rahmen stellt. Die echte Bandseite nutzt weiterhin
   // "default" unveraendert.
   variant?: 'default' | 'compact';
+  // Nur fuer die Profil-Demo relevant (Auftrag "Spielt bei in die rechte
+  // Spalte"): zusaetzlicher Block am Ende der rechten Spalte, unterhalb
+  // von "Stil & Einfluesse", im selben Label-Stil. Wird ignoriert/nicht
+  // uebergeben auf der echten Bandseite -- keine Aenderung dort.
+  extraColumnContent?: React.ReactNode;
 };
 
 // "02 Wie klingt die Band live?" -- die eine erlaubte dunkle "emotionale Insel"
@@ -26,14 +31,14 @@ type Props = {
 // Rendert nur, wenn mindestens EIN Baustein tatsaechlich Inhalt hat -- kein
 // leeres Kapitel, wenn eine Band weder Video noch Moods noch Stil noch
 // Galerie hat.
-export function BandVideoSection({ band, embedUrl, variant = 'default' }: Props) {
+export function BandVideoSection({ band, embedUrl, variant = 'default', extraColumnContent }: Props) {
   const klingtNach = band.klingtNach;
   const stil = band.musikalischVerortet;
   const hasVideo = embedUrl !== null;
   const isCompact = variant === 'compact';
   const hasGallery = !isCompact && band.gallery.length > 0;
 
-  if (!hasVideo && klingtNach.length === 0 && stil.length === 0 && !hasGallery) return null;
+  if (!hasVideo && klingtNach.length === 0 && stil.length === 0 && !hasGallery && !extraColumnContent) return null;
 
   // Vorschaubild fuer den Klick-zum-Laden-Button: bewusst ein bereits
   // vorhandenes lokales Bandbild statt eines YouTube-Vorschaubilds (Auftrag:
@@ -58,7 +63,7 @@ export function BandVideoSection({ band, embedUrl, variant = 'default' }: Props)
           </div>
         )}
 
-        {(klingtNach.length > 0 || stil.length > 0) && (
+        {(klingtNach.length > 0 || stil.length > 0 || extraColumnContent) && (
           <div className="flex flex-col gap-6">
             {klingtNach.length > 0 && (
               <div>
@@ -93,6 +98,8 @@ export function BandVideoSection({ band, embedUrl, variant = 'default' }: Props)
                 </div>
               </div>
             )}
+
+            {extraColumnContent}
           </div>
         )}
       </div>

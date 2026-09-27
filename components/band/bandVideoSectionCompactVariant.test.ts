@@ -50,3 +50,14 @@ test('Video- und Klingt-nach/Stil-Grid ist in compact und default derselbe JSX-B
 test('videoGridClass: default bleibt 2fr/1fr unveraendert, compact nutzt ab md ein 1:1-Verhaeltnis (md:grid-cols-2)', () => {
   assert.match(source, /const videoGridClass = isCompact \? 'md:grid-cols-2' : 'md:grid-cols-\[2fr_1fr\]';/)
 })
+
+test('extraColumnContent: rendert am Ende der rechten Spalte (nach "Stil & Einfluesse"), triggert die Spalte auch ohne Klingt-nach/Stil, aendert die echte Bandseite nicht (optionaler Prop)', () => {
+  assert.match(source, /extraColumnContent\?: React\.ReactNode;/)
+  const guardIdx = source.indexOf('if (!hasVideo && klingtNach.length === 0 && stil.length === 0 && !hasGallery')
+  assert.ok(guardIdx >= 0)
+  assert.match(source.slice(guardIdx, guardIdx + 200), /&& !extraColumnContent\) return null;/)
+
+  const stilIdx = source.indexOf('Stil &amp; Einflüsse')
+  const extraIdx = source.indexOf('{extraColumnContent}')
+  assert.ok(stilIdx >= 0 && extraIdx > stilIdx, 'extraColumnContent muss nach "Stil & Einfluesse" im rechten Spalten-Block stehen')
+})

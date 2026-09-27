@@ -116,15 +116,20 @@ export default async function FuerBandsPage() {
 
   // Drei Ebenen der Profilkarte, jede optional -- gleiche "erste Ebene
   // traegt keine obere Trennlinie"-Logik wie in BandTagsSection.tsx
-  // (firstTierIndex), nur hier fuer Zitatsatz / Video+Klingt-nach+Stil /
-  // Spielt-bei+PDF.
+  // (firstTierIndex), nur hier fuer Zitatsatz / Video+Klingt-nach+Stil+
+  // Spielt-bei / Presse-PDF. "Spielt bei" gehoert jetzt zur rechten Spalte
+  // von BandVideoSection (extraColumnContent) statt zu einer eigenen
+  // dritten Ebene -- daher zaehlt es mit in demoHasVideoBlock.
   const demoHasQuote = !!demoBand?.shortDescriptionExplicit;
+  const demoHasSpielBei = !!demoBand && demoBand.eventTypes.length > 0;
   const demoHasVideoBlock =
-    !!demoBand && (demoEmbedUrl !== null || demoBand.klingtNach.length > 0 || demoBand.musikalischVerortet.length > 0);
-  const demoHasEventsOrDocs = !!demoBand && (demoBand.eventTypes.length > 0 || demoBand.documents.length > 0);
-  const demoEventsAndDocsBothPresent =
-    !!demoBand && demoBand.eventTypes.length > 0 && demoBand.documents.length > 0;
-  const demoTiers = [demoHasQuote, demoHasVideoBlock, demoHasEventsOrDocs];
+    !!demoBand &&
+    (demoEmbedUrl !== null ||
+      demoBand.klingtNach.length > 0 ||
+      demoBand.musikalischVerortet.length > 0 ||
+      demoHasSpielBei);
+  const demoHasDocs = !!demoBand && demoBand.documents.length > 0;
+  const demoTiers = [demoHasQuote, demoHasVideoBlock, demoHasDocs];
   const demoFirstTierIndex = demoTiers.findIndex(Boolean);
   const demoDivider = 'mt-9 md:mt-10 pt-8 border-t border-white/10';
 
@@ -220,7 +225,7 @@ export default async function FuerBandsPage() {
                   </div>
                 </div>
 
-                {(demoHasQuote || demoHasVideoBlock || demoHasEventsOrDocs) && (
+                {(demoHasQuote || demoHasVideoBlock || demoHasDocs) && (
                   <div className="px-6 md:px-11 py-8 md:py-10">
                     {/* 01 verdichtet: nur der kurze Zitatsatz, aus
                         short_description/slogan -- NIE der gekuerzte
@@ -237,44 +242,45 @@ export default async function FuerBandsPage() {
                       </p>
                     )}
 
-                    {/* 02: Video + Klingt nach + Stil & Einfluesse --
-                        variant="compact" laesst Section-Rahmen,
-                        Kapitelueberschrift und Galerie weg und nutzt ab md
-                        ein 1:1-Spaltenverhaeltnis (statt 2fr/1fr auf der
-                        echten Bandseite), damit Video und Liste bei voller
-                        Kartenbreite etwa gleich hoch sind. */}
+                    {/* 02: Video + Klingt nach + Stil & Einfluesse + Spielt
+                        bei -- "Spielt bei" haengt jetzt als vierter Block
+                        in derselben rechten Spalte, gleicher Label-Stil wie
+                        "Klingt nach"/"Stil & Einfluesse" (Auftrag "Spielt
+                        bei in die rechte Spalte"). variant="compact" laesst
+                        Section-Rahmen, Kapitelueberschrift und Galerie weg
+                        und nutzt ab md ein 1:1-Spaltenverhaeltnis (statt
+                        2fr/1fr auf der echten Bandseite). */}
                     {demoHasVideoBlock && (
                       <div className={demoFirstTierIndex === 1 ? '' : demoDivider}>
-                        <BandVideoSection band={demoBand} embedUrl={demoEmbedUrl} variant="compact" />
+                        <BandVideoSection
+                          band={demoBand}
+                          embedUrl={demoEmbedUrl}
+                          variant="compact"
+                          extraColumnContent={
+                            demoHasSpielBei ? (
+                              <div>
+                                <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
+                                  Spielt bei
+                                </p>
+                                <BandEventTypesPills
+                                  eventTypes={demoBand.eventTypes}
+                                  categorySlugs={demoBand.categorySlugs}
+                                  variant="dark"
+                                />
+                              </div>
+                            ) : undefined
+                          }
+                        />
                       </div>
                     )}
 
-                    {/* 03 verdichtet: nur Spielt bei + Presse-/Booking-PDF,
-                        keine Referenz-Events, kein Hochzeitsmodul. Erst ab
-                        lg nebeneinander (BandDocumentsSection braucht auf
-                        md noch die volle Breite fuer ihre eigene
-                        Thumbnail+Text+Button-Zeile), darunter gestapelt --
-                        und nur, wenn beide Ebenen vorhanden sind (gleiches
-                        Muster wie midTierIsSplit in BandTagsSection.tsx). */}
-                    {demoHasEventsOrDocs && (
-                      <div
-                        className={`grid grid-cols-1 gap-8 ${
-                          demoEventsAndDocsBothPresent ? 'lg:grid-cols-2 lg:items-start' : ''
-                        } ${demoFirstTierIndex === 2 ? '' : demoDivider}`}
-                      >
-                        {demoBand.eventTypes.length > 0 && (
-                          <div>
-                            <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
-                              Spielt bei
-                            </p>
-                            <BandEventTypesPills
-                              eventTypes={demoBand.eventTypes}
-                              categorySlugs={demoBand.categorySlugs}
-                              variant="dark"
-                            />
-                          </div>
-                        )}
-                        {demoBand.documents.length > 0 && <BandDocumentsSection band={demoBand} />}
+                    {/* 03 verdichtet: nur die Presse-/Booking-PDF als
+                        flache Leiste (variant="compact"), keine
+                        Referenz-Events, kein Hochzeitsmodul, keine
+                        Beschreibung. */}
+                    {demoHasDocs && (
+                      <div className={demoFirstTierIndex === 2 ? '' : demoDivider}>
+                        <BandDocumentsSection band={demoBand} variant="compact" />
                       </div>
                     )}
                   </div>
@@ -287,6 +293,30 @@ export default async function FuerBandsPage() {
               >
                 Ganzes Profil von {demoBand.name} ansehen →
               </Link>
+
+              {/* "Aus Musiker-Sicht" -- sichtbar unter der Demo-Karte, aber
+                  bewusst keine zweite dunkle Karte: reiner Textblock ohne
+                  eigenen Hintergrund/Rahmen auf der hellen Section-Flaeche.
+                  Inhalt/Links unveraendert, Name reiner Text (kein Link). */}
+              <div className="mt-9 md:mt-10 max-w-[60ch]">
+                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                  Aus Musiker-Sicht
+                </p>
+                <p className="mt-3 text-xl md:text-2xl italic leading-relaxed text-pl-text">
+                  „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
+                  Er behält den Überblick, reagiert schnell und bleibt menschlich.“
+                </p>
+                <p className="mt-3 text-sm font-bold text-pl-text">Dominik Palmer</p>
+                <p className="text-xs text-pl-text-muted mt-0.5">
+                  Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
+                </p>
+                <Link
+                  href="/musiker/dominik-palmer"
+                  className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
+                >
+                  Musikerprofil ansehen →
+                </Link>
+              </div>
 
               <p className="mt-9 md:mt-12 text-xs text-pl-text-muted">
                 Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.
@@ -353,36 +383,11 @@ export default async function FuerBandsPage() {
               </p>
               <p className="mt-7 text-[18px] leading-[1.7] text-pl-text">
                 Ein Profil entsteht auf proudleut nicht per Formular und Klick auf
-                „Veröffentlichen". Ich schaue mir die Band vorher an, und wir telefonieren
+                „Veröffentlichen“. Ich schaue mir die Band vorher an, und wir telefonieren
                 miteinander. Mir ist wichtig zu wissen, wer hinter einem Act steckt, bevor ich ihn
                 auf proudleut vorstelle. Danach bauen wir gemeinsam ein Profil, das deine Band so
                 zeigt, wie sie wirklich ist und Veranstaltern hilft, sie richtig einzuordnen.
               </p>
-
-              {/* "Aus Musiker-Sicht" -- aus der Profil-Demo hierher verlegt
-                  (Auftrag "Demo-Karte in die Breite ziehen"): zurueckhaltender
-                  Textblock mit oberer Trennlinie statt eigener Karte, damit
-                  er nicht mit "Kurz gesagt" rechts konkurriert. Inhalt/Links
-                  unveraendert. */}
-              <div className="mt-9 md:mt-10 pt-7 md:pt-8 border-t border-pl-soft">
-                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                  Aus Musiker-Sicht
-                </p>
-                <p className="mt-3 text-base md:text-lg italic leading-relaxed text-pl-text">
-                  „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
-                  Er behält den Überblick, reagiert schnell und bleibt menschlich.“
-                </p>
-                <p className="mt-3 text-sm font-bold text-pl-text">Dominik Palmer</p>
-                <p className="text-xs text-pl-text-muted mt-0.5">
-                  Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
-                </p>
-                <Link
-                  href="/musiker/dominik-palmer"
-                  className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
-                >
-                  Musikerprofil ansehen →
-                </Link>
-              </div>
             </div>
 
             {/* "Kurz gesagt" -- freie Hairline-Liste, bewusst kein Kasten/Schatten */}
