@@ -27,13 +27,21 @@ test('nutzt die zentrale Sichtbarkeitsregel, keine eigene Datums-/Schwellenwertl
   assert.doesNotMatch(source, /getMonth\(\)\s*-\s*12/)
 })
 
-test('deutsche Zahlenformatierung (toLocaleString de-DE), keine Abkuerzungen wie "5,2k"', () => {
-  assert.match(source, /toLocaleString\('de-DE'\)/)
-  // Nur den JSX-Rueckgabewert der Hauptkomponente pruefen (nicht den
-  // erklaerenden Kommentar oben im Modul, der die verbotene Abkuerzung
-  // selbst als Beispiel nennt, und nicht die fruehen `return (` der
-  // einzelnen Icon-Funktionen) -- sonst false positive durch den eigenen
-  // Kommentartext.
+test('nutzt die zentrale, ausgelagerte Zahlenformatierung statt einer eigenen -- keine Abkuerzungen wie "5,2k"', () => {
+  // formatFollowerCount/formatStandDate/formatStandMonthYear leben seit
+  // "Section 03 erweitern" in lib/socialLinks/formatFollowerMetrics.ts
+  // (auch von components/homepage/BandEinschaetzen.tsx genutzt) --
+  // BandContactSection.tsx importiert sie nur noch, statt sie selbst zu
+  // definieren.
+  assert.match(
+    source,
+    /import \{ formatFollowerCount, formatStandDate, formatStandMonthYear \} from '@\/lib\/socialLinks\/formatFollowerMetrics'/
+  )
+  assert.doesNotMatch(source, /function formatFollowerCount/)
+  assert.doesNotMatch(source, /toLocaleString\('de-DE'\)/)
+  // Nur den JSX-Rueckgabewert der Hauptkomponente pruefen (nicht die
+  // fruehen `return (` der einzelnen Icon-Funktionen) -- sonst false
+  // positive durch unabhaengigen Text.
   const componentIdx = source.indexOf('export function BandContactSection')
   assert.ok(componentIdx >= 0)
   const returnIdx = source.indexOf('return (', componentIdx)

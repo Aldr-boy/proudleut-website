@@ -3,6 +3,7 @@ import { AnfrageButton } from './AnfrageButton';
 import { MerkButton } from './MerkButton';
 import { isFollowerCountVisible, resolveFollowerStandDisplay } from '@/lib/socialLinks/followerCountVisibility';
 import { shouldShowOwnListenersStand } from '@/lib/socialLinks/listenersStandDisplay';
+import { formatFollowerCount, formatStandDate, formatStandMonthYear } from '@/lib/socialLinks/formatFollowerMetrics';
 
 type Props = {
   band: Band;
@@ -61,34 +62,6 @@ function SpotifyIcon() {
 }
 
 const CONTACT_EMAIL = 'alexander.dressler@proudleut.com';
-
-// Deutsche Zahlenformatierung, keine Abkuerzungen ("5,2k") -- Auftrag
-// Abschnitt 2.
-function formatFollowerCount(n: number): string {
-  return n.toLocaleString('de-DE');
-}
-
-// Feste Zeitzone UTC fuer die Formatierung: last_checked_at wird admin-
-// seitig als reines Kalenderdatum (YYYY-MM-DD, UTC-Mitternacht)
-// gespeichert (siehe lib/socialLinks/resolveSocialMetricsWrite.ts) --
-// eine Formatierung in der Betrachter-Zeitzone koennte das Datum sonst um
-// einen Tag verschieben.
-function formatStandDate(checkedAt: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(checkedAt));
-}
-
-function formatStandMonthYear(checkedAt: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(checkedAt));
-}
 
 // Zentrale Sichtbarkeitsregel (isFollowerCountVisible) entscheidet, ob
 // diese Plattform ueberhaupt eine Zahl zeigt -- ohne sichtbare Zahl bleibt
