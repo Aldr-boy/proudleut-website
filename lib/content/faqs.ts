@@ -32,6 +32,18 @@ export const faqGroups: FaqGroup[] = [
           "Wenn ihr als Band auf proudleut erscheinen möchtet, meldet euch einfach bei mir. Ich freue mich über jede gute Liveband, die das Verzeichnis bereichert. Mir ist nur wichtig, kurz persönlich mit euch zu sprechen, damit ich euch, euren Sound und passende Veranstaltungen gut einordnen kann.",
         showOnHomepage: true,
       },
+      {
+        question: "Ich plane eine öffentliche Veranstaltung – was finde ich im Bandprofil?",
+        answer:
+          "Neben Stil, Anlässen, Fotos und Videos zeigen manche Bandprofile auch Social-Media- und Streaming-Zahlen: Follower auf Instagram und Facebook, Abonnenten auf YouTube sowie monatliche Hörer*innen auf Spotify, jeweils mit Stand. Hat eine Band eine Presse- und Booking-Info hinterlegt, findest du sie direkt im Profil als PDF. Diese Angaben können für Veranstalter interessant sein, etwa für Clubs, Festivals, Festwirte, Vereine oder Kulturämter.",
+        showOnHomepage: true,
+      },
+      {
+        question: "Sagen Social-Media- und Streaming-Zahlen etwas darüber aus, wie gut eine Band ist?",
+        answer:
+          "Nein. Sie geben einen Einblick in die Online-Präsenz, sagen aber nicht aus, wie gut eine Band live spielt oder ob sie zu einer Hochzeit oder Firmenfeier passt. Wenn eine Band eine Veranstaltung online mitbewerben soll, können die Zahlen ein zusätzlicher Anhaltspunkt sein. Sie sagen jedoch nicht voraus, wie viele Menschen tatsächlich kommen. Auch großartige Hochzeits- und Eventbands können online wenig sichtbar sein, wenn sie überwiegend auf privaten Festen spielen. Ob eine Band zu eurem Abend passt, zeigen Stil, Videos und Referenzen viel besser.",
+        showOnHomepage: true,
+      },
     ],
   },
   {
