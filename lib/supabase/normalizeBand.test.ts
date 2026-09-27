@@ -57,6 +57,48 @@ test('normalizeMoodAssignments: Eintrag ohne Name oder ohne Slug wird verworfen,
   assert.deepEqual(normalizeMoodAssignments(raw), [{ name: 'Vollstaendig', slug: 'vollstaendig' }])
 })
 
+// ── Block "shortDescriptionExplicit" (Auftrag "Profil-Demo /fuer-bands
+// an neues Bandprofil angleichen") ───────────────────────────────────
+
+test('normalizeBandFromSupabase: shortDescriptionExplicit bleibt undefined, wenn nur main_text vorhanden ist -- NIE aus main_text abgeleitet', () => {
+  const band = normalizeBandFromSupabase({
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_profiles: [{
+      short_description: null,
+      slogan: null,
+      main_text:
+        'Ein sehr langer Beschreibungstext, der weit über zweihundert Zeichen hinausgeht und deshalb für shortDescription gekürzt würde -- shortDescriptionExplicit soll trotzdem leer bleiben, unabhängig von main_text und seiner Länge.',
+    }],
+  })
+  assert.equal(band.shortDescriptionExplicit, undefined)
+  // shortDescription (bestehendes Verhalten) faellt weiterhin auf den
+  // gekuerzten main_text zurueck -- das bleibt unveraendert.
+  assert.ok(band.shortDescription?.endsWith('…'))
+})
+
+test('normalizeBandFromSupabase: shortDescriptionExplicit uebernimmt short_description unveraendert', () => {
+  const band = normalizeBandFromSupabase({
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_profiles: [{ short_description: 'Ein kurzer Zitatsatz.', slogan: null, main_text: 'Langer Text.' }],
+  })
+  assert.equal(band.shortDescriptionExplicit, 'Ein kurzer Zitatsatz.')
+  assert.equal(band.shortDescription, 'Ein kurzer Zitatsatz.')
+})
+
+test('normalizeBandFromSupabase: shortDescriptionExplicit faellt auf slogan zurueck, wenn short_description leer ist', () => {
+  const band = normalizeBandFromSupabase({
+    name: 'Testband',
+    slug: 'testband',
+    status: 'active',
+    band_profiles: [{ short_description: null, slogan: 'Der Claim der Band.', main_text: null }],
+  })
+  assert.equal(band.shortDescriptionExplicit, 'Der Claim der Band.')
+})
+
 // ── Block "Event-Type-Anfrage-Label V1" ──────────────────────────────
 
 test('normalizeBandFromSupabase: eventTypes enthaelt weiterhin die kanonischen Namen, KEINE Umstellung auf anfrage_label', () => {

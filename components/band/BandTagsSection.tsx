@@ -1,6 +1,5 @@
-import Link from 'next/link';
 import type { Band } from '@/lib/types/band';
-import { findCategoryForEventTypeSlug } from './bandTagsCategoryMatch';
+import { BandEventTypesPills } from './BandEventTypesPills';
 import { BandReferenceEvents } from './BandReferenceEvents';
 import { BandDocumentsSection } from './BandDocumentsSection';
 import { BandWeddingModule } from './BandWeddingModule';
@@ -9,13 +8,6 @@ import { BandChapterHeading } from './BandChapterHeading';
 type Props = {
   band: Band;
 };
-
-// Zurueckgenommene Chip-Optik (duennere Kontur, kein weisser Fuellton, kein
-// font-semibold) -- die Anlass-Chips sollen wie Kontext wirken, nicht wie
-// gleichrangige Hauptaktionen neben "Anfragen"/"Merken" (Auftrag
-// "Bandseiten-Nachschaerfung", Abschnitt 3).
-const PILL =
-  'inline-flex items-center rounded-full border border-pl-soft px-3.5 py-1.5 text-sm font-medium text-pl-text-muted';
 
 // "03 Die Band für euer Event?" (Nachschaerfung, Abschnitt 3): drei
 // datengetriebene Ebenen statt eines zweispaltigen Rasters mit intern
@@ -56,25 +48,7 @@ export function BandTagsSection({ band }: Props) {
               <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
                 Spielt bei
               </p>
-              <div className="flex flex-wrap gap-2">
-                {band.eventTypes.map((et, i) => {
-                  const eventTypeSlug = band.categorySlugs?.[i];
-                  const category = eventTypeSlug ? findCategoryForEventTypeSlug(eventTypeSlug) : undefined;
-                  return category ? (
-                    <Link
-                      key={et}
-                      href={`/veranstaltung/${category.slug}`}
-                      className={`${PILL} hover:border-pl-accent hover:text-pl-accent motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent`}
-                    >
-                      {et}
-                    </Link>
-                  ) : (
-                    <span key={et} className={PILL}>
-                      {et}
-                    </span>
-                  );
-                })}
-              </div>
+              <BandEventTypesPills eventTypes={band.eventTypes} categorySlugs={band.categorySlugs} variant="light" />
             </div>
           )}
 
