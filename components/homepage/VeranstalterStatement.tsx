@@ -13,7 +13,7 @@ export default function VeranstalterStatement() {
       <div className="pl-container-shell border-t border-pl-soft pt-8">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-6 md:gap-16 items-start">
           <p className="text-sm md:text-base font-medium text-pl-text">
-            Feedback
+            Veranstalter-Feedback
           </p>
 
           <figure>
