@@ -1,17 +1,7 @@
 import Image from 'next/image';
 import type { Band, BandDocument } from '@/lib/types/band';
 
-type Props = {
-  band: Band;
-  // "compact": fuer die Profil-Demo auf /fuer-bands (Auftrag "Profil-Demo
-  // weiter verkleinern") -- flache, ruhige Leiste ab lg (kleine Vorschau,
-  // Titel, Button in einer Zeile). KEIN Label ("Fuer Veranstalter, Clubs
-  // und Festivals"), KEINE Beschreibung. Titel bricht auf Desktop bei
-  // Bedarf auf zwei Zeilen um statt mit "..." abgeschnitten zu werden. Die
-  // echte Bandseite nutzt weiterhin "default" unveraendert, inklusive
-  // Label und Beschreibung.
-  variant?: 'default' | 'compact';
-};
+type Props = { band: Band };
 
 // Veranstalter-Unterlagen (z. B. PDF-Praesentation), eingebettet als
 // flache, helle Dokumentkarte ueber die verfuegbare Inhaltsbreite ganz
@@ -23,19 +13,15 @@ type Props = {
 // Unterlagen. Vorschau per object-contain, damit das Dokumentformat (z. B.
 // Hochformat-PDF-Cover) nicht beschnitten wird. Auch die Beschreibung
 // bleibt vollstaendig sichtbar, keine gekuerzte Textzeile.
-export function BandDocumentsSection({ band, variant = 'default' }: Props) {
+export function BandDocumentsSection({ band }: Props) {
   const documents = band.documents;
   if (documents.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
-      {documents.map((document) =>
-        variant === 'compact' ? (
-          <CompactDocumentCard key={document.id} document={document} />
-        ) : (
-          <DocumentCard key={document.id} document={document} />
-        )
-      )}
+      {documents.map((document) => (
+        <DocumentCard key={document.id} document={document} />
+      ))}
     </div>
   );
 }
@@ -69,39 +55,6 @@ function DocumentCard({ document }: { document: BandDocument }) {
           </p>
         )}
       </div>
-      <a
-        href={document.fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold border border-pl-soft text-pl-text hover:border-pl-accent hover:text-pl-accent motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
-      >
-        PDF ansehen
-      </a>
-    </div>
-  );
-}
-
-function CompactDocumentCard({ document }: { document: BandDocument }) {
-  return (
-    <div className="bg-pl-elevated border border-pl-soft rounded-xl p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
-      <div className="relative w-11 shrink-0 aspect-[3/4] mx-auto lg:mx-0 rounded-md overflow-hidden border border-pl-soft bg-pl-canvas">
-        {document.thumbnailUrl ? (
-          <Image
-            src={document.thumbnailUrl}
-            alt={`Vorschau: ${document.title}`}
-            fill
-            className="object-contain p-1"
-            sizes="44px"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <DocumentIcon />
-          </div>
-        )}
-      </div>
-      <p className="min-w-0 flex-1 text-center lg:text-left text-base font-bold text-pl-text leading-snug">
-        {document.title}
-      </p>
       <a
         href={document.fileUrl}
         target="_blank"

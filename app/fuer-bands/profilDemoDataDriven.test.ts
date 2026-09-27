@@ -52,13 +52,15 @@ test('kein zusaetzliches <h1> durch die Demo -- weiterhin nur die eine Seiten-H1
   assert.doesNotMatch(source, /BandChapterHeading/)
 })
 
-test('nutzt BandVideoSection im compact-Modus, BandEventTypesPills im dark-Modus und BandDocumentsSection im compact-Modus (echte Bandseiten-Komponenten statt Kopien)', () => {
+test('nutzt BandVideoSection im compact-Modus und BandEventTypesPills im dark-Modus (echte Bandseiten-Komponenten statt Kopien)', () => {
   assert.match(source, /import \{ BandVideoSection \} from '@\/components\/band\/BandVideoSection'/)
   assert.match(source, /<BandVideoSection\s+band=\{demoBand\}\s+embedUrl=\{demoEmbedUrl\}\s+variant="compact"/)
   assert.match(source, /import \{ BandEventTypesPills \} from '@\/components\/band\/BandEventTypesPills'/)
   assert.match(source, /variant="dark"/)
-  assert.match(source, /import \{ BandDocumentsSection \} from '@\/components\/band\/BandDocumentsSection'/)
-  assert.match(source, /<BandDocumentsSection band=\{demoBand\} variant="compact" \/>/)
+})
+
+test('keine Presse-\\/Booking-PDF in der Demo (Auftrag "Presse-Info aus der Profil-Demo entfernen") -- BandDocumentsSection weder importiert noch gerendert', () => {
+  assert.doesNotMatch(source, /BandDocumentsSection/)
 })
 
 test('Zitatsatz kommt aus shortDescriptionExplicit, nie aus dem main_text-gekuerzten shortDescription', () => {
@@ -77,52 +79,34 @@ test('Fussnote "Beispielprofil" bleibt erhalten', () => {
 
 // ── Block "Demo-Karte in die Breite ziehen" ──────────────────────────
 
-test('Demo-Karte (bg-pl-stage-Block) selbst nutzt die volle Container-Breite -- keine Aside-Spalte MEHR INNERHALB der Karte', () => {
+test('Demo-Karte (bg-pl-stage-Block) selbst nutzt die volle Container-Breite -- keine Aside-Spalte innerhalb der Karte', () => {
   const demoCardStart = source.indexOf("{demoBand && (")
-  // Grenze ist der Beginn des NEUEN Zweispalten-Grids unter der Karte
-  // (nicht der Link-Text, der jetzt INNERHALB dieses Grids liegt).
-  const cardDivEnd = source.indexOf("mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-[1fr_380px]")
+  const cardDivEnd = source.indexOf('Ganzes Profil von {demoBand.name} ansehen')
   assert.ok(demoCardStart >= 0 && cardDivEnd > demoCardStart)
   const demoCardSource = source.slice(demoCardStart, cardDivEnd)
-  assert.doesNotMatch(demoCardSource, /lg:grid-cols-\[1fr_380px\]/, 'die Karte selbst darf nicht wieder gesplittet werden')
-  // Das 1fr/380px-Grid taucht bewusst erst DANACH wieder auf: fuer
-  // Link+Fussnote (links) und die Musiker-Stimme-Box (rechts) UNTER der
-  // Karte (Auftrag "Dominiks O-Ton wieder als Box").
-  assert.match(source.slice(cardDivEnd), /lg:grid-cols-\[1fr_380px\]/)
+  assert.doesNotMatch(demoCardSource, /grid-cols-\[1fr_380px\]/, 'die Karte selbst darf nicht gesplittet werden')
 })
 
-test('Bildbanner ist ab md noch flacher (aspect-\\[5\\/1\\], Auftrag "Profil-Demo weiter verkleinern"), Mobile unveraendert bei aspect-\\[4\\/3\\]', () => {
+test('Bildbanner ist ab md flacher (aspect-\\[5\\/1\\]), Mobile unveraendert bei aspect-\\[4\\/3\\]', () => {
   assert.match(source, /aspect-\[4\/3\] md:aspect-\[5\/1\]/)
   assert.doesNotMatch(source, /aspect-\[8\/3\]/)
   assert.doesNotMatch(source, /aspect-\[4\/1\]/)
 })
 
-test('PDF-Leiste hat keine Trennlinie darueber (eigene Abstands-Variable ohne border-t)', () => {
-  assert.match(source, /const demoDocsSpacing = 'mt-6 md:mt-7';/)
-  const idx = source.indexOf('<BandDocumentsSection band={demoBand} variant="compact" />')
-  assert.ok(idx >= 0)
-  const wrapperStart = source.lastIndexOf('<div', idx)
-  const wrapperTag = source.slice(wrapperStart, source.indexOf('>', wrapperStart) + 1)
-  assert.doesNotMatch(wrapperTag, /border-t/)
-})
+// ── Block "Profil-Demo niedriger machen" / "Presse-Info entfernen" ───
 
-// ── Block "Profil-Demo niedriger machen" ─────────────────────────────
-
-test('"Spielt bei" haengt als extraColumnContent in der rechten Spalte von BandVideoSection, nicht mehr als eigene Ebene neben der PDF-Karte', () => {
+test('"Spielt bei" haengt als extraColumnContent in der rechten Spalte von BandVideoSection', () => {
   assert.match(source, /extraColumnContent=\{/)
   const idx = source.indexOf('extraColumnContent={')
   const block = source.slice(idx, source.indexOf('/>', idx))
   assert.match(block, /Spielt bei/)
   assert.match(block, /<BandEventTypesPills/)
   assert.match(block, /variant="dark"/)
-  // Keine Seite-an-Seite-Logik zwischen "Spielt bei" und der PDF-Karte mehr.
-  assert.doesNotMatch(source, /demoEventsAndDocsBothPresent/)
-  assert.doesNotMatch(source, /lg:grid-cols-2 lg:items-start/)
 })
 
-test('Presse-\\/Booking-PDF ist eine eigene, dritte Ebene (variant="compact"), volle Kartenbreite, kein Nebeneinander mit "Spielt bei"', () => {
-  const idx = source.indexOf('<BandDocumentsSection band={demoBand} variant="compact" />')
-  assert.ok(idx >= 0)
+test('Karte endet nach Video/rechter Spalte -- nur zwei Ebenen (Zitat, Video-Block), keine dritte PDF-Ebene mehr', () => {
+  assert.match(source, /const demoTiers = \[demoHasQuote, demoHasVideoBlock\];/)
+  assert.doesNotMatch(source, /demoHasDocs/)
 })
 
 test('"Aus Musiker-Sicht" ist NICHT Teil der dunklen Profilkarte (bg-pl-stage-Block), sondern steht darunter', () => {
@@ -133,41 +117,40 @@ test('"Aus Musiker-Sicht" ist NICHT Teil der dunklen Profilkarte (bg-pl-stage-Bl
   assert.doesNotMatch(demoCardSource, /Aus Musiker-Sicht/)
 })
 
-test('Grid unter der Demo-Karte in DOM-/Mobile-Reihenfolge Link, Box, Fussnote (explizite lg:row-start-Platzierung statt vorgruppierter Spalten) -- NICHT mehr in Section 04', () => {
-  const gridIdx = source.indexOf("mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-[1fr_380px]")
-  assert.ok(gridIdx >= 0, 'Zweispalten-Grid unter der Karte fehlt')
-
+test('Zeile direkt unter der Karte: ab md Link und Fussnote auf einer Grundlinie (flex + md:items-baseline + md:justify-between), unter md gestapelt', () => {
   const linkIdx = source.indexOf('Ganzes Profil von {demoBand.name} ansehen')
+  assert.ok(linkIdx >= 0)
+  const rowStart = source.lastIndexOf('<div', linkIdx)
+  const rowTag = source.slice(rowStart, source.indexOf('>', rowStart) + 1)
+  assert.match(rowTag, /flex flex-col md:flex-row/)
+  assert.match(rowTag, /md:items-baseline/)
+  assert.match(rowTag, /md:justify-between/)
+
   const footnoteIdx = source.indexOf('Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.')
-  // Reale (nicht Kommentar-)Stelle von "Aus Musiker-Sicht": der Text der
-  // <p>, nicht die JSX-Kommentare davor.
-  const musikerIdx = source.lastIndexOf('Aus Musiker-Sicht')
-  // Auftrag "Unter lg alles untereinander: Link, Box, Fussnote" -- die
-  // DOM-Reihenfolge (= Mobile-Reihenfolge) ist deshalb bewusst Link vor
-  // Box vor Fussnote, NICHT Link+Fussnote gruppiert vor der Box.
-  assert.ok(gridIdx < linkIdx && linkIdx < musikerIdx && musikerIdx < footnoteIdx, 'DOM-Reihenfolge muss Link, Box, Fussnote sein')
-
-  // Explizite Grid-Platzierung fuer das lg-Layout (links Link/row1 +
-  // Fussnote/row2 uebereinander, rechts die Box ueber beide Reihen).
-  assert.match(source, /lg:col-start-1 lg:row-start-1/)
-  assert.match(source, /lg:col-start-2 lg:row-start-1 lg:row-span-2/)
-  assert.match(source, /lg:col-start-1 lg:row-start-2/)
-
-  const section04Idx = source.indexOf('Ich baue und pflege proudleut persönlich')
-  assert.ok(section04Idx >= 0 && section04Idx > footnoteIdx, 'Section 04 folgt im Quelltext erst NACH dem Grid unter der Karte')
-  const section04Source = source.slice(section04Idx, source.indexOf('Kurz gesagt', section04Idx))
-  assert.doesNotMatch(section04Source, /Aus Musiker-Sicht/, '"Aus Musiker-Sicht" darf nicht mehr in Section 04 stehen')
+  assert.ok(footnoteIdx > linkIdx, 'Fussnote steht im Quelltext nach dem Link (DOM-Reihenfolge: Link, dann Fussnote)')
 })
 
-test('"Aus Musiker-Sicht"-Box hat wieder die urspruengliche Kartenoptik (bg-pl-canvas/border-l/rounded-2xl/Abstaende) aus der Git-Historie', () => {
-  const idx = source.lastIndexOf('Aus Musiker-Sicht')
-  assert.ok(idx >= 0)
-  const wrapperIdx = source.lastIndexOf('<div', idx)
-  const wrapperTag = source.slice(wrapperIdx, source.indexOf('>', wrapperIdx) + 1)
-  assert.match(wrapperTag, /bg-pl-canvas/)
-  assert.match(wrapperTag, /border-l border-pl-soft/)
-  assert.match(wrapperTag, /rounded-2xl/)
-  assert.match(wrapperTag, /px-6 md:px-8 py-7 md:py-9/)
+test('"Aus Musiker-Sicht"-Box liegt quer unter Link/Fussnote, volle Kartenbreite, unveraenderte Box-Optik (bg-pl-canvas/border-l/rounded-2xl), Innenabstand reduziert', () => {
+  const wrapperIdx = source.indexOf('bg-pl-canvas border-l border-pl-soft rounded-2xl')
+  assert.ok(wrapperIdx >= 0, 'Box-Wrapper mit der urspruenglichen Optik fehlt')
+  const wrapperTagStart = source.lastIndexOf('<div', wrapperIdx)
+  const wrapperTag = source.slice(wrapperTagStart, source.indexOf('>', wrapperTagStart) + 1)
+  // Kein max-width-Constraint und keine Spaltenbreiten-Klasse auf dem
+  // Wrapper selbst -- die Box soll die volle Kartenbreite (pl-container-shell)
+  // nutzen, nicht auf ~380px begrenzt sein.
+  assert.doesNotMatch(wrapperTag, /380px|max-w-/)
+  assert.match(wrapperTag, /py-5 md:py-6/, 'Innenabstand oben\\/unten muss reduziert sein (flacher als zuvor py-7\\/py-9)')
+
+  const footnoteIdx = source.indexOf('Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.')
+  assert.ok(footnoteIdx < wrapperIdx, 'Box steht im Quelltext nach der Link/Fussnote-Zeile')
+})
+
+test('Box ist ab lg intern zweispaltig (Label+Zitat links, Name/Rolle/Link rechts, vertikal zentriert), unter lg weiterhin alles untereinander', () => {
+  const wrapperIdx = source.indexOf('bg-pl-canvas border-l border-pl-soft rounded-2xl')
+  assert.ok(wrapperIdx >= 0)
+  const boxSource = source.slice(wrapperIdx, source.indexOf('Musikerprofil ansehen', wrapperIdx) + 60)
+  assert.match(boxSource, /lg:grid lg:grid-cols-2/)
+  assert.match(boxSource, /lg:items-center/)
 })
 
 test('Dominik Palmer als reiner Text (nicht verlinkt), nur "Musikerprofil ansehen" bleibt Link', () => {
@@ -178,13 +161,20 @@ test('Dominik Palmer als reiner Text (nicht verlinkt), nur "Musikerprofil ansehe
   assert.doesNotMatch(block.slice(0, block.indexOf('Dominik Palmer')), /<Link/, 'kein Link vor/um den Namen')
 })
 
-test('Zitat ist wieder in normaler Fliesstextgroesse (text-sm md:text-base italic, wie urspruenglich), schliesst mit typografisch korrektem Anfuehrungszeichen (U+201C), nicht mit "', () => {
+test('Zitat bleibt in normaler Fliesstextgroesse (text-sm md:text-base italic), max-w-[70ch], schliesst mit typografisch korrektem Anfuehrungszeichen (U+201C), nicht mit "', () => {
   const quoteIdx = source.indexOf('Mit Alex zu arbeiten')
   assert.ok(quoteIdx >= 0)
-  const quoteBlock = source.slice(quoteIdx - 100, quoteIdx + 200)
-  assert.match(quoteBlock, /text-sm md:text-base italic/)
+  const quoteBlock = source.slice(quoteIdx - 120, quoteIdx + 200)
+  assert.match(quoteBlock, /text-sm md:text-base italic leading-relaxed text-pl-text max-w-\[70ch\]/)
   assert.match(quoteBlock, /bleibt menschlich\.“/)
   assert.doesNotMatch(quoteBlock, /bleibt menschlich\."/)
+})
+
+test('"Aus Musiker-Sicht" steht NICHT mehr in Section 04', () => {
+  const section04Idx = source.indexOf('Ich baue und pflege proudleut persönlich')
+  assert.ok(section04Idx >= 0)
+  const section04Source = source.slice(section04Idx, source.indexOf('Kurz gesagt', section04Idx))
+  assert.doesNotMatch(section04Source, /Aus Musiker-Sicht/)
 })
 
 test('Anfuehrungszeichen bei "Veroeffentlichen" in Section 04 ist typografisch korrekt (U+201E…U+201C statt gerader ")', () => {

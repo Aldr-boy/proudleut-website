@@ -8,7 +8,6 @@ import { formatLocation } from '@/lib/utils/formatLocation';
 import { getYouTubeEmbedUrl } from '@/lib/youtube';
 import { BandVideoSection } from '@/components/band/BandVideoSection';
 import { BandEventTypesPills } from '@/components/band/BandEventTypesPills';
-import { BandDocumentsSection } from '@/components/band/BandDocumentsSection';
 
 // Profil-Demo (Sektion 02) laedt das echte San2-Profil ueber denselben Weg
 // wie /band/[slug] -- ISR wie bei der Homepage-Section "Eine Band
@@ -114,12 +113,13 @@ export default async function FuerBandsPage() {
   const demoBand = demoBandData ? normalizeBandFromSupabase(demoBandData) : null;
   const demoEmbedUrl = demoBand ? getYouTubeEmbedUrl(demoBand.youtubeVideoUrl) : null;
 
-  // Drei Ebenen der Profilkarte, jede optional -- gleiche "erste Ebene
+  // Zwei Ebenen der Profilkarte, jede optional -- gleiche "erste Ebene
   // traegt keine obere Trennlinie"-Logik wie in BandTagsSection.tsx
   // (firstTierIndex), nur hier fuer Zitatsatz / Video+Klingt-nach+Stil+
-  // Spielt-bei / Presse-PDF. "Spielt bei" gehoert jetzt zur rechten Spalte
-  // von BandVideoSection (extraColumnContent) statt zu einer eigenen
-  // dritten Ebene -- daher zaehlt es mit in demoHasVideoBlock.
+  // Spielt-bei. "Spielt bei" gehoert zur rechten Spalte von
+  // BandVideoSection (extraColumnContent) statt zu einer eigenen dritten
+  // Ebene. Presse-/Booking-PDF wird in der Demo bewusst NICHT gezeigt
+  // (Auftrag "Presse-Info aus der Profil-Demo entfernen").
   const demoHasQuote = !!demoBand?.shortDescriptionExplicit;
   const demoHasSpielBei = !!demoBand && demoBand.eventTypes.length > 0;
   const demoHasVideoBlock =
@@ -128,13 +128,9 @@ export default async function FuerBandsPage() {
       demoBand.klingtNach.length > 0 ||
       demoBand.musikalischVerortet.length > 0 ||
       demoHasSpielBei);
-  const demoHasDocs = !!demoBand && demoBand.documents.length > 0;
-  const demoTiers = [demoHasQuote, demoHasVideoBlock, demoHasDocs];
+  const demoTiers = [demoHasQuote, demoHasVideoBlock];
   const demoFirstTierIndex = demoTiers.findIndex(Boolean);
   const demoDivider = 'mt-6 md:mt-7 pt-6 border-t border-white/10';
-  // PDF-Leiste bekommt bewusst KEINE Trennlinie (Auftrag "Profil-Demo
-  // weiter verkleinern"), nur Abstand nach oben.
-  const demoDocsSpacing = 'mt-6 md:mt-7';
 
   return (
     <main>
@@ -228,7 +224,7 @@ export default async function FuerBandsPage() {
                   </div>
                 </div>
 
-                {(demoHasQuote || demoHasVideoBlock || demoHasDocs) && (
+                {(demoHasQuote || demoHasVideoBlock) && (
                   <div className="px-6 md:px-8 py-6 md:py-7">
                     {/* 01 verdichtet: nur der kurze Zitatsatz, aus
                         short_description/slogan -- NIE der gekuerzte
@@ -276,63 +272,56 @@ export default async function FuerBandsPage() {
                         />
                       </div>
                     )}
-
-                    {/* 03 verdichtet: nur die Presse-/Booking-PDF als
-                        flache Leiste (variant="compact"), keine
-                        Referenz-Events, kein Hochzeitsmodul, keine
-                        Beschreibung, keine Trennlinie darueber. */}
-                    {demoHasDocs && (
-                      <div className={demoFirstTierIndex === 2 ? '' : demoDocsSpacing}>
-                        <BandDocumentsSection band={demoBand} variant="compact" />
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
 
-              {/* Ab lg zweispaltig: links Profil-Link + Fussnote
-                  (uebereinander), rechts die Musiker-Stimme in ihrer
-                  urspruenglichen Kartenbreite (~380px). Unter lg alles
-                  untereinander in DOM-Reihenfolge: Link, Box, Fussnote --
-                  deshalb explizite Grid-Platzierung statt zweier
-                  vorgruppierter Spalten-Wrapper (die haetten Fussnote vor
-                  der Box in den DOM/Mobile-Fluss gebracht). */}
-              <div className="mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-x-[72px] items-start">
+              {/* Zeile direkt unter der Karte: ab md Link und Fussnote auf
+                  einer Grundlinie nebeneinander, darunter (unter md
+                  gestapelt: Link, dann Fussnote). */}
+              <div className="mt-8 md:mt-10 flex flex-col md:flex-row md:items-baseline md:justify-between gap-2 md:gap-8">
                 <Link
                   href={`/band/${demoBand.slug}`}
-                  className="inline-block rounded-sm text-sm font-semibold text-pl-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent lg:col-start-1 lg:row-start-1"
+                  className="inline-block rounded-sm text-sm font-semibold text-pl-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
                 >
                   Ganzes Profil von {demoBand.name} ansehen →
                 </Link>
-
-                {/* "Aus Musiker-Sicht" -- urspruengliche Box-Optik
-                    (bg-pl-canvas/border-l/rounded-2xl/Abstaende) 1:1 aus der
-                    Git-Historie uebernommen (Commit 1721bff), nur Inhalt
-                    bleibt auf dem zwischenzeitlichen Stand: Name reiner
-                    Text statt Link, typografisches Anfuehrungszeichen. */}
-                <div className="bg-pl-canvas border-l border-pl-soft rounded-2xl px-6 md:px-8 py-7 md:py-9 lg:col-start-2 lg:row-start-1 lg:row-span-2">
-                  <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                    Aus Musiker-Sicht
-                  </p>
-                  <p className="mt-3 text-sm md:text-base italic leading-relaxed text-pl-text">
-                    „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
-                    Er behält den Überblick, reagiert schnell und bleibt menschlich.“
-                  </p>
-                  <p className="mt-3 text-sm font-bold text-pl-text">Dominik Palmer</p>
-                  <p className="text-xs text-pl-text-muted mt-0.5">
-                    Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
-                  </p>
-                  <Link
-                    href="/musiker/dominik-palmer"
-                    className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
-                  >
-                    Musikerprofil ansehen →
-                  </Link>
-                </div>
-
-                <p className="text-xs text-pl-text-muted lg:col-start-1 lg:row-start-2">
+                <p className="text-xs text-pl-text-muted">
                   Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.
                 </p>
+              </div>
+
+              {/* "Aus Musiker-Sicht" -- jetzt quer ueber die volle
+                  Kartenbreite statt als schmale Aside-Box. Box-Optik
+                  unveraendert (bg-pl-canvas/border-l/rounded-2xl), nur
+                  Innenabstand oben/unten reduziert, damit sie flach wirkt.
+                  Ab lg intern zweispaltig (links Label+Zitat, rechts
+                  Name/Rolle/Link, vertikal zur Zitatmitte ausgerichtet),
+                  unter lg weiterhin alles untereinander. */}
+              <div className="mt-6 md:mt-8 bg-pl-canvas border-l border-pl-soft rounded-2xl px-6 md:px-8 py-5 md:py-6">
+                <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:items-center">
+                  <div>
+                    <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                      Aus Musiker-Sicht
+                    </p>
+                    <p className="mt-3 text-sm md:text-base italic leading-relaxed text-pl-text max-w-[70ch]">
+                      „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
+                      Er behält den Überblick, reagiert schnell und bleibt menschlich.“
+                    </p>
+                  </div>
+                  <div className="mt-4 lg:mt-0">
+                    <p className="text-sm font-bold text-pl-text">Dominik Palmer</p>
+                    <p className="text-xs text-pl-text-muted mt-0.5">
+                      Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
+                    </p>
+                    <Link
+                      href="/musiker/dominik-palmer"
+                      className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
+                    >
+                      Musikerprofil ansehen →
+                    </Link>
+                  </div>
+                </div>
               </div>
             </>
           )}

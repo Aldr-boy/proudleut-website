@@ -25,12 +25,8 @@ test('Zustand 0: bei documents.length === 0 wird null zurueckgegeben (entfaellt 
   assert.match(source, /if \(documents\.length === 0\) return null;/)
 })
 
-test('jedes Dokument (1 oder mehrere) wird durch dieselbe Kartenkomponente gerendert -- keine Sonderbehandlung nach Anzahl (nur variant entscheidet Default-/Compact-Karte)', () => {
-  const idx = source.indexOf('documents.map((document) =>')
-  assert.ok(idx >= 0)
-  const mapBody = source.slice(idx, source.indexOf(')}', idx) + 2)
-  assert.match(mapBody, /<CompactDocumentCard key=\{document\.id\} document=\{document\} \/>/)
-  assert.match(mapBody, /<DocumentCard key=\{document\.id\} document=\{document\} \/>/)
+test('jedes Dokument (1 oder mehrere) wird durch dieselbe Kartenkomponente gerendert -- keine Sonderbehandlung nach Anzahl', () => {
+  assert.match(source, /documents\.map\(\(document\) => \(\s*<DocumentCard key=\{document\.id\} document=\{document\} \/>/)
 })
 
 test('kein Slider/Carousel/Tabs', () => {
@@ -76,33 +72,4 @@ test('CTA verlinkt document.fileUrl, oeffnet in neuem Tab mit rel-Attribut (echt
 
 test('BandTagsSection.tsx: BandDocumentsSection wird als eigene, volle Breite nutzende Ebene von "03" eingebunden (nicht mehr als eigene Section in page.tsx)', () => {
   assert.match(tagsSectionSource, /<BandDocumentsSection band=\{band\} \/>/)
-})
-
-// ── Block "compact"-Variante (Auftrag "Profil-Demo niedriger machen") ──
-
-test('variant-Prop existiert mit "default" als Fallback, aendert den Default-Pfad der echten Bandseite nicht', () => {
-  assert.match(source, /variant\?: 'default' \| 'compact'/)
-  assert.match(source, /variant = 'default'/)
-})
-
-test('CompactDocumentCard zeigt NIE die Beschreibung (Auftrag: Beschreibungstext in der Demo nicht anzeigen)', () => {
-  const idx = source.indexOf('function CompactDocumentCard')
-  assert.ok(idx >= 0)
-  const body = source.slice(idx, source.indexOf('function DocumentIcon'))
-  assert.doesNotMatch(body, /document\.description/)
-})
-
-test('CompactDocumentCard bricht ab lg zu einer Zeile um (lg:flex-row), Titel darf dort auf zwei Zeilen umbrechen statt mit "..." abgeschnitten zu werden', () => {
-  const idx = source.indexOf('function CompactDocumentCard')
-  assert.ok(idx >= 0)
-  const body = source.slice(idx, source.indexOf('function DocumentIcon'))
-  assert.match(body, /flex-col lg:flex-row/)
-  assert.doesNotMatch(body, /truncate/, 'Titel darf auf Desktop nicht mit truncate abgeschnitten werden (Auftrag: lieber zweizeilig umbrechen)')
-})
-
-test('CompactDocumentCard zeigt NIE das audienceLabel ("Fuer Veranstalter, ...") -- nur Vorschau, Titel, Button', () => {
-  const idx = source.indexOf('function CompactDocumentCard')
-  assert.ok(idx >= 0)
-  const body = source.slice(idx, source.indexOf('function DocumentIcon'))
-  assert.doesNotMatch(body, /document\.audienceLabel/)
 })
