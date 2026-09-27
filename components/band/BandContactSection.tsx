@@ -130,6 +130,13 @@ export function BandContactSection({ band, websiteUrl }: Props) {
     ? shouldShowOwnListenersStand(spotifyListeners.asOf, standDisplay)
     : false;
 
+  // Einordnungssatz unter den Zahlen (Auftrag "Hinweis unter den Social-
+  // Zahlen"): nur wenn mindestens eine Kennzahl tatsaechlich sichtbar ist
+  // (Follower ODER Spotify-Hoerer*innen) -- reine Anzeigeregel auf Basis
+  // der bereits berechneten, sichtbaren Metriken, keine eigene Sichtbar-
+  // keits-/Standlogik.
+  const hasVisibleMetric = links.some((l) => l.metric || l.listeners);
+
   return (
     <section id="band-contact-section" className="bg-pl-paper border-t border-pl-soft py-12 md:py-16 px-4 sm:px-6">
       <div className="pl-container-shell">
@@ -197,8 +204,14 @@ export function BandContactSection({ band, websiteUrl }: Props) {
               </ul>
 
               {standDisplay.kind === 'shared' && (
-                <p className="mt-3 text-xs text-pl-text-hint">
+                <p className="mt-3 max-w-sm text-xs text-pl-text-hint text-right">
                   Stand: {formatStandMonthYear(standDisplay.checkedAt)}
+                </p>
+              )}
+
+              {hasVisibleMetric && (
+                <p className="mt-1 max-w-sm text-xs text-pl-text-hint text-right">
+                  Die Zahlen zeigen die Online-Präsenz, nicht die Qualität einer Band oder wie gut sie zu eurem Fest passt.
                 </p>
               )}
             </div>
