@@ -16,7 +16,14 @@ export function BandHero({ band, hasVideo }: Props) {
   const locationText = formatLocation(band.location);
   const metaLine = [band.category, locationText].filter(Boolean).join(' · ');
   const memberInfo = band.weddingInfo?.bandSize;
-  const subtitle = [band.shortDescription, memberInfo].filter(Boolean).join(' · ');
+  // shortDescriptionExplicit statt shortDescription (Auftrag "Kein Slogan
+  // -> kein Text im Hero"): OHNE den main_text-Kuerzungs-Fallback, siehe
+  // lib/supabase/normalizeBand.ts. Fehlt er, faellt die Textzeile bei
+  // Baendern ohne Besetzung komplett weg (leerer String, siehe
+  // {subtitle && (...)} unten); bei Baendern MIT Besetzung bleibt nur
+  // "<Besetzung>" stehen -- .filter(Boolean) verhindert dabei in jedem
+  // Fall ein verwaistes " · " am Anfang.
+  const subtitle = [band.shortDescriptionExplicit, memberInfo].filter(Boolean).join(' · ');
 
   const presentation = resolveHeroImagePresentation(band.slug);
   const mobileImage = resolveMobileHeroImage(band);
