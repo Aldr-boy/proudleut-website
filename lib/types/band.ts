@@ -192,12 +192,6 @@ export type Band = {
   musikalischVerortet: string[];
 
   shortDescription?: string;
-  // Wie shortDescription, aber OHNE den main_text-Kuerzungs-Fallback -- nur
-  // gesetzt, wenn short_description oder slogan tatsaechlich gepflegt sind.
-  // Fuer Kontexte, die lieber ganz auf einen Zitatsatz verzichten als einen
-  // algorithmisch gekuerzten main_text-Ausschnitt zu zeigen (Profil-Demo auf
-  // /fuer-bands). Nur fuer Supabase-normalisierte Baender befuellt.
-  shortDescriptionExplicit?: string;
   description?: string;
   metaDescription?: string;
 

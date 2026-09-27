@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 // Strukturelle Regressionspruefung fuer die Profil-Demo auf /fuer-bands
-// (Auftrag "Profil-Demo an neues Bandprofil angleichen"): die Demo laedt
-// das echte San2-Profil ueber denselben Weg wie /band/[slug], statt eigene
+// (Entwurf "1b — Bild als Hintergrund"): die Demo laedt das echte
+// San2-Profil ueber denselben Weg wie /band/[slug], statt eigene
 // Profildaten zu pflegen. Kein jsdom im Repo -- gleiches Textmuster wie die
 // uebrigen strukturellen Bandprofil-Tests.
 const source = readFileSync(
@@ -52,20 +52,17 @@ test('kein zusaetzliches <h1> durch die Demo -- weiterhin nur die eine Seiten-H1
   assert.doesNotMatch(source, /BandChapterHeading/)
 })
 
-test('nutzt BandVideoSection im compact-Modus und BandEventTypesPills im dark-Modus (echte Bandseiten-Komponenten statt Kopien)', () => {
-  assert.match(source, /import \{ BandVideoSection \} from '@\/components\/band\/BandVideoSection'/)
-  assert.match(source, /<BandVideoSection\s+band=\{demoBand\}\s+embedUrl=\{demoEmbedUrl\}\s+variant="compact"/)
-  assert.match(source, /import \{ BandEventTypesPills \} from '@\/components\/band\/BandEventTypesPills'/)
-  assert.match(source, /variant="dark"/)
+test('BandVideoSection wird in der Demo NICHT mehr verwendet (Entwurf 1b zeigt kein eingebettetes Video, nur die Live-Video-Pill)', () => {
+  assert.doesNotMatch(source, /BandVideoSection/)
 })
 
-test('keine Presse-\\/Booking-PDF in der Demo (Auftrag "Presse-Info aus der Profil-Demo entfernen") -- BandDocumentsSection weder importiert noch gerendert', () => {
+test('keine Presse-\\/Booking-PDF in der Demo -- BandDocumentsSection weder importiert noch gerendert', () => {
   assert.doesNotMatch(source, /BandDocumentsSection/)
 })
 
-test('Zitatsatz kommt aus shortDescriptionExplicit, nie aus dem main_text-gekuerzten shortDescription', () => {
-  assert.match(source, /demoBand\.shortDescriptionExplicit/)
-  assert.doesNotMatch(source, /demoBand\.shortDescription\b(?!Explicit)/)
+test('Kurzbeschreibung/Zitatzeile der Band wird in dieser Variante nicht angezeigt -- kein shortDescription(Explicit) in der Demo-Karte', () => {
+  assert.doesNotMatch(source, /demoBand\.shortDescription/)
+  assert.doesNotMatch(source, /shortDescriptionExplicit/)
 })
 
 test('Link am Ende der Demo fuehrt auf das echte Profil', () => {
@@ -77,44 +74,74 @@ test('Fussnote "Beispielprofil" bleibt erhalten', () => {
   assert.match(source, /Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut\./)
 })
 
-// ── Block "Demo-Karte in die Breite ziehen" ──────────────────────────
+// ── Block "1b — Bild als Hintergrund" ────────────────────────────────
 
-test('Demo-Karte (bg-pl-stage-Block) selbst nutzt die volle Container-Breite -- keine Aside-Spalte innerhalb der Karte', () => {
-  const demoCardStart = source.indexOf("{demoBand && (")
-  const cardDivEnd = source.indexOf('Ganzes Profil von {demoBand.name} ansehen')
-  assert.ok(demoCardStart >= 0 && cardDivEnd > demoCardStart)
-  const demoCardSource = source.slice(demoCardStart, cardDivEnd)
-  assert.doesNotMatch(demoCardSource, /grid-cols-\[1fr_380px\]/, 'die Karte selbst darf nicht gesplittet werden')
+test('Kartenwechsel erfolgt bei xl (nicht lg): Infospalte + rechtsbuendiges Bild passen im pl-container-shell (1140px) erst ab xl nebeneinander', () => {
+  assert.match(source, /hidden xl:block relative h-\[620px\]/)
+  assert.match(source, /"xl:hidden"/)
+  assert.doesNotMatch(source, /hidden lg:block/, 'der Umbruch darf nicht bei lg liegen -- dort ist die Infospalte noch zu breit')
 })
 
-test('Bildbanner ist ab md flacher (aspect-\\[5\\/1\\]), Mobile unveraendert bei aspect-\\[4\\/3\\]', () => {
-  assert.match(source, /aspect-\[4\/3\] md:aspect-\[5\/1\]/)
-  assert.doesNotMatch(source, /aspect-\[8\/3\]/)
-  assert.doesNotMatch(source, /aspect-\[4\/1\]/)
+test('Karte: feste Hoehe 620px, rounded-3xl, overflow-hidden, dunkler Buehnenhintergrund', () => {
+  assert.match(source, /rounded-3xl overflow-hidden bg-pl-stage/)
+  assert.match(source, /h-\[620px\]/)
 })
 
-// ── Block "Profil-Demo niedriger machen" / "Presse-Info entfernen" ───
-
-test('"Spielt bei" haengt als extraColumnContent in der rechten Spalte von BandVideoSection', () => {
-  assert.match(source, /extraColumnContent=\{/)
-  const idx = source.indexOf('extraColumnContent={')
-  const block = source.slice(idx, source.indexOf('/>', idx))
-  assert.match(block, /Spielt bei/)
-  assert.match(block, /<BandEventTypesPills/)
-  assert.match(block, /variant="dark"/)
+test('Bild ab xl rechtsbuendig in voller Kartenhoehe, Seitenverhaeltnis 4:3 (Breite = Hoehe × 4\\/3), object-cover nur innerhalb dieser Flaeche', () => {
+  const desktopIdx = source.indexOf('hidden xl:block relative h-[620px]')
+  assert.ok(desktopIdx >= 0)
+  const desktopBlock = source.slice(desktopIdx, source.indexOf('DemoSoundInfo', desktopIdx))
+  assert.match(desktopBlock, /absolute right-0 top-0 h-full aspect-\[4\/3\]/)
+  assert.match(desktopBlock, /object-cover/)
 })
 
-test('Karte endet nach Video/rechter Spalte -- nur zwei Ebenen (Zitat, Video-Block), keine dritte PDF-Ebene mehr', () => {
-  assert.match(source, /const demoTiers = \[demoHasQuote, demoHasVideoBlock\];/)
-  assert.doesNotMatch(source, /demoHasDocs/)
+test('horizontaler Verlauf ab xl: deckend bis 33%, ausklingend bis 58% transparent (Werte aus dem Entwurf)', () => {
+  assert.match(source, /linear-gradient\(90deg, #12101a 0%, #12101a 33%, rgba\(18,16,26,0\.88\) 40%, rgba\(18,16,26,0\.45\) 48%, rgba\(18,16,26,0\) 58%\)/)
 })
 
-test('"Aus Musiker-Sicht" ist NICHT Teil der dunklen Profilkarte (bg-pl-stage-Block), sondern steht darunter', () => {
-  const demoCardStart = source.indexOf("{demoBand && (")
-  const cardDivEnd = source.indexOf('Ganzes Profil von {demoBand.name} ansehen')
-  assert.ok(demoCardStart >= 0 && cardDivEnd > demoCardStart)
-  const demoCardSource = source.slice(demoCardStart, cardDivEnd)
-  assert.doesNotMatch(demoCardSource, /Aus Musiker-Sicht/)
+test('Infospalte ab xl: Breite 470px, vertikal zentriert', () => {
+  assert.match(source, /w-\[470px\] max-w-full flex flex-col justify-center gap-6/)
+})
+
+test('Bandname als reiner Text (kein h1\\/h2), "Bandart · Herkunft" in Akzent-Lila', () => {
+  const desktopIdx = source.indexOf('hidden xl:block relative h-[620px]')
+  const desktopBlock = source.slice(desktopIdx, source.indexOf('DemoSoundInfo', desktopIdx))
+  assert.doesNotMatch(desktopBlock, /<h1|<h2/)
+  assert.match(desktopBlock, /text-pl-accent-light/)
+  assert.match(source, /const demoLocationLabel = demoBand/)
+  assert.match(source, /\[demoBand\.category, formatLocation\(demoBand\.location\)\]\.filter\(Boolean\)\.join\(' · '\)/)
+})
+
+test('"Klingt nach"/"Stil & Einfluesse"/"Spielt bei" ueber gemeinsame DemoSoundInfo-Komponente, "Spielt bei" nutzt BandEventTypesPills variant="dark"', () => {
+  assert.match(source, /function DemoSoundInfo\(/)
+  assert.match(source, /<DemoSoundInfo band=\{demoBand\} size="desktop" \/>/)
+  assert.match(source, /<DemoSoundInfo band=\{demoBand\} size="mobile" \/>/)
+  assert.match(source, /import \{ BandEventTypesPills \} from '@\/components\/band\/BandEventTypesPills'/)
+  assert.match(source, /<BandEventTypesPills eventTypes=\{band\.eventTypes\} categorySlugs=\{band\.categorySlugs\} variant="dark" \/>/)
+})
+
+test('"Live-Video"-Pill verlinkt auf die echte Bandseite mit Sprungmarke zum Video-Abschnitt, rendert nur wenn die Band ein Video hat', () => {
+  assert.match(source, /const demoHasVideo = demoEmbedUrl !== null;/)
+  assert.match(source, /const demoVideoHref = demoBand \? `\/band\/\$\{demoBand\.slug\}#live` : '';/)
+  assert.match(source, /\{demoHasVideo && <LiveVideoPill href=\{demoVideoHref\} position="right-6 bottom-6" size="md" \/>\}/)
+  assert.match(source, /\{demoHasVideo && <LiveVideoPill href=\{demoVideoHref\} position="right-3 top-3" size="sm" \/>\}/)
+})
+
+test('Mobile/gestapeltes Layout (unter xl): Bild oben unbeschnitten (aspect-[4/3], volle Breite), Pill oben rechts, Bandname im Bild ueberlagert, Infos darunter auf dunklem Grund', () => {
+  const mobileIdx = source.indexOf('"xl:hidden"')
+  assert.ok(mobileIdx >= 0)
+  const mobileBlock = source.slice(mobileIdx, mobileIdx + 2000)
+  assert.match(mobileBlock, /relative w-full aspect-\[4\/3\]/)
+  assert.match(mobileBlock, /linear-gradient\(180deg, rgba\(18,16,26,0\) 45%, rgba\(18,16,26,0\.75\) 78%, #12101a 100%\)/)
+  assert.match(mobileBlock, /absolute left-\[22px\] right-\[22px\] bottom-1/)
+})
+
+test('"Aus Musiker-Sicht" ist NICHT Teil der Profilkarte, sondern steht darunter', () => {
+  const cardIdx = source.indexOf('rounded-3xl overflow-hidden bg-pl-stage')
+  const cardEndIdx = source.indexOf('Ganzes Profil von {demoBand.name} ansehen')
+  assert.ok(cardIdx >= 0 && cardEndIdx > cardIdx)
+  const cardSource = source.slice(cardIdx, cardEndIdx)
+  assert.doesNotMatch(cardSource, /Aus Musiker-Sicht/)
 })
 
 test('Zeile direkt unter der Karte: ab md Link und Fussnote auf einer Grundlinie (flex + md:items-baseline + md:justify-between), unter md gestapelt', () => {
@@ -130,26 +157,22 @@ test('Zeile direkt unter der Karte: ab md Link und Fussnote auf einer Grundlinie
   assert.ok(footnoteIdx > linkIdx, 'Fussnote steht im Quelltext nach dem Link (DOM-Reihenfolge: Link, dann Fussnote)')
 })
 
-test('"Aus Musiker-Sicht"-Box liegt quer unter Link/Fussnote, volle Kartenbreite, unveraenderte Box-Optik (bg-pl-canvas/border-l/rounded-2xl), Innenabstand reduziert', () => {
-  const wrapperIdx = source.indexOf('bg-pl-canvas border-l border-pl-soft rounded-2xl')
-  assert.ok(wrapperIdx >= 0, 'Box-Wrapper mit der urspruenglichen Optik fehlt')
+test('"Aus Musiker-Sicht"-Box: heller Kasten mit umlaufendem, feinem Rahmen (Entwurf 1b, kein reiner Linksrand mehr), volle Kartenbreite', () => {
+  const wrapperIdx = source.indexOf('bg-pl-canvas border border-pl-soft rounded-[20px]')
+  assert.ok(wrapperIdx >= 0, 'Box-Wrapper mit umlaufendem Rahmen fehlt')
   const wrapperTagStart = source.lastIndexOf('<div', wrapperIdx)
   const wrapperTag = source.slice(wrapperTagStart, source.indexOf('>', wrapperTagStart) + 1)
-  // Kein max-width-Constraint und keine Spaltenbreiten-Klasse auf dem
-  // Wrapper selbst -- die Box soll die volle Kartenbreite (pl-container-shell)
-  // nutzen, nicht auf ~380px begrenzt sein.
   assert.doesNotMatch(wrapperTag, /380px|max-w-/)
-  assert.match(wrapperTag, /py-5 md:py-6/, 'Innenabstand oben\\/unten muss reduziert sein (flacher als zuvor py-7\\/py-9)')
 
   const footnoteIdx = source.indexOf('Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.')
   assert.ok(footnoteIdx < wrapperIdx, 'Box steht im Quelltext nach der Link/Fussnote-Zeile')
 })
 
-test('Box ist ab lg intern zweispaltig (Label+Zitat links, Name/Rolle/Link rechts, vertikal zentriert), unter lg weiterhin alles untereinander', () => {
-  const wrapperIdx = source.indexOf('bg-pl-canvas border-l border-pl-soft rounded-2xl')
+test('Box ist ab lg intern zweispaltig (1.4fr/1fr, 56px Abstand -- Werte aus dem Entwurf), vertikal zentriert, unter lg alles untereinander', () => {
+  const wrapperIdx = source.indexOf('bg-pl-canvas border border-pl-soft rounded-[20px]')
   assert.ok(wrapperIdx >= 0)
   const boxSource = source.slice(wrapperIdx, source.indexOf('Musikerprofil ansehen', wrapperIdx) + 60)
-  assert.match(boxSource, /lg:grid lg:grid-cols-2/)
+  assert.match(boxSource, /lg:grid lg:grid-cols-\[1\.4fr_1fr\] lg:gap-14/)
   assert.match(boxSource, /lg:items-center/)
 })
 
@@ -161,11 +184,11 @@ test('Dominik Palmer als reiner Text (nicht verlinkt), nur "Musikerprofil ansehe
   assert.doesNotMatch(block.slice(0, block.indexOf('Dominik Palmer')), /<Link/, 'kein Link vor/um den Namen')
 })
 
-test('Zitat bleibt in normaler Fliesstextgroesse (text-sm md:text-base italic), max-w-[70ch], schliesst mit typografisch korrektem Anfuehrungszeichen (U+201C), nicht mit "', () => {
+test('Zitat schliesst mit typografisch korrektem Anfuehrungszeichen (U+201C), nicht mit "', () => {
   const quoteIdx = source.indexOf('Mit Alex zu arbeiten')
   assert.ok(quoteIdx >= 0)
   const quoteBlock = source.slice(quoteIdx - 120, quoteIdx + 200)
-  assert.match(quoteBlock, /text-sm md:text-base italic leading-relaxed text-pl-text max-w-\[70ch\]/)
+  assert.match(quoteBlock, /italic leading-relaxed text-pl-text max-w-\[70ch\]/)
   assert.match(quoteBlock, /bleibt menschlich\.“/)
   assert.doesNotMatch(quoteBlock, /bleibt menschlich\."/)
 })
