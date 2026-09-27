@@ -92,10 +92,17 @@ test('CompactDocumentCard zeigt NIE die Beschreibung (Auftrag: Beschreibungstext
   assert.doesNotMatch(body, /document\.description/)
 })
 
-test('CompactDocumentCard bricht ab lg zu einer Zeile um (lg:flex-row) und der Titel bricht dort nicht um (lg:truncate)', () => {
+test('CompactDocumentCard bricht ab lg zu einer Zeile um (lg:flex-row), Titel darf dort auf zwei Zeilen umbrechen statt mit "..." abgeschnitten zu werden', () => {
   const idx = source.indexOf('function CompactDocumentCard')
   assert.ok(idx >= 0)
   const body = source.slice(idx, source.indexOf('function DocumentIcon'))
   assert.match(body, /flex-col lg:flex-row/)
-  assert.match(body, /text-base font-bold text-pl-text leading-snug lg:truncate/)
+  assert.doesNotMatch(body, /truncate/, 'Titel darf auf Desktop nicht mit truncate abgeschnitten werden (Auftrag: lieber zweizeilig umbrechen)')
+})
+
+test('CompactDocumentCard zeigt NIE das audienceLabel ("Fuer Veranstalter, ...") -- nur Vorschau, Titel, Button', () => {
+  const idx = source.indexOf('function CompactDocumentCard')
+  assert.ok(idx >= 0)
+  const body = source.slice(idx, source.indexOf('function DocumentIcon'))
+  assert.doesNotMatch(body, /document\.audienceLabel/)
 })

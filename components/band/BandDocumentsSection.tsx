@@ -4,10 +4,12 @@ import type { Band, BandDocument } from '@/lib/types/band';
 type Props = {
   band: Band;
   // "compact": fuer die Profil-Demo auf /fuer-bands (Auftrag "Profil-Demo
-  // niedriger machen") -- flache Leiste ab lg (Vorschau, Label+Titel,
-  // Button in einer Zeile), Titel bricht auf Desktop nicht um (truncate),
-  // KEINE Beschreibung. Die echte Bandseite nutzt weiterhin "default"
-  // unveraendert, inklusive Beschreibung.
+  // weiter verkleinern") -- flache, ruhige Leiste ab lg (kleine Vorschau,
+  // Titel, Button in einer Zeile). KEIN Label ("Fuer Veranstalter, Clubs
+  // und Festivals"), KEINE Beschreibung. Titel bricht auf Desktop bei
+  // Bedarf auf zwei Zeilen um statt mit "..." abgeschnitten zu werden. Die
+  // echte Bandseite nutzt weiterhin "default" unveraendert, inklusive
+  // Label und Beschreibung.
   variant?: 'default' | 'compact';
 };
 
@@ -81,15 +83,15 @@ function DocumentCard({ document }: { document: BandDocument }) {
 
 function CompactDocumentCard({ document }: { document: BandDocument }) {
   return (
-    <div className="bg-pl-elevated border border-pl-soft rounded-2xl p-4 lg:p-3 flex flex-col lg:flex-row gap-4 lg:gap-4 lg:items-center">
-      <div className="relative w-16 lg:w-14 shrink-0 aspect-[3/4] mx-auto lg:mx-0 rounded-lg overflow-hidden border border-pl-soft bg-pl-canvas">
+    <div className="bg-pl-elevated border border-pl-soft rounded-xl p-3 flex flex-col lg:flex-row gap-3 lg:items-center">
+      <div className="relative w-11 shrink-0 aspect-[3/4] mx-auto lg:mx-0 rounded-md overflow-hidden border border-pl-soft bg-pl-canvas">
         {document.thumbnailUrl ? (
           <Image
             src={document.thumbnailUrl}
             alt={`Vorschau: ${document.title}`}
             fill
             className="object-contain p-1"
-            sizes="72px"
+            sizes="44px"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -97,12 +99,9 @@ function CompactDocumentCard({ document }: { document: BandDocument }) {
           </div>
         )}
       </div>
-      <div className="min-w-0 flex-1 text-center lg:text-left">
-        <p className="text-[11px] font-semibold text-pl-accent-deep uppercase tracking-wider mb-0.5 lg:truncate">
-          {document.audienceLabel}
-        </p>
-        <p className="text-base font-bold text-pl-text leading-snug lg:truncate">{document.title}</p>
-      </div>
+      <p className="min-w-0 flex-1 text-center lg:text-left text-base font-bold text-pl-text leading-snug">
+        {document.title}
+      </p>
       <a
         href={document.fileUrl}
         target="_blank"

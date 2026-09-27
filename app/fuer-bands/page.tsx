@@ -131,7 +131,10 @@ export default async function FuerBandsPage() {
   const demoHasDocs = !!demoBand && demoBand.documents.length > 0;
   const demoTiers = [demoHasQuote, demoHasVideoBlock, demoHasDocs];
   const demoFirstTierIndex = demoTiers.findIndex(Boolean);
-  const demoDivider = 'mt-9 md:mt-10 pt-8 border-t border-white/10';
+  const demoDivider = 'mt-6 md:mt-7 pt-6 border-t border-white/10';
+  // PDF-Leiste bekommt bewusst KEINE Trennlinie (Auftrag "Profil-Demo
+  // weiter verkleinern"), nur Abstand nach oben.
+  const demoDocsSpacing = 'mt-6 md:mt-7';
 
   return (
     <main>
@@ -193,17 +196,17 @@ export default async function FuerBandsPage() {
                 {/* Bild + Name + Bandart/Herkunft -- wie im echten Profil
                     (BandHero.tsx), aber als kompakter Kartenkopf statt
                     Vollbild-Hero: kein eigenes H1-Element, keine
-                    Anfrage-CTA. Ab md deutlich flacher (4:1 statt der
-                    frueheren 8:3-Teilspalte), da die Karte jetzt die volle
+                    Anfrage-CTA. Ab md noch flacher (5:1, Auftrag "Profil-
+                    Demo weiter verkleinern"), da die Karte die volle
                     Container-Breite nutzt. */}
-                <div className="relative aspect-[4/3] md:aspect-[4/1] bg-pl-stage-elevated">
+                <div className="relative aspect-[4/3] md:aspect-[5/1] bg-pl-stage-elevated">
                   {demoBand.heroImage && (
                     <Image
                       src={demoBand.heroImage.url}
                       alt={demoBand.heroImage.alt}
                       fill
                       className="object-cover"
-                      style={{ objectPosition: 'center 30%' }}
+                      style={{ objectPosition: 'center 22%' }}
                       sizes="(max-width: 768px) 100vw, 1140px"
                     />
                   )}
@@ -226,7 +229,7 @@ export default async function FuerBandsPage() {
                 </div>
 
                 {(demoHasQuote || demoHasVideoBlock || demoHasDocs) && (
-                  <div className="px-6 md:px-11 py-8 md:py-10">
+                  <div className="px-6 md:px-8 py-6 md:py-7">
                     {/* 01 verdichtet: nur der kurze Zitatsatz, aus
                         short_description/slogan -- NIE der gekuerzte
                         main_text-Fallback (siehe shortDescriptionExplicit
@@ -277,9 +280,9 @@ export default async function FuerBandsPage() {
                     {/* 03 verdichtet: nur die Presse-/Booking-PDF als
                         flache Leiste (variant="compact"), keine
                         Referenz-Events, kein Hochzeitsmodul, keine
-                        Beschreibung. */}
+                        Beschreibung, keine Trennlinie darueber. */}
                     {demoHasDocs && (
-                      <div className={demoFirstTierIndex === 2 ? '' : demoDivider}>
+                      <div className={demoFirstTierIndex === 2 ? '' : demoDocsSpacing}>
                         <BandDocumentsSection band={demoBand} variant="compact" />
                       </div>
                     )}
@@ -287,40 +290,50 @@ export default async function FuerBandsPage() {
                 )}
               </div>
 
-              <Link
-                href={`/band/${demoBand.slug}`}
-                className="mt-8 md:mt-10 inline-block rounded-sm text-sm font-semibold text-pl-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
-              >
-                Ganzes Profil von {demoBand.name} ansehen →
-              </Link>
-
-              {/* "Aus Musiker-Sicht" -- sichtbar unter der Demo-Karte, aber
-                  bewusst keine zweite dunkle Karte: reiner Textblock ohne
-                  eigenen Hintergrund/Rahmen auf der hellen Section-Flaeche.
-                  Inhalt/Links unveraendert, Name reiner Text (kein Link). */}
-              <div className="mt-9 md:mt-10 max-w-[60ch]">
-                <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
-                  Aus Musiker-Sicht
-                </p>
-                <p className="mt-3 text-xl md:text-2xl italic leading-relaxed text-pl-text">
-                  „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
-                  Er behält den Überblick, reagiert schnell und bleibt menschlich.“
-                </p>
-                <p className="mt-3 text-sm font-bold text-pl-text">Dominik Palmer</p>
-                <p className="text-xs text-pl-text-muted mt-0.5">
-                  Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
-                </p>
+              {/* Ab lg zweispaltig: links Profil-Link + Fussnote
+                  (uebereinander), rechts die Musiker-Stimme in ihrer
+                  urspruenglichen Kartenbreite (~380px). Unter lg alles
+                  untereinander in DOM-Reihenfolge: Link, Box, Fussnote --
+                  deshalb explizite Grid-Platzierung statt zweier
+                  vorgruppierter Spalten-Wrapper (die haetten Fussnote vor
+                  der Box in den DOM/Mobile-Fluss gebracht). */}
+              <div className="mt-8 md:mt-10 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-x-[72px] items-start">
                 <Link
-                  href="/musiker/dominik-palmer"
-                  className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
+                  href={`/band/${demoBand.slug}`}
+                  className="inline-block rounded-sm text-sm font-semibold text-pl-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent lg:col-start-1 lg:row-start-1"
                 >
-                  Musikerprofil ansehen →
+                  Ganzes Profil von {demoBand.name} ansehen →
                 </Link>
-              </div>
 
-              <p className="mt-9 md:mt-12 text-xs text-pl-text-muted">
-                Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.
-              </p>
+                {/* "Aus Musiker-Sicht" -- urspruengliche Box-Optik
+                    (bg-pl-canvas/border-l/rounded-2xl/Abstaende) 1:1 aus der
+                    Git-Historie uebernommen (Commit 1721bff), nur Inhalt
+                    bleibt auf dem zwischenzeitlichen Stand: Name reiner
+                    Text statt Link, typografisches Anfuehrungszeichen. */}
+                <div className="bg-pl-canvas border-l border-pl-soft rounded-2xl px-6 md:px-8 py-7 md:py-9 lg:col-start-2 lg:row-start-1 lg:row-span-2">
+                  <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider">
+                    Aus Musiker-Sicht
+                  </p>
+                  <p className="mt-3 text-sm md:text-base italic leading-relaxed text-pl-text">
+                    „Mit Alex zu arbeiten ist angenehm, strukturiert, entspannt und zuverlässig.
+                    Er behält den Überblick, reagiert schnell und bleibt menschlich.“
+                  </p>
+                  <p className="mt-3 text-sm font-bold text-pl-text">Dominik Palmer</p>
+                  <p className="text-xs text-pl-text-muted mt-0.5">
+                    Bassist · u. a. mit Claudia Koreck, David Garrett, Mel C &amp; Max Mutzke
+                  </p>
+                  <Link
+                    href="/musiker/dominik-palmer"
+                    className="mt-3 inline-block rounded-sm text-sm font-medium text-pl-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent focus-visible:ring-offset-2"
+                  >
+                    Musikerprofil ansehen →
+                  </Link>
+                </div>
+
+                <p className="text-xs text-pl-text-muted lg:col-start-1 lg:row-start-2">
+                  Beispielprofil — jedes Profil auf proudleut wird individuell aufgebaut.
+                </p>
+              </div>
             </>
           )}
         </div>
