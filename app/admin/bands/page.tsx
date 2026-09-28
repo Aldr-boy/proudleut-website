@@ -30,8 +30,11 @@ type BandRow = {
   status: string
   is_published: boolean
   updated_at: string
-  // Supabase returns FK-joins as array; home_location_id is 0..1
-  locations: { city_name: string }[] | null
+  city_name: string | null
+  // Nur gesetzt, wenn der Treffer über den Ansprechpartner kam (nicht über
+  // Bandname/Slug) -- siehe supabase/admin_search_bands_and_spitzname.sql.
+  match_source: 'name' | 'slug' | 'contact' | null
+  match_value: string | null
 }
 
 type PageProps = {
@@ -43,20 +46,14 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
 
   const client = createAdminClient()
 
-  let query = client
-    .from('bands')
-    .select('id, name, slug, status, is_published, updated_at, locations(city_name)')
-    .order('name', { ascending: true })
-
-  if (status && status !== 'all') {
-    query = query.eq('status', status)
-  }
-
-  if (q && q.trim()) {
-    query = query.or(`name.ilike.%${q.trim()}%,slug.ilike.%${q.trim()}%`)
-  }
-
-  const { data: bands, error } = await query
+  // admin_search_bands durchsucht Bandname/Slug UND Ansprechpartner
+  // (contact_name/spitzname/email, unaccent-faehig), kombiniert mit dem
+  // Status-Filter -- ersetzt den vorherigen reinen .or()-Filter auf
+  // bands.name/slug (siehe supabase/admin_search_bands_and_spitzname.sql).
+  const { data: bands, error } = await client.rpc('admin_search_bands', {
+    p_query: q && q.trim() ? q.trim() : null,
+    p_status: status && status !== 'all' ? status : null,
+  })
 
   const activeStatus = status ?? 'all'
   const bandList = (bands ?? []) as unknown as BandRow[]
@@ -134,7 +131,7 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
             type="text"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Name oder Slug suchen…"
+            placeholder="Bandname, Slug oder Ansprechpartner suchen…"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
           <select
@@ -200,6 +197,11 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
                         >
                           {band.name}
                         </a>
+                        {band.match_source === 'contact' && band.match_value && (
+                          <p className="mt-0.5 text-xs font-normal text-violet-600">
+                            Treffer über Ansprechpartner: {band.match_value}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-gray-500 font-mono text-xs">{band.slug}</td>
                       <td className="px-4 py-3">
@@ -219,7 +221,7 @@ export default async function AdminBandsPage({ searchParams }: PageProps) {
                         )}
                       </td>
                       <td className="px-4 py-3 text-gray-500">
-                        {band.locations?.[0]?.city_name ?? '–'}
+                        {band.city_name ?? '–'}
                       </td>
                       <td className="px-4 py-3 text-gray-400 text-xs">
                         {new Date(band.updated_at).toLocaleDateString('de-DE', {

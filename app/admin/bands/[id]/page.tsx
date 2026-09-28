@@ -290,6 +290,9 @@ type BandContact = {
   email: string | null
   phone: string | null
   contact_role: string | null
+  // Admin-only, nie öffentlich ausgegeben (band_contacts bleibt RLS-
+  // gesperrt für anon, siehe supabase/admin_search_bands_and_spitzname.sql).
+  spitzname: string | null
   is_public: boolean
   is_primary_inquiry: boolean
   created_at: string
@@ -423,7 +426,7 @@ export default async function AdminBandDetailPage({
       home_location_id,
       locations(id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude),
       band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier, wedding_description, wedding_possible_playtimes, wedding_constellation, wedding_fee_range, wedding_kidnapping_bride, wedding_moderation),
-      band_contacts(id, contact_name, email, phone, contact_role, is_public, is_primary_inquiry, created_at, updated_at)
+      band_contacts(id, contact_name, email, phone, contact_role, spitzname, is_public, is_primary_inquiry, created_at, updated_at)
     `)
     .eq('id', id)
     .single()
@@ -1376,6 +1379,26 @@ export default async function AdminBandDetailPage({
                           className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                         />
                       </div>
+
+                      {/* Spitzname -- admin-only, nie öffentlich sichtbar
+                          (band_contacts bleibt RLS-gesperrt für anon). */}
+                      <div>
+                        <label
+                          htmlFor={`sp_${c.id}`}
+                          className="block text-xs font-medium text-gray-600 mb-1"
+                        >
+                          Spitzname
+                        </label>
+                        <input
+                          id={`sp_${c.id}`}
+                          name="spitzname"
+                          type="text"
+                          defaultValue={c.spitzname ?? ''}
+                          maxLength={100}
+                          className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-xs text-gray-400">Optional. Nur intern, nie öffentlich sichtbar.</p>
+                      </div>
                     </div>
 
                     {/* Checkboxes */}
@@ -1492,6 +1515,23 @@ export default async function AdminBandDetailPage({
                     placeholder="+49 89 …"
                     className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                   />
+                </div>
+
+                {/* Spitzname -- admin-only, nie öffentlich sichtbar
+                    (band_contacts bleibt RLS-gesperrt für anon). */}
+                <div>
+                  <label htmlFor="new_spitzname" className="block text-xs font-medium text-gray-600 mb-1">
+                    Spitzname
+                  </label>
+                  <input
+                    id="new_spitzname"
+                    name="spitzname"
+                    type="text"
+                    maxLength={100}
+                    placeholder="z. B. Maxi"
+                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">Optional. Nur intern, nie öffentlich sichtbar.</p>
                 </div>
               </div>
 
