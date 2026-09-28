@@ -639,9 +639,15 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
           kleiner Pill-Button, sonst wirkt es sprunghaft statt griffig.
           motion-safe:transition (nicht nur -colors/-transform) uebernimmt
           zusaetzlich Rahmen-/Schattenwechsel in derselben 150ms/ease-out-
-          Bewegung. Bewusst KEINE eigene motion-reduce:-Overrides noetig:
-          jede Bewegungs-Utility steht bereits hinter motion-safe:, greift
-          bei prefers-reduced-motion:reduce also automatisch gar nicht.
+          Bewegung. motion-safe: steht nicht nur vor transition, sondern
+          auch direkt vor den Transform-Utilities selbst (motion-safe:
+          md:hover:-translate-y-0.5, motion-safe:active:scale-[0.98],
+          motion-safe:md:group-hover:scale-105) -- sonst wuerde bei
+          prefers-reduced-motion:reduce nur die Animation wegfallen, die
+          Kachel aber weiterhin ohne Uebergang springen/skalieren (Codex-
+          Review-Fund, siehe PR #133). Schatten-/Rahmenwechsel bleiben
+          bewusst ungated, da das keine Bewegung im Sinne von
+          prefers-reduced-motion ist.
           [-webkit-tap-highlight-color:transparent] verhindert den blauen
           Tap-Highlight-Kasten mobiler Browser -- kein Tailwind-Utility
           dafuer vorhanden, deshalb Arbitrary-Property. md:active:shadow-sm
@@ -662,7 +668,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
             aria-current={theme.active ? 'page' : undefined}
             className={`group flex flex-col rounded-xl overflow-hidden border text-left
                        motion-safe:transition motion-safe:duration-150 motion-safe:ease-out
-                       md:hover:-translate-y-0.5 md:hover:shadow-md active:scale-[0.98] active:shadow-sm md:active:shadow-sm
+                       motion-safe:md:hover:-translate-y-0.5 md:hover:shadow-md motion-safe:active:scale-[0.98] active:shadow-sm md:active:shadow-sm
                        [-webkit-tap-highlight-color:transparent]
                        focus:outline-none focus-visible:outline-2
                        focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]
@@ -676,7 +682,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                 alt={theme.image.alt}
                 fill
                 sizes="(min-width: 768px) 33vw, 50vw"
-                className="object-cover md:group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
+                className="object-cover motion-safe:md:group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
                 style={{ objectPosition: theme.image.objectPosition ?? 'center' }}
               />
             </span>

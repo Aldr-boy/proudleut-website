@@ -52,16 +52,22 @@ test('Tastaturfokus der Themen-Kachel bleibt sichtbar (focus-visible-Outline auf
 // Press-Feedback fuer die Themen-Kacheln, in der Staerke an die
 // grossflaechigen Kacheln angepasst (active:scale-[0.98] statt des
 // Buttons active:scale-95, siehe components/Header.tsx CTA).
-test('Themen-Kachel: Hover hebt minimal an + staerkerer Schatten (nur Desktop)', () => {
-  assert.match(source, /md:hover:-translate-y-0\.5 md:hover:shadow-md/)
+test('Themen-Kachel: Hover hebt minimal an (motion-safe) + staerkerer Schatten (nur Desktop)', () => {
+  assert.match(source, /motion-safe:md:hover:-translate-y-0\.5 md:hover:shadow-md/)
 })
 
-test('Themen-Kachel: Active/Tap sinkt leicht ein (scale-[0.98], angepasst an die Buttonstaerke 0.95) + kleinerer Schatten -- wirkt auch ohne vorherigen Hover (mobile Tap)', () => {
-  assert.match(source, /active:scale-\[0\.98\] active:shadow-sm/)
+test('Themen-Kachel: Active/Tap sinkt leicht ein (motion-safe:scale-[0.98], angepasst an die Buttonstaerke 0.95) + kleinerer Schatten -- wirkt auch ohne vorherigen Hover (mobile Tap)', () => {
+  assert.match(source, /motion-safe:active:scale-\[0\.98\] active:shadow-sm/)
 })
 
 test('Themen-Kachel: md:active:shadow-sm zusaetzlich zum einfachen active:shadow-sm, damit der Schatten auch bei einem echten Desktop-Klick (gleichzeitig :hover UND :active) kleiner wird -- sonst gewinnt md:hover:shadow-md den Kaskadenkonflikt (per getComputedStyle verifiziert)', () => {
-  assert.match(source, /active:scale-\[0\.98\] active:shadow-sm md:active:shadow-sm/)
+  assert.match(source, /motion-safe:active:scale-\[0\.98\] active:shadow-sm md:active:shadow-sm/)
+})
+
+test('Themen-Kachel: prefers-reduced-motion unterbindet nicht nur die Animation, sondern auch die Bewegung selbst (motion-safe: steht direkt vor -translate-y/scale, nicht nur vor transition) -- Codex-Review-Fund PR #133', () => {
+  assert.match(source, /motion-safe:md:hover:-translate-y-0\.5/)
+  assert.match(source, /motion-safe:active:scale-\[0\.98\]/)
+  assert.match(source, /motion-safe:md:group-hover:scale-105/)
 })
 
 test('Themen-Kachel: sanfte Transition (~150ms, ease-out) deckt Transform UND Schatten/Farben ab (motion-safe:transition, nicht nur -colors/-transform)', () => {
@@ -74,7 +80,7 @@ test('Themen-Kachel: kein blauer Tap-Highlight-Kasten auf mobilen Browsern', () 
 
 test('Themen-Kachel-Bild zoomt beim Hover leicht (group-hover, nur Desktop), Bildflaeche bleibt overflow-hidden', () => {
   assert.match(source, /relative block w-full h-20 md:h-24 overflow-hidden shrink-0 bg-pl-stage/)
-  assert.match(source, /object-cover md:group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out/)
+  assert.match(source, /object-cover motion-safe:md:group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out/)
 })
 
 test('Themen-Kachel traegt group-Klasse, damit nur das eigene Bild auf den eigenen Hover reagiert (kein Leck auf Nachbarkacheln)', () => {
