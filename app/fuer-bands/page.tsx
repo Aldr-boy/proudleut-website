@@ -587,8 +587,23 @@ export default async function FuerBandsPage() {
           sizes="100vw"
           quality={80}
         />
+        {/* Verlauf mobil staerker als auf /ueber-mich (dort identischer
+            Ausgangswert): das Hundskrippln/Tuba-Foto wirkt auf dem
+            Ausschnitt, den Mobilgeraete zeigen (objectPosition 38% 40%,
+            Bild wird auf die Hoehe skaliert), greller/unruhiger als das
+            dunklere, waermere San2-Foto auf /ueber-mich -- dort reicht
+            derselbe Verlauf. +12 Prozentpunkte auf jeden Stop, nur unter
+            md; ab md exakt der bisherige, mit /ueber-mich weiterhin
+            identische Wert (Desktop unveraendert). */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none md:hidden"
+          style={{
+            background:
+              'radial-gradient(ellipse 62% 78% at 50% 42%, rgba(18,16,26,0.84) 0%, rgba(18,16,26,0.58) 55%, rgba(18,16,26,0.30) 100%)',
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none hidden md:block"
           style={{
             background:
               'radial-gradient(ellipse 62% 78% at 50% 42%, rgba(18,16,26,0.72) 0%, rgba(18,16,26,0.46) 55%, rgba(18,16,26,0.18) 100%)',
