@@ -630,15 +630,41 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
           beiden langen Bezeichnungen ("Stadt- & Buergerfest", "Konzert,
           Club & Festival") die Textbreite/den Umbruch veraendern -- die
           Auswahl wird stattdessen ueber Flaeche, Rahmen und Haekchen in
-          der Beschriftungsflaeche markiert. */}
+          der Beschriftungsflaeche markiert.
+
+          Haptisches Press-Feedback (Auftrag "Kacheln druecken sich wie
+          Bands entdecken"): -translate-y-0.5/shadow-md im Hover, aber
+          active:scale-[0.98] statt des Buttons active:scale-95 -- eine
+          grossflaechige Kachel darf nicht so stark einsinken wie ein
+          kleiner Pill-Button, sonst wirkt es sprunghaft statt griffig.
+          motion-safe:transition (nicht nur -colors/-transform) uebernimmt
+          zusaetzlich Rahmen-/Schattenwechsel in derselben 150ms/ease-out-
+          Bewegung. Bewusst KEINE eigene motion-reduce:-Overrides noetig:
+          jede Bewegungs-Utility steht bereits hinter motion-safe:, greift
+          bei prefers-reduced-motion:reduce also automatisch gar nicht.
+          [-webkit-tap-highlight-color:transparent] verhindert den blauen
+          Tap-Highlight-Kasten mobiler Browser -- kein Tailwind-Utility
+          dafuer vorhanden, deshalb Arbitrary-Property. md:active:shadow-sm
+          zusaetzlich zum einfachen active:shadow-sm: bei einem echten
+          Desktop-Klick sind :hover und :active gleichzeitig wahr (Maus
+          bleibt beim Klicken auf der Kachel) -- ohne dieses Duplikat in
+          derselben md:-Variantenebene gewinnt sonst md:hover:shadow-md
+          den Kaskadenkonflikt und der Schatten wird beim Draufklicken
+          nie kleiner (per getComputedStyle verifiziert). Der ausgewaehlte
+          Zustand (theme.active) bleibt unveraendert: er setzt weiterhin
+          nur Rahmenfarbe/Hintergrund/Haekchen, keine der neuen Press-
+          Klassen ueberschreibt das. */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 mb-4 md:mb-5 pt-4 md:pt-5">
         {themeNavItems.map((theme) => (
           <Link
             key={theme.key}
             href={theme.href}
             aria-current={theme.active ? 'page' : undefined}
-            className={`flex flex-col rounded-xl overflow-hidden border text-left
-                       motion-safe:transition-colors focus:outline-none focus-visible:outline-2
+            className={`group flex flex-col rounded-xl overflow-hidden border text-left
+                       motion-safe:transition motion-safe:duration-150 motion-safe:ease-out
+                       md:hover:-translate-y-0.5 md:hover:shadow-md active:scale-[0.98] active:shadow-sm md:active:shadow-sm
+                       [-webkit-tap-highlight-color:transparent]
+                       focus:outline-none focus-visible:outline-2
                        focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]
                        ${theme.active
                          ? 'border-pl-accent bg-[color-mix(in_srgb,var(--pl-accent)_12%,var(--pl-accent-subtle))]'
@@ -650,7 +676,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                 alt={theme.image.alt}
                 fill
                 sizes="(min-width: 768px) 33vw, 50vw"
-                className="object-cover"
+                className="object-cover md:group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out"
                 style={{ objectPosition: theme.image.objectPosition ?? 'center' }}
               />
             </span>
