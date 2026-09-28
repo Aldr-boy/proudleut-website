@@ -8,9 +8,25 @@
 -- Ansprechpartner (contact_name/spitzname/email) kombiniert mit dem
 -- bestehenden Status-Filter, unaccent-faehig.
 --
--- VERIFIZIERT per Rollback-Probelauf gegen Produktion (bfyucjjyarvqeftqqihm,
--- BEGIN...ROLLBACK, PROD_DB_URL_MIGRATION, ein pg.Client) am 2026-09-28.
--- Alle sieben Nachweise (a-g, siehe Freigabe-Bericht) bestanden:
+-- KEIN TEST-Lauf: das Test-Projekt (jqzqpizykymjdjumwdoj) war zum
+-- Zeitpunkt dieses Auftrags nicht erreichbar (DNS-NXDOMAIN, vermutlich
+-- geloescht oder die Referenz veraltet -- gegen einen oeffentlichen
+-- Resolver verifiziert, kein Sandbox-Artefakt). Stattdessen wurde als
+-- bewusste, ausdruecklich freigegebene Ausnahme von der sonst geltenden
+-- 2A/2B-Reihenfolge (immer erst TEST, dann Produktion) zweimal ein
+-- Rollback-Probelauf DIREKT gegen Produktion (bfyucjjyarvqeftqqihm,
+-- BEGIN...ROLLBACK, PROD_DB_URL_MIGRATION, ein pg.Client, garantiertes
+-- ROLLBACK im finally-Block) durchgefuehrt, am 28.09.2026. Der zweite
+-- Lauf las diese Datei exakt so, wie sie hier vorliegt (roh per
+-- readFileSync), und legte die beiden Testkontakte ueber
+-- create_band_contact() an (nicht per direktem INSERT). Nach beiden
+-- Laeufen wurde ueber eine neue, unabhaengige Verbindung bestaetigt, dass
+-- Produktion vollstaendig unveraendert war (admin_search_bands/spitzname/
+-- Testband existierten nicht, die Kontakt-RPCs hatten wieder exakt ihre
+-- urspruenglichen 7/8-Parameter-Signaturen).
+--
+-- VERIFIZIERT (zweiter Rollback-Probelauf). Alle sieben Nachweise (a-g,
+-- siehe Freigabe-Bericht) bestanden:
 --   a) genau 1 Zeile pro Band trotz mehrerer Kontakte (EXISTS/Unterabfrage,
 --      kein direkter Join im Hauptresultat)
 --   b) "Muller" (ohne Umlaut) findet Kontakt "Müller" (unaccent Zwei-
@@ -25,19 +41,21 @@
 --   g) anon hat keinen Zugriff auf admin_search_bands (REVOKE ALL FROM
 --      public/anon/authenticated, GRANT EXECUTE nur an service_role)
 --
--- WICHTIG (aus dem Probelauf gelernt): die PL/pgSQL-Ausdruecke hier NIE
--- durch eine JS-Template-Literal-Schicht route -- \s, \r\n, \. und die
--- \/\\-Verdopplung fuer das LIKE-Escaping werden von JS' eigenem String-
--- Escaping sonst stillschweigend veraendert (beobachtet waehrend der
--- ersten Probelauf-Iteration: [^\s@] wurde zu [^s@], brach die E-Mail-
--- Validierung fuer jede Adresse mit einem "s" vor dem @). Diese Datei ist
--- reines SQL und wird 1:1 ausgefuehrt (psql, Supabase SQL-Editor, oder ein
--- Runner, der die Datei unveraendert per readFileSync einliest) -- nie
--- Zeile fuer Zeile in JS-Stringliterale umschreiben.
+-- Zusaetzlich verifiziert: pg_get_functiondef() der live in Produktion
+-- laufenden create_band_contact/update_band_contact gegen die neuen
+-- Funktionskoerper unten verglichen -- einziger inhaltlicher Unterschied
+-- ist der spitzname-Parameter und seine Verarbeitung (siehe Freigabe-
+-- Bericht fuer den vollstaendigen Diff).
 --
--- Reihenfolge: zuerst TEST, danach Produktion mit separater Freigabe
--- (siehe migration-notes.md / Projektkonvention). NICHT eigenmaechtig
--- ausfuehren.
+-- WICHTIG (aus dem ersten Probelauf gelernt): die PL/pgSQL-Ausdruecke
+-- hier NIE durch eine JS-Template-Literal-Schicht routen -- \s, \r\n, \.
+-- und die \/\\-Verdopplung fuer das LIKE-Escaping werden von JS' eigenem
+-- String-Escaping sonst stillschweigend veraendert (beobachtet: [^\s@]
+-- wurde zu [^s@], brach die E-Mail-Validierung fuer jede Adresse mit
+-- einem "s" vor dem @). Diese Datei ist reines SQL und wird 1:1
+-- ausgefuehrt (psql, Supabase SQL-Editor, oder ein Runner, der die Datei
+-- unveraendert per readFileSync einliest) -- nie Zeile fuer Zeile in
+-- JS-Stringliterale umschreiben.
 -- ============================================================
 
 -- ------------------------------------------------------------
