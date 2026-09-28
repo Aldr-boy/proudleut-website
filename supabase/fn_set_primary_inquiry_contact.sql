@@ -4,10 +4,16 @@
 -- Codex-Nachtrag PR #26, zweiter Review -- Befund 1+2: vollstaendig
 -- atomare Kontaktanlage/-bearbeitung inkl. optionalem Primaerwechsel.
 --
--- NOCH NICHT AUSGEFUEHRT. Nur gegen lokale/Test-/Preview-Instanz, nicht
--- gegen Production ohne separate Freigabe. Da die gesamte L-A1-Migration
--- noch nirgends ausgefuehrt wurde, wurde diese Datei bewusst konsolidiert
--- (kein Production-Rollback der vorherigen Fassung noetig).
+-- LAENGST AUSGEFUEHRT UND LIVE IN PRODUKTION (bfyucjjyarvqeftqqihm):
+-- create_band_contact/update_band_contact sind ueber /rpc/create_band_contact
+-- und /rpc/update_band_contact exponiert und werden von
+-- app/admin/bands/[id]/actions.ts aktiv aufgerufen (per PostgREST-
+-- OpenAPI-Introspektion am 2026-09-27 verifiziert, siehe Analysebericht
+-- "Admin-Bandsuche über Ansprechpartner + Feld Spitzname"). Der vormalige
+-- Hinweis "NOCH NICHT AUSGEFUEHRT" war veraltet -- dem Repo-Stand allein
+-- ist bei diesen beiden Funktionen nicht zu trauen, nur der tatsaechlichen
+-- Datenbank. Nachtraegliche Signaturaenderungen (z. B. p_spitzname) siehe
+-- supabase/admin_search_bands_and_spitzname.sql.
 --
 -- Vorherige Fassung dieser Datei enthielt ausschliesslich
 -- set_primary_inquiry_contact(p_band_id, p_contact_id) -- das loeste NUR
