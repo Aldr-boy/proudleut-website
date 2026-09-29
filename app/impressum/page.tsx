@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   },
 };
 
-const h2Class = 'text-xl md:text-2xl font-bold text-pl-text mt-10 mb-3 first:mt-0';
+const h2Class = 'text-xl md:text-2xl font-bold text-pl-text mt-10 mb-3 first:mt-0 break-words';
 const pClass = 'text-pl-text-muted leading-relaxed';
 const linkClass = 'text-pl-accent underline hover:text-pl-accent-link-hover break-words';
 
@@ -41,19 +41,25 @@ export default function ImpressumPage() {
               </a>
             </p>
 
-            <h2 className={h2Class}>Verbraucherstreitbeilegung/Universalschlichtungsstelle</h2>
+            {/* Weiche Trennstellen (echte U+00AD) an den Wortfugen, wie im
+                eRecht24-Generator-Text vorgesehen -- verhindert das
+                Abschneiden auf schmalen Displays (~360px), sichtbarer Text
+                bleibt unveraendert. break-words auf h2Class als Absicherung. */}
+            <h2 className={h2Class}>
+              {'Verbraucher\u00ADstreit\u00ADbeilegung/Universal\u00ADschlichtungs\u00ADstelle'}
+            </h2>
             <p className={pClass}>
               Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
               Verbraucherschlichtungsstelle teilzunehmen.
             </p>
 
-            <p className={pClass}>
+            <p className={`${pClass} mt-4`}>
               Quelle:{' '}
               <a
                 href="https://www.e-recht24.de/impressum-generator.html"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={linkClass}
+                className={`${linkClass} [overflow-wrap:anywhere]`}
               >
                 https://www.e-recht24.de/impressum-generator.html
               </a>
