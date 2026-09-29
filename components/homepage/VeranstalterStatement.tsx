@@ -17,7 +17,7 @@ export default function VeranstalterStatement() {
           </p>
 
           <figure>
-            <blockquote className="text-base leading-relaxed font-normal text-pl-text">
+            <blockquote className="text-sm md:text-base italic leading-relaxed font-normal text-pl-text">
               <p>
                 „Bei Alex steht nicht der persönliche Profit im Vordergrund, sondern der
                 individuelle Kundenwunsch. Durch seine Empfehlungen konnte ich für unsere
