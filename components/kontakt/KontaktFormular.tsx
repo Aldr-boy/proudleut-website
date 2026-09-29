@@ -283,6 +283,7 @@ export default function KontaktFormular() {
                       name="firma_hidden"
                       tabIndex={-1}
                       autoComplete="off"
+                      aria-hidden="true"
                       defaultValue=""
                     />
                     <input
@@ -290,6 +291,7 @@ export default function KontaktFormular() {
                       name="website_hidden"
                       tabIndex={-1}
                       autoComplete="off"
+                      aria-hidden="true"
                       defaultValue=""
                     />
                   </div>

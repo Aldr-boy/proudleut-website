@@ -1,63 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
+import { extractClientIp } from '@/lib/anfrage/clientIp';
+import { hashClientIp } from '@/lib/anfrage/rateLimit';
+import { submitKontakt } from '@/lib/kontakt/service';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getResendClient } from '@/lib/resend/client';
 
-function asString(value: unknown): string {
-  return typeof value === 'string' ? value : ''
-}
-
-function isValidEmail(email: string): boolean {
-  return /\S+@\S+\.\S+/.test(email)
-}
-
+// Allgemeiner Kontakt-Endpunkt (Auftrag L-A1b, Option B: Mail an Xandi ueber
+// Resend, keine Speicherung). Duennwandiger Wrapper -- die eigentliche
+// Geschaeftslogik liegt vollstaendig in lib/kontakt/service.ts (submitKontakt)
+// und ist unabhaengig von dieser Route testbar. Reine IP-Hash-Namensraum-
+// Trennung von /api/anfrage und /api/band-introductions: dasselbe
+// ANFRAGE_RATE_LIMIT_SALT/dieselbe RPC werden wiederverwendet, aber mit einem
+// "kontakt:"-Praefix gehasht, damit alle drei Formulare unabhaengige
+// Rate-Limit-Fenster pro IP haben (kein neues Rate-Limit-System, keine neue
+// Tabelle, keine neue RPC, keine GRANT-Aenderung).
 export async function POST(req: NextRequest) {
-  let body: unknown
+  let body: unknown;
   try {
-    body = await req.json()
+    body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
   }
 
-  if (typeof body !== 'object' || body === null) {
-    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 })
-  }
-
-  const p = body as Record<string, unknown>
-
-  // Honeypot → stille 200 (bewusstes Anti-Spam-Verhalten, Bot-Täuschung)
-  if (asString(p.firma_hidden) || asString(p.website_hidden)) {
-    return NextResponse.json({ ok: true })
-  }
-
-  // Zeitstempel-Check → stille 200 (bewusstes Anti-Spam-Verhalten, Bot-Täuschung)
-  if (typeof p.openedAt === 'number' && Date.now() - p.openedAt < 3000) {
-    return NextResponse.json({ ok: true })
-  }
-
-  const anlass    = asString(p.anlass).trim()
-  const vorname   = asString(p.vorname).trim()
-  const nachname  = asString(p.nachname).trim()
-  const email     = asString(p.email).trim()
-  const nachricht = asString(p.nachricht).trim()
-
-  if (!anlass) {
-    return NextResponse.json({ error: 'Bitte wähle ein Anliegen aus' }, { status: 400 })
-  }
-  if (!vorname || !nachname) {
-    return NextResponse.json({ error: 'Vor- und Nachname sind Pflichtfelder' }, { status: 400 })
-  }
-  if (!email || !isValidEmail(email)) {
+  const clientIp = extractClientIp(req.headers);
+  let ipHash: string;
+  try {
+    ipHash = hashClientIp(`kontakt:${clientIp}`);
+  } catch (err) {
+    console.error('[api/kontakt] Rate-Limit-Konfiguration fehlt, fail-closed', err);
     return NextResponse.json(
-      { error: 'Bitte gib eine gültige E-Mail-Adresse ein' },
-      { status: 400 },
-    )
-  }
-  if (!nachricht) {
-    return NextResponse.json({ error: 'Bitte schreib eine kurze Nachricht' }, { status: 400 })
-  }
-  if (p.datenschutz !== true) {
-    return NextResponse.json({ error: 'Datenschutz-Zustimmung fehlt' }, { status: 400 })
+      { error: 'Deine Nachricht kann gerade nicht verarbeitet werden. Bitte versuche es in einigen Minuten erneut oder schreib uns direkt per E-Mail (siehe Kontaktbox rechts).' },
+      { status: 503 }
+    );
   }
 
-  // Stub-Modus: kein E-Mail-Versand, keine personenbezogenen Daten geloggt
-  // Phase 2: Resend-Integration hier ergänzen
-  return NextResponse.json({ ok: true, mode: 'stub' })
+  const result = await submitKontakt(body, { ipHash }, { client: createAdminClient(), getResendClient });
+
+  switch (result.kind) {
+    case 'bot_silent':
+      // Stille 200-Antwort, damit Bots die Anfrage faelschlich fuer
+      // erfolgreich halten (identisches, uebernommenes Verhalten wie
+      // /api/anfrage und /api/band-introductions).
+      return NextResponse.json({ ok: true });
+
+    case 'accepted':
+      return NextResponse.json({ ok: true });
+
+    case 'too_fast':
+      return NextResponse.json({ error: result.message }, { status: 400 });
+
+    case 'validation_error':
+      return NextResponse.json({ error: result.message }, { status: 400 });
+
+    case 'rate_limited':
+      return NextResponse.json(
+        {
+          error: 'Zu viele Anfragen — bitte versuche es in Kürze erneut oder schreib uns direkt per E-Mail (siehe Kontaktbox rechts).',
+        },
+        { status: 429, headers: { 'Retry-After': String(result.retryAfterSeconds) } }
+      );
+
+    case 'temporarily_unavailable':
+      return NextResponse.json(
+        { error: 'Deine Nachricht kann gerade nicht verarbeitet werden. Bitte versuche es in einigen Minuten erneut oder schreib uns direkt per E-Mail (siehe Kontaktbox rechts).' },
+        { status: 503 }
+      );
+
+    case 'server_error':
+    default:
+      return NextResponse.json(
+        { error: 'Deine Nachricht konnte nicht gesendet werden — bitte versuche es später erneut oder schreib uns direkt per E-Mail (siehe Kontaktbox rechts).' },
+        { status: 500 }
+      );
+  }
 }
