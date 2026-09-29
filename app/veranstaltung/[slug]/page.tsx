@@ -136,11 +136,14 @@ export default async function VeranstaltungPage({ params }: Props) {
         )}
       </section>
 
-      {/* Verwandte Kategorien – immer sichtbar */}
+      {/* Verwandte Kategorien – immer sichtbar. Bühnenfläche (bg-pl-stage)
+          jetzt explizit statt ueber den Legacy-Body-Hintergrund geerbt --
+          zuvor griff hier text-pl-text (heller-Grund-Token, dunkler Text)
+          auf dunklem Grund und war praktisch unlesbar. */}
       {related.length > 0 && (
-        <section className="py-12 px-4 sm:px-6 border-t border-white/5">
+        <section className="bg-pl-stage py-12 px-4 sm:px-6 border-t border-pl-stage-divider">
           <div className="pl-container-shell">
-            <h2 className="text-base font-semibold text-pl-text mb-4">
+            <h2 className="text-base font-semibold text-pl-on-stage mb-4">
               Weitere Anlässe entdecken
             </h2>
             <div className="flex flex-wrap gap-2">
@@ -148,9 +151,12 @@ export default async function VeranstaltungPage({ params }: Props) {
                 <Link
                   key={cat.slug}
                   href={`/veranstaltung/${cat.slug}`}
-                  className="px-4 py-2 rounded-full text-sm border border-white/10
-                             text-pl-text-muted hover:border-pl-primary hover:text-pl-text
-                             motion-safe:transition-colors"
+                  className="inline-flex min-h-11 items-center px-4 py-2 rounded-full text-sm font-medium
+                             text-pl-on-stage border border-pl-on-stage-muted
+                             transition-[transform,background-color,border-color] duration-200 ease-out
+                             hover:border-pl-accent-light hover:bg-pl-stage-elevated
+                             active:duration-100 active:bg-pl-stage-elevated motion-safe:active:scale-[0.96]
+                             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent-light"
                 >
                   {cat.title}
                 </Link>
