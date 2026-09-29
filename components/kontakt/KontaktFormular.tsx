@@ -2,6 +2,7 @@
 
 import { useState, useRef, FormEvent } from 'react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/Button'
 
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -295,7 +296,7 @@ export default function KontaktFormular() {
 
                   {/* Submit */}
                   <div className="sm:col-span-2 flex flex-col gap-3">
-                    <button
+                    <Button
                       type="submit"
                       disabled={status === 'submitting'}
                       className="inline-flex items-center justify-center px-6 py-3 rounded-full
@@ -304,7 +305,7 @@ export default function KontaktFormular() {
                                  disabled:opacity-60 disabled:cursor-not-allowed w-fit"
                     >
                       {status === 'submitting' ? 'Wird gesendet …' : 'Nachricht senden'}
-                    </button>
+                    </Button>
                     {status === 'error' && (
                       <p className="text-red-600 text-sm">{errorMsg}</p>
                     )}

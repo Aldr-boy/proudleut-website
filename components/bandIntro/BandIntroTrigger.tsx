@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 import { BandIntroModal } from './BandIntroModal';
 
 type Props = {
@@ -23,13 +23,13 @@ export function BandIntroTrigger({ className, children }: Props) {
 
   return (
     <>
-      <button type="button" onClick={() => setModalOpen(true)} className={`hidden md:inline-flex ${className}`}>
+      <Button onClick={() => setModalOpen(true)} className={`hidden md:inline-flex ${className}`}>
         {children}
-      </button>
+      </Button>
 
-      <Link href="/fuer-bands/band-vorstellen" className={`md:hidden inline-flex ${className}`}>
+      <Button href="/fuer-bands/band-vorstellen" className={`md:hidden inline-flex ${className}`}>
         {children}
-      </Link>
+      </Button>
 
       <BandIntroModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>

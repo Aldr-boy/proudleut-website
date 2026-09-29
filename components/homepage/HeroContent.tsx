@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Button, ButtonArrow } from '@/components/ui/Button'
 
 // Hero-Content-Layer fuer den Startseiten-Hero-Redesign (verbindlicher
 // Text laut Auftrag Abschnitt 3). Rendert ausschliesslich Text/CTA, keine
@@ -44,15 +44,14 @@ export function HeroContent() {
         Für eure Hochzeit, Firmenfeier oder ein Fest, das in Erinnerung bleiben soll.
       </p>
 
-      <Link
+      <Button
         href="/bands"
         className="inline-flex items-center gap-2 mt-8 px-7 py-3.5 rounded-full bg-pl-accent text-pl-on-accent text-base font-semibold
-                   hover:bg-pl-accent-hover motion-safe:transition-colors active:scale-95 motion-safe:transition-transform
-                   focus:outline-none focus-visible:ring-2 focus-visible:ring-pl-accent-light focus-visible:ring-offset-2 focus-visible:ring-offset-pl-stage"
+                   hover:bg-pl-accent-hover motion-safe:transition-colors"
       >
         Bands entdecken
-        <span aria-hidden="true">→</span>
-      </Link>
+        <ButtonArrow>→</ButtonArrow>
+      </Button>
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 import { useAnfrageStore } from '@/stores/anfrageStore';
 import { MAX_BANDS_PER_ANFRAGE } from '@/lib/anfrage/constants';
 import { AnfrageModal, Initials, XIcon } from './AnfrageModal';
@@ -196,15 +197,14 @@ function MerklisteCollectionDialog({
               Tippe beim Stöbern auf das Herz einer Bandkarte – hier sammelst du deine Favoriten
               und wählst später aus, wen du anfragen möchtest.
             </p>
-            <Link
+            <Button
               href="/bands"
               onClick={onClose}
               className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold
-                         motion-safe:transition-colors"
-              style={{ background: 'var(--pl-accent)', color: 'var(--pl-text-on-accent)' }}
+                         bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
             >
               Bands entdecken →
-            </Link>
+            </Button>
           </div>
         ) : (
           <>

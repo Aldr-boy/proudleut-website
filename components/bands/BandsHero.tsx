@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 import { useCallback, useState, type KeyboardEvent } from 'react';
 import type { FeaturedSliderSlide } from '@/lib/types/featuredSlider';
 import { featuredSliderImageUrl } from '@/sanity/lib/featuredSliderImage';
@@ -180,12 +180,12 @@ function SanitySlideHero({ slides }: { slides: FeaturedSliderSlide[] }) {
           <p className="text-base md:text-lg text-pl-on-stage leading-relaxed max-w-xl mb-6 line-clamp-3 md:line-clamp-4">
             {activeSlide.text}
           </p>
-          <Link
+          <Button
             href={activeSlide.ctaHref}
             className="inline-flex items-center px-6 py-3 rounded-full bg-pl-accent text-pl-on-accent text-sm font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
           >
             {activeSlide.ctaLabel}
-          </Link>
+          </Button>
 
           {showNavigation && (
             <SlideNavigation

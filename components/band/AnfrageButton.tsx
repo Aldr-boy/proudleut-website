@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import { AnfrageModal } from './AnfrageModal';
 import type { BandAnfrageEventType } from '@/lib/types/band';
 
@@ -15,16 +16,14 @@ export function AnfrageButton({ name, slug, anfrageEventTypes }: Props) {
 
   return (
     <>
-      <button
-        type="button"
+      <Button
         onClick={() => setModalOpen(true)}
         className="inline-flex items-center justify-center px-6 py-3 rounded-full
                    text-sm font-semibold bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
-                   hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors
-                   focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent-light"
+                   hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors"
       >
         Unverbindlich anfragen
-      </button>
+      </Button>
 
       <AnfrageModal
         bands={[{ slug, name, anfrageEventTypes }]}
