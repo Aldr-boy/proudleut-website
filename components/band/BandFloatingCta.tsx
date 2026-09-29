@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AnfrageModal } from './AnfrageModal';
+import { Button } from '@/components/ui/Button';
 import { useAnfrageStore } from '@/stores/anfrageStore';
 import type { BandAnfrageEventType } from '@/lib/types/band';
 
@@ -130,18 +131,16 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
         style={{ bottom: `${24 + merklisteBarHeight}px` }}
         aria-hidden={!stickyVisible}
       >
-        <button
-          type="button"
+        <Button
           onClick={() => setModalOpen(true)}
           tabIndex={stickyVisible ? 0 : -1}
           aria-label={`${name} unverbindlich anfragen`}
           className="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold
                      bg-pl-accent text-pl-on-accent shadow-lg hover:bg-pl-accent-hover
-                     motion-safe:transition-colors focus-visible:outline focus-visible:outline-2
-                     focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+                     motion-safe:transition-colors"
         >
           Unverbindlich anfragen
-        </button>
+        </Button>
       </div>
 
       {/* Mobile: Sticky Bottom CTA -- nur zwischen Hero-CTA und finalem Anfragebereich sichtbar.
@@ -176,16 +175,14 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
               </svg>
             </a>
           )}
-          <button
-            type="button"
+          <Button
             onClick={() => setModalOpen(true)}
             aria-label={`${name} unverbindlich anfragen`}
             className="flex-1 inline-flex items-center justify-center px-6 py-3.5 rounded-full text-sm font-semibold
-                       bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover motion-safe:transition-colors
-                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+                       bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover motion-safe:transition-colors"
           >
             Unverbindlich anfragen
-          </button>
+          </Button>
           <button
             type="button"
             onClick={handleMerken}

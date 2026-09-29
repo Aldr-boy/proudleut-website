@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 
 export const metadata: Metadata = {
   title: 'Über proudleut – proudleut',
@@ -350,16 +351,14 @@ export default function UeberProudleutPage() {
             melde mich persönlich.
           </p>
           <div className="mt-11 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7">
-            <Link
+            <Button
               href="/bands"
               className="inline-flex items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
                          bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
-                         hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors
-                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-                         focus-visible:outline-[var(--pl-accent-on-stage)]"
+                         hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors"
             >
               Bands entdecken
-            </Link>
+            </Button>
             <a
               href="mailto:alexander.dressler@proudleut.com"
               className="pl-photo-copy pl-photo-copy-link text-base font-semibold border-b border-transparent motion-safe:transition-colors"

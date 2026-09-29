@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAnfrageStore } from '@/stores/anfrageStore';
+import { Button } from '@/components/ui/Button';
 import { MerklisteFlow } from './MerklisteFlow';
 
 export function MerklisteBar() {
@@ -65,18 +66,13 @@ export function MerklisteBar() {
             </span>
           </p>
 
-          <button
-            type="button"
+          <Button
             onClick={() => setModalOpen(true)}
             className="shrink-0 inline-flex items-center justify-center px-5 py-2 rounded-full
-                       text-sm font-semibold motion-safe:transition-colors"
-            style={{
-              background: 'var(--pl-accent)',
-              color: 'var(--pl-text-on-accent)',
-            }}
+                       text-sm font-semibold bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
           >
             Merkliste ansehen
-          </button>
+          </Button>
         </div>
       </div>
       <div aria-hidden="true" style={{ height: placeholderHeight }} />

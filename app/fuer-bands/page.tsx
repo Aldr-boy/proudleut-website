@@ -232,9 +232,7 @@ export default async function FuerBandsPage() {
             <BandIntroTrigger
               className="items-center justify-center px-7 py-3.5 rounded-full text-base font-semibold
                          bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]
-                         hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors
-                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-                         focus-visible:outline-[var(--pl-accent-on-stage)]"
+                         hover:bg-[var(--pl-accent-hover)] motion-safe:transition-colors"
             >
               Bandseite anfragen
             </BandIntroTrigger>

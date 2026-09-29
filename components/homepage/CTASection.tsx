@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import Image from 'next/image';
+import { Button } from '@/components/ui/Button';
 
 // "Abschluss" -- an die visuelle Referenz app/ueber-mich/page.tsx (letzte
 // Section dort, San2-Livefoto) angeglichen: gleiche Layoutlogik
@@ -42,12 +42,12 @@ export default function CTASection() {
           Schaut euch in Ruhe um und entdeckt, welche Bands zu eurem Anlass passen.
         </p>
         <div className="mt-11 flex items-center justify-center">
-          <Link
+          <Button
             href="/bands"
             className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-pl-accent text-pl-on-accent text-base font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
           >
             Bands entdecken →
-          </Link>
+          </Button>
         </div>
       </div>
       <p

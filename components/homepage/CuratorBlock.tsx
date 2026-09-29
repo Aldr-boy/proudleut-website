@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
 
 export default function CuratorBlock() {
   return (
@@ -23,12 +24,12 @@ export default function CuratorBlock() {
               die passen könnten.
             </p>
             <div className="flex items-center gap-6 mt-7 flex-wrap">
-              <a
+              <Button
                 href="mailto:alexander.dressler@proudleut.com"
                 className="inline-flex items-center px-7 py-3.5 rounded-full bg-pl-accent text-pl-on-accent font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
               >
                 Schreib mir
-              </a>
+              </Button>
               <Link
                 href="/ueber-mich"
                 className="text-sm font-semibold text-pl-accent-deep hover:text-pl-accent-link-hover motion-safe:transition-colors"

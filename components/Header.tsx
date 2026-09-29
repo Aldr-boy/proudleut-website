@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ProudleutLogo } from './ProudleutLogo';
+import { Button, ButtonArrow } from '@/components/ui/Button';
 
 const NAV_LINKS = [
   { label: 'Über proudleut', href: '/ueber-mich' },
@@ -214,14 +215,17 @@ export default function Header() {
               })}
             </nav>
 
-            {/* Desktop-CTA: dunkel, nur im Hover lila, kein Active-State */}
-            <Link
+            {/* Desktop-CTA: dunkel, nur im Hover lila. Hover/Klick/Fokus
+                kommen jetzt einheitlich aus components/ui/Button.tsx. */}
+            <Button
               href={CTA.href}
-              className="hidden md:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-5 py-2.5 rounded-full bg-pl-text text-pl-paper text-sm font-medium hover:bg-pl-accent hover:text-pl-on-accent motion-safe:transition-colors active:scale-95 motion-safe:transition-transform"
+              className="hidden md:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap px-5 py-2.5 rounded-full bg-pl-text text-pl-paper text-sm font-medium hover:bg-pl-accent hover:text-pl-on-accent motion-safe:transition-colors"
             >
               {CTA.label}
-              <ChevronRightIcon className="h-4 w-4" />
-            </Link>
+              <ButtonArrow>
+                <ChevronRightIcon className="h-4 w-4" />
+              </ButtonArrow>
+            </Button>
 
             {/* Mobile Toggle */}
             <button
@@ -267,15 +271,17 @@ export default function Header() {
                     </Link>
                   );
                 })}
-                <Link
+                <Button
                   href={CTA.href}
                   tabIndex={menuOpen ? undefined : -1}
                   onClick={() => setMenuOpen(false)}
-                  className="mt-2 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-pl-accent text-pl-on-accent text-sm font-medium active:scale-95 motion-safe:transition-transform"
+                  className="mt-2 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-pl-accent text-pl-on-accent text-sm font-medium"
                 >
                   {CTA.label}
-                  <ChevronRightIcon className="h-4 w-4" />
-                </Link>
+                  <ButtonArrow>
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </ButtonArrow>
+                </Button>
               </nav>
             </div>
           </div>
