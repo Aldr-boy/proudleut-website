@@ -12,6 +12,7 @@ import { BandTagsSection } from '@/components/band/BandTagsSection';
 import { BandDescription } from '@/components/band/BandDescription';
 import { BandPeopleSection } from '@/components/band/BandPeopleSection';
 import { BandContactSection } from '@/components/band/BandContactSection';
+import { BandCtaSection } from '@/components/band/BandCtaSection';
 import { BandFloatingCta } from '@/components/band/BandFloatingCta';
 import { BandVideoSection } from '@/components/band/BandVideoSection';
 import { getYouTubeEmbedUrl } from '@/lib/youtube';
@@ -130,10 +131,14 @@ export default async function BandPage({ params }: PageProps) {
           Festwirte-Unterlagen, Hochzeitsinfos -- siehe BandTagsSection.tsx) */}
       <BandTagsSection band={band} />
 
-      {/* Sentinel für BandFloatingCta: markiert den Beginn des finalen Anfragebereichs,
-          damit die Leisten wissen, wann sie wieder ausblenden muessen. */}
-      <div id="final-cta-sentinel" aria-hidden="true" className="h-px" />
+      {/* Mehr von [Band]: Social-Pills als Zeile im Raster */}
       <BandContactSection band={band} websiteUrl={websiteUrl} />
+
+      {/* Sentinel für BandFloatingCta: markiert den Beginn des Abschluss-
+          Anfragebereichs (BandCtaSection), damit die Leisten wissen, wann sie
+          wieder ausblenden muessen. Über "Mehr von" bleiben sie sichtbar. */}
+      <div id="final-cta-sentinel" aria-hidden="true" className="h-px" />
+      <BandCtaSection band={band} />
 
       <BandFloatingCta
         name={band.name}

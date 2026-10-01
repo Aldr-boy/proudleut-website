@@ -54,7 +54,7 @@ test('Instagram/Facebook zeigen "Follower", YouTube zeigt "Abonnenten"', () => {
   assert.match(source, /'Abonnenten'/)
 })
 
-test('jede Zeile bleibt genau EIN Link (Icon+Label+Zahl in derselben <a>, keine verschachtelten Links)', () => {
+test('jede Pill bleibt genau EIN Link (Label+Zahl in derselben <a>, keine verschachtelten Links)', () => {
   const liStart = source.indexOf('{links.map(')
   const liEnd = source.indexOf('</ul>', liStart)
   const body = source.slice(liStart, liEnd)
@@ -62,9 +62,18 @@ test('jede Zeile bleibt genau EIN Link (Icon+Label+Zahl in derselben <a>, keine 
   assert.equal(anchorOpenings.length, 1, 'genau ein <a>-Tag pro map()-Aufruf-Template erwartet')
 })
 
-test('Zahl ist optisch kraeftiger (font-semibold) als die Einheit (text-xs, kein font-semibold)', () => {
-  assert.match(source, /font-semibold text-pl-text[^"]*"\s*>\s*\{formatFollowerCount/)
-  assert.match(source, /text-xs text-pl-text-muted">\{metric\.unit\}/)
+test('Pill (Prototyp E): Label fett, Zahl und Einheit gedaempft (text-pl-text-muted), ohne Icons', () => {
+  assert.match(source, /<strong className="font-bold">\{label\}<\/strong>/)
+  assert.match(source, /text-pl-text-muted">\s*<span>\s*\{formatFollowerCount\(metric\.count\)\} \{metric\.unit\}/)
+  assert.doesNotMatch(source, /<svg|Icon\b/)
+})
+
+test('ohne jeden Link entfaellt die Zeile komplett (return null), keine leere Zeile', () => {
+  assert.match(source, /if \(links\.length === 0\) return null;/)
+})
+
+test('"Mehr von [Band]" ist eine BandRow mit h2-Label (Zwischenueberschrift bleibt semantisch erhalten)', () => {
+  assert.match(source, /<BandRow label=\{`Mehr von \$\{band\.name\}`\} labelAs="h2"/)
 })
 
 test('keine Following-Zahlen oder Follower\\/Following-Verhaeltnisse', () => {
@@ -131,18 +140,18 @@ test('Einordnungssatz unter den Zahlen: nur sichtbar, wenn mindestens eine Kennz
   assert.ok(idx > sharedIdx, 'Einordnungssatz muss im Quelltext nach der Stand-Zeile stehen')
 })
 
-test('Stand-Zeile und Einordnungssatz sind rechtsbuendig und auf die Breite der Zahlenspalte begrenzt', () => {
+test('Stand-Zeile und Einordnungssatz stehen linksbuendig unter den Pills (Prototyp E), nicht mehr rechtsbuendig', () => {
   const sharedIdx = source.indexOf("standDisplay.kind === 'shared' && (")
   assert.ok(sharedIdx >= 0)
   const sharedBlock = source.slice(sharedIdx, source.indexOf(')}', sharedIdx) + 2)
-  assert.match(sharedBlock, /max-w-sm/, 'Stand-Zeile muss auf die Breite der Zahlenspalte (wie <ul>) begrenzt sein')
-  assert.match(sharedBlock, /text-right/, 'Stand-Zeile muss rechtsbuendig sein')
+  assert.match(sharedBlock, /mt-3 text-xs text-pl-text-hint/)
+  assert.doesNotMatch(sharedBlock, /text-right|max-w-sm/)
 
   const hintIdx = source.indexOf('{hasVisibleMetric && (')
   assert.ok(hintIdx >= 0)
   const hintBlock = source.slice(hintIdx, source.indexOf(')}', hintIdx) + 2)
-  assert.match(hintBlock, /max-w-sm/, 'Einordnungssatz muss auf die Breite der Zahlenspalte (wie <ul>) begrenzt sein')
-  assert.match(hintBlock, /text-right/, 'Einordnungssatz muss rechtsbuendig sein, buendig mit der Zahlenspalte')
+  assert.match(hintBlock, /text-xs text-pl-text-hint/)
+  assert.doesNotMatch(hintBlock, /text-right|max-w-sm/)
 })
 
 test('Website und Spotify erhalten keine Kennzahl (kein metric-Feld in ihren LinkItems)', () => {
