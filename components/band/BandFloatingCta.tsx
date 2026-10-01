@@ -133,16 +133,36 @@ export function BandFloatingCta({
         style={{ top: 'var(--pl-nav-height)' }}
       >
         <div className="pl-container-shell px-4 sm:px-6 py-3 flex items-center gap-4">
-          <dl className="flex flex-1 min-w-0 items-center">
-            {facts.map((f) => (
-              <div
-                key={f.label}
-                className="flex flex-col gap-0.5 min-w-0 pr-7 mr-7 border-r border-pl-soft last:border-r-0 last:mr-0 last:pr-0"
-              >
-                <dt className="text-[11px] font-bold uppercase tracking-[0.08em] text-pl-text-muted">{f.label}</dt>
-                <dd className="text-base font-bold text-pl-text truncate">{f.value}</dd>
-              </div>
-            ))}
+          {/* Prioritaet bei knappem Platz, rein ueber CSS: Besetzung und Stil
+              schrumpfen nie (shrink-0). Die Herkunft darf mit "…" kuerzen (volle
+              Fassung im title), ab ihrer Untergrenze (flex-basis) bricht der
+              Stil in eine zweite Zeile um. Die Zeilenhoehe ist fest (h-11) und
+              der Zeilenabstand (gap-y-4) groesser als der Rest der Hoehe, damit
+              von der zweiten Zeile nie ein Rest sichtbar bleibt -- ein Wert
+              weniger statt eines abgeschnittenen. Trennlinien stehen
+              fuehrend (border-l), damit nach einem entfallenen Stil keine
+              Linie uebrig bleibt. Die Leistenhoehe (74 px) aendert sich nicht
+              (Buttons 48 px), sie steckt in scroll-margin-top der Video-Section. */}
+          <dl className="flex flex-wrap content-start gap-y-4 flex-1 min-w-0 h-11 overflow-hidden">
+            {facts.map((f, i) => {
+              const isHerkunft = f.label === 'Herkunft';
+              return (
+                <div
+                  key={f.label}
+                  className={`flex flex-col gap-0.5 ${isHerkunft ? 'flex-[1_1_10rem] min-w-0 max-w-max' : 'shrink-0'} ${
+                    i > 0 ? 'ml-7 pl-7 border-l border-pl-soft' : ''
+                  }`}
+                >
+                  <dt className="text-[11px] font-bold uppercase tracking-[0.08em] text-pl-text-muted">{f.label}</dt>
+                  <dd
+                    title={isHerkunft ? f.value : undefined}
+                    className={`text-base font-bold text-pl-text ${isHerkunft ? 'truncate' : 'whitespace-nowrap'}`}
+                  >
+                    {f.value}
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
           <BandMerkHeart
             name={name}

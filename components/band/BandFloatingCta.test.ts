@@ -67,8 +67,28 @@ test('prefers-reduced-motion: der Slide (translate) steht nur hinter motion-safe
 
 test('Desktop-Faktenleiste klebt unter dem Header (top: var(--pl-nav-height)) und zeigt Fakten, Herz und Anfrage-Button', () => {
   assert.match(source, /top: 'var\(--pl-nav-height\)'/)
-  assert.match(source, /facts\.map\(\(f\) =>/)
+  assert.match(source, /facts\.map\(\(f, i\) =>/)
   assert.equal((source.match(/<BandMerkHeart/g) ?? []).length, 2)
+})
+
+test('Faktenleiste: Besetzung und Stil schrumpfen nie (shrink-0), nur die Herkunft darf kuerzen (flex-[1_1_10rem] min-w-0 max-w-max, truncate, title)', () => {
+  assert.match(source, /isHerkunft \? 'flex-\[1_1_10rem\] min-w-0 max-w-max' : 'shrink-0'/)
+  assert.match(source, /title=\{isHerkunft \? f\.value : undefined\}/)
+  assert.match(source, /isHerkunft \? 'truncate' : 'whitespace-nowrap'/)
+})
+
+test('Faktenleiste: Stil entfaellt vollstaendig statt abgeschnitten zu werden (flex-wrap + feste Zeilenhoehe + overflow-hidden, Zeilenabstand groesser als die Resthoehe)', () => {
+  assert.match(source, /<dl className="flex flex-wrap content-start gap-y-4 flex-1 min-w-0 h-11 overflow-hidden">/)
+})
+
+test('Faktenleiste: Trennlinien stehen fuehrend (border-l ab dem zweiten Fakt), kein hinteres border-r, das nach einem entfallenen Stil uebrig bliebe', () => {
+  assert.match(source, /i > 0 \? 'ml-7 pl-7 border-l border-pl-soft' : ''/)
+  assert.ok(!/border-r/.test(source))
+})
+
+test('Faktenleiste: Zeilenhoehe h-11 (44 px) bleibt unter den 48-px-Buttons, die Leistenhoehe (74 px) und damit scroll-margin-top der Video-Section aendern sich nicht', () => {
+  assert.match(source, /py-3 flex items-center gap-4/)
+  assert.match(source, /h-12 px-\[26px\]/)
 })
 
 test('Stacking der mobilen Leiste ueber der Merkliste-Leiste (merklisteBarHeight) und safe-area bleiben erhalten', () => {
