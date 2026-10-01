@@ -7,7 +7,7 @@ type Props = {
   band: Band;
 };
 
-// "01 Wer steht hier auf der Bühne?" (Prototyp E): links "Klingt nach" in
+// "Wer steht hier auf der Bühne?" (Prototyp E, ohne Kapitelnummer): links "Klingt nach" in
 // grosser Typografie mit Linien, rechts der Bandtext als Zweispalter; mobil
 // steht "Klingt nach" als Liste ueber dem Text. Absatz 1 steht immer offen
 // da; weitere Absaetze (falls vorhanden) liegen in <details> ("Mehr ueber X",
@@ -32,7 +32,7 @@ export function BandDescription({ band }: Props) {
   return (
     <section className="bg-pl-paper py-16 md:py-20 px-4 sm:px-6">
       <div className="pl-container-shell">
-        <BandChapterHeading number="01" title="Wer steht hier auf der Bühne?" />
+        <BandChapterHeading title="Wer steht hier auf der Bühne?" />
 
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-[72px]">
           {klingtNach.length > 0 ? (

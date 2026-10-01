@@ -33,7 +33,7 @@ test('variant="dark" nutzt andere, dunkle Token (border-white\\/20, text-pl-on-s
 test('BandTagsSection.tsx nutzt BandEventTypesPills mit variant="light" statt eigener Pill-Logik (kein doppelter PILL-Code mehr)', () => {
   assert.match(
     tagsSectionSource,
-    /<BandEventTypesPills eventTypes=\{band\.eventTypes\} categorySlugs=\{band\.categorySlugs\} variant="light" \/>/
+    /<BandEventTypesPills\s+eventTypes=\{band\.eventTypes\}\s+categorySlugs=\{band\.categorySlugs\}\s+variant="light"\s+collapseOnMobile=\{6\}\s*\/>/
   )
   assert.doesNotMatch(tagsSectionSource, /const PILL =/, 'die alte, lokale PILL-Konstante darf nicht wieder auftauchen')
 })

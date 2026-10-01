@@ -70,6 +70,16 @@ test('CTA verlinkt document.fileUrl, oeffnet in neuem Tab mit rel-Attribut (echt
   assert.match(source, /rel="noopener noreferrer"/)
 })
 
-test('BandTagsSection.tsx: BandDocumentsSection wird als eigene, volle Breite nutzende Ebene von "03" eingebunden (nicht mehr als eigene Section in page.tsx)', () => {
+test('BandTagsSection.tsx: BandDocumentsSection wird als Zeile des Zeilenrasters eingebunden (nicht mehr als eigene Section in page.tsx)', () => {
   assert.match(tagsSectionSource, /<BandDocumentsSection band=\{band\} \/>/)
+})
+
+test('Zeilenraster: das Label der Zeile ist document.audienceLabel (je Dokument eine Zeile), nicht mehr ein Eyebrow in der Karte', () => {
+  assert.match(source, /<BandRow label=\{document\.audienceLabel\}>/)
+  assert.doesNotMatch(source, /uppercase tracking-wider mb-1/)
+})
+
+test('ohne Vorschaubild steht ein "PDF"-Kaestchen (heller Text auf dunklem Token pl-text, nicht pl-stage)', () => {
+  assert.match(source, /function DocumentIcon\(\)/)
+  assert.match(source, />\s*PDF\s*<\/div>/)
 })

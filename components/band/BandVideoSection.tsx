@@ -8,22 +8,21 @@ type Props = {
   embedUrl: string | null;
 };
 
-// "02 Wie klingt die Band live?" -- die eine erlaubte dunkle "emotionale Insel"
+// "Wie klingt die Band live?" -- die eine erlaubte dunkle "emotionale Insel"
 // neben dem Hero (siehe design-reference.md, "Max. 2 dunkle Buehnen-
-// Content-Sections pro Seite"). Fuehrt Video, "Stil & Einfluesse" und die
+// Content-Sections pro Seite"). Fuehrt nur noch Video-Tile und die
 // vollstaendige Galerie samt Vergroesserungsfunktion (siehe BandGallery.tsx)
-// auf einer Flaeche zusammen. "Klingt nach" steht seit Prototyp E in
-// "01" (siehe BandDescription.tsx). Ohne Stil bekommt das Video die volle
-// Breite.
+// auf einer Flaeche zusammen. "Klingt nach" steht in BandDescription.tsx,
+// "Stil & Einfluesse" im Zeilenraster (BandTagsSection.tsx).
 //
-// Rendert nur, wenn mindestens EIN Baustein tatsaechlich Inhalt hat -- kein
-// leeres Kapitel, wenn eine Band weder Video noch Stil noch Galerie hat.
+// Rendert nur, wenn Video oder Galerie vorhanden sind -- keine leere Insel.
+// Ohne Video steht die Galerie direkt unter der Ueberschrift (keine
+// Trennlinie ueber ihr).
 export function BandVideoSection({ band, embedUrl }: Props) {
-  const stil = band.musikalischVerortet;
   const hasVideo = embedUrl !== null;
   const hasGallery = band.gallery.length > 0;
 
-  if (!hasVideo && stil.length === 0 && !hasGallery) return null;
+  if (!hasVideo && !hasGallery) return null;
 
   // Vorschaubild fuer den Klick-zum-Laden-Button: bewusst ein bereits
   // vorhandenes lokales Bandbild statt eines YouTube-Vorschaubilds (Auftrag:
@@ -36,36 +35,16 @@ export function BandVideoSection({ band, embedUrl }: Props) {
   return (
     <section id="live" className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav md:scroll-mt-[calc(var(--pl-nav-height)+5rem)]">
       <div className="pl-container-shell">
-        <BandChapterHeading number="02" title="Wie klingt die Band live?" variant="dark" />
+        <BandChapterHeading title="Wie klingt die Band live?" variant="dark" />
 
-        <div className={hasVideo && stil.length > 0 ? 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 md:gap-12 items-start' : ''}>
-          {hasVideo && (
-            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-pl-stage-elevated">
-              <VideoPlayer bandName={band.name} poster={poster} />
-            </div>
-          )}
-
-          {stil.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-pl-on-stage-muted uppercase tracking-wider mb-3">
-                Stil &amp; Einflüsse
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {stil.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-pl-on-stage"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {hasVideo && (
+          <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-pl-stage-elevated">
+            <VideoPlayer bandName={band.name} poster={poster} />
+          </div>
+        )}
 
         {hasGallery && (
-          <div className="mt-10 pt-10 border-t border-white/10">
+          <div className={hasVideo ? 'mt-10 pt-10 border-t border-white/10' : ''}>
             <BandGallery band={band} />
           </div>
         )}
