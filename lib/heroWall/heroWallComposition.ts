@@ -1,24 +1,31 @@
-// Bildplatz-Definition fuer die neue Split-Hero-Komposition (Auftrag
-// "Startseiten-Hero-Redesign"). Loest die vorherige 40-Slot-Paternoster-
-// Logik (ehemals simulateHeroWallSlots.ts) vollstaendig ab -- andere
-// Geometrie (Split-Layout mit gekippter Bildwelt statt Vollflaechen-
-// Ueberlagerung), andere Zuordnungsregel:
+// Bildplatz-Definition fuer die Split-Hero-Komposition (Auftrag
+// "Hero-Bildwand: horizontale Steuerung", Option 1 -- Round-Robin).
+// Loest die vorherige 40-Slot-Paternoster-Logik (ehemals
+// simulateHeroWallSlots.ts) vollstaendig ab -- andere Geometrie
+// (Split-Layout mit gekippter Bildwelt statt Vollflaechen-Ueberlagerung),
+// andere Zuordnungsregel:
 //
-//   Bildplatz n erhaelt IMMER Poolbild n (pool[n]).
+//   Poolbild n landet in Spur (n mod Spurenzahl), an Zeile
+//   floor(n / Spurenzahl) dieser Spur (Round-Robin statt
+//   zusammenhaengender Bloecke).
 //
-// Direkte 1:1-Zuordnung nach dem bestehenden hero_wall_position-Sortierung
-// (siehe fetchHeroWallPool.ts) -- kein Modulo-Wrap, kein Shuffle, keine
-// Wiederholung zum Auffuellen. Fehlt an einer Position ein Poolbild
-// (Pool kleiner als der Bedarf des Breakpoints), bleibt der Bildplatz ein
-// Platzhalter (siehe HeroWall.tsx) statt ein anderes Bild zu wiederholen.
+// Direkte, deterministische Zuordnung nach dem bestehenden
+// hero_wall_position-Sortierung (siehe fetchHeroWallPool.ts) -- kein
+// Shuffle, keine Wiederholung zum Auffuellen. Fehlt an einer Position ein
+// Poolbild (Pool kleiner als der Bedarf des Breakpoints), bleibt der
+// Bildplatz ein Platzhalter (siehe HeroWall.tsx) statt ein anderes Bild
+// zu wiederholen.
 //
-// Alle Breakpoints verwenden DIESELBE Zuordnung: sie zeigen lediglich ein
-// PREFIX der kanonischen Desktop-Liste (weniger Bildplaetze auf kleineren
-// Screens) und ordnen dieses Prefix in eine eigene, zum Breakpoint
-// passende Spaltenzahl (Tracks) um -- exakt das, was der Auftrag mit
-// "duerfen Plaetze ausblenden oder umordnen" meint. Kein Breakpoint zeigt
-// je ein Poolbild, das nicht auch auf jedem breiteren Breakpoint an
-// mindestens derselben Position erscheint.
+// Welche Poolindizes ueberhaupt verwendet werden (0..HERO_WALL_SLOT_COUNT-1
+// je Breakpoint), bleibt unveraendert ein PREFIX der kanonischen
+// Desktop-Liste -- Verkleinern des Viewports schneidet weiterhin nur das
+// Ende der Liste ab, holt nie ein anderes Bild herein. Anders als zuvor
+// landet ein bestimmter Poolindex aber NICHT mehr zwangslaeufig in
+// derselben Spur auf jedem Breakpoint (die Spurenzahl unterscheidet sich
+// je Breakpoint: 5/4/3/3) -- das ist hier gewollt: die vorhandenen
+// Auf-/Ab-Pfeile im Admin-Editor wirken dadurch automatisch auch
+// horizontal, benachbarte Poolbilder verteilen sich auf verschiedene
+// Spuren statt sich in einer einzigen zu buendeln.
 export type HeroWallBreakpoint = 'mobile' | 'tablet' | 'tabletWide' | 'desktop'
 
 export const HERO_WALL_TRACK_COUNT: Record<HeroWallBreakpoint, number> = {
@@ -48,13 +55,16 @@ export const HERO_WALL_CANONICAL_SLOT_COUNT = HERO_WALL_SLOT_COUNT.desktop
 
 export type HeroWallSlot<T> = { index: number; image: T | null }
 
-// Baut die Tracks (Spalten) eines Breakpoints: Track i erhaelt
-// KONTINUIERLICHE, aufsteigende Bildplaetze aus dem gemeinsamen Prefix
-// (Track 0 = die ersten imagesPerTrack Plaetze, Track 1 die naechsten
-// usw.) -- dasselbe Grundprinzip wie die abgeloeste Spec ("Spalte i
-// erhaelt Slots i*8..i*8+7"), nur mit den kleineren Zahlen dieser
-// Komposition. `image: null` markiert einen unbesetzten Bildplatz
-// (Platzhalter) -- niemals eine Wiederholung eines anderen Poolbilds.
+// Baut die Tracks (Spalten) eines Breakpoints per Round-Robin: Spur t,
+// Zeile r erhaelt Poolindex (r * trackCount + t) -- Track 0 bekommt Index
+// 0, trackCount, 2*trackCount, ...; Track 1 bekommt 1, trackCount+1, ...
+// usw. Jeder Poolindex erscheint in genau einer Spur, an genau einer
+// Zeile (bijektive Zuordnung ueber den gesamten Prefix, keine Duplikate).
+// Innerhalb einer Spur bleibt die Reihenfolge stabil aufsteigend nach
+// Poolindex (Zeile 0 < Zeile 1 < ...). `image: null` markiert einen
+// unbesetzten Bildplatz (Platzhalter, siehe HeroWall.tsx) -- niemals eine
+// Wiederholung eines anderen Poolbilds, auch wenn eine Spur dadurch
+// weniger echte Bilder traegt als eine andere.
 export function buildHeroWallTracks<T>(
   pool: readonly T[],
   breakpoint: HeroWallBreakpoint
@@ -64,8 +74,8 @@ export function buildHeroWallTracks<T>(
   const tracks: HeroWallSlot<T>[][] = []
   for (let t = 0; t < trackCount; t++) {
     const track: HeroWallSlot<T>[] = []
-    for (let p = 0; p < perTrack; p++) {
-      const index = t * perTrack + p
+    for (let r = 0; r < perTrack; r++) {
+      const index = r * trackCount + t
       const image = index < pool.length ? pool[index] : null
       track.push({ index, image })
     }
