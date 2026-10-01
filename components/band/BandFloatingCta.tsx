@@ -2,96 +2,97 @@
 
 import { useEffect, useState } from 'react';
 import { AnfrageModal } from './AnfrageModal';
+import { BandMerkHeart } from './BandMerkHeart';
 import { Button } from '@/components/ui/Button';
 import { useAnfrageStore } from '@/stores/anfrageStore';
 import type { BandAnfrageEventType } from '@/lib/types/band';
+import type { BandFact } from '@/lib/bands/bandFacts';
 
 type Props = {
   name: string;
   slug: string;
   anfrageEventTypes: BandAnfrageEventType[];
-  heroSentinelId: string;
+  facts: BandFact[];
+  // Id des Anfrage-Buttons im Hero (siehe HeroCTA.tsx). Existiert er nicht
+  // (Band ohne Bandbild -> kurzer Kopf), sind die Leisten von Anfang an
+  // sichtbar und tragen den einzigen Anfrage-Button der Seite.
+  heroButtonId: string;
+  hasHeroButton: boolean;
   finalSentinelId: string;
-  hasVideo: boolean;
 };
 
-// Auftrag 4.6 + UX-Feintuning (Sticky-CTA-Ueberschneidung) + Fix "fest
-// positionierte Leisten ueberdecken den Footer":
-// Desktop -- dezenter schwebender Anfrage-Pill unten rechts.
-// Mobile -- Sticky Bottom CTA, ebenfalls nur im Zwischenbereich sichtbar
-// (nicht mehr durchgaengig), damit er sich am ersten Screen nicht mit dem
-// Hero-CTA ueberschneidet und am Ende nicht mit dem finalen Anfragebereich
-// konkurriert.
+// Faktenleiste (Desktop) und untere Anfrageleiste (Handy), Variante E:
 //
-//   heroPassed   -- der Hero-Sentinel liegt bereits oberhalb der Observer-Grenze
+//   heroPassed   -- der Anfrage-Button im Hero ist aus dem Bild gescrollt
+//                   (IntersectionObserver direkt auf diesen Button)
 //   finalReached -- der Final-Sentinel liegt innerhalb oder oberhalb des Viewports
-//   stickyVisible = heroPassed && !finalReached
+//   visible = heroPassed && !finalReached
 //
-// heroPassed bleibt unveraendert ueber einen IntersectionObserver bestimmt.
-// finalReached wird bewusst NICHT mehr ueber einen IntersectionObserver
-// bestimmt: Ein Observer feuert nur, wenn ein tatsaechlich beobachteter
-// Frame eine Grenzueberquerung zeigt. Ein grosser, unstetiger Scroll-Sprung
-// (Scrollbar-Klick/-Drag, Pos1/Ende-Taste, interner Sprunglink, schnelles
-// Trackpad-Fling) kann den 1px-Sentinel in einem einzigen Frame ueberspringen
-// -- in beide Richtungen --, wodurch der Callback nie feuert und finalReached
-// auf einem veralteten Wert haengen bleibt (siehe Analysebericht "Fix fest
-// positionierte Leisten"). Stattdessen wird die tatsaechliche Geometrie bei
-// jedem Scroll/Resize (per requestAnimationFrame gedrosselt, kein Layout-
-// Thrashing) direkt ausgewertet: erreicht, sobald
-// sentinel.getBoundingClientRect().top < window.innerHeight gilt -- das
-// entspricht immer dem echten Zustand, unabhaengig vom Scroll-Pfad.
-export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId, finalSentinelId, hasVideo }: Props) {
+// So stehen nie zwei "Unverbindlich anfragen"-Buttons gleichzeitig im Bild:
+// weder Hero + Leiste noch Leiste + Anfragebereich am Seitenende.
+//
+// Kein Layout-Sprung: beide Leisten sind position:fixed (aus dem Fluss), das
+// Ein-/Ausblenden aendert nur opacity/transform/visibility. Die Mobil-Fakten
+// stehen statisch im Seitenfluss (BandHero.tsx) und haengen nicht an diesem
+// Zustand. Ausgeblendet: visibility:hidden + inert -- nichts darin ist
+// fokussierbar; der Fokus wird beim Einblenden nicht verschoben.
+//
+// finalReached wird bewusst NICHT ueber einen IntersectionObserver bestimmt:
+// ein Observer feuert nur bei einer beobachteten Grenzueberquerung. Ein grosser,
+// unstetiger Scroll-Sprung (Scrollbar-Drag, Pos1/Ende, interner Sprunglink,
+// Trackpad-Fling) kann den 1px-Sentinel in einem Frame ueberspringen, finalReached
+// bliebe veraltet (siehe Analysebericht "Fix fest positionierte Leisten").
+// Stattdessen wird die Geometrie bei jedem Scroll/Resize (per
+// requestAnimationFrame gedrosselt) ausgewertet: erreicht, sobald
+// sentinel.getBoundingClientRect().top < window.innerHeight gilt.
+export function BandFloatingCta({
+  name,
+  slug,
+  anfrageEventTypes,
+  facts,
+  heroButtonId,
+  hasHeroButton,
+  finalSentinelId,
+}: Props) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [heroPassed, setHeroPassed] = useState(false);
+  const [heroPassed, setHeroPassed] = useState(!hasHeroButton);
   const [finalReached, setFinalReached] = useState(false);
   const [merklisteBarHeight, setMerklisteBarHeight] = useState(0);
-  const isGemerkt = useAnfrageStore((s) => s.isSelected(slug));
-  const addBand = useAnfrageStore((s) => s.addBand);
-  const removeBand = useAnfrageStore((s) => s.removeBand);
   const merklisteBandsCount = useAnfrageStore((s) => s.bands.length);
 
-  // Echte Kollisionsloesung statt eines hoeheren z-index (Auftrag
-  // "Bandseiten-Finalisierung": "Ein hoeherer z-index allein loest die
-  // Kollision nicht") -- die globale Merkliste-Leiste (MerklisteBar.tsx,
-  // ebenfalls "fixed bottom-0") bekommt per id="merkliste-bar" eine feste
-  // Referenz, deren tatsaechlich gerenderte Hoehe hier gemessen und als
-  // bottom-Offset uebernommen wird. Beide Leisten bleiben so gleichzeitig
-  // sichtbar und gestapelt statt sich zu verdecken; merklisteBandsCount
-  // triggert die Neumessung, wenn die Merkliste ein-/ausgeblendet wird
-  // oder ihr Inhalt (und damit ihre Hoehe) sich aendert.
+  // Echte Kollisionsloesung statt eines hoeheren z-index: die globale
+  // Merkliste-Leiste (MerklisteBar.tsx, ebenfalls "fixed bottom-0") hat per
+  // id="merkliste-bar" eine feste Referenz, deren gerenderte Hoehe hier
+  // gemessen und als bottom-Offset der mobilen Leiste uebernommen wird.
+  // merklisteBandsCount triggert die Neumessung, wenn die Merkliste ein-/
+  // ausgeblendet wird oder ihre Hoehe sich aendert.
   useEffect(() => {
     const el = document.getElementById('merkliste-bar');
     setMerklisteBarHeight(el?.offsetHeight ?? 0);
   }, [merklisteBandsCount]);
 
-  const handleMerken = () => {
-    if (isGemerkt) {
-      removeBand(slug);
-    } else {
-      addBand({ slug, name, anfrageEventTypes });
-    }
-  };
-
   useEffect(() => {
-    const heroSentinel = document.getElementById(heroSentinelId);
     const finalSentinel = document.getElementById(finalSentinelId);
-    if (!heroSentinel || !finalSentinel) return;
+    if (!finalSentinel) return;
 
-    // rootMargin '-8px 0px 0px 0px' gilt ausschliesslich fuer den Hero-Observer --
-    // bewusst kein pixelgenauer Nachbau der Navigationshoehe, nur eine kleine
-    // deterministische Toleranz. Unveraendert gegenueber dem bisherigen Stand.
-    const heroObserver = new IntersectionObserver(([entry]) => {
-      const boundary = entry.rootBounds ? entry.rootBounds.top : 8;
-      const isAboveBoundary = entry.boundingClientRect.top < boundary;
-      setHeroPassed(!entry.isIntersecting && isAboveBoundary);
-    }, { rootMargin: '-8px 0px 0px 0px' });
-    heroObserver.observe(heroSentinel);
+    // Die Faktenleiste klebt unter dem Header (--pl-nav-height). Der Observer
+    // nutzt dieselbe Hoehe als oberen rootMargin: die Leiste erscheint genau,
+    // wenn der Hero-Button vollstaendig oberhalb ihrer Unterkante liegt --
+    // keine Ueberlappung, kein Moment mit zwei Buttons.
+    let heroObserver: IntersectionObserver | undefined;
+    if (hasHeroButton) {
+      const heroButton = document.getElementById(heroButtonId);
+      if (heroButton) {
+        const navHeight =
+          parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pl-nav-height')) || 88;
+        heroObserver = new IntersectionObserver(([entry]) => {
+          const boundary = entry.rootBounds ? entry.rootBounds.top : navHeight;
+          setHeroPassed(!entry.isIntersecting && entry.boundingClientRect.top < boundary);
+        }, { rootMargin: `-${navHeight}px 0px 0px 0px` });
+        heroObserver.observe(heroButton);
+      }
+    }
 
-    // finalReached: deterministische Geometrie-Pruefung statt Observer-
-    // Crossing-Erkennung (siehe Kommentar oben) -- bei jedem Scroll/Resize
-    // per requestAnimationFrame gedrosselt neu ausgewertet, zusaetzlich
-    // einmal sofort nach dem Mount (z. B. Reload waehrend die Seite bereits
-    // bis ans Ende gescrollt ist).
     let rafScheduled = false;
     const evaluateFinalSentinel = () => {
       rafScheduled = false;
@@ -108,92 +109,88 @@ export function BandFloatingCta({ name, slug, anfrageEventTypes, heroSentinelId,
     window.addEventListener('resize', scheduleEvaluateFinalSentinel);
 
     return () => {
-      heroObserver.disconnect();
+      heroObserver?.disconnect();
       window.removeEventListener('scroll', scheduleEvaluateFinalSentinel);
       window.removeEventListener('resize', scheduleEvaluateFinalSentinel);
     };
-  }, [heroSentinelId, finalSentinelId]);
+  }, [heroButtonId, hasHeroButton, finalSentinelId]);
 
-  const stickyVisible = heroPassed && !finalReached;
-  const hiddenInertProps = stickyVisible ? {} : { inert: true };
+  const visible = heroPassed && !finalReached;
+
+  const hiddenClasses = visible
+    ? 'visible opacity-100 translate-y-0 pointer-events-auto'
+    : 'invisible opacity-0 pointer-events-none';
 
   return (
     <>
-      {/* Desktop: schwebender Anfrage-Pill -- bottom-Offset weicht der
-          Merkliste-Leiste aus (siehe Kommentar am merklisteBarHeight-Effekt
-          oben), statt sie per z-index zu verdecken. */}
+      {/* Desktop: Faktenleiste, klebt unter dem Header. fixed statt sticky,
+          damit sie nie Platz im Seitenfluss belegt. */}
       <div
-        className={`hidden md:block fixed right-6 z-40 motion-safe:transition-all motion-safe:duration-300 ${
-          stickyVisible
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 translate-y-2 pointer-events-none'
-        }`}
-        style={{ bottom: `${24 + merklisteBarHeight}px` }}
-        aria-hidden={!stickyVisible}
+        inert={!visible}
+        className={`hidden md:block fixed inset-x-0 z-40 bg-pl-canvas/95 backdrop-blur-sm border-y border-pl-soft
+                    transition-[opacity,transform,visibility] duration-[220ms] ease-out
+                    ${visible ? '' : 'motion-safe:-translate-y-2'} ${hiddenClasses}`}
+        style={{ top: 'var(--pl-nav-height)' }}
       >
-        <Button
-          onClick={() => setModalOpen(true)}
-          tabIndex={stickyVisible ? 0 : -1}
-          aria-label={`${name} unverbindlich anfragen`}
-          className="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold
-                     bg-pl-accent text-pl-on-accent shadow-lg hover:bg-pl-accent-hover
-                     motion-safe:transition-colors"
-        >
-          Unverbindlich anfragen
-        </Button>
+        <div className="pl-container-shell px-4 sm:px-6 py-3 flex items-center gap-4">
+          <dl className="flex flex-1 min-w-0 items-center">
+            {facts.map((f) => (
+              <div
+                key={f.label}
+                className="flex flex-col gap-0.5 min-w-0 pr-7 mr-7 border-r border-pl-soft last:border-r-0 last:mr-0 last:pr-0"
+              >
+                <dt className="text-[11px] font-bold uppercase tracking-[0.08em] text-pl-text-muted">{f.label}</dt>
+                <dd className="text-base font-bold text-pl-text truncate">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <BandMerkHeart
+            name={name}
+            slug={slug}
+            anfrageEventTypes={anfrageEventTypes}
+            tone="light"
+            className="w-12 h-12"
+          />
+          <Button
+            onClick={() => setModalOpen(true)}
+            aria-label={`${name} unverbindlich anfragen`}
+            className="inline-flex items-center justify-center h-12 px-[26px] rounded-full text-base font-bold
+                       bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover"
+          >
+            Unverbindlich anfragen
+          </Button>
+        </div>
       </div>
 
-      {/* Mobile: Sticky Bottom CTA -- nur zwischen Hero-CTA und finalem Anfragebereich sichtbar.
-          Bei aktiver globaler Merkliste (MerklisteBar.tsx, ebenfalls "fixed bottom-0") rueckt
-          diese Leiste per bottom-Offset (merklisteBarHeight) nach oben, statt sie zu verdecken --
-          ein hoeherer z-index allein wuerde die Kollision nicht loesen, da beide Leisten dieselbe
-          volle Breite beanspruchen. Der Zugang zur Mehrband-Anfrage (Merkliste ansehen) bleibt so
-          in jedem Fall sichtbar und erreichbar. */}
+      {/* Handy: untere Anfrageleiste (Anfrage + Herz). Bei aktiver globaler
+          Merkliste (MerklisteBar.tsx, ebenfalls "fixed bottom-0") rueckt sie per
+          bottom-Offset (merklisteBarHeight) nach oben, statt sie zu verdecken --
+          ein hoeherer z-index allein loest die Kollision nicht, beide Leisten
+          beanspruchen die volle Breite. */}
       <div
-        {...hiddenInertProps}
-        aria-hidden={!stickyVisible}
+        inert={!visible}
         className={`md:hidden fixed inset-x-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
                     border-pl-soft px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
-                    transition-[opacity,transform,bottom] duration-[220ms] ease-out ${
-          stickyVisible
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 motion-safe:translate-y-2 pointer-events-none'
-        }`}
+                    transition-[opacity,transform,bottom,visibility] duration-[220ms] ease-out
+                    ${visible ? '' : 'motion-safe:translate-y-2'} ${hiddenClasses}`}
         style={{ bottom: `${merklisteBarHeight}px` }}
       >
         <div className="flex items-center gap-2">
-          {hasVideo && (
-            <a
-              href="#live"
-              className="shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-full border border-pl-soft text-pl-text
-                         hover:border-pl-medium motion-safe:transition-colors
-                         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
-              aria-label="Live-Video ansehen"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </a>
-          )}
           <Button
             onClick={() => setModalOpen(true)}
             aria-label={`${name} unverbindlich anfragen`}
             className="flex-1 inline-flex items-center justify-center px-6 py-3.5 rounded-full text-sm font-semibold
-                       bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover motion-safe:transition-colors"
+                       bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover"
           >
             Unverbindlich anfragen
           </Button>
-          <button
-            type="button"
-            onClick={handleMerken}
-            aria-pressed={isGemerkt}
-            aria-label={isGemerkt ? `${name} aus Anfrage entfernen` : `${name} für Anfrage merken`}
-            className="shrink-0 inline-flex items-center justify-center w-12 h-12 rounded-full border border-pl-soft text-pl-text
-                       hover:border-pl-medium motion-safe:transition-colors
-                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
-          >
-            <span aria-hidden="true">{isGemerkt ? '✓' : '♡'}</span>
-          </button>
+          <BandMerkHeart
+            name={name}
+            slug={slug}
+            anfrageEventTypes={anfrageEventTypes}
+            tone="light"
+            className="w-12 h-12"
+          />
         </div>
       </div>
 
