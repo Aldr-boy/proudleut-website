@@ -1,81 +1,72 @@
 import type { Band } from '@/lib/types/band';
+import { hasWeddingContent } from '@/lib/bands/bandWeddingContent';
 import { BandEventTypesPills } from './BandEventTypesPills';
 import { BandReferenceEvents } from './BandReferenceEvents';
 import { BandDocumentsSection } from './BandDocumentsSection';
 import { BandWeddingModule } from './BandWeddingModule';
-import { BandChapterHeading } from './BandChapterHeading';
+import { BandRow } from './BandRow';
 
 type Props = {
   band: Band;
 };
 
-// "03 Die Band für euer Event?" (Nachschaerfung, Abschnitt 3): drei
-// datengetriebene Ebenen statt eines zweispaltigen Rasters mit intern
-// nochmals zweispaltigen Referenzen -- 1) "Spielt bei" ueber die volle
-// Breite, 2) Referenz-Events links / Hochzeitskarte rechts (nur wenn
-// beide vorhanden, sonst nutzt die eine vorhandene Gruppe die volle
-// Lesebreite), 3) Festwirte-Unterlagen als flache Karte ueber die volle
-// Breite. Jede Ebene rendert nur, wenn sie tatsaechlich Inhalt hat -- keine
-// leeren Spalten/Flaechen. "Vernetzt"/Social-Links entfallen hier
-// vollstaendig, da sie bereits einmalig im Anfrage-Bereich erscheinen
-// (BandContactSection.tsx) -- keine Dopplung. Bandart/Herkunft/Besetzung
-// sind nach "01" umgezogen (siehe BandDescription.tsx).
+// Zeilenraster (Prototyp E): Label links, Inhalt rechts, in dieser
+// Reihenfolge -- Stil & Einfluesse, Spielt bei, Hochzeit, Referenz-Events,
+// Unterlagen fuer Veranstalter. Jede Zeile rendert nur, wenn sie
+// tatsaechlich Inhalt hat (kein Platzhalter); die erste sichtbare Zeile hat
+// keine Linie darueber (siehe BandRow.tsx). Ohne Ueberschrift und ohne
+// Kapitelnummer. "Vernetzt"/Social-Links stehen in "Mehr von [Band]"
+// (BandContactSection.tsx).
 export function BandTagsSection({ band }: Props) {
+  const stil = band.musikalischVerortet;
+  const hasStil = stil.length > 0;
   const hasEventTypes = band.eventTypes.length > 0;
   const hasReferenceEvents = band.referenceEvents.length > 0;
   const hasDocuments = band.documents.length > 0;
-  const hasWedding = !!band.weddingInfo?.weddingDescription
+  // BandWeddingModule rendert nur mit "Hochzeit" unter den Event-Types
+  // (hasWeddingContent); die Zeile darf nur erscheinen, wenn auch Inhalt da ist.
+  const hasWedding = hasWeddingContent(band) && (
+    !!band.weddingInfo?.weddingDescription
     || band.weddingInfo?.kidnappingBride != null
     || band.weddingInfo?.moderation != null
-    || !!band.weddingInfo?.possiblePlaytimes;
+    || !!band.weddingInfo?.possiblePlaytimes
+  );
 
-  const hasMidTier = hasReferenceEvents || hasWedding;
-  const midTierIsSplit = hasReferenceEvents && hasWedding;
-
-  const tiers = [hasEventTypes, hasMidTier, hasDocuments];
-  const firstTierIndex = tiers.findIndex(Boolean);
-
-  if (firstTierIndex === -1) return null;
+  if (!hasStil && !hasEventTypes && !hasWedding && !hasReferenceEvents && !hasDocuments) return null;
 
   return (
     <section id="anlass" className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav">
       <div className="pl-container-shell">
-        <BandChapterHeading number="03" title="Die Band für euer Event?" />
+        <div>
+          {hasStil && (
+            <BandRow label="Stil & Einflüsse" pillAligned>
+              <div className="flex flex-wrap gap-2">
+                {stil.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center h-[38px] px-[18px] rounded-full bg-pl-stage text-pl-on-stage text-sm font-semibold"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </BandRow>
+          )}
 
-        <div className="flex flex-col gap-10 md:gap-12">
           {hasEventTypes && (
-            <div>
-              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-3">
-                Spielt bei
-              </p>
-              <BandEventTypesPills eventTypes={band.eventTypes} categorySlugs={band.categorySlugs} variant="light" />
-            </div>
+            <BandRow label="Spielt bei" pillAligned>
+              <BandEventTypesPills
+                eventTypes={band.eventTypes}
+                categorySlugs={band.categorySlugs}
+                variant="light"
+                collapseOnMobile={6}
+              />
+            </BandRow>
           )}
 
-          {hasMidTier && (
-            <div
-              className={`grid grid-cols-1 gap-8 ${midTierIsSplit ? 'lg:grid-cols-2 lg:gap-14 lg:items-start' : ''} ${
-                firstTierIndex === 1 ? '' : 'pt-10 md:pt-12 border-t border-pl-soft'
-              }`}
-            >
-              {hasReferenceEvents && (
-                <div className={midTierIsSplit ? '' : 'max-w-xl'}>
-                  <BandReferenceEvents band={band} />
-                </div>
-              )}
-              {hasWedding && (
-                <div className={midTierIsSplit ? '' : 'max-w-xl'}>
-                  <BandWeddingModule band={band} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {hasDocuments && (
-            <div className={firstTierIndex === 2 ? '' : 'pt-10 md:pt-12 border-t border-pl-soft'}>
-              <BandDocumentsSection band={band} />
-            </div>
-          )}
+          {hasWedding && <BandWeddingModule band={band} />}
+          {hasReferenceEvents && <BandReferenceEvents band={band} />}
+          {hasDocuments && <BandDocumentsSection band={band} />}
         </div>
       </div>
     </section>

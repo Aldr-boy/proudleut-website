@@ -1,13 +1,15 @@
 import type { Band } from '@/lib/types/band';
 import { hasWeddingContent } from '@/lib/bands/bandWeddingContent';
+import { BandRow } from './BandRow';
 
 type Props = { band: Band };
 
-// Hochzeitsinformationen, eingebettet als helle Karte in der rechten Spalte
-// von "03 Die Band fuer euer Event?" (siehe BandTagsSection.tsx, finaler
-// Entwurf: Hochzeitskarte unter der Festwirte-PDF-Karte). weddingDescription
-// ist eine kurze, bestehende Stimmungszeile der Band (z. B. "aufregend -
-// pfundig - bewegend") -- servergerendert, keine erfundene Ergaenzung.
+// Zeile "Hochzeit" im Zeilenraster von BandTagsSection.tsx (Prototyp E):
+// Karte mit Titel und kurzer Stimmungszeile links, den Entscheidungswerten
+// rechts (ab md zweispaltig). weddingDescription ist eine kurze, bestehende
+// Stimmungszeile der Band (z. B. "aufregend - pfundig - bewegend") --
+// servergerendert, keine erfundene Ergaenzung. Nur das vorhandene
+// Hochzeitsmodell, keine generischen Anlass-Karten.
 export function BandWeddingModule({ band }: Props) {
   if (!hasWeddingContent(band)) return null;
 
@@ -26,25 +28,33 @@ export function BandWeddingModule({ band }: Props) {
   ].filter((c): c is { label: string; value: string } => c !== null);
 
   return (
-    <div className="bg-pl-paper border border-pl-soft rounded-2xl p-5">
-      <p className="text-xs font-semibold text-pl-accent-deep uppercase tracking-wider mb-1.5">
-        Hochzeit
-      </p>
-      <h3 className="text-base font-bold text-pl-text mb-1">
-        Wenn diese Band eure Hochzeit begleitet
-      </h3>
-      {info?.weddingDescription && (
-        <p className="font-serif italic text-sm text-pl-text-muted mb-3">
-          {info.weddingDescription}
-        </p>
-      )}
-
-      {decisionCards.map(({ label, value }) => (
-        <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-sm border-t border-pl-soft">
-          <span className="text-pl-text-muted">{label}</span>
-          <strong className="text-pl-text">{value}</strong>
+    <BandRow label="Hochzeit" tone="accent">
+      <div className="bg-pl-elevated border border-pl-soft rounded-2xl p-5 sm:p-7 flex flex-col md:flex-row md:items-start gap-5 md:gap-10">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-pl-text mb-2">
+            Wenn diese Band eure Hochzeit begleitet
+          </h3>
+          {info?.weddingDescription && (
+            <p className="font-serif italic text-base text-pl-text-muted">
+              {info.weddingDescription}
+            </p>
+          )}
         </div>
-      ))}
-    </div>
+
+        {decisionCards.length > 0 && (
+          <div className="md:w-80 md:shrink-0">
+            {decisionCards.map(({ label, value }) => (
+              <div
+                key={label}
+                className="flex items-center justify-between gap-3 py-2.5 text-sm border-b border-pl-soft first:pt-0 last:border-b-0 last:pb-0"
+              >
+                <span className="text-pl-text-muted">{label}</span>
+                <strong className="text-pl-text">{value}</strong>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </BandRow>
   );
 }
