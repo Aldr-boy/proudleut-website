@@ -76,6 +76,33 @@ test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA
   assert.match(pageSource, /<article className="bg-pl-canvas pb-24 md:pb-0">/)
 })
 
+test('Reihenfolge am Seitenende: Zeilenraster, "Mehr von", Sentinel, Abschluss-CTA, Aehnliche Bands; der Sentinel steht unmittelbar vor BandCtaSection', () => {
+  const idx = (needle: string) => pageSource.indexOf(needle)
+  const order = [
+    idx('<BandTagsSection band={band} />'),
+    idx('<BandContactSection band={band} websiteUrl={websiteUrl} />'),
+    idx('id="final-cta-sentinel"'),
+    idx('<BandCtaSection band={band} />'),
+    idx('<BandFloatingCta'),
+  ]
+  assert.ok(order.every((i) => i >= 0), 'ein Baustein fehlt')
+  assert.deepEqual([...order].sort((a, b) => a - b), order)
+  assert.match(pageSource, /id="final-cta-sentinel" aria-hidden="true" className="h-px" \/>\s*<BandCtaSection band=\{band\} \/>/)
+})
+
+test('BandCtaSection: Anfrage-Button + MerkButton (dunkel) in der rechten Spalte, "Noch unsicher?"-Zeile mit mailto-Link, "Interesse?" als h2', () => {
+  const ctaSource = readFileSync(path.join(root, 'components', 'band', 'BandCtaSection.tsx'), 'utf8')
+  assert.match(ctaSource, /<h2 [^>]*>\s*Interesse\?\s*<\/h2>/)
+  assert.match(ctaSource, /Euer Abend mit \{band\.name\}/)
+  assert.match(ctaSource, /Deine Anfrage geht direkt an \{band\.name\}\./)
+  assert.match(ctaSource, /<AnfrageButton/)
+  assert.match(ctaSource, /<MerkButton[\s\S]*?variant="dark"/)
+  assert.match(ctaSource, /href=\{`mailto:\$\{CONTACT_EMAIL\}`\}/)
+  assert.match(ctaSource, /Schreib mir kurz, wenn du Hilfe bei der Auswahl möchtest\./)
+  assert.match(ctaSource, /md:w-\[300px\]/)
+  assert.match(ctaSource, /bg-pl-paper/)
+})
+
 test('"Ähnliche Bands" nutzt Spacing-Stufe "large" (bewusster Szenenwechsel vor Seitenende)', () => {
   assert.match(pageSource, /Ähnliche Bands \*\/\}\s*\{similarBands\.length > 0 \? \(\s*<section className="bg-pl-canvas border-t border-pl-soft py-16 md:py-20/)
 })
