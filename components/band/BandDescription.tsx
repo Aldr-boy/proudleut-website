@@ -1,48 +1,64 @@
 import { MarkdownText } from '@/components/MarkdownText';
 import type { Band } from '@/lib/types/band';
-import { formatLocation } from '@/lib/utils/formatLocation';
+import { hasParagraphBreak, splitParagraphs } from '@/lib/bands/bandTextParagraphs';
 import { BandChapterHeading } from './BandChapterHeading';
 
 type Props = {
   band: Band;
 };
 
-// "01 Wer steht hier auf der Bühne?" (Auftrag "Bandseiten-Finalisierung":
-// kurze Beschreibungen vollstaendig sichtbar, bei langen Texten einen
-// sinnvollen Einstieg sichtbar lassen und nur den Rest einklappen --
-// vollstaendiger Text bleibt servergerendert im DOM). Absatz 1 steht immer
-// offen da; weitere Absaetze (falls vorhanden) liegen in <details>, ohne
-// Toggle-Button, wenn es nur einen einzigen Absatz gibt. Rechte Spalte:
-// Bandart/Herkunft/Besetzung (finaler Entwurf, sec-wer: band.facts neben
-// der Beschreibung statt in "03").
+// "01 Wer steht hier auf der Bühne?" (Prototyp E): links "Klingt nach" in
+// grosser Typografie mit Linien, rechts der Bandtext als Zweispalter; mobil
+// steht "Klingt nach" als Liste ueber dem Text. Absatz 1 steht immer offen
+// da; weitere Absaetze (falls vorhanden) liegen in <details> ("Mehr ueber X",
+// vollstaendiger Text bleibt servergerendert im DOM), ohne Toggle, wenn es nur
+// einen einzigen Absatz gibt. Bandart/Herkunft/Besetzung stehen nicht mehr
+// hier: Bandart im Hero-Kicker, Herkunft und Besetzung in der Faktenleiste
+// (siehe BandHero.tsx, lib/bands/bandFacts.ts). Ohne "Klingt nach" entfaellt
+// die linke Spalte komplett, der Text rueckt an den linken Containerrand
+// (max. 680 px, wie in E).
 export function BandDescription({ band }: Props) {
-  const paragraphs = band.description ? band.description.trim().split(/\n\n+/) : [];
+  // Echte Absaetze (Leerzeile, auch als \r\n\r\n) bestimmen die Einklapp-Grenze.
+  // Hat der Text keine, werden einfache Umbrueche als Zeilenabstand gerendert
+  // (lineBreaks="spaced"), die Einklapp-Logik bleibt davon unberuehrt.
+  const paragraphs = band.description ? splitParagraphs(band.description) : [];
+  const lineBreaks = band.description && !hasParagraphBreak(band.description) ? 'spaced' : 'break';
   const [firstParagraph, ...restParagraphs] = paragraphs;
   const hasMore = restParagraphs.length > 0;
+  const klingtNach = band.klingtNach;
 
-  const besetzung = band.weddingInfo?.bandSize || band.weddingInfo?.constellation;
-  const locationText = formatLocation(band.location);
-  const facts = (
-    [
-      band.category ? { label: 'Bandart', value: band.category } : null,
-      locationText ? { label: 'Herkunft', value: locationText } : null,
-      besetzung ? { label: 'Besetzung', value: besetzung } : null,
-    ] as ({ label: string; value: string } | null)[]
-  ).filter((f): f is { label: string; value: string } => f !== null);
-
-  if (!firstParagraph && facts.length === 0) return null;
+  if (!firstParagraph && klingtNach.length === 0) return null;
 
   return (
     <section className="bg-pl-paper py-16 md:py-20 px-4 sm:px-6">
       <div className="pl-container-shell">
         <BandChapterHeading number="01" title="Wer steht hier auf der Bühne?" />
 
-        <div className="flex flex-col lg:flex-row gap-10 lg:gap-14">
+        <div className="flex flex-col lg:flex-row gap-10 lg:gap-[72px]">
+          {klingtNach.length > 0 ? (
+            <div className="lg:w-[400px] lg:shrink-0">
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-pl-accent-deep pb-3">
+                Klingt nach
+              </p>
+              <ul>
+                {klingtNach.map((tag) => (
+                  <li
+                    key={tag}
+                    className="py-[11px] lg:py-3.5 border-t border-pl-soft text-[27px] lg:text-[34px] leading-[1.12] tracking-[-0.025em] font-extrabold text-pl-text"
+                  >
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {firstParagraph && (
-            <div className="flex-[1.6] min-w-0 max-w-[720px]">
+            <div className="flex-1 min-w-0 max-w-[680px]">
               <MarkdownText
                 text={firstParagraph}
-                className="text-pl-text leading-8 text-base md:text-[1.05rem]"
+                lineBreaks={lineBreaks}
+                className="text-pl-text leading-[1.6] lg:leading-[1.65] text-[17px] lg:text-lg"
               />
 
               {hasMore && (
@@ -68,24 +84,12 @@ export function BandDescription({ band }: Props) {
                   <div className="mt-5">
                     <MarkdownText
                       text={restParagraphs.join('\n\n')}
-                      className="text-pl-text leading-8 space-y-5 text-base md:text-[1.05rem]"
+                      lineBreaks={lineBreaks}
+                      className="text-pl-text leading-[1.6] lg:leading-[1.65] space-y-5 text-[17px] lg:text-lg"
                     />
                   </div>
                 </details>
               )}
-            </div>
-          )}
-
-          {facts.length > 0 && (
-            <div className="flex-1 min-w-0 lg:max-w-[280px] lg:self-start">
-              {facts.map(({ label, value }) => (
-                <div key={label} className="flex flex-col gap-0.5 py-3.5 border-b border-pl-soft">
-                  <span className="text-[11px] font-semibold text-pl-text-hint uppercase tracking-wider">
-                    {label}
-                  </span>
-                  <span className="text-[15px] font-bold text-pl-text">{value}</span>
-                </div>
-              ))}
             </div>
           )}
         </div>
