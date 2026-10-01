@@ -1,8 +1,14 @@
 import type { ReactNode } from 'react';
+import { splitLines, splitParagraphs } from '@/lib/bands/bandTextParagraphs';
 
 type Props = {
   text: string;
   className?: string;
+  // 'break' (Default): einfache \n werden zu <br />. 'spaced': jede Zeile
+  // eines mehrzeiligen Absatzes wird ein eigener <p> mit kleinem Abstand
+  // (space-y-3, kleiner als der Absatzabstand der Aufrufer) -- Opt-in fuer
+  // Texte ohne echte Absaetze (siehe BandDescription.tsx).
+  lineBreaks?: 'break' | 'spaced';
 };
 
 // Parst **bold** und [text](https://...) innerhalb eines einzelnen Textsegments.
@@ -45,7 +51,22 @@ function renderInline(segment: string, paraIndex: number, lineIndex: number): Re
 }
 
 // Rendert einen Absatz: einzelne \n werden zu <br />, Inline-Patterns werden aufgelöst.
-function renderParagraph(text: string, paraIndex: number): ReactNode {
+// Im Modus 'spaced' wird jede Zeile ein eigener <p> in einem Container mit
+// kleinem Abstand.
+function renderParagraph(text: string, paraIndex: number, lineBreaks: 'break' | 'spaced'): ReactNode {
+  if (lineBreaks === 'spaced') {
+    const spacedLines = splitLines(text);
+    if (spacedLines.length > 1) {
+      return (
+        <div key={paraIndex} className="space-y-3">
+          {spacedLines.map((line, lineIndex) => (
+            <p key={lineIndex}>{renderInline(line, paraIndex, lineIndex)}</p>
+          ))}
+        </div>
+      );
+    }
+  }
+
   const lines = text.split('\n');
   const content: ReactNode[] = [];
 
@@ -60,12 +81,13 @@ function renderParagraph(text: string, paraIndex: number): ReactNode {
 }
 
 // Einfacher Markdown-Renderer für Bandbeschreibungstexte.
-// Unterstützt: Absätze (\n\n), Fettschrift (**...**), Links ([text](url)), Zeilenumbrüche (\n).
-export function MarkdownText({ text, className }: Props) {
-  const paragraphs = text.trim().split(/\n\n+/);
+// Unterstützt: Absätze (\n\n, auch als \r\n\r\n), Fettschrift (**...**), Links ([text](url)),
+// Zeilenumbrüche (\n).
+export function MarkdownText({ text, className, lineBreaks = 'break' }: Props) {
+  const paragraphs = splitParagraphs(text);
   return (
     <div className={className}>
-      {paragraphs.map((para, i) => renderParagraph(para, i))}
+      {paragraphs.map((para, i) => renderParagraph(para, i, lineBreaks))}
     </div>
   );
 }
