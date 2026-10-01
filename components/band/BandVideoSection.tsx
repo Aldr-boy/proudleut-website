@@ -36,14 +36,14 @@ export function BandVideoSection({ band, embedUrl }: Props) {
   const poster = band.thumbnailImage ?? band.heroImage ?? band.gallery[0];
 
   return (
-    <section id="live" className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav">
+    <section id="live" className="bg-pl-stage py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav md:scroll-mt-[calc(var(--pl-nav-height)+5rem)]">
       <div className="pl-container-shell">
         <BandChapterHeading number="02" title="Wie klingt die Band live?" variant="dark" />
 
         <div className={hasVideo ? 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 md:gap-12 items-start' : ''}>
           {hasVideo && (
             <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-pl-stage-elevated">
-              <VideoPlayer embedUrl={embedUrl} bandName={band.name} poster={poster} />
+              <VideoPlayer bandName={band.name} poster={poster} />
             </div>
           )}
 

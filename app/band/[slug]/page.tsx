@@ -15,6 +15,9 @@ import { BandContactSection } from '@/components/band/BandContactSection';
 import { BandFloatingCta } from '@/components/band/BandFloatingCta';
 import { BandVideoSection } from '@/components/band/BandVideoSection';
 import { getYouTubeEmbedUrl } from '@/lib/youtube';
+import { getBandFacts } from '@/lib/bands/bandFacts';
+import { VideoModalProvider } from '@/components/band/VideoModalProvider';
+import { HERO_ANFRAGE_BUTTON_ID } from '@/components/band/HeroCTA';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +96,9 @@ export default async function BandPage({ params }: PageProps) {
   const embedUrl = getYouTubeEmbedUrl(band.youtubeVideoUrl);
   const similarBands = getSimilarBands(band, allBands);
   const hasVideo = embedUrl !== null;
+  const facts = getBandFacts(band);
+  // Ohne Bandbild zeigt BandHero einen kurzen Kopf ohne Anfrage-Button.
+  const hasHeroButton = Boolean(band.heroImage);
 
   return (
     <article className="bg-pl-canvas pb-24 md:pb-0">
@@ -102,26 +108,30 @@ export default async function BandPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Hero: vollflaechiges Bandbild, Name, Logo, Aktionen bereits im
-          Einstieg (Auftrag "Bandseiten-Redesign", Abschnitt 5) */}
-      <BandHero band={band} hasVideo={hasVideo} />
+      {/* Ein Video-Modal fuer Hero-Pille und Poster-Tile in "02" (siehe
+          VideoModalProvider.tsx) */}
+      <VideoModalProvider embedUrl={embedUrl} bandName={band.name}>
+        {/* Hero: vollflaechiges Bandbild, Name, Logo, Aktionen bereits im
+            Einstieg (Auftrag "Bandseiten-Redesign", Abschnitt 5) */}
+        <BandHero band={band} hasVideo={hasVideo} facts={facts} />
 
-      {/* 01 – Wer steht hier auf der Bühne? */}
-      <BandDescription band={band} />
-      <BandPeopleSection band={band} />
+        {/* 01 – Wer steht hier auf der Bühne? */}
+        <BandDescription band={band} />
+        <BandPeopleSection band={band} />
 
-      {/* 02 – Wie klingt sie live? (Video, Klingt nach, Stil & Einfluesse,
-          vollstaendige Galerie auf einer dunklen Flaeche zusammengefuehrt --
-          die einzige "emotionale Insel" neben dem Hero, siehe
-          BandVideoSection.tsx) */}
-      <BandVideoSection band={band} embedUrl={embedUrl} />
+        {/* 02 – Wie klingt sie live? (Video, Klingt nach, Stil & Einfluesse,
+            vollstaendige Galerie auf einer dunklen Flaeche zusammengefuehrt --
+            die einzige "emotionale Insel" neben dem Hero, siehe
+            BandVideoSection.tsx) */}
+        <BandVideoSection band={band} embedUrl={embedUrl} />
+      </VideoModalProvider>
 
       {/* 03 – Die Band für euer Event? (Spielt bei, Referenz-Events,
           Festwirte-Unterlagen, Hochzeitsinfos -- siehe BandTagsSection.tsx) */}
       <BandTagsSection band={band} />
 
       {/* Sentinel für BandFloatingCta: markiert den Beginn des finalen Anfragebereichs,
-          damit der Sticky-CTA weiss, wann er wieder ausblenden muss. */}
+          damit die Leisten wissen, wann sie wieder ausblenden muessen. */}
       <div id="final-cta-sentinel" aria-hidden="true" className="h-px" />
       <BandContactSection band={band} websiteUrl={websiteUrl} />
 
@@ -129,9 +139,10 @@ export default async function BandPage({ params }: PageProps) {
         name={band.name}
         slug={band.slug}
         anfrageEventTypes={band.anfrageEventTypes ?? []}
-        heroSentinelId="hero-cta-sentinel"
+        facts={facts}
+        heroButtonId={HERO_ANFRAGE_BUTTON_ID}
+        hasHeroButton={hasHeroButton}
         finalSentinelId="final-cta-sentinel"
-        hasVideo={hasVideo}
       />
 
       {/* Ähnliche Bands */}

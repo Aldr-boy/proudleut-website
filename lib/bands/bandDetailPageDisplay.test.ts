@@ -49,20 +49,30 @@ test('HeroCTA wird nicht mehr eigenstaendig auf der Seite eingebunden, sondern v
   assert.match(bandHeroSource, /<HeroCTA/)
 })
 
-test('BandFloatingCta wird mit heroSentinelId="hero-cta-sentinel", finalSentinelId="final-cta-sentinel" und hasVideo eingebunden', () => {
+test('BandFloatingCta wird mit facts, heroButtonId, hasHeroButton und finalSentinelId="final-cta-sentinel" eingebunden', () => {
   const block = pageSource.match(/<BandFloatingCta[\s\S]*?\/>/)
   assert.ok(block, 'BandFloatingCta-Aufruf nicht gefunden')
-  assert.match(block![0], /heroSentinelId="hero-cta-sentinel"/)
+  assert.match(block![0], /facts=\{facts\}/)
+  assert.match(block![0], /heroButtonId=\{HERO_ANFRAGE_BUTTON_ID\}/)
+  assert.match(block![0], /hasHeroButton=\{hasHeroButton\}/)
   assert.match(block![0], /finalSentinelId="final-cta-sentinel"/)
-  assert.match(block![0], /hasVideo=\{hasVideo\}/)
 })
 
-test('die von BandFloatingCta referenzierten Sentinel-IDs existieren real in HeroCTA und page.tsx', () => {
-  assert.match(heroCtaSource, /id="hero-cta-sentinel"/)
+test('die von BandFloatingCta referenzierten IDs existieren real: Hero-Anfrage-Button in HeroCTA, final-cta-sentinel in page.tsx', () => {
+  assert.match(heroCtaSource, /export const HERO_ANFRAGE_BUTTON_ID = 'hero-anfrage-btn'/)
+  assert.match(heroCtaSource, /id=\{HERO_ANFRAGE_BUTTON_ID\}/)
   assert.match(pageSource, /id="final-cta-sentinel"/)
 })
 
-test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA (3-Button-Zeile, siehe BandFloatingCta)', () => {
+test('Hero und Video-Section liegen im selben VideoModalProvider (ein Modal fuer Hero-Pille und Poster-Tile)', () => {
+  const provider = pageSource.match(/<VideoModalProvider[\s\S]*?<\/VideoModalProvider>/)
+  assert.ok(provider, 'VideoModalProvider nicht gefunden')
+  assert.match(provider![0], /<BandHero/)
+  assert.match(provider![0], /<BandVideoSection/)
+  assert.match(provider![0], /embedUrl=\{embedUrl\}/)
+})
+
+test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA (Anfrage + Herz, siehe BandFloatingCta)', () => {
   assert.match(pageSource, /<article className="bg-pl-canvas pb-24 md:pb-0">/)
 })
 
