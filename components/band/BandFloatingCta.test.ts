@@ -15,49 +15,68 @@ import path from 'node:path'
 const sourcePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'BandFloatingCta.tsx')
 const source = readFileSync(sourcePath, 'utf8')
 
-test('heroPassed wird per IntersectionObserver direkt auf den Hero-Anfrage-Button bestimmt (rootMargin = Hoehe von Header/Faktenleiste)', () => {
-  assert.match(source, /const heroButton = document\.getElementById\(heroButtonId\)/)
-  assert.match(source, /heroObserver = new IntersectionObserver\(/)
-  assert.match(source, /rootMargin: `-\$\{navHeight\}px 0px 0px 0px`/)
-  assert.match(source, /heroObserver\.observe\(heroButton\)/)
-  assert.match(source, /setHeroPassed\(!entry\.isIntersecting && entry\.boundingClientRect\.top < boundary\)/)
+test('die Entscheidung kommt aus der reinen Funktion computeBarVisible (lib/bands/barVisibility.ts), die Komponente ruft sie nur auf', () => {
+  assert.match(source, /import \{ computeBarVisible, usablePointY \} from '@\/lib\/bands\/barVisibility'/)
+  assert.match(source, /const next = computeBarVisible\(\{/)
+  assert.ok(!/IntersectionObserver/.test(source.replace(/\/\/.*$/gm, '')), 'kein IntersectionObserver mehr: weder Hero-Observer noch Sentinel')
+  assert.ok(!/finalSentinel|final-cta-sentinel|finalReached|heroPassed/.test(source.replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')), 'alte Sentinel-/Observer-Zustaende duerfen nicht zurueckkehren')
 })
 
-test('ohne Hero-Button (Band ohne Bandbild) sind die Leisten von Anfang an sichtbar -- heroPassed startet mit !hasHeroButton', () => {
+test('gemessen wird die Geometrie des Hero-Buttons und des Buttons der CTA-Karte (ctaButtonId), mit Rects, innerHeight und Hoehe der MerklisteBar', () => {
+  assert.match(source, /document\.getElementById\(heroButtonId\)/)
+  assert.match(source, /document\.getElementById\(ctaButtonId\)/)
+  assert.match(source, /getBoundingClientRect\(\)/)
+  assert.match(source, /window\.innerHeight/)
+  assert.match(source, /document\.getElementById\('merkliste-bar'\)\?\.offsetHeight \?\? 0/)
+})
+
+test('Verdeckung des Hero-Buttons: elementFromPoint am Mittelpunkt des sichtbaren Teils, nur Treffer innerhalb eines <header> zaehlen (keine Hysterese durch die Leiste selbst)', () => {
+  assert.match(source, /usablePointY\(heroRect, viewportHeight, merklisteHeight\)/)
+  assert.match(source, /document\.elementFromPoint\(/)
+  assert.match(source, /hit\.closest\('header'\) !== null/)
+  assert.ok(!/document\.querySelector\('header'\)/.test(source), 'kein Header-Rect per querySelector')
+})
+
+test('ohne Hero-Button (Band ohne Bandbild) sind die Leisten von Anfang an sichtbar; mit Hero-Button zunaechst ausgeblendet (Start-Zustand wie bisher)', () => {
   assert.match(source, /useState\(!hasHeroButton\)/)
+  assert.match(source, /useRef\(!hasHeroButton\)/)
 })
 
-test('finalReached nutzt keinen IntersectionObserver, sondern eine deterministische Geometrie-Pruefung (Fix Scroll-Pfad-Abhaengigkeit)', () => {
-  assert.ok(!/const finalObserver = new IntersectionObserver/.test(source), 'der alte finalObserver darf nicht mehr vorkommen')
-  assert.match(source, /finalSentinel\.getBoundingClientRect\(\)\.top < window\.innerHeight/)
+test('Auswertung per requestAnimationFrame gedrosselt, bei Scroll (passive), Resize und Layoutaenderungen (ResizeObserver auf body), initial direkt nach dem Mount', () => {
+  assert.match(source, /requestAnimationFrame\(evaluate\)/)
+  assert.match(source, /window\.addEventListener\('scroll', scheduleEvaluate, \{ passive: true \}\)/)
+  assert.match(source, /window\.addEventListener\('resize', scheduleEvaluate\)/)
+  assert.match(source, /new ResizeObserver\(scheduleEvaluate\)/)
+  assert.match(source, /resizeObserver\.observe\(document\.body\)/)
+  assert.match(source, /scheduleEvaluate\(\);\s*\n\s*window\.addEventListener\('scroll'/)
 })
 
-test('Geometrie-Pruefung wird per requestAnimationFrame gedrosselt (kein Layout-Thrashing) und bei Scroll und Resize ausgeloest', () => {
-  assert.match(source, /requestAnimationFrame\(evaluateFinalSentinel\)/)
-  assert.match(source, /window\.addEventListener\('scroll', scheduleEvaluateFinalSentinel, \{ passive: true \}\)/)
-  assert.match(source, /window\.addEventListener\('resize', scheduleEvaluateFinalSentinel\)/)
+test('erst lesen, dann ein einziger Schreibvorgang: setState nur ueber flushSync am Ende von evaluate (noch vor dem Zeichnen des Frames), nur bei Aenderung', () => {
+  const evaluate = source.slice(source.indexOf('const evaluate = () => {'), source.indexOf('const scheduleEvaluate'))
+  assert.ok(evaluate.indexOf('computeBarVisible') < evaluate.indexOf('flushSync'), 'zuerst berechnen, dann schreiben')
+  assert.equal((evaluate.match(/flushSync\(/g) ?? []).length, 1)
+  assert.match(evaluate, /if \(next !== barVisibleRef\.current\) \{/)
+  assert.match(source, /import \{ flushSync \} from 'react-dom';/)
 })
 
-test('initiale Auswertung direkt nach dem Mount (z. B. Reload waehrend die Seite bereits am Ende gescrollt ist)', () => {
-  assert.match(source, /scheduleEvaluateFinalSentinel\(\);\s*\r?\n\s*window\.addEventListener\('scroll'/)
-})
-
-test('Scroll- und Resize-Listener werden beim Unmount sauber entfernt, Hero-Observer disconnected', () => {
-  const cleanup = source.match(/return \(\) => \{\s*heroObserver\?\.disconnect\(\);[\s\S]*?\};\s*\r?\n\s*\}, \[heroButtonId, hasHeroButton, finalSentinelId\]\)/)?.[0] ?? ''
-  assert.match(cleanup, /window\.removeEventListener\('scroll', scheduleEvaluateFinalSentinel\)/)
-  assert.match(cleanup, /window\.removeEventListener\('resize', scheduleEvaluateFinalSentinel\)/)
-})
-
-test('visible = heroPassed && !finalReached -- nie zwei Anfrage-Buttons gleichzeitig (Hero/Leiste/Anfragebereich)', () => {
-  assert.match(source, /const visible = heroPassed && !finalReached;/)
+test('Listener und ResizeObserver werden beim Unmount sauber entfernt', () => {
+  const cleanup = source.match(/return \(\) => \{\s*resizeObserver\.disconnect\(\);[\s\S]*?\};\s*\n\s*\}, \[heroButtonId, ctaButtonId, hasHeroButton, merklisteBandsCount\]\)/)?.[0] ?? ''
+  assert.match(cleanup, /window\.removeEventListener\('scroll', scheduleEvaluate\)/)
+  assert.match(cleanup, /window\.removeEventListener\('resize', scheduleEvaluate\)/)
 })
 
 test('beide Leisten sind position:fixed (kein Layout-Sprung) und ausgeblendet inert + visibility:hidden', () => {
   assert.equal((source.match(/fixed inset-x-0/g) ?? []).length, 2)
   assert.ok(!/sticky/.test(source.replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')), 'keine in den Fluss eingebundene sticky-Leiste')
   assert.equal((source.match(/inert=\{!visible\}/g) ?? []).length, 2)
-  assert.match(source, /invisible opacity-0 pointer-events-none/)
-  assert.match(source, /transition-\[opacity,transform,visibility\]/)
+  assert.match(source, /const hiddenClasses = 'transition-none invisible opacity-0 pointer-events-none';/)
+})
+
+test('Ausblenden ist sofort (transition-none nur im ausgeblendeten Zustand), nur das Einblenden laeuft mit der 220-ms-Transition', () => {
+  assert.match(source, /const visibleClasses = 'visible opacity-100 translate-y-0 pointer-events-auto';/)
+  assert.match(source, /transition-\[opacity,transform\] duration-\[220ms\] ease-out \$\{visibleClasses\}/)
+  assert.match(source, /transition-\[opacity,transform,bottom\] duration-\[220ms\] ease-out \$\{visibleClasses\}/)
+  assert.ok(!/transition-\[[^\]]*visibility/.test(source), 'visibility darf nicht verzoegert uebergehen (kein Nachleuchten neben einem benutzbaren Button)')
 })
 
 test('prefers-reduced-motion: der Slide (translate) steht nur hinter motion-safe:, Ein-/Ausblenden bleibt', () => {

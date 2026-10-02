@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { AnfrageModal } from './AnfrageModal';
 import { BandMerkHeart } from './BandMerkHeart';
 import { Button } from '@/components/ui/Button';
 import { useAnfrageStore } from '@/stores/anfrageStore';
 import type { BandAnfrageEventType } from '@/lib/types/band';
 import type { BandFact } from '@/lib/bands/bandFacts';
+import { computeBarVisible, usablePointY } from '@/lib/bands/barVisibility';
 
 type Props = {
   name: string;
@@ -18,33 +20,38 @@ type Props = {
   // sichtbar und tragen den einzigen Anfrage-Button der Seite.
   heroButtonId: string;
   hasHeroButton: boolean;
-  finalSentinelId: string;
+  // Id des Wrappers um den Anfrage-Button der CTA-Karte (BandCtaSection.tsx).
+  ctaButtonId: string;
 };
 
-// Faktenleiste (Desktop) und untere Anfrageleiste (Handy), Variante E:
+// Faktenleiste (Desktop) und untere Anfrageleiste (Handy), Variante E.
 //
-//   heroPassed   -- der Anfrage-Button im Hero ist aus dem Bild gescrollt
-//                   (IntersectionObserver direkt auf diesen Button)
-//   finalReached -- der Final-Sentinel liegt innerhalb oder oberhalb des Viewports
-//   visible = heroPassed && !finalReached
+// Die Entscheidung "Leiste sichtbar" faellt in lib/bands/barVisibility.ts (reine
+// Funktion, dort die Regeln und die Wertetabelle im Test): sichtbar, wenn der
+// Hero-Button nicht mehr benutzbar ist (< 50 % sichtbar bzw. von der Header-
+// Pill verdeckt, oberhalb) und der Button der CTA-Karte noch nicht benutzbar
+// ist (unterhalb). So steht zu jedem Scrollstand hoechstens EIN benutzbarer
+// "Unverbindlich anfragen"-Button, und zwischen Hero-Button und CTA-Karte gibt
+// es keine Luecke.
 //
-// So stehen nie zwei "Unverbindlich anfragen"-Buttons gleichzeitig im Bild:
-// weder Hero + Leiste noch Leiste + Anfragebereich am Seitenende.
+// Auswertung rein ueber Geometrie bei Scroll, Resize und Layoutaenderungen
+// (ResizeObserver auf body), per requestAnimationFrame gedrosselt: erst lesen
+// (Rects, ein elementFromPoint, Hoehe der MerklisteBar), dann ein einziger
+// Schreibvorgang. Anders als ein Observer liefert sie nach jedem
+// Scroll-Sprung (Scrollbar-Drag, Pos1/Ende, interner Sprunglink, Reload mitten
+// im Text) den echten Zustand statt eines veralteten.
 //
-// Kein Layout-Sprung: beide Leisten sind position:fixed (aus dem Fluss), das
-// Ein-/Ausblenden aendert nur opacity/transform/visibility. Die Mobil-Fakten
-// stehen statisch im Seitenfluss (BandHero.tsx) und haengen nicht an diesem
-// Zustand. Ausgeblendet: visibility:hidden + inert -- nichts darin ist
-// fokussierbar; der Fokus wird beim Einblenden nicht verschoben.
+// Kein Layout-Sprung: beide Leisten sind position:fixed (aus dem Fluss). Die
+// Mobil-Fakten stehen statisch im Seitenfluss (BandHero.tsx). Ausgeblendet:
+// visibility:hidden + inert -- nichts darin ist fokussierbar; der Fokus wird
+// beim Einblenden nicht verschoben.
 //
-// finalReached wird bewusst NICHT ueber einen IntersectionObserver bestimmt:
-// ein Observer feuert nur bei einer beobachteten Grenzueberquerung. Ein grosser,
-// unstetiger Scroll-Sprung (Scrollbar-Drag, Pos1/Ende, interner Sprunglink,
-// Trackpad-Fling) kann den 1px-Sentinel in einem Frame ueberspringen, finalReached
-// bliebe veraltet (siehe Analysebericht "Fix fest positionierte Leisten").
-// Stattdessen wird die Geometrie bei jedem Scroll/Resize (per
-// requestAnimationFrame gedrosselt) ausgewertet: erreicht, sobald
-// sentinel.getBoundingClientRect().top < window.innerHeight gilt.
+// Ausblenden ist sofort (transition-none, Opacity 0, visibility hidden und
+// inert im selben Frame; der Zustand wird per flushSync noch im rAF-Callback
+// committed, bevor der Frame gezeichnet wird). Nur das Einblenden laeuft mit
+// der 220-ms-Transition (bei reduzierter Bewegung ohne Slide, siehe
+// motion-safe:), damit die Leiste nie mit Opacity > 0 neben einem benutzbaren
+// Button steht.
 export function BandFloatingCta({
   name,
   slug,
@@ -52,11 +59,13 @@ export function BandFloatingCta({
   facts,
   heroButtonId,
   hasHeroButton,
-  finalSentinelId,
+  ctaButtonId,
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [heroPassed, setHeroPassed] = useState(!hasHeroButton);
-  const [finalReached, setFinalReached] = useState(false);
+  // Start-Zustand wie bisher: bei Bands mit Hero-Button zunaechst ausgeblendet
+  // (nichts blitzt beim Laden auf), ohne Hero-Button von Anfang an sichtbar.
+  const [barVisible, setBarVisible] = useState(!hasHeroButton);
+  const barVisibleRef = useRef(!hasHeroButton);
   const [merklisteBarHeight, setMerklisteBarHeight] = useState(0);
   const merklisteBandsCount = useAnfrageStore((s) => s.bands.length);
 
@@ -72,54 +81,76 @@ export function BandFloatingCta({
   }, [merklisteBandsCount]);
 
   useEffect(() => {
-    const finalSentinel = document.getElementById(finalSentinelId);
-    if (!finalSentinel) return;
-
-    // Die Faktenleiste klebt unter dem Header (--pl-nav-height). Der Observer
-    // nutzt dieselbe Hoehe als oberen rootMargin: die Leiste erscheint genau,
-    // wenn der Hero-Button vollstaendig oberhalb ihrer Unterkante liegt --
-    // keine Ueberlappung, kein Moment mit zwei Buttons.
-    let heroObserver: IntersectionObserver | undefined;
-    if (hasHeroButton) {
-      const heroButton = document.getElementById(heroButtonId);
-      if (heroButton) {
-        const navHeight =
-          parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pl-nav-height')) || 88;
-        heroObserver = new IntersectionObserver(([entry]) => {
-          const boundary = entry.rootBounds ? entry.rootBounds.top : navHeight;
-          setHeroPassed(!entry.isIntersecting && entry.boundingClientRect.top < boundary);
-        }, { rootMargin: `-${navHeight}px 0px 0px 0px` });
-        heroObserver.observe(heroButton);
-      }
-    }
-
     let rafScheduled = false;
-    const evaluateFinalSentinel = () => {
+
+    const evaluate = () => {
       rafScheduled = false;
-      setFinalReached(finalSentinel.getBoundingClientRect().top < window.innerHeight);
+
+      // --- nur lesen ---
+      const viewportHeight = window.innerHeight;
+      const merklisteHeight = document.getElementById('merkliste-bar')?.offsetHeight ?? 0;
+      const heroEl = hasHeroButton ? document.getElementById(heroButtonId) : null;
+      const ctaEl = document.getElementById(ctaButtonId);
+      const heroRect = heroEl?.getBoundingClientRect() ?? null;
+      const ctaRect = ctaEl?.getBoundingClientRect() ?? null;
+
+      // Verdeckung des Hero-Buttons durch die Header-Pill: elementFromPoint am
+      // Mittelpunkt des sichtbaren Teils. Nur Treffer innerhalb eines <header>
+      // zaehlen -- die Leiste selbst (die den Hero-Button bei Positionen unter
+      // ihr verdecken koennte) wuerde sonst eine Hysterese erzeugen, und
+      // Dialog-Hintergruende sollen die Entscheidung nicht beeinflussen.
+      let heroCoveredByHeader = false;
+      if (heroEl && heroRect) {
+        const pointY = usablePointY(heroRect, viewportHeight, merklisteHeight);
+        if (pointY !== null) {
+          const hit = document.elementFromPoint((heroRect.left + heroRect.right) / 2, pointY);
+          heroCoveredByHeader = hit !== null && !heroEl.contains(hit) && hit.closest('header') !== null;
+        }
+      }
+
+      const next = computeBarVisible({
+        hasHeroButton,
+        hero: heroRect,
+        heroCoveredByHeader,
+        cta: ctaRect,
+        viewportHeight,
+        merklisteHeight,
+      });
+
+      // --- ein einziger Schreibvorgang, noch vor dem Zeichnen dieses Frames ---
+      if (next !== barVisibleRef.current) {
+        barVisibleRef.current = next;
+        flushSync(() => setBarVisible(next));
+      }
     };
-    const scheduleEvaluateFinalSentinel = () => {
+
+    const scheduleEvaluate = () => {
       if (rafScheduled) return;
       rafScheduled = true;
-      requestAnimationFrame(evaluateFinalSentinel);
+      requestAnimationFrame(evaluate);
     };
 
-    scheduleEvaluateFinalSentinel();
-    window.addEventListener('scroll', scheduleEvaluateFinalSentinel, { passive: true });
-    window.addEventListener('resize', scheduleEvaluateFinalSentinel);
+    scheduleEvaluate();
+    window.addEventListener('scroll', scheduleEvaluate, { passive: true });
+    window.addEventListener('resize', scheduleEvaluate);
+    // Layoutaenderungen ohne Scroll (Bilder, aufgeklappte Texte, "+N weitere").
+    const resizeObserver = new ResizeObserver(scheduleEvaluate);
+    resizeObserver.observe(document.body);
 
     return () => {
-      heroObserver?.disconnect();
-      window.removeEventListener('scroll', scheduleEvaluateFinalSentinel);
-      window.removeEventListener('resize', scheduleEvaluateFinalSentinel);
+      resizeObserver.disconnect();
+      window.removeEventListener('scroll', scheduleEvaluate);
+      window.removeEventListener('resize', scheduleEvaluate);
     };
-  }, [heroButtonId, hasHeroButton, finalSentinelId]);
+  }, [heroButtonId, ctaButtonId, hasHeroButton, merklisteBandsCount]);
 
-  const visible = heroPassed && !finalReached;
+  const visible = barVisible;
 
-  const hiddenClasses = visible
-    ? 'visible opacity-100 translate-y-0 pointer-events-auto'
-    : 'invisible opacity-0 pointer-events-none';
+  // Einblenden: 220-ms-Transition (Opacity/Slide); Ausblenden: sofort
+  // (transition-none steht nur im ausgeblendeten Zustand, die Transition-
+  // Eigenschaften des Zielzustands gelten).
+  const visibleClasses = 'visible opacity-100 translate-y-0 pointer-events-auto';
+  const hiddenClasses = 'transition-none invisible opacity-0 pointer-events-none';
 
   return (
     <>
@@ -128,8 +159,11 @@ export function BandFloatingCta({
       <div
         inert={!visible}
         className={`hidden md:block fixed inset-x-0 z-40 bg-pl-canvas/95 backdrop-blur-sm border-y border-pl-soft
-                    transition-[opacity,transform,visibility] duration-[220ms] ease-out
-                    ${visible ? '' : 'motion-safe:-translate-y-2'} ${hiddenClasses}`}
+                    ${
+                      visible
+                        ? `transition-[opacity,transform] duration-[220ms] ease-out ${visibleClasses}`
+                        : `motion-safe:-translate-y-2 ${hiddenClasses}`
+                    }`}
         style={{ top: 'var(--pl-nav-height)' }}
       >
         <div className="pl-container-shell px-4 sm:px-6 py-3 flex items-center gap-4">
@@ -191,8 +225,11 @@ export function BandFloatingCta({
         inert={!visible}
         className={`md:hidden fixed inset-x-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
                     border-pl-soft px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
-                    transition-[opacity,transform,bottom,visibility] duration-[220ms] ease-out
-                    ${visible ? '' : 'motion-safe:translate-y-2'} ${hiddenClasses}`}
+                    ${
+                      visible
+                        ? `transition-[opacity,transform,bottom] duration-[220ms] ease-out ${visibleClasses}`
+                        : `motion-safe:translate-y-2 ${hiddenClasses}`
+                    }`}
         style={{ bottom: `${merklisteBarHeight}px` }}
       >
         <div className="flex items-center gap-2">

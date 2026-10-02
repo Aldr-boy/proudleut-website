@@ -134,10 +134,8 @@ export default async function BandPage({ params }: PageProps) {
       {/* Mehr von [Band]: Social-Pills als Zeile im Raster */}
       <BandContactSection band={band} websiteUrl={websiteUrl} />
 
-      {/* Sentinel für BandFloatingCta: markiert den Beginn des Abschluss-
-          Anfragebereichs (BandCtaSection), damit die Leisten wissen, wann sie
-          wieder ausblenden muessen. Über "Mehr von" bleiben sie sichtbar. */}
-      <div id="final-cta-sentinel" aria-hidden="true" className="h-px" />
+      {/* Abschluss-CTA; Faktenleiste und Bottom-Bar weichen am Anfrage-Button
+          dieser Karte (BandFloatingCta, ctaButtonId). Über "Mehr von" bleiben sie sichtbar. */}
       <BandCtaSection band={band} />
 
       <BandFloatingCta
@@ -147,7 +145,7 @@ export default async function BandPage({ params }: PageProps) {
         facts={facts}
         heroButtonId={HERO_ANFRAGE_BUTTON_ID}
         hasHeroButton={hasHeroButton}
-        finalSentinelId="final-cta-sentinel"
+        ctaButtonId="cta-anfrage-btn"
       />
 
       {/* Ähnliche Bands */}
