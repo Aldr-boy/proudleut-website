@@ -103,6 +103,31 @@ test('BandCtaSection: Anfrage-Button + MerkButton (dunkel) in der rechten Spalte
   assert.match(ctaSource, /bg-pl-paper/)
 })
 
+test('"Ähnliche Bands": SimilarBandCard statt BandCard, Block bleibt inline in page.tsx, Unterzeile entfaellt, Link "Mehr Livebands entdecken →" und Fallback-Block bleiben', () => {
+  assert.match(pageSource, /import \{ SimilarBandCard \} from '@\/components\/band\/SimilarBandCard';/)
+  assert.doesNotMatch(pageSource, /import BandCard from/, 'BandCard wird auf der Banddetailseite nicht mehr importiert')
+  assert.doesNotMatch(pageSource, /<BandCard\b/)
+  assert.match(pageSource, /<SimilarBandCard key=\{b\.slug\} band=\{b\} \/>/)
+  assert.doesNotMatch(pageSource, /Weitere Livebands mit ähnlichem Gefühl/)
+  assert.match(pageSource, /Mehr Livebands entdecken →/)
+  assert.match(pageSource, /Noch nicht die richtige Band\? Entdecke weitere Livebands auf proudleut\./)
+  assert.match(pageSource, /Alle Bands entdecken/)
+  // feste 3-Spalten-Raster: 1 oder 2 Karten stehen linksbuendig in der Kartenbreite von 3
+  assert.match(pageSource, /grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6/)
+})
+
+test('SimilarBandCard: Bild, Name und "Ort · Genre" in EINEM Link auf das Bandprofil; kein Merken-Herz, kein Store, keine Client-Komponente, dekoratives Bild', () => {
+  const card = readFileSync(path.join(root, 'components', 'band', 'SimilarBandCard.tsx'), 'utf8').replace(/\/\/.*$/gm, '')
+  assert.doesNotMatch(card, /'use client'/)
+  assert.doesNotMatch(card, /useAnfrageStore|Merk|merk/)
+  assert.equal((card.match(/<Link\b/g) ?? []).length, 1)
+  assert.match(card, /href=\{`\/band\/\$\{band\.slug\}`\}/)
+  assert.match(card, /\[city, genre\]\.filter\(Boolean\)\.join\(' · '\)/)
+  assert.match(card, /alt=""/)
+  assert.match(card, /<h3 [^>]*>\{band\.name\}<\/h3>/)
+  assert.doesNotMatch(card, /shortDescription|chips|line-clamp/)
+})
+
 test('"Ähnliche Bands" nutzt Spacing-Stufe "large" (bewusster Szenenwechsel vor Seitenende)', () => {
   assert.match(pageSource, /Ähnliche Bands \*\/\}\s*\{similarBands\.length > 0 \? \(\s*<section className="bg-pl-canvas border-t border-pl-soft py-16 md:py-20/)
 })
