@@ -8,7 +8,7 @@ type Props = {
 };
 
 // "Wer steht hier auf der Bühne?" (Prototyp E, ohne Kapitelnummer): links "Klingt nach" in
-// grosser Typografie mit Linien, rechts der Bandtext als Zweispalter; mobil
+// grosser Typografie (22 px mobil, 28 px ab lg) mit Linien, rechts der Bandtext als Zweispalter; mobil
 // steht "Klingt nach" als Liste ueber dem Text. Absatz 1 steht immer offen
 // da; weitere Absaetze (falls vorhanden) liegen in <details> ("Mehr ueber X",
 // vollstaendiger Text bleibt servergerendert im DOM), ohne Toggle, wenn es nur
@@ -32,7 +32,7 @@ export function BandDescription({ band }: Props) {
   return (
     <section className="bg-pl-paper py-16 md:py-20 px-4 sm:px-6">
       <div className="pl-container-shell">
-        <BandChapterHeading title="Wer steht hier auf der Bühne?" />
+        <BandChapterHeading title="Wer steht hier auf der Bühne?" divider={false} />
 
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-[72px]">
           {klingtNach.length > 0 ? (
@@ -44,7 +44,7 @@ export function BandDescription({ band }: Props) {
                 {klingtNach.map((tag) => (
                   <li
                     key={tag}
-                    className="py-[11px] lg:py-3.5 border-t border-pl-soft text-[27px] lg:text-[34px] leading-[1.12] tracking-[-0.025em] font-extrabold text-pl-text"
+                    className="py-[10px] lg:py-3 border-t border-pl-soft text-[22px] lg:text-[28px] leading-[1.12] tracking-[-0.025em] font-extrabold text-pl-text"
                   >
                     {tag}
                   </li>

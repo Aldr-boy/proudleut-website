@@ -2,6 +2,9 @@ type Props = {
   number?: string;
   title: string;
   variant?: 'light' | 'dark';
+  // Trennlinie unter der Ueberschrift (Default: an). Mit false entfaellt die
+  // Linie samt ihrem Innenabstand; der Abstand nach unten (mb-8 md:mb-10) bleibt.
+  divider?: boolean;
 };
 
 // Gemeinsame Kapitelueberschrift fuer "01"/"02"/"03" (Auftrag
@@ -19,13 +22,13 @@ type Props = {
 // Optik statt einer eigenen parallelen Komponente. Ohne `number` entfaellt
 // nur die Nummer samt ihrem Abstand -- fuer alle bestehenden Bandseiten
 // (immer mit `number`) unveraendert.
-export function BandChapterHeading({ number, title, variant = 'light' }: Props) {
+export function BandChapterHeading({ number, title, variant = 'light', divider = true }: Props) {
   const isDark = variant === 'dark';
 
   return (
     <div
-      className={`mb-8 md:mb-10 flex items-baseline ${number ? 'gap-3' : ''} pb-4 md:pb-5 border-b ${
-        isDark ? 'border-white/10' : 'border-pl-soft'
+      className={`mb-8 md:mb-10 flex items-baseline ${number ? 'gap-3' : ''} ${
+        divider ? `pb-4 md:pb-5 border-b ${isDark ? 'border-white/10' : 'border-pl-soft'}` : ''
       }`}
     >
       {number && (
