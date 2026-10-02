@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { useAnfrageStore } from '@/stores/anfrageStore';
 import type { BandAnfrageEventType } from '@/lib/types/band';
 import type { BandFact } from '@/lib/bands/bandFacts';
-import { computeBarVisible, usablePointY } from '@/lib/bands/barVisibility';
+import { computeBarVisible } from '@/lib/bands/barVisibility';
 
 type Props = {
   name: string;
@@ -36,7 +36,7 @@ type Props = {
 //
 // Auswertung rein ueber Geometrie bei Scroll, Resize und Layoutaenderungen
 // (ResizeObserver auf body), per requestAnimationFrame gedrosselt: erst lesen
-// (Rects, ein elementFromPoint, Hoehe der MerklisteBar), dann ein einziger
+// (Rects inkl. Header-Pille, Hoehe der MerklisteBar), dann ein einziger
 // Schreibvorgang. Anders als ein Observer liefert sie nach jedem
 // Scroll-Sprung (Scrollbar-Drag, Pos1/Ende, interner Sprunglink, Reload mitten
 // im Text) den echten Zustand statt eines veralteten.
@@ -94,24 +94,17 @@ export function BandFloatingCta({
       const heroRect = heroEl?.getBoundingClientRect() ?? null;
       const ctaRect = ctaEl?.getBoundingClientRect() ?? null;
 
-      // Verdeckung des Hero-Buttons durch die Header-Pill: elementFromPoint am
-      // Mittelpunkt des sichtbaren Teils. Nur Treffer innerhalb eines <header>
-      // zaehlen -- die Leiste selbst (die den Hero-Button bei Positionen unter
-      // ihr verdecken koennte) wuerde sonst eine Hysterese erzeugen, und
-      // Dialog-Hintergruende sollen die Entscheidung nicht beeinflussen.
-      let heroCoveredByHeader = false;
-      if (heroEl && heroRect) {
-        const pointY = usablePointY(heroRect, viewportHeight, merklisteHeight);
-        if (pointY !== null) {
-          const hit = document.elementFromPoint((heroRect.left + heroRect.right) / 2, pointY);
-          heroCoveredByHeader = hit !== null && !heroEl.contains(hit) && hit.closest('header') !== null;
-        }
-      }
+      // Verdeckung des Hero-Buttons durch die Header-Pill: rein geometrisch gegen
+      // das Rechteck des Elements mit data-nav-footprint (Header.tsx, immer die
+      // normale Pille), siehe isCoveredByPill in lib/bands/barVisibility.ts.
+      // Keine Abhaengigkeit von Leiste, Dialogen oder der angezeigten Pillenform.
+      // Gibt es das Element nicht, gilt der Hero-Button als nicht verdeckt.
+      const pillRect = document.querySelector('[data-nav-footprint]')?.getBoundingClientRect() ?? null;
 
       const next = computeBarVisible({
         hasHeroButton,
         hero: heroRect,
-        heroCoveredByHeader,
+        pill: pillRect,
         cta: ctaRect,
         viewportHeight,
         merklisteHeight,

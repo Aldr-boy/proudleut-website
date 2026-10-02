@@ -5,23 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ProudleutLogo } from './ProudleutLogo';
 import { Button, ButtonArrow } from '@/components/ui/Button';
-
-const NAV_LINKS = [
-  { label: 'Über proudleut', href: '/ueber-mich' },
-  { label: 'Für Bands', href: '/fuer-bands' },
-  { label: 'Kontakt', href: '/kontakt' },
-] as const;
-
-const CTA = { label: 'Bands entdecken', href: '/bands' };
-const MOBILE_MENU_ID = 'pill-mobile-menu';
-
-function ChevronRightIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <path d="M9 18l6-6-6-6" />
-    </svg>
-  );
-}
+import { useHeaderSlotStore } from '@/stores/headerSlotStore';
+import { CTA, ChevronRightIcon, HeaderMenuLinks, MOBILE_MENU_ID, NAV_LINKS } from './HeaderMenuLinks';
 
 function BurgerIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -56,6 +41,7 @@ export default function Header() {
     setMenuOpen(false);
   }
 
+  const setSlotEl = useHeaderSlotStore((st) => st.setSlotEl);
   const pillRef = useRef<HTMLElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -165,8 +151,15 @@ export default function Header() {
         Zum Inhalt springen
       </a>
 
+      {/* data-nav-footprint: Vertrag fuer BandFloatingCta/barVisibility -- das
+          Rechteck dieses <header> ist die feste Geometrie der NORMALEN Pille
+          (Logo, Links, "Bands entdecken"), gegen die die Verdeckung des
+          Hero-Buttons berechnet wird. Es muss immer das der normalen Pille
+          sein: eine spaeter eingefuehrte kompakte Pille liegt absolut darueber
+          (Slot), die normale bleibt im Fluss (visibility:hidden, inert). */}
       <header
         ref={pillRef as React.RefObject<HTMLElement>}
+        data-nav-footprint
         className="fixed z-50 left-1/2 -translate-x-1/2 top-3 md:top-6 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-md md:w-auto md:max-w-none"
       >
         <div className="bg-pl-paper border border-pl-soft shadow-[0_8px_30px_rgba(42,34,38,0.12)] rounded-[1.75rem] md:rounded-full">
@@ -241,51 +234,19 @@ export default function Header() {
             </button>
           </div>
 
-          {/* Mobile: dieselbe Pill waechst nach unten -- kein Overlay, kein
-              Drawer, kein Portal, kein Scroll-Lock. Oeffnungsanimation ueber
-              CSS Grid (0fr -> 1fr) statt max-height. */}
-          <div
-            id={MOBILE_MENU_ID}
-            className="md:hidden grid motion-safe:transition-[grid-template-rows] motion-safe:duration-300 motion-safe:ease-out"
-            style={{ gridTemplateRows: menuOpen ? '1fr' : '0fr' }}
-            aria-hidden={!menuOpen}
-            inert={!menuOpen}
-          >
-            <div className="overflow-hidden min-h-0">
-              <nav className="flex flex-col px-4 pb-4 pt-1 gap-1" aria-label="Hauptnavigation mobil">
-                {NAV_LINKS.map((link, i) => {
-                  const isActive = pathname === link.href;
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      ref={i === 0 ? firstMobileLinkRef : undefined}
-                      aria-current={isActive ? 'page' : undefined}
-                      tabIndex={menuOpen ? undefined : -1}
-                      onClick={() => setMenuOpen(false)}
-                      className={`px-3 py-2.5 rounded-xl text-base outline-none motion-safe:transition-colors active:scale-95 motion-safe:transition-transform hover:bg-pl-accent/20 hover:text-pl-accent-deep focus-visible:outline-none focus-visible:bg-pl-accent/20 focus-visible:text-pl-accent-deep focus-visible:ring-2 focus-visible:ring-pl-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-pl-paper ${
-                        isActive ? 'bg-pl-accent/20 text-pl-accent-deep' : 'text-pl-text'
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  );
-                })}
-                <Button
-                  href={CTA.href}
-                  tabIndex={menuOpen ? undefined : -1}
-                  onClick={() => setMenuOpen(false)}
-                  className="mt-2 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-pl-accent text-pl-on-accent text-sm font-medium"
-                >
-                  {CTA.label}
-                  <ButtonArrow>
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </ButtonArrow>
-                </Button>
-              </nav>
-            </div>
-          </div>
+          {/* Mobile: dieselbe Pill waechst nach unten (HeaderMenuLinks.tsx). */}
+          <HeaderMenuLinks
+            menuOpen={menuOpen}
+            pathname={pathname}
+            firstLinkRef={firstMobileLinkRef}
+            onNavigate={() => setMenuOpen(false)}
+          />
         </div>
+
+        {/* Leerer Slot fuer seitenspezifischen Inhalt (stores/headerSlotStore.ts).
+            Absolut positioniert und ohne Inhalt: keine Hoehe, kein Flex-Eintrag,
+            kein Tab-Stopp, kein Landmark. */}
+        <div ref={setSlotEl} data-header-slot className="pointer-events-none absolute inset-0" />
       </header>
     </>
   );
