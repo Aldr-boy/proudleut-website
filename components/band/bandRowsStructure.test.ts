@@ -54,8 +54,33 @@ test('Hochzeit-Zeile erscheint nur, wenn auch BandWeddingModule rendert (hasWedd
 })
 
 test('Kapitelnummern entfallen, die Ueberschrift des Text-Bereichs bleibt', () => {
-  assert.match(descriptionSource, /<BandChapterHeading title="Wer steht hier auf der Bühne\?" \/>/)
+  assert.match(descriptionSource, /<BandChapterHeading title="Wer steht hier auf der Bühne\?" divider=\{false\} \/>/)
   assert.doesNotMatch(descriptionSource, /number="0\d"/)
+})
+
+test('Ueberschrift "Wer steht hier auf der Buehne?" ohne Linie (optionale Prop divider, Default an); "Klingt nach"-Eintraege 22 px mobil / 28 px ab lg mit Linien dazwischen', () => {
+  const heading = readFileSync(path.join(dir, 'BandChapterHeading.tsx'), 'utf8')
+  assert.match(heading, /divider\?: boolean;/)
+  assert.match(heading, /divider = true/)
+  assert.match(heading, /divider \? `pb-4 md:pb-5 border-b /)
+  assert.match(descriptionSource, /py-\[10px\] lg:py-3 border-t border-pl-soft text-\[22px\] lg:text-\[28px\] leading-\[1\.12\] tracking-\[-0\.025em\] font-extrabold/)
+  assert.doesNotMatch(descriptionSource, /text-\[27px\]|text-\[34px\]/)
+})
+
+test('HeroVideoPill: Haptik (Glas, Lichtkante, Schatten), Hover nur ueber hover:, active-Zustand, Bewegung nur unter motion-safe, Fokusring; Groesse, Text, sr-only-Zusatz und aria-haspopup unveraendert', () => {
+  const pill = readFileSync(path.join(dir, 'HeroVideoPill.tsx'), 'utf8')
+  assert.match(pill, /backdrop-blur-sm/)
+  assert.match(pill, /shadow-\[inset_0_1px_0_rgba\(255,255,255,0\.18\),0_2px_8px_rgba\(0,0,0,0\.35\)\]/)
+  assert.match(pill, /motion-safe:hover:-translate-y-px/)
+  assert.match(pill, /motion-safe:active:translate-y-0 motion-safe:active:scale-\[0\.98\]/)
+  assert.match(pill, /motion-safe:group-hover:scale-105/)
+  assert.match(pill, /motion-safe:duration-150/)
+  assert.match(pill, /focus-visible:outline-\[3px\] focus-visible:outline-offset-2/)
+  assert.doesNotMatch(pill.replace(/\/\/.*$/gm, ''), /(?<![\w:-])hover:-translate|(?<![\w:-])active:scale/, 'Bewegung nur mit motion-safe')
+  assert.match(pill, /h-12 md:h-\[52px\]/)
+  assert.match(pill, /aria-haspopup="dialog"/)
+  assert.match(pill, /Live ansehen/)
+  assert.match(pill, /<span className="sr-only">– Video von \{bandName\}<\/span>/)
 })
 
 test('Keine Live-Zeile mehr: BandTagsSection ohne BandVideoRow und ohne hasVideo, erste Zeile ist "Stil & Einfluesse"; das Video oeffnet nur ueber die Hero-Pille', () => {
