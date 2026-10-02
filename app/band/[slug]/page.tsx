@@ -6,7 +6,7 @@ import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import { generateBandJsonLd } from '@/lib/seo/jsonLd';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import { getSimilarBands } from '@/lib/bands/similarBands';
-import BandCard from '@/components/BandCard';
+import { SimilarBandCard } from '@/components/band/SimilarBandCard';
 import { BandHero } from '@/components/band/BandHero';
 import { BandTagsSection } from '@/components/band/BandTagsSection';
 import { BandDescription } from '@/components/band/BandDescription';
@@ -155,13 +155,14 @@ export default async function BandPage({ params }: PageProps) {
             <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-2">
               Ähnliche Bands
             </p>
-            <h2 className="text-xl font-bold text-pl-text mb-2">Wenn dir diese Band gefällt</h2>
-            <p className="text-sm text-pl-text-muted mb-8">
-              Weitere Livebands mit ähnlichem Gefühl, Sound oder Anlass.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h2 className="text-2xl md:text-[30px] font-extrabold tracking-[-0.025em] leading-tight text-pl-text mb-6 md:mb-8">
+              Wenn dir diese Band gefällt
+            </h2>
+            {/* Feste 3-Spalten-Raster: bei 1 oder 2 Empfehlungen bleibt die
+                Kartenbreite wie bei 3, die Karten stehen linksbuendig. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
               {similarBands.map((b) => (
-                <BandCard key={b.slug} band={b} />
+                <SimilarBandCard key={b.slug} band={b} />
               ))}
             </div>
             <div className="mt-8 text-center">
