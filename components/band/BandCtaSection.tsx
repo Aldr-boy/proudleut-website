@@ -14,8 +14,8 @@ const CONTACT_EMAIL = 'alexander.dressler@proudleut.com';
 // design-reference.md). Links Eyebrow, "Interesse?" und der Hinweis, wohin die
 // Anfrage geht, darunter die kleine Zeile "Noch unsicher?"; rechts (ab md,
 // 300 px) der Anfrage-Button mit dem Merken-Button darunter, mobil gestapelt.
-// Der Sentinel "final-cta-sentinel" steht in page.tsx unmittelbar vor dieser
-// Section -- dort blenden Faktenleiste und mobile Bottom-Bar aus.
+// Faktenleiste und mobile Bottom-Bar weichen, sobald der Anfrage-Button dieser
+// Karte benutzbar ist (id "cta-anfrage-btn", siehe lib/bands/barVisibility.ts).
 export function BandCtaSection({ band }: Props) {
   return (
     <section className="bg-pl-paper py-12 md:py-16 px-4 sm:px-6">
@@ -43,11 +43,16 @@ export function BandCtaSection({ band }: Props) {
           </div>
 
           <div className="flex flex-col gap-3 md:w-[300px] md:shrink-0">
-            <AnfrageButton
-              name={band.name}
-              slug={band.slug}
-              anfrageEventTypes={band.anfrageEventTypes ?? []}
-            />
+            {/* Wrapper mit id: BandFloatingCta misst die Geometrie dieses Buttons, um
+                an der Karte zu weichen (flex-col, damit der Button wie zuvor die volle
+                Spaltenbreite hat). */}
+            <div id="cta-anfrage-btn" className="flex flex-col">
+              <AnfrageButton
+                name={band.name}
+                slug={band.slug}
+                anfrageEventTypes={band.anfrageEventTypes ?? []}
+              />
+            </div>
             <MerkButton
               name={band.name}
               slug={band.slug}

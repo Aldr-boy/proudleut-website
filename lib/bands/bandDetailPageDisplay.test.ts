@@ -21,7 +21,7 @@ import path from 'node:path'
 // Inhaltsbereiche" statt vier zusaetzlich gestapelter Alt-Sections (siehe
 // BandTagsSection.tsx, BandVideoSection.tsx). HeroCTA ist in BandHero
 // eingebettet (kein eigener "hero-cta"-Balken mehr), BandFloatingCta nutzt
-// weiterhin heroSentinelId/finalSentinelId.
+// weiterhin heroButtonId/ctaButtonId.
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const pageSource = readFileSync(path.join(root, 'app', 'band', '[slug]', 'page.tsx'), 'utf8')
 const heroCtaSource = readFileSync(path.join(root, 'components', 'band', 'HeroCTA.tsx'), 'utf8')
@@ -49,19 +49,21 @@ test('HeroCTA wird nicht mehr eigenstaendig auf der Seite eingebunden, sondern v
   assert.match(bandHeroSource, /<HeroCTA/)
 })
 
-test('BandFloatingCta wird mit facts, heroButtonId, hasHeroButton und finalSentinelId="final-cta-sentinel" eingebunden', () => {
+test('BandFloatingCta wird mit facts, heroButtonId, hasHeroButton und ctaButtonId="cta-anfrage-btn" eingebunden', () => {
   const block = pageSource.match(/<BandFloatingCta[\s\S]*?\/>/)
   assert.ok(block, 'BandFloatingCta-Aufruf nicht gefunden')
   assert.match(block![0], /facts=\{facts\}/)
   assert.match(block![0], /heroButtonId=\{HERO_ANFRAGE_BUTTON_ID\}/)
   assert.match(block![0], /hasHeroButton=\{hasHeroButton\}/)
-  assert.match(block![0], /finalSentinelId="final-cta-sentinel"/)
+  assert.match(block![0], /ctaButtonId="cta-anfrage-btn"/)
 })
 
-test('die von BandFloatingCta referenzierten IDs existieren real: Hero-Anfrage-Button in HeroCTA, final-cta-sentinel in page.tsx', () => {
+test('die von BandFloatingCta referenzierten IDs existieren real: Hero-Anfrage-Button in HeroCTA, Wrapper cta-anfrage-btn in BandCtaSection, kein Sentinel mehr in page.tsx', () => {
   assert.match(heroCtaSource, /export const HERO_ANFRAGE_BUTTON_ID = 'hero-anfrage-btn'/)
   assert.match(heroCtaSource, /id=\{HERO_ANFRAGE_BUTTON_ID\}/)
-  assert.match(pageSource, /id="final-cta-sentinel"/)
+  const ctaSource = readFileSync(path.join(root, 'components', 'band', 'BandCtaSection.tsx'), 'utf8')
+  assert.match(ctaSource, /<div id="cta-anfrage-btn" className="flex flex-col">\s*<AnfrageButton/)
+  assert.doesNotMatch(pageSource, /final-cta-sentinel/)
 })
 
 test('Hero und Video-Section liegen im selben VideoModalProvider (ein Modal fuer Hero-Pille und Poster-Tile)', () => {
@@ -76,18 +78,16 @@ test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA
   assert.match(pageSource, /<article className="bg-pl-canvas pb-24 md:pb-0">/)
 })
 
-test('Reihenfolge am Seitenende: Zeilenraster, "Mehr von", Sentinel, Abschluss-CTA, Aehnliche Bands; der Sentinel steht unmittelbar vor BandCtaSection', () => {
+test('Reihenfolge am Seitenende: Zeilenraster, "Mehr von", Abschluss-CTA, BandFloatingCta', () => {
   const idx = (needle: string) => pageSource.indexOf(needle)
   const order = [
     idx('<BandTagsSection band={band} />'),
     idx('<BandContactSection band={band} websiteUrl={websiteUrl} />'),
-    idx('id="final-cta-sentinel"'),
     idx('<BandCtaSection band={band} />'),
     idx('<BandFloatingCta'),
   ]
   assert.ok(order.every((i) => i >= 0), 'ein Baustein fehlt')
   assert.deepEqual([...order].sort((a, b) => a - b), order)
-  assert.match(pageSource, /id="final-cta-sentinel" aria-hidden="true" className="h-px" \/>\s*<BandCtaSection band=\{band\} \/>/)
 })
 
 test('BandCtaSection: Anfrage-Button + MerkButton (dunkel) in der rechten Spalte, "Noch unsicher?"-Zeile mit mailto-Link, "Interesse?" als h2', () => {
