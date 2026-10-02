@@ -16,7 +16,7 @@ const sourcePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'Band
 const source = readFileSync(sourcePath, 'utf8')
 
 test('die Entscheidung kommt aus der reinen Funktion computeBarVisible (lib/bands/barVisibility.ts), die Komponente ruft sie nur auf', () => {
-  assert.match(source, /import \{ computeBarVisible, usablePointY \} from '@\/lib\/bands\/barVisibility'/)
+  assert.match(source, /import \{ computeBarVisible \} from '@\/lib\/bands\/barVisibility'/)
   assert.match(source, /const next = computeBarVisible\(\{/)
   assert.ok(!/IntersectionObserver/.test(source.replace(/\/\/.*$/gm, '')), 'kein IntersectionObserver mehr: weder Hero-Observer noch Sentinel')
   assert.ok(!/finalSentinel|final-cta-sentinel|finalReached|heroPassed/.test(source.replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')), 'alte Sentinel-/Observer-Zustaende duerfen nicht zurueckkehren')
@@ -30,11 +30,14 @@ test('gemessen wird die Geometrie des Hero-Buttons und des Buttons der CTA-Karte
   assert.match(source, /document\.getElementById\('merkliste-bar'\)\?\.offsetHeight \?\? 0/)
 })
 
-test('Verdeckung des Hero-Buttons: elementFromPoint am Mittelpunkt des sichtbaren Teils, nur Treffer innerhalb eines <header> zaehlen (keine Hysterese durch die Leiste selbst)', () => {
-  assert.match(source, /usablePointY\(heroRect, viewportHeight, merklisteHeight\)/)
-  assert.match(source, /document\.elementFromPoint\(/)
-  assert.match(source, /hit\.closest\('header'\) !== null/)
-  assert.ok(!/document\.querySelector\('header'\)/.test(source), 'kein Header-Rect per querySelector')
+test('Verdeckung des Hero-Buttons: rein geometrisch gegen das Rechteck des Elements mit data-nav-footprint (kein elementFromPoint); fehlt das Element, gilt "nicht verdeckt"', () => {
+  const code = source.replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+  assert.match(code, /document\.querySelector\('\[data-nav-footprint\]'\)\?\.getBoundingClientRect\(\) \?\? null/)
+  assert.match(code, /pill: pillRect,/)
+  assert.match(code, /hero: heroRect,/)
+  assert.ok(!/elementFromPoint/.test(code), 'kein elementFromPoint mehr')
+  assert.ok(!/heroCoveredByHeader/.test(code), 'kein Boolean heroCoveredByHeader mehr')
+  assert.ok(!/closest\('header'\)/.test(code))
 })
 
 test('ohne Hero-Button (Band ohne Bandbild) sind die Leisten von Anfang an sichtbar; mit Hero-Button zunaechst ausgeblendet (Start-Zustand wie bisher)', () => {

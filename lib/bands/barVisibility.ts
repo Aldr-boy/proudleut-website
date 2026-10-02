@@ -8,7 +8,7 @@
 //   - mindestens USABLE_MIN_FRACTION (0.5) seiner Hoehe im freien Viewport
 //     liegen (Viewport abzueglich der MerklisteBar am unteren Rand) und
 //   - der Mittelpunkt dieses sichtbaren Teils nicht von der Header-Pill
-//     verdeckt ist (Hero-Button; der Aufrufer liefert das per elementFromPoint).
+//     verdeckt ist (Hero-Button; rein geometrisch, siehe isCoveredByPill).
 // Bei exakt 0.5 zaehlt der Button (Leiste aus). Es gibt genau EINE
 // Vergleichsstelle (isUsable) fuer beide Buttons und beide Uebergaenge.
 //
@@ -23,16 +23,24 @@ export const USABLE_MIN_FRACTION = 0.5;
 
 export type VerticalRect = { top: number; bottom: number };
 
+// Rect des Hero-Buttons mit x-Grenzen (Viewport-Koordinaten).
+export type HeroRect = VerticalRect & { left: number; right: number };
+
+// Rechteck der NORMALEN Header-Pille (Border-Box des <header> mit
+// data-nav-footprint, siehe components/Header.tsx).
+export type PillRect = { left: number; right: number; top: number; bottom: number };
+
 export type ButtonPosition = 'usable' | 'above' | 'below';
 
 export type BarVisibilityInput = {
   hasHeroButton: boolean;
   // Rect des Hero-Buttons (Viewport-Koordinaten) bzw. null, wenn nicht im DOM.
-  hero: VerticalRect | null;
-  // true, wenn der Mittelpunkt des sichtbaren Teils des Hero-Buttons von der
-  // Header-Pill verdeckt ist (am Handy und bei ca. 768-1100 px; am breiten
-  // Desktop deckt die Pill den Hero-Button horizontal nicht ab).
-  heroCoveredByHeader: boolean;
+  hero: HeroRect | null;
+  // Rechteck der normalen Header-Pille bzw. null, wenn es sie nicht gibt (dann
+  // gilt der Hero-Button als nicht verdeckt). Die Pille deckt den Hero-Button am
+  // Handy und bei ca. 768-1030 px ab; am breiten Desktop liegt der Button links
+  // neben ihr.
+  pill: PillRect | null;
   // Rect des Buttons in der CTA-Karte bzw. null.
   cta: VerticalRect | null;
   viewportHeight: number;
@@ -69,6 +77,25 @@ export function usablePointY(rect: VerticalRect, viewportHeight: number, merklis
   return range ? (range.top + range.bottom) / 2 : null;
 }
 
+// Verdeckung des Hero-Buttons durch die Header-Pille, rein geometrisch: der
+// Mittelpunkt des sichtbaren Teils (x: Mitte von left/right, y: usablePointY)
+// liegt im Pillenrechteck. Halboffen (left <= x < right, top <= y < bottom),
+// wie ein Treffertest an der Pixelgrenze. Ersetzt das fruehere
+// elementFromPoint; unabhaengig von Dialogen, der Leiste und davon, welche
+// Pillenform gerade angezeigt wird.
+export function isCoveredByPill(
+  hero: HeroRect,
+  pill: PillRect | null,
+  viewportHeight: number,
+  merklisteHeight: number,
+): boolean {
+  if (!pill) return false;
+  const y = usablePointY(hero, viewportHeight, merklisteHeight);
+  if (y === null) return false;
+  const x = (hero.left + hero.right) / 2;
+  return x >= pill.left && x < pill.right && y >= pill.top && y < pill.bottom;
+}
+
 // Die EINE Vergleichsstelle fuer "benutzbar".
 export function isUsable(fraction: number, covered: boolean): boolean {
   return !covered && fraction >= USABLE_MIN_FRACTION;
@@ -86,10 +113,11 @@ export function classifyButton(
 }
 
 export function computeBarVisible(input: BarVisibilityInput): boolean {
-  const { hasHeroButton, hero, heroCoveredByHeader, cta, viewportHeight, merklisteHeight } = input;
+  const { hasHeroButton, hero, pill, cta, viewportHeight, merklisteHeight } = input;
 
   const heroPassed = hasHeroButton
-    ? hero !== null && classifyButton(hero, viewportHeight, merklisteHeight, heroCoveredByHeader) === 'above'
+    ? hero !== null &&
+      classifyButton(hero, viewportHeight, merklisteHeight, isCoveredByPill(hero, pill, viewportHeight, merklisteHeight)) === 'above'
     : true;
   if (!heroPassed) return false;
 
