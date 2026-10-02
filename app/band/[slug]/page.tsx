@@ -14,7 +14,7 @@ import { BandPeopleSection } from '@/components/band/BandPeopleSection';
 import { BandContactSection } from '@/components/band/BandContactSection';
 import { BandCtaSection } from '@/components/band/BandCtaSection';
 import { BandFloatingCta } from '@/components/band/BandFloatingCta';
-import { BandVideoSection } from '@/components/band/BandVideoSection';
+import { BandGallerySection } from '@/components/band/BandGallerySection';
 import { getYouTubeEmbedUrl } from '@/lib/youtube';
 import { getBandFacts } from '@/lib/bands/bandFacts';
 import { VideoModalProvider } from '@/components/band/VideoModalProvider';
@@ -109,30 +109,28 @@ export default async function BandPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Ein Video-Modal fuer Hero-Pille und Poster-Tile in "02" (siehe
-          VideoModalProvider.tsx) */}
+      {/* Ein Video-Modal fuer Hero-Pille und Poster-Tile in der Zeile "Live"
+          (BandTagsSection, siehe VideoModalProvider.tsx) -- der Provider reicht
+          deshalb bis nach BandTagsSection. */}
       <VideoModalProvider embedUrl={embedUrl} bandName={band.name}>
         {/* Hero: vollflaechiges Bandbild, Name, Logo, Aktionen bereits im
             Einstieg (Auftrag "Bandseiten-Redesign", Abschnitt 5) */}
         <BandHero band={band} hasVideo={hasVideo} facts={facts} />
 
-        {/* 01 – Wer steht hier auf der Bühne? */}
+        {/* Wer steht hier auf der Bühne? (Text, Klingt nach) */}
         <BandDescription band={band} />
         <BandPeopleSection band={band} />
 
-        {/* 02 – Wie klingt sie live? (Video, Klingt nach, Stil & Einfluesse,
-            vollstaendige Galerie auf einer dunklen Flaeche zusammengefuehrt --
-            die einzige "emotionale Insel" neben dem Hero, siehe
-            BandVideoSection.tsx) */}
-        <BandVideoSection band={band} embedUrl={embedUrl} />
+        {/* Zeilenraster: Live (Video-Tile), Stil, Spielt bei, Hochzeit,
+            Referenz-Events, Unterlagen -- siehe BandTagsSection.tsx */}
+        <BandTagsSection band={band} hasVideo={hasVideo} />
       </VideoModalProvider>
-
-      {/* 03 – Die Band für euer Event? (Spielt bei, Referenz-Events,
-          Festwirte-Unterlagen, Hochzeitsinfos -- siehe BandTagsSection.tsx) */}
-      <BandTagsSection band={band} />
 
       {/* Mehr von [Band]: Social-Pills als Zeile im Raster */}
       <BandContactSection band={band} websiteUrl={websiteUrl} />
+
+      {/* Ein Eindruck von der Bühne: eigene helle Section, entfaellt ohne Galerie */}
+      <BandGallerySection band={band} />
 
       {/* Abschluss-CTA; Faktenleiste und Bottom-Bar weichen am Anfrage-Button
           dieser Karte (BandFloatingCta, ctaButtonId). Über "Mehr von" bleiben sie sichtbar. */}

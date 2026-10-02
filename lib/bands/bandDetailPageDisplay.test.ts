@@ -16,10 +16,11 @@ import path from 'node:path'
 // Bandseiten-Finalisierung (Auftrag "Bandseiten-Finalisierung"):
 // BandReferenceEvents, BandGallery, BandDocumentsSection und
 // BandWeddingModule sind nicht mehr als eigene Sections direkt in
-// page.tsx eingebunden, sondern in BandVideoSection ("02") bzw.
-// BandTagsSection ("03") eingebettet -- "zusammenhaengende
+// page.tsx eingebunden, sondern in BandTagsSection (Zeilenraster) bzw.
+// BandGallerySection (Fotos) eingebettet -- "zusammenhaengende
 // Inhaltsbereiche" statt vier zusaetzlich gestapelter Alt-Sections (siehe
-// BandTagsSection.tsx, BandVideoSection.tsx). HeroCTA ist in BandHero
+// BandTagsSection.tsx, BandGallerySection.tsx). Die fruehere dunkle Insel
+// BandVideoSection ist aufgeloest. HeroCTA ist in BandHero
 // eingebettet (kein eigener "hero-cta"-Balken mehr), BandFloatingCta nutzt
 // weiterhin heroButtonId/ctaButtonId.
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -27,14 +28,14 @@ const pageSource = readFileSync(path.join(root, 'app', 'band', '[slug]', 'page.t
 const heroCtaSource = readFileSync(path.join(root, 'components', 'band', 'HeroCTA.tsx'), 'utf8')
 const bandHeroSource = readFileSync(path.join(root, 'components', 'band', 'BandHero.tsx'), 'utf8')
 const tagsSectionSource = readFileSync(path.join(root, 'components', 'band', 'BandTagsSection.tsx'), 'utf8')
-const videoSectionSource = readFileSync(path.join(root, 'components', 'band', 'BandVideoSection.tsx'), 'utf8')
+const gallerySectionSource = readFileSync(path.join(root, 'components', 'band', 'BandGallerySection.tsx'), 'utf8')
 
-test('BandReferenceEvents, BandGallery, BandDocumentsSection und BandWeddingModule sind nicht mehr eigenstaendig in page.tsx eingebunden, sondern in "02"/"03" eingebettet', () => {
+test('BandReferenceEvents, BandGallery, BandDocumentsSection und BandWeddingModule sind nicht mehr eigenstaendig in page.tsx eingebunden, sondern in BandGallerySection bzw. BandTagsSection eingebettet', () => {
   assert.doesNotMatch(pageSource, /<BandReferenceEvents/)
-  assert.doesNotMatch(pageSource, /<BandGallery/)
+  assert.doesNotMatch(pageSource, /<BandGallery(?!Section)/)
   assert.doesNotMatch(pageSource, /<BandDocumentsSection/)
   assert.doesNotMatch(pageSource, /<BandWeddingModule/)
-  assert.match(videoSectionSource, /<BandGallery band=\{band\} \/>/)
+  assert.match(gallerySectionSource, /<BandGallery band=\{band\} \/>/)
   assert.match(tagsSectionSource, /<BandReferenceEvents band=\{band\} \/>/)
   assert.match(tagsSectionSource, /<BandDocumentsSection band=\{band\} \/>/)
   assert.match(tagsSectionSource, /<BandWeddingModule band=\{band\} \/>/)
@@ -66,12 +67,31 @@ test('die von BandFloatingCta referenzierten IDs existieren real: Hero-Anfrage-B
   assert.doesNotMatch(pageSource, /final-cta-sentinel/)
 })
 
-test('Hero und Video-Section liegen im selben VideoModalProvider (ein Modal fuer Hero-Pille und Poster-Tile)', () => {
+test('Hero und Zeilenraster (mit der Zeile "Live") liegen im selben VideoModalProvider (ein Modal fuer Hero-Pille und Poster-Tile)', () => {
   const provider = pageSource.match(/<VideoModalProvider[\s\S]*?<\/VideoModalProvider>/)
   assert.ok(provider, 'VideoModalProvider nicht gefunden')
   assert.match(provider![0], /<BandHero/)
-  assert.match(provider![0], /<BandVideoSection/)
+  assert.match(provider![0], /<BandTagsSection band=\{band\} hasVideo=\{hasVideo\} \/>/)
   assert.match(provider![0], /embedUrl=\{embedUrl\}/)
+  assert.doesNotMatch(pageSource, /BandVideoSection/, 'die dunkle Insel ist aufgeloest')
+})
+
+test('Reihenfolge: Hero, Text, Zeilenraster, "Mehr von", Fotos, Abschluss-CTA; ohne Galerie entfaellt die Fotos-Section (BandGallerySection gibt null zurueck)', () => {
+  const idx = (needle: string) => pageSource.indexOf(needle)
+  const order = [
+    idx('<BandHero band={band}'),
+    idx('<BandDescription band={band} />'),
+    idx('<BandTagsSection band={band} hasVideo={hasVideo} />'),
+    idx('<BandContactSection band={band} websiteUrl={websiteUrl} />'),
+    idx('<BandGallerySection band={band} />'),
+    idx('<BandCtaSection band={band} />'),
+  ]
+  assert.ok(order.every((i) => i >= 0), 'ein Baustein fehlt')
+  assert.deepEqual([...order].sort((a, b) => a - b), order)
+  // der Provider endet vor "Mehr von" und umschliesst die Galerie nicht
+  assert.ok(idx('</VideoModalProvider>') < idx('<BandContactSection'))
+  assert.match(gallerySectionSource, /if \(band\.gallery\.length === 0\) return null;/)
+  assert.match(gallerySectionSource, /<section className="bg-pl-canvas px-4 sm:px-6 pb-16 md:pb-20">/)
 })
 
 test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA (Anfrage + Herz, siehe BandFloatingCta)', () => {
@@ -81,7 +101,7 @@ test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA
 test('Reihenfolge am Seitenende: Zeilenraster, "Mehr von", Abschluss-CTA, BandFloatingCta', () => {
   const idx = (needle: string) => pageSource.indexOf(needle)
   const order = [
-    idx('<BandTagsSection band={band} />'),
+    idx('<BandTagsSection band={band} hasVideo={hasVideo} />'),
     idx('<BandContactSection band={band} websiteUrl={websiteUrl} />'),
     idx('<BandCtaSection band={band} />'),
     idx('<BandFloatingCta'),
@@ -132,13 +152,11 @@ test('"Ähnliche Bands" nutzt Spacing-Stufe "large" (bewusster Szenenwechsel vor
   assert.match(pageSource, /Ähnliche Bands \*\/\}\s*\{similarBands\.length > 0 \? \(\s*<section className="bg-pl-canvas border-t border-pl-soft py-16 md:py-20/)
 })
 
-test('Seiten-Rhythmus: Hero vor 01 (Beschreibung) vor 02 (Video-Section) vor 03 (Tags-Section)', () => {
+test('Seiten-Rhythmus: Hero vor Beschreibung (Text) vor Zeilenraster (Tags-Section)', () => {
   const heroIdx = pageSource.indexOf('<BandHero band={band}')
   const descriptionIdx = pageSource.indexOf('<BandDescription band={band} />')
-  const videoIdx = pageSource.indexOf('<BandVideoSection band={band}')
-  const tagsIdx = pageSource.indexOf('<BandTagsSection band={band} />')
-  assert.ok(heroIdx >= 0 && descriptionIdx >= 0 && videoIdx >= 0 && tagsIdx >= 0, 'eine der Kernsections fehlt')
+  const tagsIdx = pageSource.indexOf('<BandTagsSection band={band} hasVideo={hasVideo} />')
+  assert.ok(heroIdx >= 0 && descriptionIdx >= 0 && tagsIdx >= 0, 'eine der Kernsections fehlt')
   assert.ok(heroIdx < descriptionIdx)
-  assert.ok(descriptionIdx < videoIdx)
-  assert.ok(videoIdx < tagsIdx)
+  assert.ok(descriptionIdx < tagsIdx)
 })
