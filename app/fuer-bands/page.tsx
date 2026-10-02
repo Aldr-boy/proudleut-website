@@ -167,9 +167,8 @@ function DemoSoundInfo({ band, size }: { band: Band; size: 'mobile' | 'desktop' 
 // "Live-Video"-Pill auf dem Kartenbild (Entwurf 1b) -- rechts unten im
 // Bild-Hintergrund-Layout (ab xl), rechts oben im gestapelten Layout
 // (darunter). Rendert nur, wenn die Band ein Video hat (siehe Aufrufer);
-// verlinkt auf die echte Bandseite mit Sprungmarke zum Video-Abschnitt --
-// die echte Bandseite traegt an ihrer Video-Section bereits id="live",
-// unveraendert -- keine Aenderung dort noetig.
+// verlinkt auf die echte Bandseite (ohne Sprungmarke); das Video oeffnet
+// dort ueber die Hero-Pille.
 function LiveVideoPill({ href, position, size }: { href: string; position: string; size: 'sm' | 'md' }) {
   const isSmall = size === 'sm';
   return (
@@ -202,7 +201,7 @@ export default async function FuerBandsPage() {
   const demoBand = demoBandData ? normalizeBandFromSupabase(demoBandData) : null;
   const demoEmbedUrl = demoBand ? getYouTubeEmbedUrl(demoBand.youtubeVideoUrl) : null;
   const demoHasVideo = demoEmbedUrl !== null;
-  const demoVideoHref = demoBand ? `/band/${demoBand.slug}#live` : '';
+  const demoVideoHref = demoBand ? `/band/${demoBand.slug}` : '';
   const demoLocationLabel = demoBand
     ? [demoBand.category, formatLocation(demoBand.location)].filter(Boolean).join(' · ')
     : '';

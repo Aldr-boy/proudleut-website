@@ -109,22 +109,21 @@ export default async function BandPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* Ein Video-Modal fuer Hero-Pille und Poster-Tile in der Zeile "Live"
-          (BandTagsSection, siehe VideoModalProvider.tsx) -- der Provider reicht
-          deshalb bis nach BandTagsSection. */}
+      {/* Video-Modal fuer die Hero-Pille (einziger Video-Einstieg, siehe
+          VideoModalProvider.tsx) -- der Provider umschliesst nur BandHero. */}
       <VideoModalProvider embedUrl={embedUrl} bandName={band.name}>
         {/* Hero: vollflaechiges Bandbild, Name, Logo, Aktionen bereits im
             Einstieg (Auftrag "Bandseiten-Redesign", Abschnitt 5) */}
         <BandHero band={band} hasVideo={hasVideo} facts={facts} />
-
-        {/* Wer steht hier auf der Bühne? (Text, Klingt nach) */}
-        <BandDescription band={band} />
-        <BandPeopleSection band={band} />
-
-        {/* Zeilenraster: Live (Video-Tile), Stil, Spielt bei, Hochzeit,
-            Referenz-Events, Unterlagen -- siehe BandTagsSection.tsx */}
-        <BandTagsSection band={band} hasVideo={hasVideo} />
       </VideoModalProvider>
+
+      {/* Wer steht hier auf der Bühne? (Text, Klingt nach) */}
+      <BandDescription band={band} />
+      <BandPeopleSection band={band} />
+
+      {/* Zeilenraster: Stil, Spielt bei, Hochzeit, Referenz-Events,
+          Unterlagen -- siehe BandTagsSection.tsx */}
+      <BandTagsSection band={band} />
 
       {/* Mehr von [Band]: Social-Pills als Zeile im Raster */}
       <BandContactSection band={band} websiteUrl={websiteUrl} />

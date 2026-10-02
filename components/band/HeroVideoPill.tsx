@@ -3,6 +3,8 @@
 import { useVideoModal } from './VideoModalProvider';
 
 type Props = {
+  // Fuer den zugaenglichen Namen (sr-only-Zusatz "– Video von {Bandname}").
+  bandName: string;
   // 'image': auf dem Hero-Bild; 'light': im kurzen Kopf ohne Bandbild.
   tone: 'image' | 'light';
   className?: string;
@@ -11,7 +13,7 @@ type Props = {
 // Video-Pille "Live ansehen · YouTube": oeffnet das Video-Modal
 // (VideoModalProvider), fuehrt nicht mehr zu YouTube weg -- daher ein Button
 // ohne Extern-Icon.
-export function HeroVideoPill({ tone, className = '' }: Props) {
+export function HeroVideoPill({ tone, bandName, className = '' }: Props) {
   const { openVideo } = useVideoModal();
 
   const toneClasses =
@@ -37,6 +39,7 @@ export function HeroVideoPill({ tone, className = '' }: Props) {
       </span>
       Live ansehen
       <span className={`font-medium text-xs md:text-[13px] ${subClasses}`}>· YouTube</span>
+      <span className="sr-only">– Video von {bandName}</span>
     </button>
   );
 }

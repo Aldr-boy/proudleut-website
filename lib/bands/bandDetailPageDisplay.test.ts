@@ -67,12 +67,13 @@ test('die von BandFloatingCta referenzierten IDs existieren real: Hero-Anfrage-B
   assert.doesNotMatch(pageSource, /final-cta-sentinel/)
 })
 
-test('Hero und Zeilenraster (mit der Zeile "Live") liegen im selben VideoModalProvider (ein Modal fuer Hero-Pille und Poster-Tile)', () => {
+test('VideoModalProvider umschliesst nur BandHero (Hero-Pille ist der einzige Video-Einstieg); kein Poster-Tile, keine Live-Zeile', () => {
   const provider = pageSource.match(/<VideoModalProvider[\s\S]*?<\/VideoModalProvider>/)
   assert.ok(provider, 'VideoModalProvider nicht gefunden')
   assert.match(provider![0], /<BandHero/)
-  assert.match(provider![0], /<BandTagsSection band=\{band\} hasVideo=\{hasVideo\} \/>/)
+  assert.doesNotMatch(provider![0], /<BandTagsSection|<BandDescription|<BandPeopleSection/)
   assert.match(provider![0], /embedUrl=\{embedUrl\}/)
+  assert.match(pageSource, /<BandTagsSection band=\{band\} \/>/)
   assert.doesNotMatch(pageSource, /BandVideoSection/, 'die dunkle Insel ist aufgeloest')
 })
 
@@ -81,7 +82,7 @@ test('Reihenfolge: Hero, Text, Zeilenraster, "Mehr von", Fotos, Abschluss-CTA; o
   const order = [
     idx('<BandHero band={band}'),
     idx('<BandDescription band={band} />'),
-    idx('<BandTagsSection band={band} hasVideo={hasVideo} />'),
+    idx('<BandTagsSection band={band} />'),
     idx('<BandContactSection band={band} websiteUrl={websiteUrl} />'),
     idx('<BandGallerySection band={band} />'),
     idx('<BandCtaSection band={band} />'),
@@ -101,7 +102,7 @@ test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA
 test('Reihenfolge am Seitenende: Zeilenraster, "Mehr von", Abschluss-CTA, BandFloatingCta', () => {
   const idx = (needle: string) => pageSource.indexOf(needle)
   const order = [
-    idx('<BandTagsSection band={band} hasVideo={hasVideo} />'),
+    idx('<BandTagsSection band={band} />'),
     idx('<BandContactSection band={band} websiteUrl={websiteUrl} />'),
     idx('<BandCtaSection band={band} />'),
     idx('<BandFloatingCta'),
@@ -155,7 +156,7 @@ test('"Ähnliche Bands" nutzt Spacing-Stufe "large" (bewusster Szenenwechsel vor
 test('Seiten-Rhythmus: Hero vor Beschreibung (Text) vor Zeilenraster (Tags-Section)', () => {
   const heroIdx = pageSource.indexOf('<BandHero band={band}')
   const descriptionIdx = pageSource.indexOf('<BandDescription band={band} />')
-  const tagsIdx = pageSource.indexOf('<BandTagsSection band={band} hasVideo={hasVideo} />')
+  const tagsIdx = pageSource.indexOf('<BandTagsSection band={band} />')
   assert.ok(heroIdx >= 0 && descriptionIdx >= 0 && tagsIdx >= 0, 'eine der Kernsections fehlt')
   assert.ok(heroIdx < descriptionIdx)
   assert.ok(descriptionIdx < tagsIdx)

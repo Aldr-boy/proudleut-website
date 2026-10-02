@@ -60,7 +60,7 @@ export function BandHero({ band, hasVideo, facts }: Props) {
             )}
             {hasVideo && (
               <div className="mt-5">
-                <HeroVideoPill tone="light" />
+                <HeroVideoPill tone="light" bandName={band.name} />
               </div>
             )}
           </div>
@@ -189,7 +189,7 @@ export function BandHero({ band, hasVideo, facts }: Props) {
                 {/* Handy: Pille unter dem Claim, ueber dem Anfrage-Button */}
                 {hasVideo && (
                   <div className="md:hidden mb-4">
-                    <HeroVideoPill tone="image" />
+                    <HeroVideoPill tone="image" bandName={band.name} />
                   </div>
                 )}
 
@@ -203,7 +203,7 @@ export function BandHero({ band, hasVideo, facts }: Props) {
               {/* Desktop: Pille unten rechts im Bild */}
               {hasVideo && (
                 <div className="hidden md:block shrink-0">
-                  <HeroVideoPill tone="image" />
+                  <HeroVideoPill tone="image" bandName={band.name} />
                 </div>
               )}
             </div>

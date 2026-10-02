@@ -122,7 +122,7 @@ test('"Klingt nach"/"Stil & Einfluesse"/"Spielt bei" ueber gemeinsame DemoSoundI
 
 test('"Live-Video"-Pill verlinkt auf die echte Bandseite mit Sprungmarke zum Video-Abschnitt, rendert nur wenn die Band ein Video hat', () => {
   assert.match(source, /const demoHasVideo = demoEmbedUrl !== null;/)
-  assert.match(source, /const demoVideoHref = demoBand \? `\/band\/\$\{demoBand\.slug\}#live` : '';/)
+  assert.match(source, /const demoVideoHref = demoBand \? `\/band\/\$\{demoBand\.slug\}` : '';/)
   assert.match(source, /\{demoHasVideo && <LiveVideoPill href=\{demoVideoHref\} position="right-6 bottom-6" size="md" \/>\}/)
   assert.match(source, /\{demoHasVideo && <LiveVideoPill href=\{demoVideoHref\} position="right-3 top-3" size="sm" \/>\}/)
 })
