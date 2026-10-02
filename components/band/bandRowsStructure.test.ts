@@ -6,7 +6,8 @@ import path from 'node:path'
 
 // Strukturelle Regressionspruefung fuer das Zeilenraster (Prototyp E):
 // BandRow.tsx, BandTagsSection.tsx, CollapsiblePills.tsx,
-// BandEventTypesPills.tsx und BandVideoSection.tsx. Kein React-Test-Harness
+// BandEventTypesPills.tsx, BandVideoRow.tsx und BandGallerySection.tsx (die
+// frueheren dunklen Insel BandVideoSection ist aufgeloest). Kein React-Test-Harness
 // in diesem Repo -- das Verhalten (Aufklappen, Tab-Reihenfolge, Linien) wird
 // zusaetzlich per Playwright geprueft.
 const dir = path.dirname(fileURLToPath(import.meta.url))
@@ -15,7 +16,9 @@ const rowSource = read('BandRow.tsx')
 const tagsSource = read('BandTagsSection.tsx')
 const pillsSource = read('BandEventTypesPills.tsx')
 const collapsibleSource = read('CollapsiblePills.tsx')
-const videoSource = read('BandVideoSection.tsx')
+const videoRowSource = read('BandVideoRow.tsx')
+const galleryRaw = read('BandGallery.tsx')
+const gallerySectionSource = read('BandGallerySection.tsx')
 const descriptionSource = read('BandDescription.tsx')
 
 test('BandRow: erste Zeile ohne Linie und Oberabstand, letzte ohne Unterabstand -- keine Luecke, wenn Zeilen entfallen', () => {
@@ -44,25 +47,51 @@ test('BandTagsSection: jede Zeile rendert nur mit Inhalt, die Section entfaellt 
   assert.match(tagsSource, /\{hasWedding && <BandWeddingModule/)
   assert.match(tagsSource, /\{hasReferenceEvents && <BandReferenceEvents/)
   assert.match(tagsSource, /\{hasDocuments && <BandDocumentsSection/)
-  assert.match(tagsSource, /if \(!hasStil && !hasEventTypes && !hasWedding && !hasReferenceEvents && !hasDocuments\) return null;/)
+  assert.match(tagsSource, /if \(!hasVideo && !hasStil && !hasEventTypes && !hasWedding && !hasReferenceEvents && !hasDocuments\) return null;/)
 })
 
 test('Hochzeit-Zeile erscheint nur, wenn auch BandWeddingModule rendert (hasWeddingContent) -- keine leere Zeile', () => {
   assert.match(tagsSource, /hasWeddingContent\(band\) && \(/)
 })
 
-test('Kapitelnummern entfallen in 01 und 02, die Ueberschriften bleiben', () => {
+test('Kapitelnummern entfallen, die Ueberschrift des Text-Bereichs bleibt', () => {
   assert.match(descriptionSource, /<BandChapterHeading title="Wer steht hier auf der Bühne\?" \/>/)
-  assert.match(videoSource, /<BandChapterHeading title="Wie klingt die Band live\?" variant="dark" \/>/)
-  assert.doesNotMatch(descriptionSource + videoSource, /number="0\d"/)
+  assert.doesNotMatch(descriptionSource, /number="0\d"/)
 })
 
-test('Insel (BandVideoSection): nur Video-Tile und Galerie, entfaellt ohne beides; ohne Video keine Trennlinie ueber der Galerie', () => {
-  assert.match(videoSource, /if \(!hasVideo && !hasGallery\) return null;/)
-  assert.doesNotMatch(videoSource, /band\.musikalischVerortet|Stil &amp;/)
-  assert.match(videoSource, /hasVideo \? 'mt-10 pt-10 border-t border-white\/10' : ''/)
-  assert.match(videoSource, /id="live"/)
-  assert.match(videoSource, /md:scroll-mt-\[calc\(var\(--pl-nav-height\)\+5rem\)\]/)
+test('Zeile "Live": erste Zeile des Zeilenrasters, nur mit Video, vor "Stil & Einfluesse"', () => {
+  assert.match(tagsSource, /\{hasVideo && <BandVideoRow band=\{band\} \/>\}/)
+  assert.ok(tagsSource.indexOf('<BandVideoRow') < tagsSource.indexOf('label="Stil & Einflüsse"'), 'Live steht vor Stil')
+  assert.match(tagsSource, /hasVideo: boolean;/)
+  assert.match(tagsSource, /export function BandTagsSection\(\{ band, hasVideo \}: Props\)/)
+})
+
+test('BandTagsSection entfaellt nicht, wenn nur das Video da ist: hasVideo zaehlt in der Null-Bedingung mit (Band mit Video ohne weitere Zeilen)', () => {
+  assert.match(tagsSource, /if \(!hasVideo && !hasStil && !hasEventTypes && !hasWedding && !hasReferenceEvents && !hasDocuments\) return null;/)
+})
+
+test('Live-Zeile (BandVideoRow): <h2> "Live" mit sr-only-Zusatz "– Video von {Bandname}", id="live", Tile max. 640 px 16:9 linksbuendig, unveraendertes Poster-Tile (VideoPlayer), lokales Bandbild', () => {
+  assert.match(videoRowSource, /<BandRow id="live" label="Live" labelAs="h2" labelSrSuffix=\{`– Video von \$\{band\.name\}`\}>/)
+  assert.match(videoRowSource, /relative w-full max-w-\[640px\] aspect-video rounded-xl overflow-hidden bg-pl-stage-elevated/)
+  assert.match(videoRowSource, /<VideoPlayer bandName=\{band\.name\} poster=\{poster\} \/>/)
+  assert.match(videoRowSource, /const poster = band\.thumbnailImage \?\? band\.heroImage \?\? band\.gallery\[0\];/)
+  assert.doesNotMatch(videoRowSource, /ytimg|youtube\.com|i\.ytimg/)
+})
+
+test('BandRow: Prop id setzt Anker und scroll-margin unter der Faktenleiste (Header-Pill + 5rem am Desktop), labelSrSuffix als sr-only-Span', () => {
+  assert.match(rowSource, /id\?: string;/)
+  assert.match(rowSource, /id \? ' scroll-mt-nav md:scroll-mt-\[calc\(var\(--pl-nav-height\)\+5rem\)\]' : ''/)
+  assert.match(rowSource, /<span className="sr-only"> \{labelSrSuffix\}<\/span>/)
+})
+
+test('Galerie: eigene helle Section (bg-pl-canvas), <h2> "Ein Eindruck von der Buehne", Anzahlhinweis in text-pl-text-muted, helle Fokusfarbe; Komposition, Lightbox und next/image bleiben', () => {
+  assert.match(gallerySectionSource, /bg-pl-canvas/)
+  assert.match(galleryRaw, /<h2 className="text-2xl font-extrabold tracking-\[-0\.02em\] text-pl-text">Ein Eindruck von der Bühne<\/h2>/)
+  assert.match(galleryRaw, /<span className="text-xs text-pl-text-muted">/)
+  assert.doesNotMatch(galleryRaw.replace(/\/\/.*$/gm, ''), /pl-on-stage|accent-light/, 'keine dunklen Tokens mehr')
+  assert.match(galleryRaw, /<GalleryLightbox/)
+  assert.match(galleryRaw, /from 'next\/image'/)
+  assert.match(galleryRaw, /desktopGalleryComposition\(images\.length\)/)
 })
 
 test('Spielt bei: mobile Kuerzung ist Opt-in, verborgene Pills tragen display:none (max-md:group-data-[expanded=false]:hidden) und bleiben im HTML', () => {

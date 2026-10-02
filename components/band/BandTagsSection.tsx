@@ -5,19 +5,23 @@ import { BandReferenceEvents } from './BandReferenceEvents';
 import { BandDocumentsSection } from './BandDocumentsSection';
 import { BandWeddingModule } from './BandWeddingModule';
 import { BandRow } from './BandRow';
+import { BandVideoRow } from './BandVideoRow';
 
 type Props = {
   band: Band;
+  // Die Band hat ein gueltiges Video: erste Zeile "Live" mit dem Poster-Tile.
+  hasVideo: boolean;
 };
 
 // Zeilenraster (Prototyp E): Label links, Inhalt rechts, in dieser
-// Reihenfolge -- Stil & Einfluesse, Spielt bei, Hochzeit, Referenz-Events,
-// Unterlagen fuer Veranstalter. Jede Zeile rendert nur, wenn sie
+// Reihenfolge -- Live (Video-Tile, nur mit Video), Stil & Einfluesse, Spielt
+// bei, Hochzeit, Referenz-Events, Unterlagen fuer Veranstalter. Die Section
+// entfaellt nicht, wenn nur das Video da ist (hasVideo zaehlt mit). Jede Zeile rendert nur, wenn sie
 // tatsaechlich Inhalt hat (kein Platzhalter); die erste sichtbare Zeile hat
 // keine Linie darueber (siehe BandRow.tsx). Ohne Ueberschrift und ohne
 // Kapitelnummer. "Vernetzt"/Social-Links stehen in "Mehr von [Band]"
 // (BandContactSection.tsx).
-export function BandTagsSection({ band }: Props) {
+export function BandTagsSection({ band, hasVideo }: Props) {
   const stil = band.musikalischVerortet;
   const hasStil = stil.length > 0;
   const hasEventTypes = band.eventTypes.length > 0;
@@ -32,12 +36,14 @@ export function BandTagsSection({ band }: Props) {
     || !!band.weddingInfo?.possiblePlaytimes
   );
 
-  if (!hasStil && !hasEventTypes && !hasWedding && !hasReferenceEvents && !hasDocuments) return null;
+  if (!hasVideo && !hasStil && !hasEventTypes && !hasWedding && !hasReferenceEvents && !hasDocuments) return null;
 
   return (
     <section id="anlass" className="bg-pl-canvas py-16 md:py-20 px-4 sm:px-6 scroll-mt-nav">
       <div className="pl-container-shell">
         <div>
+          {hasVideo && <BandVideoRow band={band} />}
+
           {hasStil && (
             <BandRow label="Stil & Einflüsse" pillAligned>
               <div className="flex flex-wrap gap-2">

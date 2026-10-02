@@ -17,10 +17,9 @@ type Props = { band: Band };
 // 2x2-Quadrant aus den ersten 5 Bildern; ab Bild 6 ein einfaches
 // Fortsetzungsraster darunter -- kein "+N mehr"-Overlay.
 //
-// Bandseiten-Finalisierung: eingebettet in die dunkle "02"-Flaeche (siehe
-// BandVideoSection.tsx) statt einer eigenen hellen Section -- kein eigener
-// Hintergrund/Container/Numerierung mehr, nur noch die Galerie-Ueberschrift
-// und das Raster. Client Component, da jedes Bild per Klick die
+// Steht in einer eigenen hellen Section (BandGallerySection.tsx, Prototyp E):
+// Galerie-Ueberschrift ("Ein Eindruck von der Buehne", <h2>) und Raster, kein
+// eigener Hintergrund/Container. Client Component, da jedes Bild per Klick die
 // Vergroesserungsfunktion (GalleryLightbox) oeffnet.
 export function BandGallery({ band }: Props) {
   const images = band.gallery;
@@ -30,9 +29,9 @@ export function BandGallery({ band }: Props) {
 
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-3 flex-wrap mb-4">
-        <h3 className="text-lg font-bold text-pl-on-stage">Ein Eindruck von der Bühne</h3>
-        <span className="text-xs text-pl-on-stage-muted">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap mb-5">
+        <h2 className="text-2xl font-extrabold tracking-[-0.02em] text-pl-text">Ein Eindruck von der Bühne</h2>
+        <span className="text-xs text-pl-text-muted">
           {images.length} {images.length === 1 ? 'Foto' : 'Fotos'} · zum Vergrößern antippen
         </span>
       </div>
@@ -160,7 +159,7 @@ function GalleryTile({
       type="button"
       onClick={() => onOpen(index)}
       aria-label={`Bild vergrößern: ${img.alt}`}
-      className={`relative rounded-lg overflow-hidden cursor-zoom-in group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent-light ${className}`}
+      className={`relative rounded-lg overflow-hidden cursor-zoom-in group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent ${className}`}
     >
       <Image
         src={img.url}
