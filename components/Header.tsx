@@ -42,6 +42,10 @@ export default function Header() {
   }
 
   const setSlotEl = useHeaderSlotStore((st) => st.setSlotEl);
+  // Kompakte Pille aktiv (Bandseiten ab 1024 px): Die normale Pille bleibt im
+  // Fluss und sichtbar darunter, ist aber inert und aria-hidden; die kompakte
+  // liegt opak darueber (components/band/CompactPill.tsx).
+  const compact = useHeaderSlotStore((st) => st.compact);
   const pillRef = useRef<HTMLElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -162,7 +166,14 @@ export default function Header() {
         data-nav-footprint
         className="fixed z-50 left-1/2 -translate-x-1/2 top-3 md:top-6 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] max-w-md md:w-auto md:max-w-none"
       >
-        <div className="bg-pl-paper border border-pl-soft shadow-[0_8px_30px_rgba(42,34,38,0.12)] rounded-[1.75rem] md:rounded-full">
+        <div
+          data-pill-normal
+          inert={compact}
+          aria-hidden={compact || undefined}
+          className={`bg-pl-paper border border-pl-soft rounded-[1.75rem] md:rounded-full motion-safe:transition-shadow motion-safe:duration-150 ${
+            compact ? 'shadow-none' : 'shadow-[0_8px_30px_rgba(42,34,38,0.12)]'
+          }`}
+        >
           <div className="h-14 md:h-16 pl-3 pr-2 md:pl-6 md:pr-2 flex items-center justify-between gap-2 md:gap-4">
             <Link
               href="/"

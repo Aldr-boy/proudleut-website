@@ -54,6 +54,11 @@ test('Header behaelt Zustand, Escape, Outside-Click und Routenwechsel; das Menue
   assert.match(header, /--pl-nav-height/)
 })
 
-test('keine Popover-Teile in PR 1 (kommen in PR 2)', () => {
-  assert.ok(!/popover|top-full/i.test(code(menu) + code(header)))
+test('Header selbst enthaelt kein Popover und kein Portal: das Popover der kompakten Pille liegt in CompactPill.tsx, der Header kennt nur das compact-Flag', () => {
+  assert.ok(!/popover|top-full|createPortal/i.test(code(header)))
+  assert.match(code(header), /useHeaderSlotStore\(\(st\) => st\.compact\)/)
+  assert.match(code(header), /data-pill-normal/)
+  assert.match(code(header), /inert=\{compact\}/)
+  assert.match(code(header), /aria-hidden=\{compact \|\| undefined\}/)
+  assert.match(code(menu), /export function HeaderPopoverList/)
 })
