@@ -96,7 +96,7 @@ test('Reihenfolge: Hero, Text, Zeilenraster, "Mehr von", Fotos, Abschluss-CTA; o
 })
 
 test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA (Anfrage + Herz, siehe BandFloatingCta)', () => {
-  assert.match(pageSource, /<article className="bg-pl-canvas pb-24 md:pb-0">/)
+  assert.match(pageSource, /<article className="bg-pl-canvas pb-24 lg:pb-0">/)
 })
 
 test('Reihenfolge am Seitenende: Zeilenraster, "Mehr von", Abschluss-CTA, BandFloatingCta', () => {

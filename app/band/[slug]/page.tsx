@@ -102,7 +102,7 @@ export default async function BandPage({ params }: PageProps) {
   const hasHeroButton = Boolean(band.heroImage);
 
   return (
-    <article className="bg-pl-canvas pb-24 md:pb-0">
+    <article className="bg-pl-canvas pb-24 lg:pb-0">
       {/* JSON-LD – produktiv, kein Debug */}
       <script
         type="application/ld+json"

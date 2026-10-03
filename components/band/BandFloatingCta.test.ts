@@ -126,3 +126,15 @@ test('Anfrageziel (AnfrageModal) und Optik der Buttons bleiben; kein Video-Link 
   assert.match(source, /bg-pl-accent text-pl-on-accent/)
   assert.ok(!/href="#live"/.test(source))
 })
+
+test('Breakpoint 1024 px: Faktenleiste ab lg (hidden lg:block), untere Anfrageleiste bis 1023 px (lg:hidden) mit Inhalt ab md zentriert in hoechstens 640 px; Steckbrief bis 1023 px (lg:hidden, ab md auf 640 px begrenzt); Seitenabstand pb-24 bis 1023 px', () => {
+  const dir = path.dirname(sourcePath)
+  const hero = readFileSync(path.join(dir, 'BandHero.tsx'), 'utf8')
+  const page = readFileSync(path.join(dir, '..', '..', 'app', 'band', '[slug]', 'page.tsx'), 'utf8')
+  assert.match(source, /className=\{`hidden lg:block fixed inset-x-0 z-40 bg-pl-canvas\/95/)
+  assert.match(source, /className=\{`lg:hidden fixed inset-x-0 z-40 bg-pl-elevated\/95/)
+  assert.match(source, /<div className="flex items-center gap-2 md:max-w-\[640px\] md:mx-auto">/)
+  assert.ok(!/hidden md:block fixed|md:hidden fixed/.test(source), 'keine md-Grenze mehr an den Leisten')
+  assert.match(hero, /<dl className="lg:hidden md:max-w-\[640px\] bg-pl-canvas px-5 md:px-6 pt-4 pb-2">/)
+  assert.match(page, /<article className="bg-pl-canvas pb-24 lg:pb-0">/)
+})
