@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { AnfrageModal } from './AnfrageModal';
 import { BandMerkHeart } from './BandMerkHeart';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +9,9 @@ import { useAnfrageStore } from '@/stores/anfrageStore';
 import type { BandAnfrageEventType } from '@/lib/types/band';
 import type { BandFact } from '@/lib/bands/bandFacts';
 import { computeBarVisible } from '@/lib/bands/barVisibility';
+import { bottomBarActive, compactPillActive } from '@/lib/bands/compactPillActive';
+import { useHeaderSlot, useHeaderSlotStore } from '@/stores/headerSlotStore';
+import { CompactPill } from './CompactPill';
 
 type Props = {
   name: string;
@@ -24,7 +27,8 @@ type Props = {
   ctaButtonId: string;
 };
 
-// Faktenleiste (ab 1024 px) und untere Anfrageleiste (bis 1023 px), Variante E.
+// Kompakte Header-Pille (ab 1024 px, siehe CompactPill.tsx) und untere
+// Anfrageleiste (bis 1023 px), Variante E.
 //
 // Die Entscheidung "Leiste sichtbar" faellt in lib/bands/barVisibility.ts (reine
 // Funktion, dort die Regeln und die Wertetabelle im Test): sichtbar, wenn der
@@ -41,7 +45,8 @@ type Props = {
 // Scroll-Sprung (Scrollbar-Drag, Pos1/Ende, interner Sprunglink, Reload mitten
 // im Text) den echten Zustand statt eines veralteten.
 //
-// Kein Layout-Sprung: beide Leisten sind position:fixed (aus dem Fluss). Der
+// Kein Layout-Sprung: die Bottom-Bar ist position:fixed (aus dem Fluss), die
+// kompakte Pille liegt absolut im Header-Slot. Der
 // Steckbrief (bis 1023 px) steht statisch im Seitenfluss (BandHero.tsx). Ausgeblendet:
 // visibility:hidden + inert -- nichts darin ist fokussierbar; der Fokus wird
 // beim Einblenden nicht verschoben.
@@ -52,6 +57,39 @@ type Props = {
 // der 220-ms-Transition (bei reduzierter Bewegung ohne Slide, siehe
 // motion-safe:), damit die Leiste nie mit Opacity > 0 neben einem benutzbaren
 // Button steht.
+// Fokus bei einem Wechsel zwischen normaler und kompakter Pille. Liegt der Fokus
+// auf einem Element, das beim Wechsel verschwindet (inert wird), wandert er auf
+// ein sinnvolles verfuegbares Element, nie auf body:
+//   normal -> kompakt: Logo -> Logo der kompakten Pille; Navigationslink oder
+//     "Bands entdecken" -> Menue-Knopf der kompakten Pille.
+//   kompakt -> normal: "Unverbindlich anfragen" -> Hero-Button, Herz -> Hero-Herz
+//     (jeweils nur, wenn verfuegbar); sonst (Menue-Knopf, Popover-Link, Logo oder
+//     Hero-Element nicht verfuegbar) Logo der normalen Pille.
+// Liegt der Fokus ausserhalb der betroffenen Pille, bleibt er unberuehrt.
+function moveFocusOnSwitch(previous: Element | null, toCompact: boolean, heroButtonId: string) {
+  if (!previous || previous === document.body) return;
+  const compactRoot = document.querySelector('[data-compact-pill]');
+  const normalRoot = document.querySelector('[data-pill-normal]');
+  const logoSelector = 'a[aria-label="Zur Startseite"]';
+  const find = (root: Element | null, selector: string) => root?.querySelector<HTMLElement>(selector) ?? null;
+  const usable = (el: HTMLElement | null): el is HTMLElement =>
+    !!el && el.isConnected && !(el as HTMLButtonElement).disabled && !el.closest('[inert]') && el.getClientRects().length > 0;
+
+  let target: HTMLElement | null = null;
+  if (toCompact) {
+    if (!normalRoot?.contains(previous)) return;
+    target = previous.matches(logoSelector) ? find(compactRoot, logoSelector) : find(compactRoot, 'nav button[aria-controls]');
+  } else {
+    if (!compactRoot?.contains(previous)) return;
+    const label = previous.getAttribute('aria-label') ?? '';
+    const hero = document.getElementById(heroButtonId);
+    if (label.endsWith('unverbindlich anfragen')) target = hero;
+    else if (label.endsWith('für Anfrage merken') || label.endsWith('aus Anfrage entfernen')) target = hero?.nextElementSibling as HTMLElement | null;
+    if (!usable(target)) target = find(normalRoot, logoSelector);
+  }
+  if (usable(target)) target.focus({ preventScroll: true });
+}
+
 export function BandFloatingCta({
   name,
   slug,
@@ -64,8 +102,11 @@ export function BandFloatingCta({
   const [modalOpen, setModalOpen] = useState(false);
   // Start-Zustand wie bisher: bei Bands mit Hero-Button zunaechst ausgeblendet
   // (nichts blitzt beim Laden auf), ohne Hero-Button von Anfang an sichtbar.
-  const [barVisible, setBarVisible] = useState(!hasHeroButton);
-  const barVisibleRef = useRef(!hasHeroButton);
+  // Zwei Flaechen, hoechstens eine aktiv: kompakte Header-Pille (ab 1024 px) oder
+  // untere Anfrageleiste (bis 1023 px), siehe lib/bands/compactPillActive.ts.
+  const [mode, setMode] = useState({ compact: false, bottom: !hasHeroButton });
+  const modeRef = useRef(mode);
+  const slotEl = useHeaderSlot();
   const [merklisteBarHeight, setMerklisteBarHeight] = useState(0);
   const merklisteBandsCount = useAnfrageStore((s) => s.bands.length);
 
@@ -79,6 +120,11 @@ export function BandFloatingCta({
     const el = document.getElementById('merkliste-bar');
     setMerklisteBarHeight(el?.offsetHeight ?? 0);
   }, [merklisteBandsCount]);
+
+  // Beim Verlassen der Bandseite die normale Pille im Header wieder freigeben.
+  useEffect(() => {
+    return () => useHeaderSlotStore.getState().setCompact(false);
+  }, []);
 
   useEffect(() => {
     let rafScheduled = false;
@@ -101,7 +147,7 @@ export function BandFloatingCta({
       // Gibt es das Element nicht, gilt der Hero-Button als nicht verdeckt.
       const pillRect = document.querySelector('[data-nav-footprint]')?.getBoundingClientRect() ?? null;
 
-      const next = computeBarVisible({
+      const barOn = computeBarVisible({
         hasHeroButton,
         hero: heroRect,
         pill: pillRect,
@@ -110,10 +156,26 @@ export function BandFloatingCta({
         merklisteHeight,
       });
 
+      // Welche Flaeche: breit (ab 1024 px) -> kompakte Pille, sonst Bottom-Bar.
+      // Ohne Hero-Button erst, wenn der kurze Kopf (h1) aus dem Bild ist.
+      const wide = window.matchMedia('(min-width: 1024px)').matches;
+      const h1Bottom = document.querySelector('h1')?.getBoundingClientRect().bottom ?? null;
+      const headPassed = h1Bottom === null || pillRect === null || h1Bottom <= pillRect.bottom;
+      const next = {
+        compact: compactPillActive({ barVisible: barOn, wide, hasHeroButton, headPassed }),
+        bottom: bottomBarActive({ barVisible: barOn, wide }),
+      };
+
       // --- ein einziger Schreibvorgang, noch vor dem Zeichnen dieses Frames ---
-      if (next !== barVisibleRef.current) {
-        barVisibleRef.current = next;
-        flushSync(() => setBarVisible(next));
+      if (next.compact !== modeRef.current.compact || next.bottom !== modeRef.current.bottom) {
+        const previousFocus = document.activeElement;
+        const compactChanged = next.compact !== modeRef.current.compact;
+        modeRef.current = next;
+        flushSync(() => {
+          setMode(next);
+          useHeaderSlotStore.getState().setCompact(next.compact);
+        });
+        if (compactChanged) moveFocusOnSwitch(previousFocus, next.compact, heroButtonId);
       }
     };
 
@@ -126,18 +188,25 @@ export function BandFloatingCta({
     scheduleEvaluate();
     window.addEventListener('scroll', scheduleEvaluate, { passive: true });
     window.addEventListener('resize', scheduleEvaluate);
+    const wideQuery = window.matchMedia('(min-width: 1024px)');
+    wideQuery.addEventListener('change', scheduleEvaluate);
     // Layoutaenderungen ohne Scroll (Bilder, aufgeklappte Texte, "+N weitere").
     const resizeObserver = new ResizeObserver(scheduleEvaluate);
     resizeObserver.observe(document.body);
+    // Breite der normalen Pille aendert sich z. B. durch spaet geladene Schrift:
+    // nur neu auswerten (das Rechteck des <header> haengt nicht vom Zustand ab).
+    const footprint = document.querySelector('[data-nav-footprint]');
+    if (footprint) resizeObserver.observe(footprint);
 
     return () => {
       resizeObserver.disconnect();
+      wideQuery.removeEventListener('change', scheduleEvaluate);
       window.removeEventListener('scroll', scheduleEvaluate);
       window.removeEventListener('resize', scheduleEvaluate);
     };
   }, [heroButtonId, ctaButtonId, hasHeroButton, merklisteBandsCount]);
 
-  const visible = barVisible;
+  const visible = mode.bottom;
 
   // Einblenden: 220-ms-Transition (Opacity/Slide); Ausblenden: sofort
   // (transition-none steht nur im ausgeblendeten Zustand, die Transition-
@@ -147,67 +216,21 @@ export function BandFloatingCta({
 
   return (
     <>
-      {/* Ab lg (1024 px): Faktenleiste, klebt unter dem Header. fixed statt
-          sticky, damit sie nie Platz im Seitenfluss belegt. */}
-      <div
-        inert={!visible}
-        className={`hidden lg:block fixed inset-x-0 z-40 bg-pl-canvas/95 backdrop-blur-sm border-y border-pl-soft
-                    ${
-                      visible
-                        ? `transition-[opacity,transform] duration-[220ms] ease-out ${visibleClasses}`
-                        : `motion-safe:-translate-y-2 ${hiddenClasses}`
-                    }`}
-        style={{ top: 'var(--pl-nav-height)' }}
-      >
-        <div className="pl-container-shell px-4 sm:px-6 py-3 flex items-center gap-4">
-          {/* Prioritaet bei knappem Platz, rein ueber CSS: Besetzung und Stil
-              schrumpfen nie (shrink-0). Die Herkunft darf mit "…" kuerzen (volle
-              Fassung im title), ab ihrer Untergrenze (flex-basis) bricht der
-              Stil in eine zweite Zeile um. Die Zeilenhoehe ist fest (h-11) und
-              der Zeilenabstand (gap-y-4) groesser als der Rest der Hoehe, damit
-              von der zweiten Zeile nie ein Rest sichtbar bleibt -- ein Wert
-              weniger statt eines abgeschnittenen. Trennlinien stehen
-              fuehrend (border-l), damit nach einem entfallenen Stil keine
-              Linie uebrig bleibt. Die Leistenhoehe (74 px) aendert sich nicht
-              (Buttons 48 px), sie steckt in scroll-margin-top der Video-Section. */}
-          <dl className="flex flex-wrap content-start gap-y-4 flex-1 min-w-0 h-11 overflow-hidden">
-            {facts.map((f, i) => {
-              const isHerkunft = f.label === 'Herkunft';
-              return (
-                <div
-                  key={f.label}
-                  className={`flex flex-col gap-0.5 ${isHerkunft ? 'flex-[1_1_10rem] min-w-0 max-w-max' : 'shrink-0'} ${
-                    i > 0 ? 'ml-7 pl-7 border-l border-pl-soft' : ''
-                  }`}
-                >
-                  <dt className="text-[11px] font-bold uppercase tracking-[0.08em] text-pl-text-muted">{f.label}</dt>
-                  <dd
-                    title={isHerkunft ? f.value : undefined}
-                    className={`text-base font-bold text-pl-text ${isHerkunft ? 'truncate' : 'whitespace-nowrap'}`}
-                  >
-                    {f.value}
-                  </dd>
-                </div>
-              );
-            })}
-          </dl>
-          <BandMerkHeart
+      {/* Ab lg (1024 px): kompakte Header-Pille statt einer separaten Leiste. Sie
+          wird in den Slot des Headers gerendert (data-header-slot), teilt aber
+          den Modal- und Herz-Zustand dieser Komponente. */}
+      {slotEl &&
+        createPortal(
+          <CompactPill
             name={name}
             slug={slug}
             anfrageEventTypes={anfrageEventTypes}
-            tone="light"
-            className="w-12 h-12"
-          />
-          <Button
-            onClick={() => setModalOpen(true)}
-            aria-label={`${name} unverbindlich anfragen`}
-            className="inline-flex items-center justify-center h-12 px-[26px] rounded-full text-base font-bold
-                       bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover"
-          >
-            Unverbindlich anfragen
-          </Button>
-        </div>
-      </div>
+            facts={facts}
+            active={mode.compact}
+            onRequest={() => setModalOpen(true)}
+          />,
+          slotEl,
+        )}
 
       {/* Bis 1023 px: untere Anfrageleiste (Anfrage + Herz). Die Flaeche hat
           volle Breite, der Inhalt steht ab md (768 px) zentriert in hoechstens

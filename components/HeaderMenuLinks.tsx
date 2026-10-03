@@ -76,3 +76,50 @@ export function HeaderMenuLinks({ menuOpen, pathname, firstLinkRef, onNavigate }
     </div>
   );
 }
+
+type PopoverListProps = {
+  pathname: string | null;
+  firstLinkRef: Ref<HTMLAnchorElement>;
+  onNavigate: () => void;
+};
+
+// Liste der Navigationslinks im Popover der kompakten Pille
+// (components/band/CompactPill.tsx, ab 1024 px): dieselben Links und derselbe
+// Button "Bands entdecken" wie im Handy-Menue. Die Huelle (Position, Hintergrund,
+// nav-Landmark, Auf-/Zuklappen) liegt in CompactPill.tsx.
+export function HeaderPopoverList({ pathname, firstLinkRef, onNavigate }: PopoverListProps) {
+  return (
+    <ul className="flex flex-col gap-1 list-none m-0 p-0">
+      {NAV_LINKS.map((link, i) => {
+        const isActive = pathname === link.href;
+        return (
+          <li key={link.href}>
+            <Link
+              href={link.href}
+              ref={i === 0 ? firstLinkRef : undefined}
+              aria-current={isActive ? 'page' : undefined}
+              onClick={onNavigate}
+              className={`block px-3 py-2.5 rounded-xl text-base outline-none motion-safe:transition-colors active:scale-95 motion-safe:transition-transform hover:bg-pl-accent/20 hover:text-pl-accent-deep focus-visible:outline-none focus-visible:bg-pl-accent/20 focus-visible:text-pl-accent-deep focus-visible:ring-2 focus-visible:ring-pl-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-pl-paper ${
+                isActive ? 'bg-pl-accent/20 text-pl-accent-deep' : 'text-pl-text'
+              }`}
+            >
+              {link.label}
+            </Link>
+          </li>
+        );
+      })}
+      <li className="mt-2">
+        <Button
+          href={CTA.href}
+          onClick={onNavigate}
+          className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-pl-accent text-pl-on-accent text-sm font-medium"
+        >
+          {CTA.label}
+          <ButtonArrow>
+            <ChevronRightIcon className="h-4 w-4" />
+          </ButtonArrow>
+        </Button>
+      </li>
+    </ul>
+  );
+}

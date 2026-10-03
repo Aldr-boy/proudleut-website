@@ -17,7 +17,7 @@ const source = readFileSync(sourcePath, 'utf8')
 
 test('die Entscheidung kommt aus der reinen Funktion computeBarVisible (lib/bands/barVisibility.ts), die Komponente ruft sie nur auf', () => {
   assert.match(source, /import \{ computeBarVisible \} from '@\/lib\/bands\/barVisibility'/)
-  assert.match(source, /const next = computeBarVisible\(\{/)
+  assert.match(source, /const barOn = computeBarVisible\(\{/)
   assert.ok(!/IntersectionObserver/.test(source.replace(/\/\/.*$/gm, '')), 'kein IntersectionObserver mehr: weder Hero-Observer noch Sentinel')
   assert.ok(!/finalSentinel|final-cta-sentinel|finalReached|heroPassed/.test(source.replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')), 'alte Sentinel-/Observer-Zustaende duerfen nicht zurueckkehren')
 })
@@ -41,8 +41,8 @@ test('Verdeckung des Hero-Buttons: rein geometrisch gegen das Rechteck des Eleme
 })
 
 test('ohne Hero-Button (Band ohne Bandbild) sind die Leisten von Anfang an sichtbar; mit Hero-Button zunaechst ausgeblendet (Start-Zustand wie bisher)', () => {
-  assert.match(source, /useState\(!hasHeroButton\)/)
-  assert.match(source, /useRef\(!hasHeroButton\)/)
+  assert.match(source, /useState\(\{ compact: false, bottom: !hasHeroButton \}\)/)
+  assert.match(source, /useRef\(mode\)/)
 })
 
 test('Auswertung per requestAnimationFrame gedrosselt, bei Scroll (passive), Resize und Layoutaenderungen (ResizeObserver auf body), initial direkt nach dem Mount', () => {
@@ -58,59 +58,34 @@ test('erst lesen, dann ein einziger Schreibvorgang: setState nur ueber flushSync
   const evaluate = source.slice(source.indexOf('const evaluate = () => {'), source.indexOf('const scheduleEvaluate'))
   assert.ok(evaluate.indexOf('computeBarVisible') < evaluate.indexOf('flushSync'), 'zuerst berechnen, dann schreiben')
   assert.equal((evaluate.match(/flushSync\(/g) ?? []).length, 1)
-  assert.match(evaluate, /if \(next !== barVisibleRef\.current\) \{/)
-  assert.match(source, /import \{ flushSync \} from 'react-dom';/)
+  assert.match(evaluate, /if \(next\.compact !== modeRef\.current\.compact \|\| next\.bottom !== modeRef\.current\.bottom\) \{/)
+  assert.match(evaluate, /setMode\(next\);\s*useHeaderSlotStore\.getState\(\)\.setCompact\(next\.compact\);/)
+  assert.match(source, /import \{ createPortal, flushSync \} from 'react-dom';/)
 })
 
 test('Listener und ResizeObserver werden beim Unmount sauber entfernt', () => {
   const cleanup = source.match(/return \(\) => \{\s*resizeObserver\.disconnect\(\);[\s\S]*?\};\s*\n\s*\}, \[heroButtonId, ctaButtonId, hasHeroButton, merklisteBandsCount\]\)/)?.[0] ?? ''
   assert.match(cleanup, /window\.removeEventListener\('scroll', scheduleEvaluate\)/)
   assert.match(cleanup, /window\.removeEventListener\('resize', scheduleEvaluate\)/)
+  assert.match(cleanup, /wideQuery\.removeEventListener\('change', scheduleEvaluate\)/)
 })
 
-test('beide Leisten sind position:fixed (kein Layout-Sprung) und ausgeblendet inert + visibility:hidden', () => {
-  assert.equal((source.match(/fixed inset-x-0/g) ?? []).length, 2)
+test('die Bottom-Bar ist position:fixed (kein Layout-Sprung), ausgeblendet inert + visibility:hidden; die Desktop-Faktenleiste gibt es nicht mehr', () => {
+  assert.equal((source.match(/fixed inset-x-0/g) ?? []).length, 1)
   assert.ok(!/sticky/.test(source.replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')), 'keine in den Fluss eingebundene sticky-Leiste')
-  assert.equal((source.match(/inert=\{!visible\}/g) ?? []).length, 2)
+  assert.equal((source.match(/inert=\{!visible\}/g) ?? []).length, 1)
+  assert.ok(!/hidden lg:block fixed|top: 'var\(--pl-nav-height\)'/.test(source), 'keine Desktop-Leiste unter der Pille')
   assert.match(source, /const hiddenClasses = 'transition-none invisible opacity-0 pointer-events-none';/)
 })
 
 test('Ausblenden ist sofort (transition-none nur im ausgeblendeten Zustand), nur das Einblenden laeuft mit der 220-ms-Transition', () => {
   assert.match(source, /const visibleClasses = 'visible opacity-100 translate-y-0 pointer-events-auto';/)
-  assert.match(source, /transition-\[opacity,transform\] duration-\[220ms\] ease-out \$\{visibleClasses\}/)
   assert.match(source, /transition-\[opacity,transform,bottom\] duration-\[220ms\] ease-out \$\{visibleClasses\}/)
   assert.ok(!/transition-\[[^\]]*visibility/.test(source), 'visibility darf nicht verzoegert uebergehen (kein Nachleuchten neben einem benutzbaren Button)')
 })
 
-test('prefers-reduced-motion: der Slide (translate) steht nur hinter motion-safe:, Ein-/Ausblenden bleibt', () => {
-  assert.match(source, /motion-safe:-translate-y-2/)
+test('prefers-reduced-motion: der Slide (translate) der Bottom-Bar steht nur hinter motion-safe:, Ein-/Ausblenden bleibt', () => {
   assert.match(source, /motion-safe:translate-y-2/)
-})
-
-test('Desktop-Faktenleiste klebt unter dem Header (top: var(--pl-nav-height)) und zeigt Fakten, Herz und Anfrage-Button', () => {
-  assert.match(source, /top: 'var\(--pl-nav-height\)'/)
-  assert.match(source, /facts\.map\(\(f, i\) =>/)
-  assert.equal((source.match(/<BandMerkHeart/g) ?? []).length, 2)
-})
-
-test('Faktenleiste: Besetzung und Stil schrumpfen nie (shrink-0), nur die Herkunft darf kuerzen (flex-[1_1_10rem] min-w-0 max-w-max, truncate, title)', () => {
-  assert.match(source, /isHerkunft \? 'flex-\[1_1_10rem\] min-w-0 max-w-max' : 'shrink-0'/)
-  assert.match(source, /title=\{isHerkunft \? f\.value : undefined\}/)
-  assert.match(source, /isHerkunft \? 'truncate' : 'whitespace-nowrap'/)
-})
-
-test('Faktenleiste: Stil entfaellt vollstaendig statt abgeschnitten zu werden (flex-wrap + feste Zeilenhoehe + overflow-hidden, Zeilenabstand groesser als die Resthoehe)', () => {
-  assert.match(source, /<dl className="flex flex-wrap content-start gap-y-4 flex-1 min-w-0 h-11 overflow-hidden">/)
-})
-
-test('Faktenleiste: Trennlinien stehen fuehrend (border-l ab dem zweiten Fakt), kein hinteres border-r, das nach einem entfallenen Stil uebrig bliebe', () => {
-  assert.match(source, /i > 0 \? 'ml-7 pl-7 border-l border-pl-soft' : ''/)
-  assert.ok(!/border-r/.test(source))
-})
-
-test('Faktenleiste: Zeilenhoehe h-11 (44 px) bleibt unter den 48-px-Buttons, die Leistenhoehe (74 px) und damit scroll-margin-top der Video-Section aendern sich nicht', () => {
-  assert.match(source, /py-3 flex items-center gap-4/)
-  assert.match(source, /h-12 px-\[26px\]/)
 })
 
 test('Stacking der mobilen Leiste ueber der Merkliste-Leiste (merklisteBarHeight) und safe-area bleiben erhalten', () => {
@@ -127,14 +102,50 @@ test('Anfrageziel (AnfrageModal) und Optik der Buttons bleiben; kein Video-Link 
   assert.ok(!/href="#live"/.test(source))
 })
 
-test('Breakpoint 1024 px: Faktenleiste ab lg (hidden lg:block), untere Anfrageleiste bis 1023 px (lg:hidden) mit Inhalt ab md zentriert in hoechstens 640 px; Steckbrief bis 1023 px (lg:hidden, ab md auf 640 px begrenzt); Seitenabstand pb-24 bis 1023 px', () => {
+test('Breakpoint 1024 px: untere Anfrageleiste bis 1023 px (lg:hidden) mit Inhalt ab md zentriert in hoechstens 640 px; Steckbrief bis 1023 px (lg:hidden, ab md auf 640 px begrenzt); Seitenabstand pb-24 bis 1023 px', () => {
   const dir = path.dirname(sourcePath)
   const hero = readFileSync(path.join(dir, 'BandHero.tsx'), 'utf8')
   const page = readFileSync(path.join(dir, '..', '..', 'app', 'band', '[slug]', 'page.tsx'), 'utf8')
-  assert.match(source, /className=\{`hidden lg:block fixed inset-x-0 z-40 bg-pl-canvas\/95/)
   assert.match(source, /className=\{`lg:hidden fixed inset-x-0 z-40 bg-pl-elevated\/95/)
   assert.match(source, /<div className="flex items-center gap-2 md:max-w-\[640px\] md:mx-auto">/)
-  assert.ok(!/hidden md:block fixed|md:hidden fixed/.test(source), 'keine md-Grenze mehr an den Leisten')
+  assert.ok(!/hidden md:block fixed|md:hidden fixed/.test(source), 'keine md-Grenze mehr an der Bottom-Bar')
   assert.match(hero, /<dl className="lg:hidden md:max-w-\[640px\] bg-pl-canvas px-5 md:px-6 pt-4 pb-2">/)
   assert.match(page, /<article className="bg-pl-canvas pb-24 lg:pb-0">/)
+})
+
+test('Kompakte Pille: per createPortal in den Header-Slot (useHeaderSlot), gleicher Modal-Zustand (setModalOpen), Desktop-Leiste entfernt', () => {
+  assert.match(source, /import \{ createPortal, flushSync \} from 'react-dom';/)
+  assert.match(source, /const slotEl = useHeaderSlot\(\);/)
+  assert.match(source, /slotEl &&\s*createPortal\(\s*<CompactPill/)
+  assert.match(source, /onRequest=\{\(\) => setModalOpen\(true\)\}/)
+  assert.equal((source.match(/<AnfrageModal/g) ?? []).length, 1, 'ein einziges Modal')
+  assert.equal((source.match(/<BandMerkHeart/g) ?? []).length, 1, 'Herz der Bottom-Bar; das der kompakten Pille steht in CompactPill.tsx')
+})
+
+test('Flaechenwahl: matchMedia(min-width: 1024px), compactPillActive/bottomBarActive aus lib/bands/compactPillActive, Kopf (h1) nur ohne Hero-Button, barVisibility unveraendert aufgerufen', () => {
+  const code = source.replace(/\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+  assert.match(code, /window\.matchMedia\('\(min-width: 1024px\)'\)\.matches/)
+  assert.match(code, /compactPillActive\(\{ barVisible: barOn, wide, hasHeroButton, headPassed \}\)/)
+  assert.match(code, /bottomBarActive\(\{ barVisible: barOn, wide \}\)/)
+  assert.match(code, /document\.querySelector\('h1'\)\?\.getBoundingClientRect\(\)\.bottom/)
+  assert.match(code, /const wideQuery = window\.matchMedia\('\(min-width: 1024px\)'\);/)
+})
+
+test('ResizeObserver beobachtet zusaetzlich das <header> (data-nav-footprint) und loest nur eine Auswertung aus', () => {
+  assert.match(source, /const footprint = document\.querySelector\('\[data-nav-footprint\]'\);/)
+  assert.match(source, /if \(footprint\) resizeObserver\.observe\(footprint\);/)
+})
+
+test('Fokus beim Wechsel der Pille: moveFocusOnSwitch nur bei verschwindendem Element, Logo-Fallback, nie body', () => {
+  const fn = source.slice(source.indexOf('function moveFocusOnSwitch'), source.indexOf('export function BandFloatingCta'))
+  assert.match(fn, /if \(!previous \|\| previous === document\.body\) return;/)
+  assert.match(fn, /normalRoot\?\.contains\(previous\)/)
+  assert.match(fn, /compactRoot\?\.contains\(previous\)/)
+  assert.match(fn, /find\(compactRoot, 'nav button\[aria-controls\]'\)/)
+  assert.match(fn, /if \(!usable\(target\)\) target = find\(normalRoot, logoSelector\);/)
+  assert.match(source, /if \(compactChanged\) moveFocusOnSwitch\(previousFocus, next\.compact, heroButtonId\);/)
+})
+
+test('beim Verlassen der Bandseite wird das compact-Flag im Header zurueckgesetzt', () => {
+  assert.match(source, /return \(\) => useHeaderSlotStore\.getState\(\)\.setCompact\(false\);/)
 })
