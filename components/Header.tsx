@@ -170,8 +170,10 @@ export default function Header() {
           data-pill-normal
           inert={compact}
           aria-hidden={compact || undefined}
-          className={`bg-pl-paper border border-pl-soft rounded-[1.75rem] md:rounded-full motion-safe:transition-shadow motion-safe:duration-150 ${
-            compact ? 'shadow-none' : 'shadow-[0_8px_30px_rgba(42,34,38,0.12)]'
+          className={`bg-pl-paper border border-pl-soft rounded-[1.75rem] md:rounded-full ${
+            compact
+              ? 'shadow-none motion-safe:transition-shadow motion-safe:duration-200'
+              : 'shadow-[0_8px_30px_rgba(42,34,38,0.12)]'
           }`}
         >
           <div className="h-14 md:h-16 pl-3 pr-2 md:pl-6 md:pr-2 flex items-center justify-between gap-2 md:gap-4">
