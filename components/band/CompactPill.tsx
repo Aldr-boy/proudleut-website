@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ProudleutLogo } from '@/components/ProudleutLogo';
@@ -56,7 +56,12 @@ function CloseIcon() {
 //
 // Landmark: genau ein <nav> -- nur um den Menue-Cluster (Knopf + Popover), das
 // Logo steht wie in der normalen Pille ausserhalb. Ausgeblendet: invisible +
-// opacity-0 + inert, sofort; nur das Einblenden laeuft als Fade (motion-safe).
+// opacity-0 + inert, sofort. Einblenden (nur ohne prefers-reduced-motion): der
+// Beschnitt (clip-path) oeffnet sich in 280 ms aus der Breite der normalen Pille
+// heraus, der Inhalt blendet leicht verzoegert ein, der Schatten blendet in
+// 200 ms ein (waehrend der der normalen Pille ausblendet, siehe Header.tsx).
+// Umgesetzt mit der Web Animations API: nach dem Ende bleibt kein clip-path
+// stehen (Schatten und Popover werden nicht beschnitten).
 export function CompactPill({ name, slug, anfrageEventTypes, facts, active, onRequest }: Props) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -146,18 +151,59 @@ export function CompactPill({ name, slug, anfrageEventTypes, facts, active, onRe
     return state === 'shown' || state === 'full' || state === 'truncated';
   });
 
-  const visibleClasses = 'visible opacity-100 pointer-events-auto motion-safe:transition-opacity motion-safe:duration-150';
+  // ---- Einblenden: Beschnitt oeffnet sich aus der Breite der normalen Pille.
+  // useLayoutEffect, damit schon der erste gemalte Frame den Anfangszustand zeigt.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const shadowRef = useRef<HTMLDivElement | null>(null);
+  const clipRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (!active) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const root = rootRef.current;
+    const footprint = document.querySelector('[data-nav-footprint]');
+    if (!root || !footprint || !shadowRef.current || !clipRef.current || !contentRef.current) return;
+    const full = root.getBoundingClientRect().width;
+    const normal = footprint.getBoundingClientRect().width;
+    if (!(full > normal)) return;
+    const sideInset = (full - normal) / 2;
+    const easing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    const animations = [
+      clipRef.current.animate(
+        [{ clipPath: `inset(0px ${sideInset}px round 33px)` }, { clipPath: 'inset(0px 0px round 33px)' }],
+        { duration: 280, easing },
+      ),
+      shadowRef.current.animate([{ width: `${normal}px` }, { width: `${full}px` }], { duration: 280, easing }),
+      shadowRef.current.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'linear' }),
+      contentRef.current.animate([{ opacity: 0 }, { opacity: 0, offset: 0.36 }, { opacity: 1 }], {
+        duration: 280,
+        easing: 'ease-out',
+      }),
+    ];
+    return () => animations.forEach((a) => a.cancel());
+  }, [active]);
+
+  const visibleClasses = 'visible opacity-100 pointer-events-auto';
   const hiddenClasses = 'invisible opacity-0 pointer-events-none transition-none';
 
   return (
     <div
+      ref={rootRef}
       data-compact-pill
       inert={!active}
       className={`absolute z-20 top-0 left-1/2 -translate-x-1/2 h-full w-[min(calc(100vw-2rem),1140px)] ${
         active ? visibleClasses : hiddenClasses
       }`}
     >
-      <div className="h-full bg-pl-paper border border-pl-soft shadow-[0_8px_30px_rgba(42,34,38,0.12)] rounded-full pl-6 pr-2 flex items-center gap-3">
+      {/* Schatten als eigene Ebene (nicht vom Beschnitt betroffen), waechst mit */}
+      <div
+        ref={shadowRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-full rounded-full shadow-[0_8px_30px_rgba(42,34,38,0.12)]"
+      />
+      <div ref={clipRef} className="relative h-full bg-pl-paper border border-pl-soft rounded-full">
+      <div ref={contentRef} className="h-full pl-6 pr-2 flex items-center gap-3">
         <Link
           href="/"
           aria-label="Zur Startseite"
@@ -242,6 +288,7 @@ export function CompactPill({ name, slug, anfrageEventTypes, facts, active, onRe
             <HeaderPopoverList pathname={pathname} firstLinkRef={firstLinkRef} onNavigate={() => setMenuOpen(false)} />
           </div>
         </nav>
+      </div>
       </div>
     </div>
   );

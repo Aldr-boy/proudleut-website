@@ -18,11 +18,14 @@ test('Huelle: absolut im Slot, 66 px = Hoehe des <header> (h-full), Breite min(V
   assert.match(code, /data-compact-pill/)
   // z-20: ueber den positionierten Links (z-10) der normalen Pille, die darunter im Fluss bleibt
   assert.match(code, /absolute z-20 top-0 left-1\/2 -translate-x-1\/2 h-full w-\[min\(calc\(100vw-2rem\),1140px\)\]/)
-  assert.match(code, /h-full bg-pl-paper border border-pl-soft shadow-\[0_8px_30px_rgba\(42,34,38,0\.12\)\] rounded-full pl-6 pr-2 flex items-center gap-3/)
+  // Schatten als eigene, nicht beschnittene Ebene; Beschnittebene mit Hintergrund und Rand; Inhalt darin
+  assert.match(code, /pointer-events-none absolute inset-y-0 left-1\/2 -translate-x-1\/2 w-full rounded-full shadow-\[0_8px_30px_rgba\(42,34,38,0\.12\)\]/)
+  assert.match(code, /className="relative h-full bg-pl-paper border border-pl-soft rounded-full"/)
+  assert.match(code, /className="h-full pl-6 pr-2 flex items-center gap-3"/)
 })
 
-test('Ausblenden sofort (invisible, opacity-0, transition-none, inert), Einblenden als Fade nur unter motion-safe', () => {
-  assert.match(code, /const visibleClasses = 'visible opacity-100 pointer-events-auto motion-safe:transition-opacity motion-safe:duration-150';/)
+test('Ausblenden sofort (invisible, opacity-0, transition-none, inert); das Einblenden ist die Animation in CompactPill (nur ohne prefers-reduced-motion), kein Fade der Huelle mehr', () => {
+  assert.match(code, /const visibleClasses = 'visible opacity-100 pointer-events-auto';/)
   assert.match(code, /const hiddenClasses = 'invisible opacity-0 pointer-events-none transition-none';/)
   assert.match(code, /inert=\{!active\}/)
   assert.ok(!/transition-\[[^\]]*visibility/.test(code))
@@ -72,7 +75,8 @@ test('Fakten: gemessen im ResizeObserver-Callback und nach document.fonts.ready 
 test('Header-Ebenen: normale Pille bleibt im Fluss (kein display:none/visibility:hidden), nur inert + aria-hidden + Schatten weicht', () => {
   const header = strip(read('components', 'Header.tsx'))
   assert.ok(!/compact \? '(invisible|hidden)/.test(header))
-  assert.match(header, /compact \? 'shadow-none' : 'shadow-\[0_8px_30px_rgba\(42,34,38,0\.12\)\]'/)
+  // Schatten der normalen Pille blendet in 200 ms aus (nur unter motion-safe), kommt beim Rueckwechsel sofort zurueck
+  assert.match(header, /compact\s*\?\s*'shadow-none motion-safe:transition-shadow motion-safe:duration-200'\s*:\s*'shadow-\[0_8px_30px_rgba\(42,34,38,0\.12\)\]'/)
 })
 
 test('Store: compact-Flag ohne persist/Storage', () => {
@@ -80,4 +84,24 @@ test('Store: compact-Flag ohne persist/Storage', () => {
   assert.match(store, /compact: boolean;/)
   assert.match(store, /setCompact: \(compact: boolean\) => void;/)
   assert.ok(!/persist|localStorage|sessionStorage|cookie/i.test(store))
+})
+
+test('Einblenden: Beschnitt oeffnet sich aus der Breite der normalen Pille (280 ms, auslaufend), Inhalt verzoegert, Schatten 200 ms; Web Animations API im Layout-Effekt, nichts bleibt stehen', () => {
+  assert.match(code, /useLayoutEffect\(\(\) => \{\s*if \(!active\) return;/)
+  assert.match(code, /document\.querySelector\('\[data-nav-footprint\]'\)/)
+  assert.match(code, /const sideInset = \(full - normal\) \/ 2;/)
+  assert.match(code, /const easing = 'cubic-bezier\(0\.22, 1, 0\.36, 1\)';/)
+  assert.match(code, /clipPath: 'inset\(0px 0px round 33px\)'/)
+  assert.match(code, /\{ duration: 280, easing \}/)
+  assert.match(code, /\{ duration: 200, easing: 'linear' \}/)
+  assert.match(code, /\[\{ opacity: 0 \}, \{ opacity: 0, offset: 0\.36 \}, \{ opacity: 1 \}\]/)
+  assert.match(code, /return \(\) => animations\.forEach\(\(a\) => a\.cancel\(\)\);/)
+  // nur Animationen, keine dauerhaft gesetzten Inline-Stile fuer clip-path
+  assert.ok(!/style=\{\{[^}]*clipPath/.test(code))
+})
+
+test('prefers-reduced-motion: keine Animation (matchMedia-Abfrage vor jedem animate), das Ausblenden bleibt sofort', () => {
+  assert.match(code, /if \(window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches\) return;/)
+  assert.ok(code.indexOf("prefers-reduced-motion: reduce") < code.indexOf('.animate('))
+  assert.match(code, /const hiddenClasses = 'invisible opacity-0 pointer-events-none transition-none';/)
 })
