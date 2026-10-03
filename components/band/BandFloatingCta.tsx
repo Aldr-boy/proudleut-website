@@ -24,7 +24,7 @@ type Props = {
   ctaButtonId: string;
 };
 
-// Faktenleiste (Desktop) und untere Anfrageleiste (Handy), Variante E.
+// Faktenleiste (ab 1024 px) und untere Anfrageleiste (bis 1023 px), Variante E.
 //
 // Die Entscheidung "Leiste sichtbar" faellt in lib/bands/barVisibility.ts (reine
 // Funktion, dort die Regeln und die Wertetabelle im Test): sichtbar, wenn der
@@ -41,8 +41,8 @@ type Props = {
 // Scroll-Sprung (Scrollbar-Drag, Pos1/Ende, interner Sprunglink, Reload mitten
 // im Text) den echten Zustand statt eines veralteten.
 //
-// Kein Layout-Sprung: beide Leisten sind position:fixed (aus dem Fluss). Die
-// Mobil-Fakten stehen statisch im Seitenfluss (BandHero.tsx). Ausgeblendet:
+// Kein Layout-Sprung: beide Leisten sind position:fixed (aus dem Fluss). Der
+// Steckbrief (bis 1023 px) steht statisch im Seitenfluss (BandHero.tsx). Ausgeblendet:
 // visibility:hidden + inert -- nichts darin ist fokussierbar; der Fokus wird
 // beim Einblenden nicht verschoben.
 //
@@ -147,11 +147,11 @@ export function BandFloatingCta({
 
   return (
     <>
-      {/* Desktop: Faktenleiste, klebt unter dem Header. fixed statt sticky,
-          damit sie nie Platz im Seitenfluss belegt. */}
+      {/* Ab lg (1024 px): Faktenleiste, klebt unter dem Header. fixed statt
+          sticky, damit sie nie Platz im Seitenfluss belegt. */}
       <div
         inert={!visible}
-        className={`hidden md:block fixed inset-x-0 z-40 bg-pl-canvas/95 backdrop-blur-sm border-y border-pl-soft
+        className={`hidden lg:block fixed inset-x-0 z-40 bg-pl-canvas/95 backdrop-blur-sm border-y border-pl-soft
                     ${
                       visible
                         ? `transition-[opacity,transform] duration-[220ms] ease-out ${visibleClasses}`
@@ -209,14 +209,15 @@ export function BandFloatingCta({
         </div>
       </div>
 
-      {/* Handy: untere Anfrageleiste (Anfrage + Herz). Bei aktiver globaler
-          Merkliste (MerklisteBar.tsx, ebenfalls "fixed bottom-0") rueckt sie per
-          bottom-Offset (merklisteBarHeight) nach oben, statt sie zu verdecken --
-          ein hoeherer z-index allein loest die Kollision nicht, beide Leisten
-          beanspruchen die volle Breite. */}
+      {/* Bis 1023 px: untere Anfrageleiste (Anfrage + Herz). Die Flaeche hat
+          volle Breite, der Inhalt steht ab md (768 px) zentriert in hoechstens
+          640 px. Bei aktiver globaler Merkliste (MerklisteBar.tsx, ebenfalls
+          "fixed bottom-0") rueckt sie per bottom-Offset (merklisteBarHeight)
+          nach oben, statt sie zu verdecken -- ein hoeherer z-index allein loest
+          die Kollision nicht, beide Leisten beanspruchen die volle Breite. */}
       <div
         inert={!visible}
-        className={`md:hidden fixed inset-x-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
+        className={`lg:hidden fixed inset-x-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
                     border-pl-soft px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
                     ${
                       visible
@@ -225,7 +226,7 @@ export function BandFloatingCta({
                     }`}
         style={{ bottom: `${merklisteBarHeight}px` }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:max-w-[640px] md:mx-auto">
           <Button
             onClick={() => setModalOpen(true)}
             aria-label={`${name} unverbindlich anfragen`}

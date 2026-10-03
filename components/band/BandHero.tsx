@@ -9,12 +9,13 @@ import { HeroVideoPill } from './HeroVideoPill';
 type Props = { band: Band; hasVideo: boolean; facts: BandFact[] };
 
 // Steckbrief (Herkunft, Besetzung, Stil) als normale Liste im Seitenfluss
-// unter dem Hero -- nur mobil; ab md uebernimmt die Faktenleiste
-// (BandFloatingCta). Statisch, unabhaengig vom Scrollzustand.
+// unter dem Hero -- bis 1023 px; ab lg uebernimmt die Faktenleiste
+// (BandFloatingCta). Ab md auf 640 px begrenzt und linksbuendig an der Kante
+// des Textes darueber (px-6). Statisch, unabhaengig vom Scrollzustand.
 function MobileFactsList({ facts }: { facts: BandFact[] }) {
   if (facts.length === 0) return null;
   return (
-    <dl className="md:hidden bg-pl-canvas px-5 pt-4 pb-2">
+    <dl className="lg:hidden md:max-w-[640px] bg-pl-canvas px-5 md:px-6 pt-4 pb-2">
       {facts.map((f) => (
         <div key={f.label} className="flex justify-between gap-4 py-[13px] border-b border-pl-soft text-[15px]">
           <dt className="text-pl-text-muted">{f.label}</dt>
