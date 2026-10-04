@@ -61,6 +61,17 @@ export default async function RootLayout({
       lang="de"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      {!isStudio && !isAdmin && (
+        <head>
+          {/* Usercentrics CMP: nur loader.js, kein autoblocker.js; vor Fremdskripten. */}
+          <script
+            id="usercentrics-cmp"
+            src="https://web.cmp.usercentrics.eu/ui/loader.js"
+            data-settings-id="Juv4Hhz4V4liEV"
+            async
+          ></script>
+        </head>
+      )}
       <body
         className={
           isStudio

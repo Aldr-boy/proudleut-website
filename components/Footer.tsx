@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ProudleutLogo } from './ProudleutLogo';
+import PrivacySettingsButton from './PrivacySettingsButton';
 import { buildOccasionNavUrl, type FinderFilterParams } from '@/lib/bands/finderRouting';
 
 const CONTACT_EMAIL = 'alexander.dressler@proudleut.com';
@@ -145,6 +146,9 @@ export default function Footer() {
               >
                 Datenschutz
               </Link>
+              <PrivacySettingsButton
+                className={`py-3 sm:py-0 ${DIMMED_TEXT_CLASS} hover:text-pl-on-stage motion-safe:transition-colors ${FOCUS_RING}`}
+              />
             </div>
             {/* Copyright bleibt bewusst die einzige verbliebene
                 text-pl-on-stage-muted-Stelle -- reiner Fliesstext ohne

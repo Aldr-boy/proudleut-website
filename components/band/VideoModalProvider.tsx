@@ -1,8 +1,9 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { hasConsent, onConsentChange, requestConsent } from '@/lib/consent';
 
 type VideoModalContextValue = {
   // trigger: das ausloesende Element -- ihm gibt das Modal beim Schliessen
@@ -27,29 +28,59 @@ type Props = {
 // Genau EIN Video-Modal (natives <dialog>) pro Bandseite, das von mehreren
 // Triggern geoeffnet wird (Poster-Tile in "02", Video-Pille im Hero).
 // Datenschutz-Prinzip: der youtube-nocookie.com-Embed (und damit jede
-// YouTube-Ressource) wird erst nach ZWEI bewussten Nutzeraktionen angefordert
-// -- Trigger oeffnet das Modal, "Video laden" erzeugt erst dann das iframe.
-// Vorher steht nur ein Hinweis im Eigendesign im DOM: kein iframe, kein
-// YouTube-Vorschaubild von i.ytimg.com, kein Preconnect.
-// Bewusst kein localStorage/sessionStorage/Cookie: jedes Oeffnen beginnt neu
-// bei Zustand 1.
+// YouTube-Ressource) wird erst mit Einwilligung fuer den YouTube-Dienst im CMP
+// (lib/consent) erzeugt. Liegt sie vor, laedt das iframe direkt; sonst steht nur
+// ein Hinweis im Eigendesign im DOM: kein iframe, kein YouTube-Vorschaubild von
+// i.ytimg.com, kein Preconnect. "Video laden" schliesst den Modal und oeffnet die
+// CMP-Einstellungsebene; erlaubt der Besucher YouTube, oeffnet der Modal wieder
+// und das iframe laedt. Wird die Einwilligung widerrufen,
+// verschwindet das iframe wieder. Eigener Speicher: keiner.
 export function VideoModalProvider({ embedUrl, bandName, children }: Props) {
   const [loaded, setLoaded] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const askingConsentRef = useRef(false);
 
-  const openVideo = useCallback((trigger: HTMLElement | null) => {
-    triggerRef.current = trigger;
-    setLoaded(false);
-    dialogRef.current?.showModal();
+  // Gleicht das iframe mit dem CMP-Stand ab: ohne Einwilligung nie ein iframe,
+  // mit Einwilligung nur bei geoeffnetem Modal.
+  const syncConsent = useCallback(async () => {
+    const given = await hasConsent('youtube');
+    setLoaded(given && dialogRef.current?.open === true);
   }, []);
+
+  useEffect(() => onConsentChange(() => void syncConsent()), [syncConsent]);
+
+  const openVideo = useCallback(
+    (trigger: HTMLElement | null) => {
+      triggerRef.current = trigger;
+      setLoaded(false);
+      dialogRef.current?.showModal();
+      void syncConsent();
+    },
+    [syncConsent],
+  );
 
   // Laeuft bei jedem Schliessen (ESC, Hintergrund, Schliessen-Button): iframe
   // wird aus dem DOM entfernt (stoppt die Wiedergabe), Fokus zurueck zum
   // ausloesenden Element.
   const handleClose = () => {
     setLoaded(false);
+    if (askingConsentRef.current) return; // Fokus gehoert der CMP-Ebene
     triggerRef.current?.focus();
+  };
+
+  // Das native <dialog> liegt im Top-Layer und verdeckt die CMP-Ebene: der Modal
+  // schliesst vor dem Oeffnen der Ebene (ohne Eingriff ins CMP) und oeffnet
+  // sich nur wieder, wenn der Besucher YouTube erlaubt hat.
+  const askConsent = async () => {
+    askingConsentRef.current = true;
+    dialogRef.current?.close();
+    await requestConsent('youtube');
+    askingConsentRef.current = false;
+    if (await hasConsent('youtube')) {
+      dialogRef.current?.showModal();
+      setLoaded(true);
+    }
   };
 
   const value = useMemo(() => ({ openVideo }), [openVideo]);
@@ -105,7 +136,7 @@ export function VideoModalProvider({ embedUrl, bandName, children }: Props) {
                 <button
                   type="button"
                   autoFocus
-                  onClick={() => setLoaded(true)}
+                  onClick={() => void askConsent()}
                   className="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold
                              bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover motion-safe:transition-colors
                              focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent-light"
