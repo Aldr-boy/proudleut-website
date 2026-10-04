@@ -128,7 +128,7 @@ export function VideoModalProvider({ embedUrl, bandName, children }: Props) {
                 <p className="max-w-prose text-sm md:text-base text-pl-on-stage">
                   Beim Abspielen wird das Video von YouTube (Google) geladen. Dabei werden u.&nbsp;a.
                   deine IP-Adresse und die besuchte Seite an YouTube übermittelt. Mehr in der{' '}
-                  <Link href="/datenschutz" className="underline underline-offset-2 hover:text-pl-accent-light">
+                  <Link href="/datenschutz#youtube" className="underline underline-offset-2 hover:text-pl-accent-light">
                     Datenschutzerklärung
                   </Link>
                   .
