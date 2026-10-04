@@ -2,13 +2,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
 import type { ImageAsset } from '@/lib/types/image';
+import { MerkHeartButton } from '@/components/band/MerkHeartButton';
 
 // Schlankes Payload-Format fuer "01 -- Auswahl": traegt ausschliesslich die
 // Felder, die diese Card tatsaechlich rendert (Nachfass-Paket "Kuratierte
 // Klingt-nach-Filter", Schritt 4 -- Payload-Reduktion). Wird serverseitig
 // (app/page.tsx) aus dem vollen Band gemappt, nachdem Anlass-/Mood-Filter
 // und Rotation bereits auf den vollen Band-Objekten gelaufen sind.
-export type AuswahlBandSummary = Pick<Band, 'slug' | 'name' | 'moods'> & {
+export type AuswahlBandSummary = Pick<Band, 'slug' | 'name' | 'moods' | 'anfrageEventTypes'> & {
   shortDescription?: string;
   thumbnailImage?: ImageAsset;
   heroImage?: ImageAsset;
@@ -22,6 +23,7 @@ export function toAuswahlBandSummary(band: Band): AuswahlBandSummary {
     thumbnailImage: band.thumbnailImage,
     heroImage: band.heroImage,
     moods: band.moods,
+    anfrageEventTypes: band.anfrageEventTypes,
   };
 }
 
@@ -43,9 +45,8 @@ export default function AuswahlBandCard({
   const chips = band.moods.slice(0, 2);
 
   return (
-    <Link
-      href={`/band/${band.slug}`}
-      className="group block bg-pl-elevated border border-pl-soft rounded-xl overflow-hidden
+    <div
+      className="group relative bg-pl-elevated border border-pl-soft rounded-xl overflow-hidden
                  hover:border-pl-medium motion-safe:transition-colors"
     >
       <div className="relative aspect-[16/10] bg-pl-canvas">
@@ -65,6 +66,12 @@ export default function AuswahlBandCard({
             </span>
           </div>
         )}
+
+        <MerkHeartButton
+          name={band.name}
+          slug={band.slug}
+          anfrageEventTypes={band.anfrageEventTypes ?? []}
+        />
       </div>
       <div className="p-5">
         <div className="text-lg font-extrabold text-pl-text">{band.name}</div>
@@ -86,6 +93,15 @@ export default function AuswahlBandCard({
           </div>
         )}
       </div>
-    </Link>
+
+      {/* Gestreckter Link ueber die ganze Karte (wie components/BandCard.tsx):
+          das Merk-Herz liegt darueber (z-10) und ist kein Kind des Links. */}
+      <Link
+        href={`/band/${band.slug}`}
+        aria-label={`Zum Bandprofil: ${band.name}`}
+        className="absolute inset-0 z-0 focus:outline-none focus-visible:outline-2
+                   focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--pl-accent)]"
+      />
+    </div>
   );
 }
