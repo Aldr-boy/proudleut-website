@@ -53,9 +53,9 @@ test('/datenschutz: app/datenschutz/page.tsx existiert und exportiert eine Defau
 
 test('/datenschutz: enthaelt den uebernommenen Rechtstext (Kernabschnitte)', () => {
   const source = read('app/datenschutz/page.tsx')
-  assert.match(source, /Datenschutzhinweise/)
-  assert.match(source, /1\. Datenerfassung auf dieser Website/)
-  assert.match(source, /Hinweis zur verantwortlichen Stelle/)
+  assert.match(source, /Datenschutzerklärung/)
+  assert.match(source, /2\) Datenerfassung beim Besuch unserer Website/)
+  assert.match(source, /Verantwortlicher für die Datenverarbeitung/)
   assert.match(source, /Alexander Dressler/)
 })
 
@@ -67,7 +67,7 @@ test('/datenschutz: besitzt genau eine H1', () => {
 
 test('/datenschutz: Metadaten enthalten sinnvollen Titel und kanonischen Pfad', () => {
   const source = read('app/datenschutz/page.tsx')
-  assert.match(source, /title:\s*['"]Datenschutzhinweise/)
+  assert.match(source, /title:\s*['"]Datenschutzerklärung/)
   assert.match(source, /canonical:\s*['"]\/datenschutz['"]/)
 })
 

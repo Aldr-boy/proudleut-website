@@ -26,7 +26,7 @@ export const MAX_LENGTHS = {
 // lib/anfrage/constants.ts::CURRENT_DATENSCHUTZ_VERSION (eine Erklaerung,
 // eine Version, unabhaengig davon, welches Formular sie zeigt). Wird
 // ausschliesslich serverseitig gesetzt, nie vom Client uebernommen.
-export const CURRENT_DATENSCHUTZ_VERSION = 'v1-2026';
+export const CURRENT_DATENSCHUTZ_VERSION = 'v2-2026-10';
 
 // Absenderidentitaet bewusst von lib/anfrage/constants.ts uebernommen (nicht
 // neu erfunden): dieselbe, in Resend bereits verifizierte proudleut-Domain

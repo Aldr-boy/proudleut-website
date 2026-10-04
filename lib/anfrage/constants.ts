@@ -25,7 +25,7 @@ export const MAX_LENGTHS = {
 // dokumentiert wird. Wird ausschliesslich serverseitig gesetzt (nicht vom
 // Client uebernommen) -- siehe DoD 21 "Datenschutz-Consent wird
 // serverseitig geprueft und mit Zeitpunkt und Version dokumentiert".
-export const CURRENT_DATENSCHUTZ_VERSION = 'v1-2026';
+export const CURRENT_DATENSCHUTZ_VERSION = 'v2-2026-10';
 
 // Getrennte Template-Versionen je Mailtyp (Block "Bandanfrage-Mail V3",
 // A2-Entscheidung): Band-Mail und Veranstalter-Bestaetigung duerfen sich
