@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
+import { BandartPill } from '@/components/band/BandartPill';
 import { MerkHeartButton } from '@/components/band/MerkHeartButton';
 
 type BandCardProps = {
@@ -36,7 +37,8 @@ function buildChips(band: Band): string[] {
     if (fromEventTypes >= 3 || chips.length >= 4) break;
     if (tryAdd(et)) fromEventTypes++;
   }
-  tryAdd(band.category);
+  // Primaere Bandart steht als Pill im Bild (siehe unten) -- nicht doppelt.
+  if (band.category !== band.primaryBandart) tryAdd(band.category);
   tryAdd(band.location.administrativeRegion);
 
   return chips;
@@ -73,6 +75,8 @@ export default function BandCard({ band, priority, showMerkButton }: BandCardPro
             </span>
           </div>
         )}
+
+        <BandartPill name={band.primaryBandart} />
 
         {showMerkButton && (
           <MerkHeartButton
