@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import type { MouseEvent } from 'react';
 import type { Band } from '@/lib/types/band';
-import { useAnfrageStore } from '@/stores/anfrageStore';
+import { MerkHeartButton } from '@/components/band/MerkHeartButton';
 
 type BandCardProps = {
   band: Band;
@@ -50,31 +49,6 @@ export default function BandCard({ band, priority, showMerkButton }: BandCardPro
   const city = band.location?.city?.trim() || band.location?.district?.trim();
   const chips = buildChips(band);
 
-  // Merkfunktion -- bestehender, globaler Store (stores/anfrageStore.ts),
-  // identisches Muster wie components/band/HeroCTA.tsx::handleMerken.
-  // Hook wird unabhaengig von showMerkButton aufgerufen (Regel der festen
-  // Hook-Reihenfolge), der Button selbst wird aber nur bei showMerkButton
-  // gerendert.
-  const isSelected = useAnfrageStore((s) => s.isSelected);
-  const addBand = useAnfrageStore((s) => s.addBand);
-  const removeBand = useAnfrageStore((s) => s.removeBand);
-  const isGemerkt = isSelected(band.slug);
-
-  function handleMerken(e: MouseEvent) {
-    // Herz und Bandprofil-Link muessen unabhaengig voneinander bedienbar
-    // sein (Auftrag Abschnitt 8) -- der Button liegt dafuer NICHT mehr
-    // ineinander mit dem Profil-Link (der jetzt als eigener, gestreckter
-    // Link am Kartenende liegt), preventDefault/stopPropagation bleiben
-    // trotzdem als zusaetzliche Absicherung bestehen.
-    e.preventDefault();
-    e.stopPropagation();
-    if (isGemerkt) {
-      removeBand(band.slug);
-    } else {
-      addBand({ slug: band.slug, name: band.name, anfrageEventTypes: band.anfrageEventTypes ?? [] });
-    }
-  }
-
   return (
     <div
       className="group relative rounded-xl overflow-hidden bg-pl-elevated border border-pl-soft
@@ -101,25 +75,11 @@ export default function BandCard({ band, priority, showMerkButton }: BandCardPro
         )}
 
         {showMerkButton && (
-          <button
-            type="button"
-            onClick={handleMerken}
-            aria-pressed={isGemerkt}
-            aria-label={isGemerkt ? `${band.name} aus Merkliste entfernen` : `${band.name} merken`}
-            className="absolute top-2.5 right-2.5 z-10 w-9 h-9 rounded-full bg-pl-elevated/90
-                       flex items-center justify-center motion-safe:transition-transform
-                       hover:scale-[1.06] focus:outline-none focus-visible:outline-2
-                       focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                fill={isGemerkt ? 'var(--pl-accent)' : 'none'}
-                stroke={isGemerkt ? 'var(--pl-accent)' : 'var(--pl-text-main)'}
-                strokeWidth={1.8}
-              />
-            </svg>
-          </button>
+          <MerkHeartButton
+            name={band.name}
+            slug={band.slug}
+            anfrageEventTypes={band.anfrageEventTypes ?? []}
+          />
         )}
       </div>
 
