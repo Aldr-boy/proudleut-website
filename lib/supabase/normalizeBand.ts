@@ -152,6 +152,8 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     .map(bt => str((bt.band_types as Row)?.name))
     .filter((n): n is string => n !== undefined)
 
+  const primaryBandart = str((rawBandTypes.find(bt => bt.is_primary)?.band_types as Row | undefined)?.name)
+
   const bandartSlugs = rawBandTypes
     .map(bt => str((bt.band_types as Row)?.slug))
     .filter((s): s is string => s !== undefined)
@@ -376,6 +378,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     status,
 
     category:     bandartNames[0],
+    primaryBandart,
     bandartNames,
     bandartSlugs,
     eventTypes,

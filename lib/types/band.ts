@@ -170,6 +170,9 @@ export type Band = {
   status: 'active' | 'new' | 'inactive';
 
   category?: string;
+  // Nur gesetzt, wenn band_band_types.is_primary tatsaechlich gepflegt ist
+  // (category ist ohne Primaerart nur die erste Bandart nach sort_order).
+  primaryBandart?: string;
   bandartNames: string[];
   bandartSlugs: string[];
   eventTypes: string[];

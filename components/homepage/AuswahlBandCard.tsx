@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
 import type { ImageAsset } from '@/lib/types/image';
+import { BandartPill } from '@/components/band/BandartPill';
 import { MerkHeartButton } from '@/components/band/MerkHeartButton';
 
 // Schlankes Payload-Format fuer "01 -- Auswahl": traegt ausschliesslich die
@@ -9,7 +10,7 @@ import { MerkHeartButton } from '@/components/band/MerkHeartButton';
 // Klingt-nach-Filter", Schritt 4 -- Payload-Reduktion). Wird serverseitig
 // (app/page.tsx) aus dem vollen Band gemappt, nachdem Anlass-/Mood-Filter
 // und Rotation bereits auf den vollen Band-Objekten gelaufen sind.
-export type AuswahlBandSummary = Pick<Band, 'slug' | 'name' | 'moods' | 'anfrageEventTypes'> & {
+export type AuswahlBandSummary = Pick<Band, 'slug' | 'name' | 'moods' | 'anfrageEventTypes' | 'primaryBandart'> & {
   shortDescription?: string;
   thumbnailImage?: ImageAsset;
   heroImage?: ImageAsset;
@@ -24,6 +25,7 @@ export function toAuswahlBandSummary(band: Band): AuswahlBandSummary {
     heroImage: band.heroImage,
     moods: band.moods,
     anfrageEventTypes: band.anfrageEventTypes,
+    primaryBandart: band.primaryBandart,
   };
 }
 
@@ -66,6 +68,8 @@ export default function AuswahlBandCard({
             </span>
           </div>
         )}
+
+        <BandartPill name={band.primaryBandart} />
 
         <MerkHeartButton
           name={band.name}
