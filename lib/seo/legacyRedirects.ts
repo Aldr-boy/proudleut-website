@@ -9,10 +9,12 @@ export type LegacyRedirect = { source: string; destination: string; statusCode: 
 
 type Target = { path: string; query?: Record<string, string> };
 
+// Next.js dekodiert Query-Werte im Redirect-Ziel einmal und gibt sie unkodiert aus
+// (aus "%26" wuerde ein trennendes "&"). Deshalb wird doppelt kodiert.
 function dest({ path, query }: Target): string {
   if (!query) return path;
   const qs = Object.entries(query)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .map(([k, v]) => `${k}=${encodeURIComponent(encodeURIComponent(v))}`)
     .join('&');
   return `${path}?${qs}`;
 }
@@ -105,8 +107,8 @@ const BAND_FINDER_SLUGS = [
   'partyband-fuer-tanzveranstaltung', 'partyband-fuer-weihnachtsfeier',
 ];
 
-// Glory Times ist nur in der alten Sitemap, auf der neuen Seite gibt es kein Profil.
-const BAND_ONLY_OLD: string[] = ['glory-times'];
+// Alte Bandprofile (DE bzw. nur EN-Sitemap), zu denen es auf der neuen Seite kein Profil gibt.
+const BAND_ONLY_OLD: string[] = ['glory-times', 'brugger-buam', 'soulmaid-music'];
 
 function finderTarget(slug: string): string {
   for (const [bandartSlug, bandart] of Object.entries(FINDER_BANDART)) {
