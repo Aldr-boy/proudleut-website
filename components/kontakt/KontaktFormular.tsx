@@ -4,6 +4,8 @@ import { useState, useRef, FormEvent } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 
+const FEHLER_SPAETER = 'Bitte versuch es später noch einmal.'
+
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 
 const ANLASS_OPTIONS = [
@@ -73,14 +75,11 @@ export default function KontaktFormular() {
         setStatus('success')
       } else {
         setStatus('error')
-        setErrorMsg(
-          json.error ??
-            'Nachricht konnte nicht gesendet werden – bitte später erneut versuchen oder per E-Mail melden.',
-        )
+        setErrorMsg(res.status < 500 && json.error ? json.error : FEHLER_SPAETER)
       }
     } catch {
       setStatus('error')
-      setErrorMsg('Nachricht konnte nicht gesendet werden – bitte später erneut versuchen.')
+      setErrorMsg(FEHLER_SPAETER)
     }
   }
 
