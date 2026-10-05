@@ -25,7 +25,7 @@ export default function CuratorBlock() {
             </p>
             <div className="flex items-center gap-6 mt-7 flex-wrap">
               <Button
-                href="mailto:alexander.dressler@proudleut.com"
+                href="mailto:alexander@proudleut.com"
                 className="inline-flex items-center px-7 py-3.5 rounded-full bg-pl-accent text-pl-on-accent font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors"
               >
                 Schreib mir

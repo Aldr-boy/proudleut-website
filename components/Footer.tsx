@@ -3,8 +3,6 @@ import { ProudleutLogo } from './ProudleutLogo';
 import PrivacySettingsButton from './PrivacySettingsButton';
 import { buildOccasionNavUrl, type FinderFilterParams } from '@/lib/bands/finderRouting';
 
-const CONTACT_EMAIL = 'alexander.dressler@proudleut.com';
-
 // Footer-Links sind reine Navigation ohne aktive Finder-Filter -- dieselbe
 // buildOccasionNavUrl()-Logik wie im Bandfinder (lib/bands/finderRouting.ts),
 // damit Anlaesse mit eigener /veranstaltung/[slug]-Landingpage dorthin
@@ -112,21 +110,15 @@ export default function Footer() {
           <nav aria-label="Kontakt" className="flex flex-col gap-3">
             <p className={COLUMN_HEADING_CLASS}>Kontakt</p>
             <div className="flex flex-col gap-2">
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
+              <Link
+                href="/kontakt"
                 className={`inline-flex w-fit items-baseline gap-2 text-xl md:text-2xl font-bold text-pl-on-stage hover:text-pl-accent-light motion-safe:transition-colors py-1 ${FOCUS_RING}`}
               >
                 Schreib mir
                 <span aria-hidden="true" className="text-pl-accent-light">
                   →
                 </span>
-              </a>
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className={`w-fit text-sm ${DIMMED_TEXT_CLASS} underline underline-offset-4 hover:text-pl-on-stage motion-safe:transition-colors py-1 ${FOCUS_RING}`}
-              >
-                {CONTACT_EMAIL}
-              </a>
+              </Link>
             </div>
           </nav>
         </div>

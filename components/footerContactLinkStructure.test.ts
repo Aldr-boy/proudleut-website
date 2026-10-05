@@ -27,16 +27,11 @@ test('Logo-Link zeigt auf / mit aria-label "Zur Startseite" (SVG bleibt ueber di
   assert.match(source, /<Link\s+href="\/"\s+aria-label="Zur Startseite"/)
 })
 
-test('kein eigener "Kontakt"-Link mehr -- /kontakt bleibt nur ueber den Header erreichbar', () => {
-  assert.ok(!/href="\/kontakt"/.test(source), 'der bisherige Footer-Link auf /kontakt darf nicht mehr vorkommen')
-})
-
-test('Kontaktblock: "Schreib mir" und die sichtbare Adresse verlinken beide auf dieselbe mailto-Adresse wie CuratorBlock.tsx', () => {
-  const mailtoMatches = source.match(/href=\{`mailto:\$\{CONTACT_EMAIL\}`\}/g) ?? []
-  assert.equal(mailtoMatches.length, 2, 'genau zwei mailto-Links (Schreib mir + sichtbare Adresse)')
-  assert.match(source, /const CONTACT_EMAIL = 'alexander\.dressler@proudleut\.com'/)
+test('Kontaktblock: "Schreib mir" verlinkt auf /kontakt, keine E-Mail-Adresse im Footer', () => {
+  assert.match(source, /href="\/kontakt"/)
   assert.match(source, />\s*Schreib mir\s*</)
-  assert.match(source, /\{CONTACT_EMAIL\}/)
+  assert.ok(!/mailto:/.test(source), 'kein mailto-Link im Footer')
+  assert.ok(!/@proudleut\.com/.test(source), 'keine E-Mail-Adresse im Footer')
 })
 
 test('Spaltenueberschriften "Entdecken", "proudleut", "Kontakt" -- ohne uppercase-Klasse, "proudleut" bleibt woertlich klein', () => {
@@ -109,16 +104,12 @@ test('Feinschliff Lesbarkeit: Entdecken/proudleut-Links in vollem text-pl-on-sta
   assert.ok(!navLinkClass.includes('text-pl-on-stage-muted'), 'Spaltenlinks duerfen nicht mehr auf text-pl-on-stage-muted stehen')
 })
 
-test('Feinschliff Lesbarkeit: Markenzeile, sichtbare E-Mail-Adresse und Impressum/Datenschutz nutzen text-pl-on-stage/80 statt text-pl-on-stage-muted, Hover auf volles text-pl-on-stage', () => {
+test('Feinschliff Lesbarkeit: Markenzeile und Impressum/Datenschutz nutzen text-pl-on-stage/80 statt text-pl-on-stage-muted, Hover auf volles text-pl-on-stage', () => {
   assert.match(source, /const DIMMED_TEXT_CLASS = 'text-pl-on-stage\/(75|80)'/)
   const dimmedOpacity = source.match(/const DIMMED_TEXT_CLASS = 'text-pl-on-stage\/(75|80)'/)?.[1] ?? ''
   assert.ok(['75', '80'].includes(dimmedOpacity), 'Opacity-Modifier muss im freigegebenen Bereich /75-/80 liegen')
 
   assert.match(source, /className=\{`\$\{DIMMED_TEXT_CLASS\} text-sm`\}>Livebands für euer Event\./)
-  const emailLinkBlock = source.match(/href=\{`mailto:\$\{CONTACT_EMAIL\}`\}\s*\r?\n\s*className=\{`w-fit[^`]*`\}/)?.[0] ?? ''
-  assert.match(emailLinkBlock, /\$\{DIMMED_TEXT_CLASS\}/)
-  assert.match(emailLinkBlock, /hover:text-pl-on-stage/)
-
   const impressumBlock = source.match(/href="\/impressum"\s*\r?\n\s*className=\{`[^`]*`\}/)?.[0] ?? ''
   assert.match(impressumBlock, /\$\{DIMMED_TEXT_CLASS\}/)
   assert.match(impressumBlock, /hover:text-pl-on-stage/)
