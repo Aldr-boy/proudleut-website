@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { deriveSupabaseImageRemotePattern } from "./lib/bandImages/supabaseImageRemotePattern";
+import { LEGACY_REDIRECTS } from "./lib/seo/legacyRedirects";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -72,6 +73,8 @@ const nextConfig: NextConfig = {
         destination: '/datenschutz',
         permanent: true,
       },
+      // Webflow-Altadressen (Domain-Umzug) -- zentral in lib/seo/legacyRedirects.ts
+      ...LEGACY_REDIRECTS,
     ];
   },
 };
