@@ -308,6 +308,8 @@ type BandDetail = {
   lineup_flexibility: string
   default_member_count: number | null
   website_url: string | null
+  review_requested_at: string | null
+  review_confirmed_at: string | null
   home_location_id: string | null
   locations: LocationData | null
   band_profiles: {
@@ -336,6 +338,8 @@ type SearchParams = Promise<{
   e_lineup_flexibility?: string
   e_default_member_count?: string
   e_website_url?: string
+  e_review_requested_at?: string
+  e_review_confirmed_at?: string
   e_social_instagram?: string
   e_social_facebook?: string
   e_social_youtube?: string
@@ -423,6 +427,7 @@ export default async function AdminBandDetailPage({
     .select(`
       id, name, slug, status, is_published,
       lineup_flexibility, default_member_count, website_url,
+      review_requested_at, review_confirmed_at,
       home_location_id,
       locations(id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude),
       band_profiles(short_description, main_text, slogan, meta_description, price_range, price_tier, wedding_description, wedding_possible_playtimes, wedding_constellation, wedding_fee_range, wedding_kidnapping_bride, wedding_moderation),
@@ -1753,6 +1758,40 @@ export default async function AdminBandDetailPage({
                 <FieldError msg={sp.e_default_member_count} />
               </div>
             </div>
+          </fieldset>
+
+          {/* Section: Aktualitaetspruefung (nur Admin, nicht oeffentlich) */}
+          <fieldset className="border-t border-gray-100 pt-5">
+            <legend className="text-base font-semibold text-gray-900 mb-4">Aktualitätsprüfung</legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="review_requested_at" className="block text-sm font-medium text-gray-700 mb-1">
+                  Zuletzt angefragt am
+                </label>
+                <input
+                  id="review_requested_at"
+                  name="review_requested_at"
+                  type="date"
+                  defaultValue={band.review_requested_at ?? ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <FieldError msg={sp.e_review_requested_at} />
+              </div>
+              <div>
+                <label htmlFor="review_confirmed_at" className="block text-sm font-medium text-gray-700 mb-1">
+                  Zuletzt bestätigt am
+                </label>
+                <input
+                  id="review_confirmed_at"
+                  name="review_confirmed_at"
+                  type="date"
+                  defaultValue={band.review_confirmed_at ?? ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                />
+                <FieldError msg={sp.e_review_confirmed_at} />
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">Nur intern sichtbar. Feld leeren, um das Datum zu entfernen.</p>
           </fieldset>
 
           {/* Section: Links */}
