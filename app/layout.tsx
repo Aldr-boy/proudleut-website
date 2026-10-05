@@ -39,7 +39,7 @@ export default async function RootLayout({
   const isAdmin = pathname.startsWith("/admin");
 
   // Fathom Analytics: ausschliesslich in Produktion, ausschliesslich auf
-  // der echten proudleut.com-Domain (nicht auf der *.vercel.app-
+  // der echten Hauptdomain (SITE_URL) (nicht auf der *.vercel.app-
   // Produktions-URL -- die traegt denselben VERCEL_ENV="production", der
   // Host-Vergleich ist die zusaetzliche Absicherung dagegen), nie auf
   // /admin/* oder /studio/*. Alles serverseitig entschieden (Host-Header,
@@ -47,7 +47,7 @@ export default async function RootLayout({
   // vorhandener Request-Header), damit die Tracking-Komponente auf jeder
   // anderen Domain/Umgebung erst gar nicht ausgeliefert wird.
   const host = headersList.get("host") ?? "";
-  const isProductionDomain = host === "proudleut.com" || host === "www.proudleut.com";
+  const isProductionDomain = host === new URL(SITE_URL).host;
   const fathomSiteId = process.env.NEXT_PUBLIC_FATHOM_SITE_ID;
   const shouldTrackFathom =
     process.env.VERCEL_ENV === "production" &&

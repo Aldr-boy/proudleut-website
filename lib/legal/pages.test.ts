@@ -114,8 +114,8 @@ test('Footer: Impressum- und Datenschutz-Link zeigen auf die kanonischen Pfade (
 
 test('L-A1-Mail-Links (lib/anfrage/constants.ts): referenzieren die kanonischen Pfade /datenschutz und /impressum', () => {
   const source = read('lib/anfrage/constants.ts')
-  assert.match(source, /datenschutzUrl:\s*'https:\/\/proudleut\.com\/datenschutz'/)
-  assert.match(source, /impressumUrl:\s*'https:\/\/proudleut\.com\/impressum'/)
+  assert.match(source, /datenschutzUrl:\s*\`\$\{SITE_URL\}\/datenschutz\`/)
+  assert.match(source, /impressumUrl:\s*\`\$\{SITE_URL\}\/impressum\`/)
 })
 
 test('L-A1-Mail-Links: die tatsaechlich verwendeten URLs referenzieren nicht mehr den Altpfad /datenschutzhinweise', () => {

@@ -45,7 +45,7 @@ export function generateBandJsonLd(band: Band) {
     '@context': 'https://schema.org',
     '@type': 'MusicGroup',
     name: band.name,
-    url: `https://proudleut.com/band/${band.slug}`,
+    url: absoluteUrl(`/band/${band.slug}`),
     ...(sameAs.length > 0 && { sameAs }),
     ...(genre.length > 0 && { genre }),
     ...(band.description && { description: band.description.slice(0, 300) }),

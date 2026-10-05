@@ -117,15 +117,15 @@ test('renderBandMailV2: Servus-Anrede und V3-Einleitung', () => {
 test('renderBandMailV2: dezente Bandseiten-URL als eigene Zeile, keine haessliche Inline-URL im Satz', () => {
   const { bodyText } = renderBandMailV2(INPUT, BAND_A)
   assert.doesNotMatch(bodyText, /geschickt\.\s*https:\/\//)
-  assert.match(bodyText, /^Bandseite: https:\/\/proudleut\.com\/band\/band-a$/m)
+  assert.match(bodyText, /^Bandseite: https:\/\/www\.proudleut\.com\/band\/band-a$/m)
 })
 
 test('renderBandMailV2: Bandseiten-URL gehoert zur jeweils angefragten Band', () => {
   const { bodyText: bodyA } = renderBandMailV2(INPUT, BAND_A)
   const { bodyText: bodyB } = renderBandMailV2(INPUT, BAND_B)
-  assert.match(bodyA, /https:\/\/proudleut\.com\/band\/band-a/)
-  assert.doesNotMatch(bodyA, /https:\/\/proudleut\.com\/band\/band-b/)
-  assert.match(bodyB, /https:\/\/proudleut\.com\/band\/band-b/)
+  assert.match(bodyA, /https:\/\/www\.proudleut\.com\/band\/band-a/)
+  assert.doesNotMatch(bodyA, /https:\/\/www\.proudleut\.com\/band\/band-b/)
+  assert.match(bodyB, /https:\/\/www\.proudleut\.com\/band\/band-b/)
 })
 
 test('renderBandMailV2: datum_text (konkretes Datum) unveraendert', () => {
@@ -296,16 +296,16 @@ test('renderBandMailV2Html: "Bandseite bei proudleut" verlinkt auf die reale Ban
   const html = renderBandMailV2Html({ ...V2_CONTENT, bandSlug: 'oeha-band' })
   assert.match(
     html,
-    /<a href="https:\/\/proudleut\.com\/band\/oeha-band" target="_blank" style="color:#262626;text-decoration:underline;">Bandseite bei <strong>proudleut<\/strong><\/a>/
+    /<a href="https:\/\/www\.proudleut\.com\/band\/oeha-band" target="_blank" style="color:#262626;text-decoration:underline;">Bandseite bei <strong>proudleut<\/strong><\/a>/
   )
 })
 
 test('renderBandMailV2Html: Bandseiten-Link gehoert zur jeweils angefragten Band, nicht zu einer anderen', () => {
   const htmlA = renderBandMailV2Html({ ...V2_CONTENT, bandSlug: 'band-a' })
   const htmlB = renderBandMailV2Html({ ...V2_CONTENT, bandSlug: 'band-b' })
-  assert.match(htmlA, /href="https:\/\/proudleut\.com\/band\/band-a"/)
-  assert.doesNotMatch(htmlA, /href="https:\/\/proudleut\.com\/band\/band-b"/)
-  assert.match(htmlB, /href="https:\/\/proudleut\.com\/band\/band-b"/)
+  assert.match(htmlA, /href="https:\/\/www\.proudleut\.com\/band\/band-a"/)
+  assert.doesNotMatch(htmlA, /href="https:\/\/www\.proudleut\.com\/band\/band-b"/)
+  assert.match(htmlB, /href="https:\/\/www\.proudleut\.com\/band\/band-b"/)
 })
 
 test('renderBandMailV2Html: bandSlug fehlt -> kein Link, Wortlaut bleibt sonst unveraendert', () => {
@@ -405,9 +405,9 @@ test('renderConfirmationMailV2: korrekter Plural in "Wie geht\'s jetzt weiter"',
 
 test('renderConfirmationMailV2: Bandliste enthaelt /band/{slug}-URLs aller Bands', () => {
   const { bodyText } = renderConfirmationMailV2(CONFIRMATION_THREE_BANDS)
-  assert.match(bodyText, /https:\/\/proudleut\.com\/band\/donnaweda/)
-  assert.match(bodyText, /https:\/\/proudleut\.com\/band\/oeha-band/)
-  assert.match(bodyText, /https:\/\/proudleut\.com\/band\/de-gaudimacha/)
+  assert.match(bodyText, /https:\/\/www\.proudleut\.com\/band\/donnaweda/)
+  assert.match(bodyText, /https:\/\/www\.proudleut\.com\/band\/oeha-band/)
+  assert.match(bodyText, /https:\/\/www\.proudleut\.com\/band\/de-gaudimacha/)
 })
 
 test('renderConfirmationMailV2: Veranstaltungsdaten und persoenliche Nachricht vorhanden', () => {
@@ -456,9 +456,9 @@ test('renderConfirmationMailV2Html: Betreff bei mehreren Bands', () => {
 
 test('renderConfirmationMailV2Html: mehrere Bandzeilen mit "Band ansehen"-CTA auf /band/{slug}', () => {
   const html = renderConfirmationMailV2Html(CONFIRMATION_THREE_BANDS)
-  assert.match(html, /href="https:\/\/proudleut\.com\/band\/donnaweda"[^>]*>[\s\S]*?Band ansehen/)
-  assert.match(html, /href="https:\/\/proudleut\.com\/band\/oeha-band"[^>]*>[\s\S]*?Band ansehen/)
-  assert.match(html, /href="https:\/\/proudleut\.com\/band\/de-gaudimacha"[^>]*>[\s\S]*?Band ansehen/)
+  assert.match(html, /href="https:\/\/www\.proudleut\.com\/band\/donnaweda"[^>]*>[\s\S]*?Band ansehen/)
+  assert.match(html, /href="https:\/\/www\.proudleut\.com\/band\/oeha-band"[^>]*>[\s\S]*?Band ansehen/)
+  assert.match(html, /href="https:\/\/www\.proudleut\.com\/band\/de-gaudimacha"[^>]*>[\s\S]*?Band ansehen/)
   assert.equal((html.match(/Band ansehen/g) ?? []).length, 3)
 })
 

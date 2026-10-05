@@ -13,7 +13,7 @@ import path from 'node:path'
 // ergaenzt wurde.
 const appDir = path.dirname(fileURLToPath(import.meta.url))
 const sitemapSource = readFileSync(path.join(appDir, 'sitemap.ts'), 'utf8')
-const robotsTxt = readFileSync(path.join(appDir, '..', 'public', 'robots.txt'), 'utf8')
+const robotsSource = readFileSync(path.join(appDir, 'robots.ts'), 'utf8')
 const bandVorstellenSource = readFileSync(
   path.join(appDir, 'fuer-bands', 'band-vorstellen', 'page.tsx'),
   'utf8'
@@ -43,13 +43,13 @@ test('app/sitemap.ts fasst BandExplorer/useState nicht an (Paket 3 bleibt unange
   assert.ok(!sitemapSource.includes('useState'))
 })
 
-test('public/robots.txt enthaelt den korrekten Sitemap-Verweis auf https://proudleut.com/sitemap.xml', () => {
-  assert.match(robotsTxt, /^Sitemap: https:\/\/proudleut\.com\/sitemap\.xml$/m)
+test('app/robots.ts leitet den Sitemap-Verweis aus SITE_URL ab (https://www.proudleut.com/sitemap.xml)', () => {
+  assert.match(robotsSource, /sitemap:\s*`\$\{SITE_URL\}\/sitemap\.xml`/)
 })
 
-test('public/robots.txt behaelt die bestehenden Regeln (Allow: /, Disallow: /studio)', () => {
-  assert.match(robotsTxt, /^Allow: \/$/m)
-  assert.match(robotsTxt, /^Disallow: \/studio$/m)
+test('app/robots.ts behaelt die bestehenden Regeln (Allow: /, Disallow: /studio)', () => {
+  assert.match(robotsSource, /allow:\s*'\/'/)
+  assert.match(robotsSource, /disallow:\s*'\/studio'/)
 })
 
 test('/fuer-bands/band-vorstellen bleibt per robots-Metadata von der Indexierung ausgeschlossen (Begruendung fuer den Sitemap-Ausschluss)', () => {

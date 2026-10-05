@@ -1,5 +1,6 @@
 import { LEGAL_LINKS } from './constants.ts';
 import { BAND_MAIL_LOGO_URL } from '../anfrage/constants.ts';
+import { SITE_URL } from '../seo/metadata.ts';
 import type { NormalizedBandIntroInput } from './types.ts';
 
 export type RenderedMail = { subject: string; bodyText: string };
@@ -46,7 +47,7 @@ function wrapSimpleHtml(params: { subject: string; preheader: string; bodyHtml: 
         <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;background:#ffffff;border:1px solid #e6e1dc;border-radius:16px;border-collapse:separate;">
           <tr>
             <td style="padding:32px 34px 20px 34px;">
-              <a href="https://www.proudleut.com" target="_blank" style="text-decoration:none;">
+              <a href="${SITE_URL}" target="_blank" style="text-decoration:none;">
                 <img src="${BAND_MAIL_LOGO_URL}" width="141" height="26" alt="proudleut" border="0" style="display:block;width:141px;height:26px;">
               </a>
             </td>
@@ -59,7 +60,7 @@ function wrapSimpleHtml(params: { subject: string; preheader: string; bodyHtml: 
           <tr>
             <td style="padding:0 34px 28px 34px;">
               <div style="border-top:1px solid #ece8e4;padding-top:13px;font-size:12px;line-height:1.55;color:#8a837e;">
-                <a href="https://www.proudleut.com" style="color:#734b8b;text-decoration:none;font-weight:700;">proudleut.com</a>
+                <a href="${SITE_URL}" style="color:#734b8b;text-decoration:none;font-weight:700;">proudleut.com</a>
                 <span style="color:#c7c1bc;"> &middot; </span>
                 <a href="${LEGAL_LINKS.impressumUrl}" style="color:#77706b;text-decoration:none;">Impressum</a>
                 <span style="color:#c7c1bc;"> &middot; </span>

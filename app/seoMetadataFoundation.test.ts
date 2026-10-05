@@ -21,7 +21,7 @@ const bandSource = readFileSync(path.join(appDir, 'band', '[slug]', 'page.tsx'),
 const veranstaltungSource = readFileSync(path.join(appDir, 'veranstaltung', '[slug]', 'page.tsx'), 'utf8')
 const musikerSource = readFileSync(path.join(appDir, 'musiker', '[slug]', 'page.tsx'), 'utf8')
 
-test('Root-Layout setzt metadataBase auf https://proudleut.com ueber die gemeinsame SITE_URL-Konstante', () => {
+test('Root-Layout setzt metadataBase auf https://www.proudleut.com ueber die gemeinsame SITE_URL-Konstante', () => {
   assert.match(layoutSource, /import \{ SITE_URL, SITE_DEFAULT_DESCRIPTION \} from ['"]@\/lib\/seo\/metadata['"]/)
   assert.match(layoutSource, /metadataBase:\s*new URL\(SITE_URL\)/)
 })

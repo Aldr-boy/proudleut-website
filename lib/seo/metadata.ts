@@ -1,8 +1,10 @@
 // Gemeinsame Grundlage fuer Paket 1 (Cutover-Metadaten): eine einzige
-// Quelle fuer die zukuenftige Hauptdomain, damit metadataBase (app/layout.tsx)
+// Quelle fuer die Hauptdomain (www; die Domain ohne www leitet dorthin weiter).
+// Alle absoluten URLs im Code (Sitemap, robots, Canonical, JSON-LD, Mails,
+// Fathom-Host-Check) leiten sich von dieser Konstante ab. Damit metadataBase (app/layout.tsx)
 // und die manuell aufgeloesten Canonical-/Social-URLs in den drei
 // Routentypen (Band/Veranstaltung/Musiker) nicht auseinanderlaufen.
-export const SITE_URL = 'https://proudleut.com'
+export const SITE_URL = 'https://www.proudleut.com'
 
 // Bisherige Default-Description aus app/layout.tsx, hierher ausgelagert,
 // damit Musikerseiten dieselbe "effektive" Description (siehe Paket-1-

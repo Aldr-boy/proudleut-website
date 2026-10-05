@@ -10,14 +10,14 @@ import { SITE_URL, SITE_DEFAULT_DESCRIPTION, absoluteUrl, isAbsoluteHttpsUrl, DE
 // geprueft, nicht nur aus dem Code abgeleitet.
 
 test('SITE_URL zeigt auf die zukuenftige Hauptdomain, nicht auf vercel.app/localhost', () => {
-  assert.equal(SITE_URL, 'https://proudleut.com')
+  assert.equal(SITE_URL, 'https://www.proudleut.com')
 })
 
-test('absoluteUrl: root-relativer Pfad wird zu https://proudleut.com/...', () => {
-  assert.equal(absoluteUrl('/images/proudleut-logo-white.png'), 'https://proudleut.com/images/proudleut-logo-white.png')
-  assert.equal(absoluteUrl('/band/blechstreet-boys'), 'https://proudleut.com/band/blechstreet-boys')
-  assert.equal(absoluteUrl('/veranstaltung/hochzeit'), 'https://proudleut.com/veranstaltung/hochzeit')
-  assert.equal(absoluteUrl('/musiker/dominik-palmer'), 'https://proudleut.com/musiker/dominik-palmer')
+test('absoluteUrl: root-relativer Pfad wird zu https://www.proudleut.com/...', () => {
+  assert.equal(absoluteUrl('/images/proudleut-logo-white.png'), 'https://www.proudleut.com/images/proudleut-logo-white.png')
+  assert.equal(absoluteUrl('/band/blechstreet-boys'), 'https://www.proudleut.com/band/blechstreet-boys')
+  assert.equal(absoluteUrl('/veranstaltung/hochzeit'), 'https://www.proudleut.com/veranstaltung/hochzeit')
+  assert.equal(absoluteUrl('/musiker/dominik-palmer'), 'https://www.proudleut.com/musiker/dominik-palmer')
 })
 
 test('absoluteUrl: bereits absolute externe URL (z.B. Supabase Storage) bleibt unveraendert', () => {
@@ -28,7 +28,7 @@ test('absoluteUrl: bereits absolute externe URL (z.B. Supabase Storage) bleibt u
 test('absoluteUrl: Ergebnis enthaelt niemals localhost oder vercel.app', () => {
   for (const path of ['/images/proudleut-logo-white.png', '/band/x', '/veranstaltung/x', '/musiker/x']) {
     const resolved = absoluteUrl(path)
-    assert.ok(resolved.startsWith('https://proudleut.com/'), resolved)
+    assert.ok(resolved.startsWith('https://www.proudleut.com/'), resolved)
     assert.ok(!resolved.includes('localhost'), resolved)
     assert.ok(!resolved.includes('vercel.app'), resolved)
   }
@@ -44,7 +44,7 @@ test('isAbsoluteHttpsUrl: akzeptiert nur absolute https-URLs', () => {
 })
 
 test('DEFAULT_SOCIAL_IMAGE: absolute HTTPS-URL unter proudleut.com, mit den bereits im Projekt validierten Logo-Dimensionen', () => {
-  assert.equal(DEFAULT_SOCIAL_IMAGE.url, 'https://proudleut.com/images/proudleut-logo-white.png')
+  assert.equal(DEFAULT_SOCIAL_IMAGE.url, 'https://www.proudleut.com/images/proudleut-logo-white.png')
   assert.equal(isAbsoluteHttpsUrl(DEFAULT_SOCIAL_IMAGE.url), true)
   assert.equal(DEFAULT_SOCIAL_IMAGE.width, 1004)
   assert.equal(DEFAULT_SOCIAL_IMAGE.height, 185)

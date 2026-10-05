@@ -23,7 +23,7 @@ test('generatePersonJsonLd: Person ohne Bild und ohne externe Links -- keine ima
   assert.equal(result['@context'], 'https://schema.org')
   assert.equal(result['@type'], 'Person')
   assert.equal(result.name, 'Testperson')
-  assert.equal(result.url, 'https://proudleut.com/musiker/testperson')
+  assert.equal(result.url, 'https://www.proudleut.com/musiker/testperson')
   assert.equal(result['@id'], result.url, '@id folgt mangels eigener Fragment-Konvention der kanonischen URL')
   assert.ok(!('image' in result))
   assert.ok(!('sameAs' in result))
@@ -54,8 +54,8 @@ test('generatePersonJsonLd: Person mit mehreren oeffentlichen Memberships -- mem
     }),
   )
   assert.deepEqual(result.memberOf, [
-    { '@type': 'MusicGroup', name: 'More Candy', url: 'https://proudleut.com/band/more-candy' },
-    { '@type': 'MusicGroup', name: "Smooth'n'Groove", url: 'https://proudleut.com/band/smooth-n-groove' },
+    { '@type': 'MusicGroup', name: 'More Candy', url: 'https://www.proudleut.com/band/more-candy' },
+    { '@type': 'MusicGroup', name: "Smooth'n'Groove", url: 'https://www.proudleut.com/band/smooth-n-groove' },
   ])
 })
 
@@ -73,7 +73,7 @@ test('generatePersonJsonLd: private/ungueltige Links werden nicht in sameAs ausg
     person({
       websiteUrl: 'http://insecure-plain-http.example.com',
       links: [
-        { id: 'l1', label: 'Intern', url: 'https://proudleut.com/band/more-candy' },
+        { id: 'l1', label: 'Intern', url: 'https://www.proudleut.com/band/more-candy' },
         { id: 'l2', label: 'Ungueltig', url: 'not-a-url' },
         { id: 'l3', label: 'Gueltig', url: 'https://www.davidgarrett.de' },
       ],
