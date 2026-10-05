@@ -1,3 +1,4 @@
+import { SITE_URL } from '../seo/metadata.ts';
 // Zentrale Konstanten fuer das native Anfragesystem (Block L-A1).
 // Laengenbegrenzungen muessen exakt zu den CHECK-Constraints in
 // supabase/anfragesystem_native_migration.sql passen -- bei Aenderung an
@@ -62,6 +63,6 @@ export const BAND_MAIL_PORTRAIT_URL =
 // (next.config.ts). Diese Konstante wurde nicht geaendert, da sie schon
 // vorher exakt auf diese kanonischen Pfade zeigte.
 export const LEGAL_LINKS = {
-  datenschutzUrl: 'https://proudleut.com/datenschutz',
-  impressumUrl: 'https://proudleut.com/impressum',
+  datenschutzUrl: `${SITE_URL}/datenschutz`,
+  impressumUrl: `${SITE_URL}/impressum`,
 } as const;

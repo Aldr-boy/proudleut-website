@@ -591,7 +591,7 @@ test('sendAndPersistBandMail: v2-HTML enthaelt den Bandseiten-Link der jeweils a
   await sendAndPersistBandMail(client, row, () => resendClient)
 
   const html = sendCalls[0].payload.html as string
-  assert.match(html, /<a href="https:\/\/proudleut\.com\/band\/oeha-band"/)
+  assert.match(html, /<a href="https:\/\/www\.proudleut\.com\/band\/oeha-band"/)
 })
 
 test('sendAndPersistBandMail: bands-Embed als Array (PostgREST-Formvariante) wird identisch aufgeloest wie ein Objekt', async () => {
@@ -602,7 +602,7 @@ test('sendAndPersistBandMail: bands-Embed als Array (PostgREST-Formvariante) wir
   await sendAndPersistBandMail(client, row, () => resendClient)
 
   const html = sendCalls[0].payload.html as string
-  assert.match(html, /<a href="https:\/\/proudleut\.com\/band\/band-a"/)
+  assert.match(html, /<a href="https:\/\/www\.proudleut\.com\/band\/band-a"/)
 })
 
 test('retryBandSend: v2-Retry rendert denselben Bandseiten-Link ueber dieselbe bands(slug)-Relation, ohne Schemaaenderung', async () => {
@@ -621,7 +621,7 @@ test('retryBandSend: v2-Retry rendert denselben Bandseiten-Link ueber dieselbe b
 
   assert.deepEqual(result, { ok: true })
   const html = sendCalls[0].payload.html as string
-  assert.match(html, /<a href="https:\/\/proudleut\.com\/band\/oeha-band"/)
+  assert.match(html, /<a href="https:\/\/www\.proudleut\.com\/band\/oeha-band"/)
 })
 
 // ── Block "Confirmation V2": v1/v2/unbekannt-Dispatch beim Versand ──────
@@ -660,8 +660,8 @@ test('sendAndPersistConfirmation: confirmation_template_version=CONFIRMATION_TEM
 
   const html = sendCalls[0].payload.html as string
   assert.match(html, /Servus <strong>Pia<\/strong>,/)
-  assert.match(html, /href="https:\/\/proudleut\.com\/band\/donnaweda"/)
-  assert.match(html, /href="https:\/\/proudleut\.com\/band\/oeha-band"/)
+  assert.match(html, /href="https:\/\/www\.proudleut\.com\/band\/donnaweda"/)
+  assert.match(html, /href="https:\/\/www\.proudleut\.com\/band\/oeha-band"/)
   assert.equal((html.match(/Band ansehen/g) ?? []).length, 2)
   assert.equal(sendCalls.length, 1)
 })

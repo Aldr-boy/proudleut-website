@@ -17,47 +17,47 @@ const FIXTURE = {
   peopleSlugs: ['dominik-palmer'],
 }
 
-test('Homepage (/) ist enthalten, absolut unter https://proudleut.com/', () => {
+test('Homepage (/) ist enthalten, absolut unter https://www.proudleut.com/', () => {
   const entries = buildSitemapEntries(FIXTURE)
-  const home = entries.find((e) => e.url === 'https://proudleut.com/')
-  assert.ok(home, 'https://proudleut.com/ fehlt in der Sitemap')
+  const home = entries.find((e) => e.url === 'https://www.proudleut.com/')
+  assert.ok(home, 'https://www.proudleut.com/ fehlt in der Sitemap')
 })
 
 test('/bands ist enthalten', () => {
   const entries = buildSitemapEntries(FIXTURE)
-  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/bands'))
+  assert.ok(entries.some((e) => e.url === 'https://www.proudleut.com/bands'))
 })
 
 test('/musiker (Musikerübersicht) ist enthalten (Auftrag "Musikerübersicht unter /musiker anlegen")', () => {
   assert.ok(STATIC_PUBLIC_PATHS.includes('/musiker'))
   const entries = buildSitemapEntries(FIXTURE)
-  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/musiker'))
+  assert.ok(entries.some((e) => e.url === 'https://www.proudleut.com/musiker'))
 })
 
 test('alle STATIC_PUBLIC_PATHS erscheinen genau einmal', () => {
   const entries = buildSitemapEntries(FIXTURE)
   for (const path of STATIC_PUBLIC_PATHS) {
-    const expected = path === '/' ? 'https://proudleut.com/' : `https://proudleut.com${path}`
+    const expected = path === '/' ? 'https://www.proudleut.com/' : `https://www.proudleut.com${path}`
     const matches = entries.filter((e) => e.url === expected)
     assert.equal(matches.length, 1, `${expected} sollte genau einmal vorkommen`)
   }
 })
 
-test('Bandslug wird zu https://proudleut.com/band/[slug]', () => {
+test('Bandslug wird zu https://www.proudleut.com/band/[slug]', () => {
   const entries = buildSitemapEntries(FIXTURE)
-  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/band/blechstreet-boys'))
-  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/band/bigband-steinbach'))
+  assert.ok(entries.some((e) => e.url === 'https://www.proudleut.com/band/blechstreet-boys'))
+  assert.ok(entries.some((e) => e.url === 'https://www.proudleut.com/band/bigband-steinbach'))
 })
 
-test('Personenslug wird zu https://proudleut.com/musiker/[slug]', () => {
+test('Personenslug wird zu https://www.proudleut.com/musiker/[slug]', () => {
   const entries = buildSitemapEntries(FIXTURE)
-  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/musiker/dominik-palmer'))
+  assert.ok(entries.some((e) => e.url === 'https://www.proudleut.com/musiker/dominik-palmer'))
 })
 
-test('Kategorieslug wird zu https://proudleut.com/veranstaltung/[slug]', () => {
+test('Kategorieslug wird zu https://www.proudleut.com/veranstaltung/[slug]', () => {
   const entries = buildSitemapEntries(FIXTURE)
-  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/veranstaltung/hochzeit'))
-  assert.ok(entries.some((e) => e.url === 'https://proudleut.com/veranstaltung/festzelt'))
+  assert.ok(entries.some((e) => e.url === 'https://www.proudleut.com/veranstaltung/hochzeit'))
+  assert.ok(entries.some((e) => e.url === 'https://www.proudleut.com/veranstaltung/festzelt'))
 })
 
 test('leere/null/undefined Slugs werden nicht aufgenommen, kein Crash', () => {
@@ -80,9 +80,9 @@ test('doppelte Slugs erzeugen keine doppelte URL', () => {
     bandSlugs: ['blechstreet-boys', 'blechstreet-boys', 'blechstreet-boys'],
     peopleSlugs: ['dominik-palmer', 'dominik-palmer'],
   })
-  assert.equal(entries.filter((e) => e.url === 'https://proudleut.com/veranstaltung/hochzeit').length, 1)
-  assert.equal(entries.filter((e) => e.url === 'https://proudleut.com/band/blechstreet-boys').length, 1)
-  assert.equal(entries.filter((e) => e.url === 'https://proudleut.com/musiker/dominik-palmer').length, 1)
+  assert.equal(entries.filter((e) => e.url === 'https://www.proudleut.com/veranstaltung/hochzeit').length, 1)
+  assert.equal(entries.filter((e) => e.url === 'https://www.proudleut.com/band/blechstreet-boys').length, 1)
+  assert.equal(entries.filter((e) => e.url === 'https://www.proudleut.com/musiker/dominik-palmer').length, 1)
 })
 
 test('keine Duplikate insgesamt, auch nicht ueber Gruppen hinweg', () => {
@@ -91,10 +91,10 @@ test('keine Duplikate insgesamt, auch nicht ueber Gruppen hinweg', () => {
   assert.equal(new Set(urls).size, urls.length)
 })
 
-test('alle URLs absolut unter https://proudleut.com, keine localhost-/vercel.app-Treffer', () => {
+test('alle URLs absolut unter https://www.proudleut.com, keine localhost-/vercel.app-Treffer', () => {
   const entries = buildSitemapEntries(FIXTURE)
   for (const e of entries) {
-    assert.ok(e.url.startsWith('https://proudleut.com/'), e.url)
+    assert.ok(e.url.startsWith('https://www.proudleut.com/'), e.url)
     assert.ok(!e.url.includes('localhost'), e.url)
     assert.ok(!e.url.includes('vercel.app'), e.url)
   }
@@ -118,16 +118,16 @@ test('deterministische Reihenfolge: statisch -> Veranstaltung -> Band -> Musiker
 
   assert.deepEqual(
     urls.slice(0, STATIC_PUBLIC_PATHS.length),
-    STATIC_PUBLIC_PATHS.map((p) => (p === '/' ? 'https://proudleut.com/' : `https://proudleut.com${p}`))
+    STATIC_PUBLIC_PATHS.map((p) => (p === '/' ? 'https://www.proudleut.com/' : `https://www.proudleut.com${p}`))
   )
 
   const afterStatic = urls.slice(STATIC_PUBLIC_PATHS.length)
   assert.deepEqual(afterStatic, [
-    'https://proudleut.com/veranstaltung/festzelt',
-    'https://proudleut.com/veranstaltung/hochzeit',
-    'https://proudleut.com/band/bigband-steinbach',
-    'https://proudleut.com/band/blechstreet-boys',
-    'https://proudleut.com/musiker/dominik-palmer',
+    'https://www.proudleut.com/veranstaltung/festzelt',
+    'https://www.proudleut.com/veranstaltung/hochzeit',
+    'https://www.proudleut.com/band/bigband-steinbach',
+    'https://www.proudleut.com/band/blechstreet-boys',
+    'https://www.proudleut.com/musiker/dominik-palmer',
   ])
 })
 

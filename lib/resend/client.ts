@@ -10,10 +10,7 @@ import { Resend } from 'resend';
 //   RESEND_API_KEY              — Resend API-Key
 //   ANFRAGE_RATE_LIMIT_SALT     — Secret zum Hashen der Rate-Limit-IP
 //                                  (siehe lib/anfrage/rateLimit.ts)
-//   NEXT_PUBLIC_SITE_URL        — optional, zentrale App-URL fuer Links in
-//                                  Mails; faellt ohne Wert auf die in
-//                                  lib/anfrage/constants.ts hinterlegten
-//                                  proudleut.com-URLs zurueck.
+//   Absolute Links in Mails kommen aus SITE_URL (lib/seo/metadata.ts), nicht aus einer Env-Variable.
 
 let cachedClient: Resend | null = null;
 

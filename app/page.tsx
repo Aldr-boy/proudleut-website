@@ -31,12 +31,12 @@ export const revalidate = 300;
 // hartkodierter Domain.
 //
 // Bekannte, von Next.js selbst verursachte Abweichung: absoluteUrl('/')
-// liefert "https://proudleut.com/" (mit Schraegstrich, identisch zum
+// liefert "https://www.proudleut.com/" (mit Schraegstrich, identisch zum
 // Sitemap-Eintrag), aber Next.js' eigener Metadata-Resolver
 // (node_modules/next/dist/lib/metadata/resolvers/resolve-url.js,
 // resolveAbsoluteUrlWithPathname) gibt fuer eine aufgeloeste URL mit
 // pathname === '/' bewusst .origin statt .href zurueck -- das gerenderte
-// <link rel="canonical"> zeigt deshalb "https://proudleut.com" OHNE
+// <link rel="canonical"> zeigt deshalb "https://www.proudleut.com" OHNE
 // Schraegstrich. Das betrifft ausschliesslich die Root-Route und laesst
 // sich ueber die oeffentliche metadata-API nicht umgehen (auch der
 // relative-Pfad-Stil von app/impressum/page.tsx haette denselben Effekt).

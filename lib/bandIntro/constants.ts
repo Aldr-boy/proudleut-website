@@ -1,3 +1,4 @@
+import { SITE_URL } from '../seo/metadata.ts';
 // Zentrale Konstanten fuer die Bandvorstellung (Paket 2A, "Bandseite
 // anfragen"). Laengenbegrenzungen muessen exakt zu den CHECK-Constraints in
 // supabase/band_introductions_migration.sql passen -- bei Aenderung an
@@ -41,8 +42,8 @@ export const BAND_INTRO_TEMPLATE_VERSION = 'v1';
 // hier erneut exportiert, damit dieser Ordner nicht fuer eine einzelne
 // Konstante auf lib/anfrage verweisen muss.
 export const LEGAL_LINKS = {
-  datenschutzUrl: 'https://proudleut.com/datenschutz',
-  impressumUrl: 'https://proudleut.com/impressum',
+  datenschutzUrl: `${SITE_URL}/datenschutz`,
+  impressumUrl: `${SITE_URL}/impressum`,
 } as const;
 
 // Interne Benachrichtigungsadresse (Xandi). Bewusst per Env-Var statt

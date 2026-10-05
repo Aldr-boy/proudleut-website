@@ -1,4 +1,5 @@
 import { LEGAL_LINKS, BAND_MAIL_LOGO_URL, BAND_MAIL_PORTRAIT_URL } from './constants.ts';
+import { SITE_URL } from '../seo/metadata.ts';
 import type { NormalizedAnfrageInput, ResolvedBand } from './types.ts';
 
 export type RenderedMail = { subject: string; bodyText: string };
@@ -14,7 +15,7 @@ function joinNonEmpty(lines: string[]): string {
 // Reale, oeffentliche Banddetailseite -- exakt dieselbe URL-Konvention wie
 // lib/seo/jsonLd.ts (band.url), keine neue erfunden (Block "Bandmail V3.1").
 function buildBandPageUrl(slug: string): string {
-  return `https://proudleut.com/band/${slug}`;
+  return `${SITE_URL}/band/${slug}`;
 }
 
 // Individuelle Mail an EINE Band. Nennt ausschliesslich diese Band --
@@ -366,7 +367,7 @@ export function renderBandMailV2Html(content: BandMailV2Content): string {
 
           <tr>
             <td class="pl-px" style="padding:32px 34px 20px 34px;">
-              <a href="https://www.proudleut.com" target="_blank" style="text-decoration:none;">
+              <a href="${SITE_URL}" target="_blank" style="text-decoration:none;">
                 <img src="${BAND_MAIL_LOGO_URL}"
                      width="141" height="26" alt="proudleut" border="0"
                      style="display:block;width:141px;height:26px;font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;color:#1a1a1a;">
@@ -498,7 +499,7 @@ export function renderBandMailV2Html(content: BandMailV2Content): string {
                 <strong style="color:#5e5955;">Bands aus und für Bayern entdecken.</strong>
                 <span style="color:#734b8b;font-weight:700;"> Live. Echt. Nah.</span>
                 <br>
-                <a href="https://www.proudleut.com" style="color:#734b8b;text-decoration:none;font-weight:700;">proudleut.com</a>
+                <a href="${SITE_URL}" style="color:#734b8b;text-decoration:none;font-weight:700;">proudleut.com</a>
               </div>
 
               <div style="margin-top:16px;font-size:10px;line-height:1.45;color:#9a938e;">
@@ -654,7 +655,7 @@ export function renderConfirmationMailV2Html(content: ConfirmationMailV2Content)
 
           <tr>
             <td class="pl-px" style="padding:32px 34px 20px 34px;">
-              <a href="https://www.proudleut.com" target="_blank" style="text-decoration:none;">
+              <a href="${SITE_URL}" target="_blank" style="text-decoration:none;">
                 <img src="${BAND_MAIL_LOGO_URL}"
                      width="141" height="26" alt="proudleut" border="0"
                      style="display:block;width:141px;height:26px;font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;color:#1a1a1a;">
@@ -759,7 +760,7 @@ ${nachrichtBlock}
                 <strong style="color:#5e5955;">Bands aus und für Bayern entdecken.</strong>
                 <span style="color:#734b8b;font-weight:700;"> Live. Echt. Nah.</span>
                 <br>
-                <a href="https://www.proudleut.com" style="color:#734b8b;text-decoration:none;font-weight:700;">proudleut.com</a>
+                <a href="${SITE_URL}" style="color:#734b8b;text-decoration:none;font-weight:700;">proudleut.com</a>
               </div>
 
               <div style="margin-top:16px;font-size:10px;line-height:1.45;color:#9a938e;">

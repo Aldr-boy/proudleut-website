@@ -15,9 +15,9 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const layoutSource = readFileSync(path.join(root, 'app', 'layout.tsx'), 'utf8')
 const fathomSource = readFileSync(path.join(root, 'components', 'analytics', 'Fathom.tsx'), 'utf8')
 
-test('layout.tsx: Fathom wird nur gerendert, wenn VERCEL_ENV production UND Host proudleut.com/www.proudleut.com ist', () => {
+test('layout.tsx: Fathom wird nur gerendert, wenn VERCEL_ENV production UND Host der Hauptdomain (SITE_URL) ist', () => {
   assert.match(layoutSource, /process\.env\.VERCEL_ENV === "production"/)
-  assert.match(layoutSource, /host === "proudleut\.com" \|\| host === "www\.proudleut\.com"/)
+  assert.match(layoutSource, /host === new URL\(SITE_URL\)\.host/)
   assert.match(layoutSource, /shouldTrackFathom &&\s*<Fathom siteId=\{fathomSiteId!\}\s*\/>/)
 })
 
