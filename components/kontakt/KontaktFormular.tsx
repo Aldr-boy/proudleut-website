@@ -68,12 +68,15 @@ export default function KontaktFormular() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const json = await res.json()
+      const json = await res.json().catch(() => ({}))
       if (res.ok && json.ok) {
         setStatus('success')
       } else {
         setStatus('error')
-        setErrorMsg(json.error ?? 'Unbekannter Fehler')
+        setErrorMsg(
+          json.error ??
+            'Nachricht konnte nicht gesendet werden – bitte später erneut versuchen oder per E-Mail melden.',
+        )
       }
     } catch {
       setStatus('error')

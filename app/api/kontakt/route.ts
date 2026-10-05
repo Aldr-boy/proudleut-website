@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getResendClient } from '@/lib/resend/client'
+import { ANFRAGE_SENDER_EMAIL, ANFRAGE_SENDER_NAME } from '@/lib/anfrage/constants'
+
+const KONTAKT_RECIPIENT = 'alexander@proudleut.com'
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value : ''
@@ -57,7 +61,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Datenschutz-Zustimmung fehlt' }, { status: 400 })
   }
 
-  // Stub-Modus: kein E-Mail-Versand, keine personenbezogenen Daten geloggt
-  // Phase 2: Resend-Integration hier ergänzen
-  return NextResponse.json({ ok: true, mode: 'stub' })
+  const telefon = asString(p.telefon).trim()
+  const text = [
+    `Anliegen: ${anlass}`,
+    `Name: ${vorname} ${nachname}`,
+    `E-Mail: ${email}`,
+    `Telefon: ${telefon || '–'}`,
+    '',
+    nachricht,
+  ].join('\n')
+
+  // Keine personenbezogenen Daten ins Log – nur Fehlerklasse.
+  try {
+    const { data, error } = await getResendClient().emails.send({
+      from: `${ANFRAGE_SENDER_NAME} <${ANFRAGE_SENDER_EMAIL}>`,
+      to: KONTAKT_RECIPIENT,
+      replyTo: email,
+      subject: `Kontaktformular: ${anlass} – ${vorname} ${nachname}`,
+      text,
+    })
+    if (error || !data?.id) {
+      console.error('[kontakt] Resend-Versand fehlgeschlagen:', error?.name ?? 'keine Message-ID')
+      return NextResponse.json({ error: 'Versand fehlgeschlagen' }, { status: 502 })
+    }
+  } catch (err) {
+    console.error('[kontakt] Versand-Exception:', err instanceof Error ? err.message : 'unbekannt')
+    return NextResponse.json({ error: 'Versand fehlgeschlagen' }, { status: 502 })
+  }
+
+  return NextResponse.json({ ok: true })
 }
