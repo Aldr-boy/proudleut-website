@@ -4,6 +4,8 @@ import { useState, useRef, FormEvent } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 
+const FEHLER_SPAETER = 'Bitte versuch es später noch einmal.'
+
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 
 const ANLASS_OPTIONS = [
@@ -68,16 +70,16 @@ export default function KontaktFormular() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const json = await res.json()
+      const json = await res.json().catch(() => ({}))
       if (res.ok && json.ok) {
         setStatus('success')
       } else {
         setStatus('error')
-        setErrorMsg(json.error ?? 'Unbekannter Fehler')
+        setErrorMsg(res.status < 500 && json.error ? json.error : FEHLER_SPAETER)
       }
     } catch {
       setStatus('error')
-      setErrorMsg('Nachricht konnte nicht gesendet werden – bitte später erneut versuchen.')
+      setErrorMsg(FEHLER_SPAETER)
     }
   }
 
@@ -319,18 +321,11 @@ export default function KontaktFormular() {
           {/* Persönlicher Kontaktblock */}
           <div className="bg-pl-paper rounded-xl border border-pl-soft p-6 lg:p-8">
             <p className="font-semibold text-pl-text mb-4">Alex</p>
-            <p className="text-sm text-pl-text-hint leading-relaxed mb-6">
+            <p className="text-sm text-pl-text-hint leading-relaxed">
               proudleut wird von Alex persönlich betreut. Ich bin im Bandmanagement zuhause
               und baue diese Plattform, damit Veranstalter schneller gute Livebands finden —
               und Bands sichtbarer werden.
             </p>
-            <a
-              href="mailto:alexander.dressler@proudleut.com"
-              className="text-sm text-pl-accent hover:text-pl-accent-hover
-                         motion-safe:transition-colors break-all"
-            >
-              alexander.dressler@proudleut.com
-            </a>
           </div>
 
         </div>

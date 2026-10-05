@@ -6,7 +6,7 @@ type Props = {
   band: Band;
 };
 
-const CONTACT_EMAIL = 'alexander.dressler@proudleut.com';
+const CONTACT_EMAIL = 'alexander@proudleut.com';
 
 // Abschluss-CTA (Prototyp E): eigener Block in voller Containerbreite, dunkle
 // Karte auf heller Section (eine einzelne Karte innerhalb einer hellen Section

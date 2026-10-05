@@ -360,7 +360,7 @@ export default function UeberProudleutPage() {
               Bands entdecken
             </Button>
             <a
-              href="mailto:alexander.dressler@proudleut.com"
+              href="mailto:alexander@proudleut.com"
               className="pl-photo-copy pl-photo-copy-link text-base font-semibold border-b border-transparent motion-safe:transition-colors"
             >
               Kontakt aufnehmen

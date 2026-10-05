@@ -23,7 +23,7 @@ export default function FAQ() {
               Hier findest du Antworten und wenn nicht, schreib mir einfach.
             </p>
             <a
-              href="mailto:alexander.dressler@proudleut.com"
+              href="mailto:alexander@proudleut.com"
               className="text-pl-accent text-sm hover:underline motion-safe:transition-colors"
             >
               Schreib mir kurz →
