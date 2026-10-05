@@ -528,12 +528,14 @@ function validateContact(data: {
   phone: string
   contact_role: string
   spitzname: string
+  calls_me_as: string
 }): ContactErrorCode | null {
   if (!data.contact_name && !data.email && !data.phone) return 'missing_fields'
   if (data.contact_name.length > 200) return 'too_long'
   if (data.phone.length > 80) return 'too_long'
   if (data.email.length > 254) return 'too_long'
   if (data.spitzname.length > 100) return 'too_long'
+  if (data.calls_me_as.length > 100) return 'too_long'
   if (data.email && !EMAIL_REGEX.test(data.email)) return 'invalid_email'
   if (data.contact_role && !(VALID_CONTACT_ROLES as readonly string[]).includes(data.contact_role)) {
     return 'invalid_role'
@@ -554,6 +556,7 @@ export async function createContactAction(formData: FormData): Promise<never> {
   const phone = str(formData, 'phone')
   const contact_role = str(formData, 'contact_role')
   const spitzname = str(formData, 'spitzname')
+  const calls_me_as = str(formData, 'calls_me_as')
   const is_public = formData.get('is_public') === '1'
   const is_primary_inquiry = formData.get('is_primary_inquiry') === '1'
 
@@ -568,7 +571,7 @@ export async function createContactAction(formData: FormData): Promise<never> {
   if (!band) redirect(`/admin/bands?contact_error=invalid_contact`)
 
   // Feldvalidierung
-  const validationError = validateContact({ contact_name, email, phone, contact_role, spitzname })
+  const validationError = validateContact({ contact_name, email, phone, contact_role, spitzname, calls_me_as })
   if (validationError) redirect(`/admin/bands/${band_id}?contact_error=${validationError}`)
 
   // Rollenkonflikt-Vorabprüfung (vor jedem Schreibvorgang)
@@ -593,7 +596,7 @@ export async function createContactAction(formData: FormData): Promise<never> {
   // Bandsuche über Ansprechpartner + Feld Spitzname", supabase/
   // admin_search_bands_and_spitzname.sql): admin-only, nie öffentlich
   // ausgegeben (band_contacts bleibt RLS-gesperrt fuer anon).
-  const { error: createError } = await client.rpc('create_band_contact', {
+  const { data: createdContact, error: createError } = await client.rpc('create_band_contact', {
     p_band_id: band_id,
     p_contact_name: contact_name,
     p_email: email,
@@ -604,6 +607,18 @@ export async function createContactAction(formData: FormData): Promise<never> {
     p_spitzname: spitzname,
   })
   if (createError) redirect(`/admin/bands/${band_id}?contact_error=${mapContactWriteError(createError)}`)
+
+  // calls_me_as ("Wie nennt mich der Kontakt?") liegt bewusst ausserhalb der
+  // Kontakt-RPCs (rein additive Spalte, RPCs unveraendert) und wird direkt
+  // gesetzt. Admin-only, band_contacts ist fuer anon gesperrt.
+  const createdId = (createdContact as { id?: string } | null)?.id
+  if (calls_me_as && createdId) {
+    const { error: callsError } = await client
+      .from('band_contacts')
+      .update({ calls_me_as })
+      .eq('id', createdId)
+    if (callsError) redirect(`/admin/bands/${band_id}?contact_error=db_error`)
+  }
 
   redirect(`/admin/bands/${band_id}?contact_created=1`)
 }
@@ -622,6 +637,7 @@ export async function updateContactAction(formData: FormData): Promise<never> {
   const phone = str(formData, 'phone')
   const contact_role = str(formData, 'contact_role')
   const spitzname = str(formData, 'spitzname')
+  const calls_me_as = str(formData, 'calls_me_as')
   const is_public = formData.get('is_public') === '1'
   const is_primary_inquiry = formData.get('is_primary_inquiry') === '1'
 
@@ -638,7 +654,7 @@ export async function updateContactAction(formData: FormData): Promise<never> {
   }
 
   // Feldvalidierung
-  const validationError = validateContact({ contact_name, email, phone, contact_role, spitzname })
+  const validationError = validateContact({ contact_name, email, phone, contact_role, spitzname, calls_me_as })
   if (validationError) redirect(`/admin/bands/${band_id}?contact_error=${validationError}`)
 
   // Kontaktintegritaet (Produktentscheidung 23 / DoD 25): der letzte
@@ -694,6 +710,13 @@ export async function updateContactAction(formData: FormData): Promise<never> {
     p_spitzname: spitzname,
   })
   if (updateError) redirect(`/admin/bands/${band_id}?contact_error=${mapContactWriteError(updateError)}`)
+
+  // calls_me_as: direkt gesetzt bzw. (leer) geloescht, siehe createContactAction.
+  const { error: callsError } = await client
+    .from('band_contacts')
+    .update({ calls_me_as: calls_me_as === '' ? null : calls_me_as })
+    .eq('id', contact_id)
+  if (callsError) redirect(`/admin/bands/${band_id}?contact_error=db_error`)
 
   redirect(`/admin/bands/${band_id}?contact_saved=1`)
 }
