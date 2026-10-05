@@ -9,12 +9,12 @@ export type LegacyRedirect = { source: string; destination: string; statusCode: 
 
 type Target = { path: string; query?: Record<string, string> };
 
-// Next.js dekodiert Query-Werte im Redirect-Ziel einmal und gibt sie unkodiert aus
-// (aus "%26" wuerde ein trennendes "&"). Deshalb wird doppelt kodiert.
+// Query-Werte einfach kodieren (z. B. "&" als %26). Gilt fuer Vercel; der lokale
+// Dev-Server gibt dieselben Ziele abweichend unkodiert aus.
 function dest({ path, query }: Target): string {
   if (!query) return path;
   const qs = Object.entries(query)
-    .map(([k, v]) => `${k}=${encodeURIComponent(encodeURIComponent(v))}`)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
     .join('&');
   return `${path}?${qs}`;
 }
