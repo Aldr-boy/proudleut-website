@@ -99,7 +99,7 @@ function validateEditBand(data: {
 
   for (const field of ['review_requested_at', 'review_confirmed_at'] as const) {
     const v = data[field]
-    if (v !== '' && (!/^d{4}-d{2}-d{2}$/.test(v) || Number.isNaN(Date.parse(v)))) {
+    if (v !== '' && (!/^\d{4}-\d{2}-\d{2}$/.test(v) || Number.isNaN(Date.parse(v)))) {
       errors[field] = 'Bitte ein gültiges Datum eingeben'
     }
   }
