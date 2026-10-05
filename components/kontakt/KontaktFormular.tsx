@@ -322,18 +322,11 @@ export default function KontaktFormular() {
           {/* Persönlicher Kontaktblock */}
           <div className="bg-pl-paper rounded-xl border border-pl-soft p-6 lg:p-8">
             <p className="font-semibold text-pl-text mb-4">Alex</p>
-            <p className="text-sm text-pl-text-hint leading-relaxed mb-6">
+            <p className="text-sm text-pl-text-hint leading-relaxed">
               proudleut wird von Alex persönlich betreut. Ich bin im Bandmanagement zuhause
               und baue diese Plattform, damit Veranstalter schneller gute Livebands finden —
               und Bands sichtbarer werden.
             </p>
-            <a
-              href="mailto:alexander.dressler@proudleut.com"
-              className="text-sm text-pl-accent hover:text-pl-accent-hover
-                         motion-safe:transition-colors break-all"
-            >
-              alexander.dressler@proudleut.com
-            </a>
           </div>
 
         </div>
