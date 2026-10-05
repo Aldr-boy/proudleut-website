@@ -63,6 +63,8 @@ function validateEditBand(data: {
   lineup_flexibility: string
   default_member_count: string
   website_url: string
+  review_requested_at: string
+  review_confirmed_at: string
   short_description: string
   slogan: string
   meta_description: string
@@ -95,6 +97,13 @@ function validateEditBand(data: {
     try { new URL(data.website_url) } catch { errors.website_url = 'Ungültige URL' }
   }
 
+  for (const field of ['review_requested_at', 'review_confirmed_at'] as const) {
+    const v = data[field]
+    if (v !== '' && (!/^d{4}-d{2}-d{2}$/.test(v) || Number.isNaN(Date.parse(v)))) {
+      errors[field] = 'Bitte ein gültiges Datum eingeben'
+    }
+  }
+
   if (data.short_description.length > 300) errors.short_description = 'Max. 300 Zeichen'
   if (data.slogan.length > 200) errors.slogan = 'Max. 200 Zeichen'
   if (data.meta_description.length > 160) errors.meta_description = 'Max. 160 Zeichen'
@@ -125,6 +134,8 @@ export async function updateBandAction(formData: FormData): Promise<never> {
     lineup_flexibility: str(formData, 'lineup_flexibility') || 'unknown',
     default_member_count: str(formData, 'default_member_count'),
     website_url: str(formData, 'website_url'),
+    review_requested_at: str(formData, 'review_requested_at'),
+    review_confirmed_at: str(formData, 'review_confirmed_at'),
     short_description: str(formData, 'short_description'),
     slogan: str(formData, 'slogan'),
     meta_description: str(formData, 'meta_description'),
@@ -222,6 +233,8 @@ export async function updateBandAction(formData: FormData): Promise<never> {
       lineup_flexibility: data.lineup_flexibility,
       default_member_count: data.default_member_count === '' ? null : Number(data.default_member_count),
       website_url: nullIfEmpty(data.website_url),
+      review_requested_at: nullIfEmpty(data.review_requested_at),
+      review_confirmed_at: nullIfEmpty(data.review_confirmed_at),
     })
     .eq('id', id)
 
