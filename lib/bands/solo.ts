@@ -2,7 +2,6 @@ import type { Band } from '@/lib/types/band';
 
 // Solo-Act = Profil mit der Besetzungsart "Solomusiker" (bands.lineup_type).
 // Der Vorname ist das erste Wort des Anzeigenamens -- kein eigenes Datenfeld.
-export const SOLO_BANDART = 'Solomusiker';
 export const KLEINE_BAND = 'Kleine Band (Solo, Duo & Trio)';
 
 export function isSoloBand(band: Pick<Band, 'lineupType'>): boolean {
@@ -20,19 +19,12 @@ function isSmallBand(band: Pick<Band, 'lineupType'>): boolean {
   return band.lineupType === 'solomusiker' || band.lineupType === 'duo' || band.lineupType === 'trio';
 }
 
-// Einzeleintrag "Solomusiker" im Filter: weiterhin ueber die sekundaere
-// Bandart (bleibt bis zur Aufraeum-Datei bestehen).
-function hasSoloBandart(band: Pick<Band, 'bandartNames'>): boolean {
-  return band.bandartNames.includes(SOLO_BANDART);
-}
-
-type FilterBand = Pick<Band, 'category' | 'bandartNames' | 'lineupType'>;
+type FilterBand = Pick<Band, 'category' | 'lineupType'>;
 
 // Zusaetzliche Filtereintraege neben den Hauptbandarten (band.category).
 export function getExtraBandtypOptions(bands: FilterBand[]): string[] {
   const extra: string[] = [];
   if (bands.some(isSmallBand)) extra.push(KLEINE_BAND);
-  if (bands.some(hasSoloBandart)) extra.push(SOLO_BANDART);
   return extra;
 }
 
@@ -47,6 +39,5 @@ export function bandMatchesBandtyp(band: FilterBand, bandtyp: string): boolean {
   const wanted = bandtyp.toLowerCase();
   if (band.category && band.category.toLowerCase() === wanted) return true;
   if (wanted === KLEINE_BAND.toLowerCase()) return isSmallBand(band);
-  if (wanted === SOLO_BANDART.toLowerCase()) return hasSoloBandart(band);
   return false;
 }
