@@ -61,6 +61,7 @@ function validateEditBand(data: {
   slug: string
   status: string
   lineup_flexibility: string
+  lineup_type: string
   default_member_count: string
   website_url: string
   review_requested_at: string
@@ -87,6 +88,9 @@ function validateEditBand(data: {
 
   const validFlexibilities = ['fixed', 'flexible', 'modular', 'unknown']
   if (!validFlexibilities.includes(data.lineup_flexibility)) errors.lineup_flexibility = 'Ungültiger Wert'
+
+  const validLineupTypes = ['solomusiker', 'duo', 'trio', 'quartett', 'band', 'bigband']
+  if (!validLineupTypes.includes(data.lineup_type)) errors.lineup_type = 'Ungültiger Wert'
 
   if (data.default_member_count !== '') {
     const n = Number(data.default_member_count)
@@ -132,6 +136,7 @@ export async function updateBandAction(formData: FormData): Promise<never> {
     slug: str(formData, 'slug'),
     status: str(formData, 'status') || 'draft',
     lineup_flexibility: str(formData, 'lineup_flexibility') || 'unknown',
+    lineup_type: str(formData, 'lineup_type') || 'band',
     default_member_count: str(formData, 'default_member_count'),
     website_url: str(formData, 'website_url'),
     review_requested_at: str(formData, 'review_requested_at'),
@@ -231,6 +236,7 @@ export async function updateBandAction(formData: FormData): Promise<never> {
       status: data.status,
       is_published,
       lineup_flexibility: data.lineup_flexibility,
+      lineup_type: data.lineup_type,
       default_member_count: data.default_member_count === '' ? null : Number(data.default_member_count),
       website_url: nullIfEmpty(data.website_url),
       review_requested_at: nullIfEmpty(data.review_requested_at),

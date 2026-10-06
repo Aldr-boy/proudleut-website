@@ -48,6 +48,15 @@ const FLEXIBILITY_OPTIONS = [
   { value: 'modular', label: 'Modular' },
 ]
 
+const LINEUP_TYPE_OPTIONS = [
+  { value: 'solomusiker', label: 'Solomusiker' },
+  { value: 'duo', label: 'Duo' },
+  { value: 'trio', label: 'Trio' },
+  { value: 'quartett', label: 'Quartett' },
+  { value: 'band', label: 'Band' },
+  { value: 'bigband', label: 'Bigband' },
+]
+
 const PRICE_TIER_OPTIONS = [
   { value: '', label: '–' },
   { value: 'budget', label: 'Budget' },
@@ -308,6 +317,7 @@ type BandDetail = {
   status: string
   is_published: boolean
   lineup_flexibility: string
+  lineup_type: string | null
   default_member_count: number | null
   website_url: string | null
   review_requested_at: string | null
@@ -338,6 +348,7 @@ type SearchParams = Promise<{
   e_slug?: string
   e_status?: string
   e_lineup_flexibility?: string
+  e_lineup_type?: string
   e_default_member_count?: string
   e_website_url?: string
   e_review_requested_at?: string
@@ -428,7 +439,7 @@ export default async function AdminBandDetailPage({
     .from('bands')
     .select(`
       id, name, slug, status, is_published,
-      lineup_flexibility, default_member_count, website_url,
+      lineup_flexibility, lineup_type, default_member_count, website_url,
       review_requested_at, review_confirmed_at,
       home_location_id,
       locations(id, plz, city_name, landkreis, regierungsbezirk, bundesland, country, country_code, latitude, longitude),
@@ -1762,6 +1773,23 @@ export default async function AdminBandDetailPage({
           <fieldset className="border-t border-gray-100 pt-5">
             <legend className="text-base font-semibold text-gray-900 mb-4">Besetzung</legend>
             <div className="flex flex-wrap gap-4">
+              <div>
+                <label htmlFor="lineup_type" className="block text-sm font-medium text-gray-700 mb-1">
+                  Besetzungsart
+                </label>
+                <select
+                  id="lineup_type"
+                  name="lineup_type"
+                  defaultValue={band.lineup_type ?? 'band'}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  {LINEUP_TYPE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <FieldError msg={sp.e_lineup_type} />
+              </div>
+
               <div>
                 <label htmlFor="lineup_flexibility" className="block text-sm font-medium text-gray-700 mb-1">
                   Besetzungsflexibilität

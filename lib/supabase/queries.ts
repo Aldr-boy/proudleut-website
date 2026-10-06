@@ -62,6 +62,7 @@ export async function getAllBandsFromSupabase() {
       name,
       slug,
       status,
+      lineup_type,
       band_profiles ( short_description ),
       locations ( city_name, landkreis, regierungsbezirk, plz, latitude, longitude ),
       media_assets ( url, alt_text, role, sort_order ),

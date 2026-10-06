@@ -17,6 +17,8 @@ import { normalizePersonCredits } from '../people/normalizePerson.ts'
 
 type Row = Record<string, unknown>
 
+const LINEUP_TYPES: NonNullable<Band['lineupType']>[] = ['solomusiker', 'duo', 'trio', 'quartett', 'band', 'bigband']
+
 function asArr<T>(val: T | T[] | null | undefined): T[] {
   if (val === null || val === undefined) return []
   return Array.isArray(val) ? val : [val]
@@ -381,6 +383,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
     primaryBandart,
     bandartNames,
     bandartSlugs,
+    lineupType: LINEUP_TYPES.find(t => t === r.lineup_type),
     eventTypes,
     categorySlugs,
     anfrageEventTypes,
