@@ -6,6 +6,7 @@ import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import { generateBandJsonLd } from '@/lib/seo/jsonLd';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import { getSimilarBands } from '@/lib/bands/similarBands';
+import { getSoloFirstName } from '@/lib/bands/solo';
 import { SimilarBandCard } from '@/components/band/SimilarBandCard';
 import { BandHero } from '@/components/band/BandHero';
 import { BandTagsSection } from '@/components/band/BandTagsSection';
@@ -153,7 +154,7 @@ export default async function BandPage({ params }: PageProps) {
               Ähnliche Bands
             </p>
             <h2 className="text-2xl md:text-[30px] font-extrabold tracking-[-0.025em] leading-tight text-pl-text mb-6 md:mb-8">
-              Wenn dir diese Band gefällt
+              Wenn dir {getSoloFirstName(band) ?? 'diese Band'} gefällt
             </h2>
             {/* Feste 3-Spalten-Raster: bei 1 oder 2 Empfehlungen bleibt die
                 Kartenbreite wie bei 3, die Karten stehen linksbuendig. */}
