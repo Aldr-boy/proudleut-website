@@ -175,6 +175,8 @@ export type Band = {
   primaryBandart?: string;
   bandartNames: string[];
   bandartSlugs: string[];
+  // Besetzungsart (bands.lineup_type); leer/unbekannt wird wie 'band' behandelt.
+  lineupType?: 'solomusiker' | 'duo' | 'trio' | 'quartett' | 'band' | 'bigband';
   eventTypes: string[];
   categorySlugs?: string[];
   // Optional wie categorySlugs: ausschliesslich fuer Supabase-normalisierte

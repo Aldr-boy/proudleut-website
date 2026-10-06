@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
-import { SOLO_BANDART, isSoloBand, bandMatchesBandtyp } from '@/lib/bands/solo';
+import { bandMatchesBandtyp, getExtraBandtypOptions, resolveExtraBandtyp } from '@/lib/bands/solo';
 import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasions';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
@@ -141,8 +141,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     for (const b of bands) {
       if (b.category && b.category.toLowerCase() === raw.toLowerCase()) return b.category;
     }
-    if (raw.toLowerCase() === SOLO_BANDART.toLowerCase() && bands.some(isSoloBand)) return SOLO_BANDART;
-    return null;
+    return resolveExtraBandtyp(raw, bands);
   });
   const [selectedMood, setSelectedMood] = useState<string | null>(() => {
     const raw = searchParams.get('mood');
@@ -176,12 +175,13 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     const seen = new Set<string>();
     for (const b of bands) {
       if (b.category) seen.add(b.category);
-      if (isSoloBand(b)) seen.add(SOLO_BANDART);
     }
-    const available = Array.from(seen);
+    const extra = getExtraBandtypOptions(bands);
+    const available = Array.from(seen).filter((a) => !extra.includes(a));
     return [
       ...BANDTYP_PREFERRED_ORDER.filter((p) => available.includes(p)),
       ...available.filter((a) => !BANDTYP_PREFERRED_ORDER.includes(a)).sort(),
+      ...extra,
     ];
   })();
 
@@ -269,9 +269,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
           break;
         }
       }
-      if (!nextBandtyp && nextBandtypRaw.toLowerCase() === SOLO_BANDART.toLowerCase() && bands.some(isSoloBand)) {
-        nextBandtyp = SOLO_BANDART;
-      }
+      if (!nextBandtyp) nextBandtyp = resolveExtraBandtyp(nextBandtypRaw, bands);
     }
     const nextMoodRaw = p.get('mood');
     const availableMoodSlugs = bands.flatMap((b) => b.moods.map((m) => m.slug));
