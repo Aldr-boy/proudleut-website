@@ -1,5 +1,6 @@
 import type { Band } from '@/lib/types/band';
 import { hasWeddingContent } from '@/lib/bands/bandWeddingContent';
+import { getSoloFirstName } from '@/lib/bands/solo';
 import { BandRow } from './BandRow';
 
 type Props = { band: Band };
@@ -32,7 +33,7 @@ export function BandWeddingModule({ band }: Props) {
       <div className="bg-pl-elevated border border-pl-soft rounded-2xl p-5 sm:p-7 flex flex-col md:flex-row md:items-start gap-5 md:gap-10">
         <div className="flex-1 min-w-0">
           <h3 className="text-xl md:text-2xl font-extrabold leading-tight text-pl-text mb-2">
-            Wenn diese Band eure Hochzeit begleitet
+            Wenn {getSoloFirstName(band) ?? 'diese Band'} eure Hochzeit begleitet
           </h3>
           {info?.weddingDescription && (
             <p className="font-serif italic text-base text-pl-text-muted">

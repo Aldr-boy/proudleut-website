@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
+import { SOLO_BANDART, isSoloBand, bandMatchesBandtyp } from '@/lib/bands/solo';
 import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasions';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
@@ -140,6 +141,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     for (const b of bands) {
       if (b.category && b.category.toLowerCase() === raw.toLowerCase()) return b.category;
     }
+    if (raw.toLowerCase() === SOLO_BANDART.toLowerCase() && bands.some(isSoloBand)) return SOLO_BANDART;
     return null;
   });
   const [selectedMood, setSelectedMood] = useState<string | null>(() => {
@@ -174,6 +176,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     const seen = new Set<string>();
     for (const b of bands) {
       if (b.category) seen.add(b.category);
+      if (isSoloBand(b)) seen.add(SOLO_BANDART);
     }
     const available = Array.from(seen);
     return [
@@ -265,6 +268,9 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
           nextBandtyp = b.category;
           break;
         }
+      }
+      if (!nextBandtyp && nextBandtypRaw.toLowerCase() === SOLO_BANDART.toLowerCase() && bands.some(isSoloBand)) {
+        nextBandtyp = SOLO_BANDART;
       }
     }
     const nextMoodRaw = p.get('mood');
@@ -365,7 +371,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     }
 
     if (selectedBandtyp) {
-      if (!band.category || band.category.toLowerCase() !== selectedBandtyp.toLowerCase()) return false;
+      if (!bandMatchesBandtyp(band, selectedBandtyp)) return false;
     }
 
     if (!bandMatchesMood(band.moods, selectedMood)) return false;
