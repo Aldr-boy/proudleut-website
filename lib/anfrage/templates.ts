@@ -257,7 +257,65 @@ export type BandMailV2Content = {
   location: string | null;
   plzOrt: string | null;
   nachricht: string | null;
+  // Zeitpunkt der urspruenglichen Anfrage (ISO) fuer die Zitatzeile im
+  // "antworten"-Entwurf. Optional: ohne Wert wird die Zeile weggelassen.
+  anfrageZeitpunkt?: string | null;
 };
+
+const REPLY_NACHRICHT_MAX = 500;
+
+function formatAnfrageZeitpunkt(iso: string): { datum: string; uhrzeit: string } | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const datum = new Intl.DateTimeFormat('de-DE', {
+    timeZone: 'Europe/Berlin',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(d);
+  const uhrzeit = new Intl.DateTimeFormat('de-DE', {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(d);
+  return { datum, uhrzeit };
+}
+
+// mailto-Entwurf fuer den Button "[Vorname] antworten": Empfaenger, Betreff
+// "Re: Anfrage [Anlass]" und Zitatblock. Kein eigener Antworttext -- der Text
+// beginnt mit zwei Leerzeilen, damit die Band darueber schreiben kann.
+export function buildReplyMailto(content: BandMailV2Content): string {
+  const filled = (v: string | null | undefined): v is string => !!v && v.trim() !== '';
+  const veranstalterName = [content.vorname, content.nachname].filter(Boolean).join(' ');
+  const subject = filled(content.anlass) ? `Re: Anfrage ${content.anlass.trim()}` : 'Re: Anfrage';
+
+  const zeit = content.anfrageZeitpunkt ? formatAnfrageZeitpunkt(content.anfrageZeitpunkt) : null;
+  const kopf = zeit
+    ? `Am ${zeit.datum} um ${zeit.uhrzeit} schrieb ${veranstalterName} über proudleut.com:`
+    : `${veranstalterName} schrieb über proudleut.com:`;
+
+  const quote: string[] = [];
+  const ort = filled(content.plzOrt) ? content.plzOrt : content.location;
+  const felder: [string, string | null | undefined][] = [
+    ['Anlass', content.anlass],
+    ['Zeitraum', content.datumText],
+    ['Ort', ort],
+    ['Telefon', content.telefon],
+  ];
+  for (const [label, value] of felder) {
+    if (filled(value)) quote.push(`> ${label}: ${value.trim()}`);
+  }
+  if (filled(content.nachricht)) {
+    let msg = content.nachricht.replace(/\r\n?/g, '\n').trim();
+    if (msg.length > REPLY_NACHRICHT_MAX) msg = `${msg.slice(0, REPLY_NACHRICHT_MAX).trimEnd()}…`;
+    if (quote.length > 0) quote.push('>');
+    for (const l of msg.split('\n')) quote.push(l.trim() === '' ? '>' : `> ${l}`);
+  }
+
+  const body = ['', '', kopf, ...quote].join('\r\n');
+  return `mailto:${content.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 // Echtes V3-HTML fuer NEUE Bandanfragen (template_version = v2, siehe
 // BAND_TEMPLATE_VERSION). Eingefroren nach diesem Block: spaetere
@@ -403,7 +461,7 @@ export function renderBandMailV2Html(content: BandMailV2Content): string {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="padding:0 10px 10px 0;">
-                    <a href="mailto:${safeEmail}"
+                    <a href="${escapeHtml(buildReplyMailto(content))}"
                        style="display:inline-block;background:#734b8b;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;line-height:1;border-radius:999px;padding:12px 18px;">
                       ${safeVorname} antworten
                     </a>

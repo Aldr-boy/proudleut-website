@@ -130,6 +130,7 @@ async function renderAndSendBandMail(
       location: anfrageRow.location,
       plzOrt: anfrageRow.plz_ort,
       nachricht: anfrageRow.nachricht,
+      anfrageZeitpunkt: row.created_at,
     };
     html = renderBandMailV2Html(content);
   } else {
