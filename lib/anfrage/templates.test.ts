@@ -4,6 +4,7 @@ import {
   renderBandMail,
   renderBandMailV2,
   renderBandMailV2Html,
+  buildReplyMailto,
   renderConfirmationMail,
   renderConfirmationMailV2,
   renderConfirmationMailV2Html,
@@ -628,4 +629,69 @@ test('renderConfirmationMailV2Html: Plain Text und HTML inhaltlich aequivalent (
   }
   assert.match(plain.bodyText, /Mit deiner Anfrage ist noch keine Buchung verbunden/)
   assert.match(html, /Mit deiner Anfrage ist noch keine Buchung verbunden/)
+})
+
+// ── "antworten"-Button: mailto-Entwurf mit Zitatblock ───────────────────
+
+function decodeMailto(href: string) {
+  const u = new URL(href)
+  return {
+    to: decodeURIComponent(u.pathname),
+    subject: u.searchParams.get('subject') ?? '',
+    body: (u.searchParams.get('body') ?? '').replace(/\r\n/g, '\n'),
+  }
+}
+
+const REPLY_CONTENT: BandMailV2Content = {
+  ...V2_CONTENT,
+  vorname: 'Sepp',
+  nachname: 'Meier',
+  email: 'sepp@beispiel.de',
+  anlass: 'Volksfest',
+  datumText: 'März 2029',
+  location: null,
+  plzOrt: 'Wallnsdorf',
+  telefon: '01236548*/*6',
+  nachricht: 'Bitte feiert mit uns',
+  anfrageZeitpunkt: '2026-10-08T08:42:00Z',
+}
+
+test('buildReplyMailto: entspricht dem Beispiel (Betreff, zwei Leerzeilen, Zitatblock)', () => {
+  const m = decodeMailto(buildReplyMailto(REPLY_CONTENT))
+  assert.equal(m.to, 'sepp@beispiel.de')
+  assert.equal(m.subject, 'Re: Anfrage Volksfest')
+  assert.equal(
+    m.body,
+    '\n\nAm 08.10.2026 um 10:42 schrieb Sepp Meier über proudleut.com:\n' +
+      '> Anlass: Volksfest\n> Zeitraum: März 2029\n> Ort: Wallnsdorf\n> Telefon: 01236548*/*6\n>\n> Bitte feiert mit uns'
+  )
+})
+
+test('buildReplyMailto: Link ist vollstaendig kodiert (keine Leerzeichen/Umlaute/Zeilenumbrueche roh)', () => {
+  assert.ok(!/[\s äöüÄÖÜß]/.test(buildReplyMailto(REPLY_CONTENT)))
+})
+
+test('buildReplyMailto: fehlende Telefonnummer wird ausgelassen', () => {
+  const m = decodeMailto(buildReplyMailto({ ...REPLY_CONTENT, telefon: null }))
+  assert.ok(!m.body.includes('Telefon'))
+})
+
+test('buildReplyMailto: mehrzeilige Nachricht -> jede Zeile mit "> "', () => {
+  const m = decodeMailto(buildReplyMailto({ ...REPLY_CONTENT, nachricht: 'Zeile1\nZeile2\n\nZeile4 äöü & ?=' }))
+  assert.ok(m.body.endsWith('>\n> Zeile1\n> Zeile2\n>\n> Zeile4 äöü & ?='))
+})
+
+test('buildReplyMailto: Nachricht > 500 Zeichen wird mit "…" gekuerzt', () => {
+  const m = decodeMailto(buildReplyMailto({ ...REPLY_CONTENT, nachricht: 'a'.repeat(900) }))
+  assert.ok(m.body.endsWith(`> ${'a'.repeat(500)}…`))
+})
+
+test('buildReplyMailto: Uhrzeit in Berliner Zeit', () => {
+  const m = decodeMailto(buildReplyMailto({ ...REPLY_CONTENT, anfrageZeitpunkt: '2027-01-15T23:30:00Z' }))
+  assert.ok(m.body.includes('Am 16.01.2027 um 00:30 schrieb'))
+})
+
+test('renderBandMailV2Html: "antworten"-Button nutzt den mailto-Entwurf', () => {
+  const html = renderBandMailV2Html(REPLY_CONTENT)
+  assert.ok(html.includes('href="mailto:sepp@beispiel.de?subject=Re%3A%20Anfrage%20Volksfest&amp;body='))
 })
