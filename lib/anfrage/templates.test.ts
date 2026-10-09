@@ -142,6 +142,8 @@ test('renderBandMailV2: datum_text (Zeitraum/mehrere Termine) unveraendert', () 
 test('renderBandMailV2: V3-Abschluss mit Alex', () => {
   const { bodyText } = renderBandMailV2(INPUT, BAND_A)
   assert.match(bodyText, /Bitte gebt Anna möglichst zeitnah direkt Bescheid/)
+  assert.match(bodyText, /So gibt es schnell Klarheit./)
+  assert.doesNotMatch(bodyText, /So weiß er/)
   assert.match(bodyText, /Liebe Grüße\nAlex/)
 })
 
