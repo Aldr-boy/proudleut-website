@@ -90,7 +90,7 @@ export function renderBandMailV2(input: NormalizedAnfrageInput, band: ResolvedBa
     '',
     `Ihr könnt auch einfach auf diese E-Mail antworten – eure Antwort geht direkt an ${input.vorname}.`,
     '',
-    `Bitte gebt ${input.vorname} möglichst zeitnah direkt Bescheid – ob es für euch passt oder nicht. So weiß er schnell, woran er ist.`,
+    `Bitte gebt ${input.vorname} möglichst zeitnah direkt Bescheid – ob es für euch passt oder nicht. So gibt es schnell Klarheit.`,
     '',
     'Wenn ich euch bei der Anfrage unterstützen kann, meldet euch einfach bei mir.',
     '',
@@ -512,7 +512,7 @@ export function renderBandMailV2Html(content: BandMailV2Content): string {
           <tr>
             <td class="pl-px" style="padding:32px 34px 0 34px;font-size:15px;line-height:1.65;color:#262626;">
               <p style="margin:0 0 14px 0;">
-                Bitte gebt ${safeVorname} möglichst zeitnah direkt Bescheid – ob es für euch passt oder nicht. So weiß er schnell, woran er ist.
+                Bitte gebt ${safeVorname} möglichst zeitnah direkt Bescheid – ob es für euch passt oder nicht. So gibt es schnell Klarheit.
               </p>
               <p style="margin:0 0 18px 0;">
                 Wenn ich euch bei der Anfrage unterstützen kann, meldet euch einfach bei mir.
