@@ -2,6 +2,20 @@ import type { Band } from '../types/band';
 import type { PublicPerson } from '../people/normalizePerson';
 import { absoluteUrl, isAbsoluteHttpsUrl, SITE_URL } from './metadata.ts';
 
+// Entfernt paarweise Markdown-Auszeichnung (**, __, *, _, Backticks) und Zeilenumbrüche
+// aus dem Beschreibungstext. Unterstriche in Wörtern/Links bleiben unberührt.
+function stripMarkdownForJsonLd(text: string): string {
+  return text
+    .replace(/\r?\n|\r/g, ' ')
+    .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, '$1')
+    .replace(/(?<!\w)__(?=\S)(.+?)(?<=\S)__(?!\w)/g, '$1')
+    .replace(/\*(?=[^\s*])([^*]+?)(?<=[^\s*])\*/g, '$1')
+    .replace(/(?<!\w)_(?=[^\s_])([^_]+?)(?<=[^\s_])_(?!\w)/g, '$1')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/ {2,}/g, ' ')
+    .trim();
+}
+
 /**
  * MusicGroup JSON-LD für ein Bandprofil generieren.
  *
@@ -48,7 +62,7 @@ export function generateBandJsonLd(band: Band) {
     url: absoluteUrl(`/band/${band.slug}`),
     ...(sameAs.length > 0 && { sameAs }),
     ...(genre.length > 0 && { genre }),
-    ...(band.description && { description: band.description.slice(0, 300) }),
+    ...(band.description && { description: stripMarkdownForJsonLd(band.description).slice(0, 300) }),
     ...(band.heroImage && { image: band.heroImage.url }),
     ...(location && { location }),
   };
