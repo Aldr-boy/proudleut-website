@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Suspense } from 'react';
 import { getAllBandsFromSupabase } from '@/lib/supabase/queries';
 import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
@@ -51,6 +52,30 @@ export default async function BandsPage() {
           <Suspense fallback={null}>
             <BandExplorer bands={activeBands} regions={regions} themeImages={themeImages} />
           </Suspense>
+        )}
+        {/* Schlichte Linkliste aller aktiven Bands im ausgelieferten HTML:
+            das Grid zeigt zunaechst nur 24 Bands, weitere erst per Klick
+            (Client-JS) -- ohne diese Liste fehlen Crawlern die Links. */}
+        {activeBands.length > 0 && (
+          <nav aria-labelledby="alle-bands-az" className="pl-container-shell px-4 sm:px-6 mt-16">
+            <h2 id="alle-bands-az" className="text-base font-semibold text-pl-text mb-4">
+              Alle Bands von A bis Z
+            </h2>
+            <ul className="columns-1 sm:columns-2 lg:columns-3 gap-6 text-sm">
+              {[...activeBands]
+                .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+                .map((band) => (
+                  <li key={band.id} className="mb-2 break-inside-avoid">
+                    <Link
+                      href={`/band/${band.slug}`}
+                      className="text-pl-text-muted hover:text-pl-text underline underline-offset-2"
+                    >
+                      {band.name}
+                    </Link>
+                  </li>
+                ))}
+            </ul>
+          </nav>
         )}
       </section>
     </main>
