@@ -5,7 +5,7 @@ import { BandRow } from './BandRow';
 
 type Props = { band: Band };
 
-// Zeile "Referenz-Events" im Zeilenraster von BandTagsSection.tsx (Prototyp E):
+// Zeile "Hier haben wir gespielt" im Zeilenraster von BandTagsSection.tsx (Prototyp E):
 // zweispaltiges Raster, alle Eintraege sichtbar, keine "Alle anzeigen"-
 // Pagination. 0 -> entfaellt. Ein einzelner Eintrag steht ohne Kartenrahmen
 // in derselben Rasterzelle (neutrale Mikrocopy, NICHT "Zuletzt live erlebt" --
@@ -15,7 +15,7 @@ export function BandReferenceEvents({ band }: Props) {
   if (referenceEventsVariant(events.length) === 'none') return null;
 
   return (
-    <BandRow label="Referenz-Events">
+    <BandRow label="Hier haben wir gespielt">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5">
         {events.map((ev, i) => (
           <div key={i} className="flex flex-col gap-0.5">

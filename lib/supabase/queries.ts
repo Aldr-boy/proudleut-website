@@ -68,7 +68,8 @@ export async function getAllBandsFromSupabase() {
       media_assets ( url, alt_text, role, sort_order ),
       band_event_types ( sort_order, event_types ( name, slug ) ),
       band_band_types ( is_primary, sort_order, band_types ( name, slug ) ),
-      band_moods ( sort_order, moods ( name, slug, sort_order ) )
+      band_moods ( sort_order, moods ( name, slug, sort_order ) ),
+      reference_events ( event_name, location_name, city )
     `)
     .eq('status', 'active')
     .order('name', { ascending: true })
