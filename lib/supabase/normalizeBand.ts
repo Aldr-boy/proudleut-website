@@ -299,6 +299,7 @@ export function normalizeBandFromSupabase(row: unknown): Band {
       city:        str(re.city),
       year:        typeof re.year === 'number' ? re.year : undefined,
       description: str(re.description),
+      kind:        re.kind === 'hochzeit' ? 'hochzeit' as const : 'sonstiges' as const,
     }))
     .filter(re => re.eventName.length > 0)
 

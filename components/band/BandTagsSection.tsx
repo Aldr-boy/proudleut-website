@@ -21,7 +21,6 @@ export function BandTagsSection({ band }: Props) {
   const stil = band.musikalischVerortet;
   const hasStil = stil.length > 0;
   const hasEventTypes = band.eventTypes.length > 0;
-  const hasReferenceEvents = band.referenceEvents.length > 0;
   const hasDocuments = band.documents.length > 0;
   // BandWeddingModule rendert nur mit "Hochzeit" unter den Event-Types
   // (hasWeddingContent); die Zeile darf nur erscheinen, wenn auch Inhalt da ist.
@@ -31,6 +30,14 @@ export function BandTagsSection({ band }: Props) {
     || band.weddingInfo?.moderation != null
     || !!band.weddingInfo?.possiblePlaytimes
   );
+
+  // Hochzeits-Referenzen stehen im Hochzeitsblock (falls die Band einen hat)
+  // und nicht mehr in "Hier haben wir gespielt"; ohne Hochzeitsblock bleiben
+  // alle Referenzen dort.
+  const listedReferenceEvents = hasWedding
+    ? band.referenceEvents.filter((ev) => ev.kind !== 'hochzeit')
+    : band.referenceEvents;
+  const hasReferenceEvents = listedReferenceEvents.length > 0;
 
   if (!hasStil && !hasEventTypes && !hasWedding && !hasReferenceEvents && !hasDocuments) return null;
 
@@ -65,7 +72,7 @@ export function BandTagsSection({ band }: Props) {
           )}
 
           {hasWedding && <BandWeddingModule band={band} />}
-          {hasReferenceEvents && <BandReferenceEvents band={band} />}
+          {hasReferenceEvents && <BandReferenceEvents band={band} events={listedReferenceEvents} />}
           {hasDocuments && <BandDocumentsSection band={band} />}
         </div>
       </div>

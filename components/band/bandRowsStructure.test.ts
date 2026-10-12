@@ -31,7 +31,7 @@ test('BandTagsSection: Zeilenreihenfolge Stil, Spielt bei, Hochzeit, Referenz-Ev
     idx('label="Stil & Einflüsse"'),
     idx('label="Spielt bei"'),
     idx('<BandWeddingModule band={band} />'),
-    idx('<BandReferenceEvents band={band} />'),
+    idx('<BandReferenceEvents band={band} events={listedReferenceEvents} />'),
     idx('<BandDocumentsSection band={band} />'),
   ]
   assert.ok(order.every((i) => i >= 0), 'eine Zeile fehlt')

@@ -1,17 +1,16 @@
-import type { Band } from '@/lib/types/band';
+import type { Band, ReferenceEvent } from '@/lib/types/band';
 import { referenceEventsVariant } from '@/lib/bands/bandReferenceEventsLayout';
 import { referenceEventSublines } from '@/lib/bands/bandReferenceEventSubline';
 import { BandRow } from './BandRow';
 
-type Props = { band: Band };
+type Props = { band: Band; events?: ReferenceEvent[] };
 
 // Zeile "Hier haben wir gespielt" im Zeilenraster von BandTagsSection.tsx (Prototyp E):
 // zweispaltiges Raster, alle Eintraege sichtbar, keine "Alle anzeigen"-
 // Pagination. 0 -> entfaellt. Ein einzelner Eintrag steht ohne Kartenrahmen
 // in derselben Rasterzelle (neutrale Mikrocopy, NICHT "Zuletzt live erlebt" --
 // eine einzelne, ggf. aeltere Referenz darf keine Inaktivitaet suggerieren).
-export function BandReferenceEvents({ band }: Props) {
-  const events = band.referenceEvents;
+export function BandReferenceEvents({ band, events = band.referenceEvents }: Props) {
   if (referenceEventsVariant(events.length) === 'none') return null;
 
   return (

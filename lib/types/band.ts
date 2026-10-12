@@ -76,6 +76,9 @@ export type ReferenceEvent = {
   city?: string;
   year?: number;
   description?: string;
+  // 'hochzeit' = erscheint im Hochzeitsblock der Bandseite (falls vorhanden),
+  // sonst 'sonstiges' (Standard).
+  kind?: 'hochzeit' | 'sonstiges';
 };
 
 // Admin-spezifisches Pendant zu ReferenceEvent (Referenzverwaltung im
@@ -93,6 +96,7 @@ export type AdminReferenceEvent = {
   city?: string;
   year?: number;
   description?: string;
+  kind: 'hochzeit' | 'sonstiges';
   sortOrder: number;
 };
 

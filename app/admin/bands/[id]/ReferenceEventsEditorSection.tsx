@@ -14,6 +14,9 @@ import {
 const LOCATION_LIST_ID = 'reference_location_suggestions'
 const CITY_LIST_ID = 'reference_city_suggestions'
 
+const KIND_SELECT_CLASS =
+  'w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent'
+
 function TinySubmitButton({
   children,
   title,
@@ -159,6 +162,21 @@ function ReferenceEventForm({
         />
       </div>
 
+      <div>
+        <label htmlFor={`kind_${referenceEvent.id}`} className="block text-xs font-medium text-gray-600 mb-1">
+          Art
+        </label>
+        <select
+          id={`kind_${referenceEvent.id}`}
+          name="kind"
+          defaultValue={referenceEvent.kind}
+          className={KIND_SELECT_CLASS}
+        >
+          <option value="sonstiges">Sonstiges</option>
+          <option value="hochzeit">Hochzeit</option>
+        </select>
+      </div>
+
       <div className="sm:col-span-2">
         <label htmlFor={`description_${referenceEvent.id}`} className="block text-xs font-medium text-gray-600 mb-1">
           Zusatz <span className="text-gray-400 font-normal">(optional)</span>
@@ -270,6 +288,15 @@ function CreateReferenceEventForm({ bandId }: { bandId: string }) {
             max={2100}
             className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
+        </div>
+        <div>
+          <label htmlFor="new_reference_event_kind" className="block text-xs font-medium text-gray-600 mb-1">
+            Art
+          </label>
+          <select id="new_reference_event_kind" name="kind" defaultValue="sonstiges" className={KIND_SELECT_CLASS}>
+            <option value="sonstiges">Sonstiges</option>
+            <option value="hochzeit">Hochzeit</option>
+          </select>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="new_reference_event_description" className="block text-xs font-medium text-gray-600 mb-1">
