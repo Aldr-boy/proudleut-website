@@ -3,10 +3,33 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
+export type InspirationBand = { slug: string; name: string; place?: string };
+
 export type InspirationGroup = {
   label: string;
-  bands: { slug: string; name: string; place?: string }[];
+  bands: InspirationBand[];
+  // Nur gesetzt, wenn der Reiter nach Region gruppiert wird; enthaelt dann
+  // dieselben Bands wie `bands`, jede genau einmal.
+  sections?: { label: string; bands: InspirationBand[] }[];
 };
+
+function BandList({ bands }: { bands: InspirationBand[] }) {
+  return (
+    <ul className="columns-1 sm:columns-2 lg:columns-3 gap-6">
+      {bands.map((b) => (
+        <li key={b.slug} className="mb-4 break-inside-avoid">
+          <Link
+            href={`/band/${b.slug}`}
+            className="block text-sm font-semibold text-pl-text hover:text-pl-accent-deep"
+          >
+            {b.name}
+          </Link>
+          {b.place && <span className="block text-xs text-pl-text-muted">{b.place}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 // Alle Gruppen werden immer gerendert (auch serverseitig im HTML);
 // inaktive Reiter sind nur per `hidden` ausgeblendet.
@@ -52,19 +75,16 @@ export default function BandInspirationen({ groups }: { groups: InspirationGroup
           aria-labelledby={`insp-tab-${i}`}
           hidden={active !== i}
         >
-          <ul className="columns-1 sm:columns-2 lg:columns-3 gap-6">
-            {g.bands.map((b) => (
-              <li key={b.slug} className="mb-4 break-inside-avoid">
-                <Link
-                  href={`/band/${b.slug}`}
-                  className="block text-sm font-semibold text-pl-text hover:text-pl-accent-deep"
-                >
-                  {b.name}
-                </Link>
-                {b.place && <span className="block text-xs text-pl-text-muted">{b.place}</span>}
-              </li>
-            ))}
-          </ul>
+          {g.sections ? (
+            g.sections.map((sec) => (
+              <div key={sec.label} className="mb-6">
+                <h3 className="text-sm font-semibold text-pl-text mb-3">{sec.label}</h3>
+                <BandList bands={sec.bands} />
+              </div>
+            ))
+          ) : (
+            <BandList bands={g.bands} />
+          )}
         </div>
       ))}
     </section>
