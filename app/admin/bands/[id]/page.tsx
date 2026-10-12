@@ -737,6 +737,24 @@ export default async function AdminBandDetailPage({
       .returns<SocialProfileRow[]>(),
   ])
 
+  // Vorschlaege fuer Location/Ort im Referenzformular: alle bereits
+  // gespeicherten Werte aller Baender (nur lesend). Ein Fehler hier ist nicht
+  // kritisch -- das Formular bleibt ohne Vorschlaege voll nutzbar.
+  const { data: referenceSuggestionRows } = await client
+    .from('reference_events')
+    .select('location_name, city')
+    .returns<{ location_name: string | null; city: string | null }[]>()
+  const uniqueSorted = (values: (string | null | undefined)[]): string[] => {
+    const seen = new Map<string, string>()
+    for (const v of values) {
+      const t = v?.trim()
+      if (t && !seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t)
+    }
+    return [...seen.values()].sort((a, b) => a.localeCompare(b, 'de'))
+  }
+  const locationSuggestions = uniqueSorted((referenceSuggestionRows ?? []).map((r) => r.location_name))
+  const citySuggestions = uniqueSorted((referenceSuggestionRows ?? []).map((r) => r.city))
+
   // Ein Lesefehler darf NICHT als "keine Eintraege" (leere Slots/leere
   // Kandidatenliste) behandelt werden -- sonst wuerde ein Speichern nach
   // einem 403/Query-Fehler per leerem Array die bestehende Kuration
@@ -1258,6 +1276,8 @@ export default async function AdminBandDetailPage({
           bandId={band.id}
           referenceEvents={adminReferenceEvents}
           loadError={referenceEventsLoadError}
+          locationSuggestions={locationSuggestions}
+          citySuggestions={citySuggestions}
           successMsg={sp.reference_event_saved ? 'Gespeichert.' : undefined}
           errorMsg={referenceEventErrorMsg ?? undefined}
         />

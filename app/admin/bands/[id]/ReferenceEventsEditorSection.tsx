@@ -8,6 +8,12 @@ import {
   moveReferenceEventAction,
 } from './actions'
 
+// Vorschlagslisten (native datalist): Teilwort/Gross-Kleinschreibung regelt der
+// Browser, freie Eingabe bleibt moeglich. Werte kommen aus allen gespeicherten
+// Referenzen aller Baender (siehe page.tsx).
+const LOCATION_LIST_ID = 'reference_location_suggestions'
+const CITY_LIST_ID = 'reference_city_suggestions'
+
 function TinySubmitButton({
   children,
   title,
@@ -116,6 +122,7 @@ function ReferenceEventForm({
           id={`location_name_${referenceEvent.id}`}
           name="location_name"
           type="text"
+          list={LOCATION_LIST_ID}
           defaultValue={referenceEvent.locationName ?? ''}
           maxLength={200}
           className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -130,6 +137,7 @@ function ReferenceEventForm({
           id={`city_${referenceEvent.id}`}
           name="city"
           type="text"
+          list={CITY_LIST_ID}
           defaultValue={referenceEvent.city ?? ''}
           maxLength={200}
           className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -232,6 +240,7 @@ function CreateReferenceEventForm({ bandId }: { bandId: string }) {
             id="new_reference_event_location_name"
             name="location_name"
             type="text"
+            list={LOCATION_LIST_ID}
             maxLength={200}
             className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
@@ -244,6 +253,7 @@ function CreateReferenceEventForm({ bandId }: { bandId: string }) {
             id="new_reference_event_city"
             name="city"
             type="text"
+            list={CITY_LIST_ID}
             maxLength={200}
             className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
@@ -287,6 +297,8 @@ export function ReferenceEventsEditorSection({
   bandId,
   referenceEvents,
   loadError,
+  locationSuggestions = [],
+  citySuggestions = [],
   successMsg,
   errorMsg,
 }: {
@@ -296,6 +308,8 @@ export function ReferenceEventsEditorSection({
   // darf NIE als "keine Referenzen" interpretiert werden (fail-closed,
   // gleiches Muster wie Galerie/Moods/Dokumente).
   loadError?: boolean
+  locationSuggestions?: string[]
+  citySuggestions?: string[]
   successMsg?: string
   errorMsg?: string
 }) {
@@ -353,6 +367,17 @@ export function ReferenceEventsEditorSection({
           </div>
         )}
       </div>
+
+      <datalist id={LOCATION_LIST_ID}>
+        {locationSuggestions.map((v) => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
+      <datalist id={CITY_LIST_ID}>
+        {citySuggestions.map((v) => (
+          <option key={v} value={v} />
+        ))}
+      </datalist>
 
       <CreateReferenceEventForm bandId={bandId} />
     </div>
