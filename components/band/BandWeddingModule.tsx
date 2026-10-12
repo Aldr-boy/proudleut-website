@@ -1,6 +1,7 @@
 import type { Band } from '@/lib/types/band';
 import { hasWeddingContent } from '@/lib/bands/bandWeddingContent';
 import { getSoloFirstName } from '@/lib/bands/solo';
+import { weddingReferenceVenues } from '@/lib/bands/weddingReferenceVenues';
 import { BandRow } from './BandRow';
 
 type Props = { band: Band };
@@ -15,6 +16,7 @@ export function BandWeddingModule({ band }: Props) {
   if (!hasWeddingContent(band)) return null;
 
   const info = band.weddingInfo;
+  const venues = weddingReferenceVenues(band.referenceEvents);
 
   const decisionCards = [
     info?.kidnappingBride != null
@@ -38,6 +40,11 @@ export function BandWeddingModule({ band }: Props) {
           {info?.weddingDescription && (
             <p className="font-serif italic text-base text-pl-text-muted">
               {info.weddingDescription}
+            </p>
+          )}
+          {venues.length > 0 && (
+            <p className="text-sm text-pl-text-muted mt-3">
+              <span className="font-semibold text-pl-text">Hier gespielt:</span> {venues.join(', ')}
             </p>
           )}
         </div>

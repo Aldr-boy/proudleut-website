@@ -2632,6 +2632,11 @@ function parseReferenceEventYear(formData: FormData): { ok: true; value: number 
   return { ok: true, value: n }
 }
 
+// Nur 'hochzeit' wird uebernommen; alles andere (auch leer) -> 'sonstiges'.
+function parseReferenceEventKind(formData: FormData): 'hochzeit' | 'sonstiges' {
+  return str(formData, 'kind') === 'hochzeit' ? 'hochzeit' : 'sonstiges'
+}
+
 export async function createReferenceEventAction(formData: FormData): Promise<never> {
   await requireAdminSession()
 
@@ -2652,13 +2657,13 @@ export async function createReferenceEventAction(formData: FormData): Promise<ne
   const location_name = nullIfEmpty(str(formData, 'location_name'))
   const city = nullIfEmpty(str(formData, 'city'))
   const description = nullIfEmpty(str(formData, 'description'))
+  const kind = parseReferenceEventKind(formData)
   const yearField = parseReferenceEventYear(formData)
   if (!yearField.ok) referenceEventErrorRedirect(bandRow.id, 'reference_event_year_out_of_range')
 
-  // V1.1: ruft die neue RPC-Ueberladung mit p_description auf (siehe
-  // supabase/fn_reference_events_admin.sql) -- die alte 5-Arg-Fassung
-  // ohne p_description bleibt fuer Kompatibilitaet bestehen, wird von
-  // diesem Admin-Code aber nicht mehr aufgerufen.
+  // V1.2: ruft die Ueberladung mit p_description und p_kind auf (siehe
+  // supabase/reference_events_kind.sql) -- die aelteren Fassungen bleiben
+  // bestehen und werden von diesem Admin-Code nicht mehr aufgerufen.
   const { error } = await client.rpc('fn_reference_event_create', {
     p_band_id: bandRow.id,
     p_event_name: event_name,
@@ -2666,6 +2671,7 @@ export async function createReferenceEventAction(formData: FormData): Promise<ne
     p_city: city,
     p_year: yearField.value,
     p_description: description,
+    p_kind: kind,
   })
 
   if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))
@@ -2698,13 +2704,13 @@ export async function updateReferenceEventAction(formData: FormData): Promise<ne
   const location_name = nullIfEmpty(str(formData, 'location_name'))
   const city = nullIfEmpty(str(formData, 'city'))
   const description = nullIfEmpty(str(formData, 'description'))
+  const kind = parseReferenceEventKind(formData)
   const yearField = parseReferenceEventYear(formData)
   if (!yearField.ok) referenceEventErrorRedirect(bandRow.id, 'reference_event_year_out_of_range')
 
-  // V1.1: ruft die neue RPC-Ueberladung mit p_description auf (siehe
-  // supabase/fn_reference_events_admin.sql) -- die alte 6-Arg-Fassung
-  // ohne p_description bleibt fuer Kompatibilitaet bestehen, wird von
-  // diesem Admin-Code aber nicht mehr aufgerufen.
+  // V1.2: ruft die Ueberladung mit p_description und p_kind auf (siehe
+  // supabase/reference_events_kind.sql) -- die aelteren Fassungen bleiben
+  // bestehen und werden von diesem Admin-Code nicht mehr aufgerufen.
   const { error } = await client.rpc('fn_reference_event_update', {
     p_id: reference_event_id,
     p_band_id: bandRow.id,
@@ -2713,6 +2719,7 @@ export async function updateReferenceEventAction(formData: FormData): Promise<ne
     p_city: city,
     p_year: yearField.value,
     p_description: description,
+    p_kind: kind,
   })
 
   if (error) referenceEventErrorRedirect(bandRow.id, referenceEventErrorCode(error))

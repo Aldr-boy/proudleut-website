@@ -615,6 +615,7 @@ export default async function AdminBandDetailPage({
     city: string | null
     year: number | null
     description: string | null
+    kind: string | null
     sort_order: number
     created_at: string
   }
@@ -727,7 +728,7 @@ export default async function AdminBandDetailPage({
       .returns<BandDocumentRow[]>(),
     client
       .from('reference_events')
-      .select('id, event_name, location_name, city, year, description, sort_order, created_at')
+      .select('id, event_name, location_name, city, year, description, kind, sort_order, created_at')
       .eq('band_id', id)
       .returns<ReferenceEventRow[]>(),
     client
@@ -895,6 +896,7 @@ export default async function AdminBandDetailPage({
       city: row.city ?? undefined,
       year: row.year ?? undefined,
       description: row.description ?? undefined,
+      kind: row.kind === 'hochzeit' ? 'hochzeit' : 'sonstiges',
       sortOrder: row.sort_order,
     }))
 
