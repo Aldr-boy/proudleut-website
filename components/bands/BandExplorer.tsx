@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
+import { BANDTYP_PREFERRED_ORDER } from '@/lib/bands/bandtypOrder';
 import { bandMatchesBandtyp, getExtraBandtypOptions, resolveExtraBandtyp } from '@/lib/bands/solo';
 import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasions';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
@@ -68,18 +69,6 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a;
 }
-
-// Bevorzugte Anzeigereihenfolge für Bandtyp-Chips
-const BANDTYP_PREFERRED_ORDER = [
-  'Partyband',
-  'Bayerische Partyband',
-  'Bayrische Partyband',
-  'Blasmusik',
-  'Bigband',
-  'Jazz & Lounge',
-  'Akustik',
-  'DJ + Live',
-];
 
 function buildUrl(params: {
   anlass: string | null;
