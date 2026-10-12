@@ -77,8 +77,8 @@ export default function BandInspirationen({ groups }: { groups: InspirationGroup
         >
           {g.sections ? (
             g.sections.map((sec) => (
-              <div key={sec.label} className="mb-6">
-                <h3 className="text-sm font-semibold text-pl-text mb-3">{sec.label}</h3>
+              <div key={sec.label} className="mt-10 first:mt-0">
+                <h3 className="text-base font-semibold text-pl-accent-deep border-b border-pl-soft pb-2 mb-4">{sec.label}</h3>
                 <BandList bands={sec.bands} />
               </div>
             ))
