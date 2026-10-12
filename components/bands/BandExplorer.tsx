@@ -346,7 +346,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
         (loc.administrativeRegion?.toLowerCase().includes(q) ?? false) ||
         (loc.postalCode?.includes(q) ?? false) ||
         band.referenceEvents.some((ev) =>
-          [ev.eventName, ev.venue, ev.city].some((v) => v?.toLowerCase().includes(q))
+          [ev.eventName, ev.venue, ev.city, ev.description].some((v) => v?.toLowerCase().includes(q))
         );
       if (!matches) return false;
     }
