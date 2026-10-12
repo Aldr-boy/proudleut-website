@@ -344,7 +344,10 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
         (loc.city?.toLowerCase().includes(q) ?? false) ||
         (loc.district?.toLowerCase().includes(q) ?? false) ||
         (loc.administrativeRegion?.toLowerCase().includes(q) ?? false) ||
-        (loc.postalCode?.includes(q) ?? false);
+        (loc.postalCode?.includes(q) ?? false) ||
+        band.referenceEvents.some((ev) =>
+          [ev.eventName, ev.venue, ev.city, ev.description].some((v) => v?.toLowerCase().includes(q))
+        );
       if (!matches) return false;
     }
 

@@ -42,3 +42,16 @@ test('city + description + year -> zwei Zeilen: city allein, dann "description �
     ['Regensburg', 'Wiederkehrendes Engagement · 2024'],
   )
 })
+
+test('venue + city -> eine Zeile "venue, city"; leere Felder erzeugen kein Komma', () => {
+  assert.deepEqual(referenceEventSublines({ venue: 'Euringer', city: 'Paulushofen' }), ['Euringer, Paulushofen'])
+  assert.deepEqual(referenceEventSublines({ venue: 'Euringer' }), ['Euringer'])
+  assert.deepEqual(referenceEventSublines({ city: 'Paulushofen' }), ['Paulushofen'])
+})
+
+test('venue + city + year + description -> Ort in erster Zeile, description · year in zweiter', () => {
+  assert.deepEqual(
+    referenceEventSublines({ venue: 'Euringer', city: 'Paulushofen', year: 2024, description: 'Zusatz' }),
+    ['Euringer, Paulushofen', 'Zusatz · 2024'],
+  )
+})
