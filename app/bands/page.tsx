@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Suspense } from 'react';
 import { getAllBandsFromSupabase } from '@/lib/supabase/queries';
 import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
@@ -7,6 +6,8 @@ import BandExplorer from '@/components/bands/BandExplorer';
 import { BandFinderPageHead } from '@/components/bands/BandFinderPageHead';
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { getBandFinderThemeImages } from '@/lib/bands/bandFinderThemeImages';
+import BandInspirationen, { type InspirationGroup } from '@/components/bands/BandInspirationen';
+import { BANDTYP_PREFERRED_ORDER } from '@/lib/bands/bandtypOrder';
 import { absoluteUrl } from '@/lib/seo/metadata';
 
 export const revalidate = 300;
@@ -35,6 +36,34 @@ export default async function BandsPage() {
     activeBands.some((b) => getBandRegionBucket(b) === r)
   );
 
+  // "Inspirationen fuer dein Event": jede aktive Band genau einmal, bei ihrer
+  // primaeren Bandart; ohne primaere Bandart unter "Weitere". Alle Links
+  // stehen im ausgelieferten HTML (Crawler, siehe BandInspirationen).
+  const byType = new Map<string, InspirationGroup['bands']>();
+  const weitere: InspirationGroup['bands'] = [];
+  for (const band of [...activeBands].sort((a, b) => a.name.localeCompare(b.name, 'de'))) {
+    const entry = {
+      slug: band.slug,
+      name: band.name,
+      place: band.location?.city?.trim() || band.location?.district?.trim() || undefined,
+    };
+    const type = band.primaryBandart?.trim();
+    if (!type) {
+      weitere.push(entry);
+    } else {
+      byType.set(type, [...(byType.get(type) ?? []), entry]);
+    }
+  }
+  const preferred = BANDTYP_PREFERRED_ORDER.filter((t) => byType.has(t));
+  const others = [...byType.keys()]
+    .filter((t) => !BANDTYP_PREFERRED_ORDER.includes(t))
+    .sort((a, b) => byType.get(b)!.length - byType.get(a)!.length || a.localeCompare(b, 'de'));
+  const groups: InspirationGroup[] = [...preferred, ...others].map((label) => ({
+    label,
+    bands: byType.get(label)!,
+  }));
+  if (weitere.length > 0) groups.push({ label: 'Weitere', bands: weitere });
+
   return (
     <main>
       {/* Kompakter Suchkopf (Auftrag "Bandfinder-Redesign") ersetzt den
@@ -53,30 +82,7 @@ export default async function BandsPage() {
             <BandExplorer bands={activeBands} regions={regions} themeImages={themeImages} />
           </Suspense>
         )}
-        {/* Schlichte Linkliste aller aktiven Bands im ausgelieferten HTML:
-            das Grid zeigt zunaechst nur 24 Bands, weitere erst per Klick
-            (Client-JS) -- ohne diese Liste fehlen Crawlern die Links. */}
-        {activeBands.length > 0 && (
-          <nav aria-labelledby="alle-bands-az" className="pl-container-shell px-4 sm:px-6 mt-16">
-            <h2 id="alle-bands-az" className="text-base font-semibold text-pl-text mb-4">
-              Alle Bands von A bis Z
-            </h2>
-            <ul className="columns-1 sm:columns-2 lg:columns-3 gap-6 text-sm">
-              {[...activeBands]
-                .sort((a, b) => a.name.localeCompare(b.name, 'de'))
-                .map((band) => (
-                  <li key={band.id} className="mb-2 break-inside-avoid">
-                    <Link
-                      href={`/band/${band.slug}`}
-                      className="text-pl-text-muted hover:text-pl-text underline underline-offset-2"
-                    >
-                      {band.name}
-                    </Link>
-                  </li>
-                ))}
-            </ul>
-          </nav>
-        )}
+        {groups.length > 0 && <BandInspirationen groups={groups} />}
       </section>
     </main>
   );
