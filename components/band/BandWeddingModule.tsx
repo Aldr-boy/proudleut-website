@@ -70,7 +70,7 @@ export function BandWeddingModule({ band }: Props) {
               {/* Jeder Eintrag bleibt als Ganzes zusammen (inline-block); der
                   Mittelpunkt haengt am vorangehenden Eintrag, damit er nie am
                   Zeilenanfang steht. */}
-              <p className="text-base font-medium text-pl-text leading-relaxed">
+              <p className="text-sm font-medium text-pl-text leading-relaxed">
                 {venues.map((v, i) => (
                   <Fragment key={i}>
                     <span className="inline-block max-w-full break-words">
