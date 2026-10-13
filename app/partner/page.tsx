@@ -25,7 +25,7 @@ type Partner = {
 const PARTNERS: Partner[] = [
   {
     name: 'Kneipenkarussell',
-    text: 'Kneipenwanderung durch Neumarkt mit Live-Bands in vielen Lokalen an einem Abend.',
+    text: 'Kneipenwanderung durch Neumarkt mit Live-Bands in vielen Lokalen an einem Abend. proudleut ist dort fester Partner.',
     href: 'https://kneipenkarussell.de',
     logoSrc: '/images/partner/kneipenkarussell-logo.svg',
     logoAlt: 'Logo Kneipenkarussell',
@@ -42,7 +42,7 @@ export default function PartnerPage() {
       <section className="bg-pl-canvas pb-16 px-0">
         <BandFinderPageHead
           h1="Partner"
-          intro="proudleut arbeitet mit dem Kneipenkarussell zusammen."
+          intro="Gute Livemusik entsteht gemeinsam. Hier stehen Partner, mit denen proudleut Bands und Bühnen in der Region und darüber hinaus zusammenbringt."
         />
 
         <div className="pl-container-shell px-4 sm:px-6 pt-8 md:pt-10 flex flex-col gap-6">
