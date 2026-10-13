@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { Band } from '@/lib/types/band';
 import { hasWeddingContent } from '@/lib/bands/bandWeddingContent';
 import { getSoloFirstName } from '@/lib/bands/solo';
@@ -43,9 +44,25 @@ export function BandWeddingModule({ band }: Props) {
             </p>
           )}
           {venues.length > 0 && (
-            <p className="text-sm text-pl-text-muted mt-3">
-              <span className="font-semibold text-pl-text">Hier gespielt:</span> {venues.join(', ')}
-            </p>
+            <div className="mt-4">
+              <p className="text-xs font-semibold text-pl-text-muted uppercase tracking-wider mb-1.5">
+                Hier feiern wir gerne Hochzeit
+              </p>
+              {/* Jeder Eintrag bleibt als Ganzes zusammen (inline-block); der
+                  Mittelpunkt haengt am vorangehenden Eintrag, damit er nie am
+                  Zeilenanfang steht. */}
+              <p className="text-sm text-pl-text">
+                {venues.map((v, i) => (
+                  <Fragment key={i}>
+                    <span className="inline-block max-w-full">
+                      {v}
+                      {i < venues.length - 1 && <span aria-hidden="true"> ·</span>}
+                    </span>
+                    {i < venues.length - 1 && ' '}
+                  </Fragment>
+                ))}
+              </p>
+            </div>
           )}
         </div>
 
