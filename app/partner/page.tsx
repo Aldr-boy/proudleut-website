@@ -5,7 +5,8 @@ import { BandFinderPageHead } from '@/components/bands/BandFinderPageHead';
 
 export const metadata: Metadata = {
   title: 'Partner',
-  description: 'proudleut arbeitet mit dem Kneipenkarussell zusammen.',
+  description:
+    'Partner von proudleut: Gemeinsam für gute Livemusik in der Region, zum Beispiel mit dem Kneipenkarussell in Neumarkt.',
   alternates: { canonical: absoluteUrl('/partner') },
 };
 
