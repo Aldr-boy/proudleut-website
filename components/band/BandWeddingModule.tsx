@@ -54,7 +54,7 @@ export function BandWeddingModule({ band }: Props) {
               <p className="text-sm text-pl-text">
                 {venues.map((v, i) => (
                   <Fragment key={i}>
-                    <span className="inline-block max-w-full">
+                    <span className="inline-block max-w-full break-words">
                       {v}
                       {i < venues.length - 1 && <span aria-hidden="true"> ·</span>}
                     </span>
