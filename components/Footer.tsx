@@ -26,6 +26,7 @@ const PROUDLEUT_LINKS = [
   { label: 'Über proudleut', href: '/ueber-mich' },
   { label: 'Für Bands', href: '/fuer-bands' },
   { label: 'Musiker hinter den Bands', href: '/musiker' },
+  { label: 'Partner', href: '/partner' },
 ] as const;
 
 const FOCUS_RING =
