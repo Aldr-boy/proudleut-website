@@ -14,9 +14,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Resend } from 'resend';
+import { SITE_URL } from '../lib/seo/metadata.ts';
 import { resolveGreetingName, resolveSignoffName, buildProfileUrl } from '../lib/mail1/mail1.ts';
 
-const ALLOWED_SLUGS = ['freunde-des-brautpaares'];
+const ALLOWED_SLUGS = ['freunde-des-brautpaares', 'donnaweda', 'aufzundn', 'baerntreiber-band', 'heimatfieber', 'bigbeat-band', 'onesee', 'hob-nou'];
 // Kennung der Resend-Vorlage mail1-profil-pruefen (kein Geheimnis).
 const TEMPLATE_ID = '89ad911c-24f6-49b2-bc39-c04e7a9da91e';
 
@@ -34,6 +35,7 @@ function loadEnvFile(file) {
 const args = process.argv.slice(2);
 const slug = args[args.indexOf('--slug') + 1];
 const doSend = args.includes('--send');
+const noMark = args.includes('--no-mark'); // Testversand: "zuletzt angefragt am" nicht setzen
 
 if (!slug || !ALLOWED_SLUGS.includes(slug)) {
   console.error(`Abbruch: --slug muss einer von [${ALLOWED_SLUGS.join(', ')}] sein.`);
@@ -73,6 +75,7 @@ const pc = primaries[0];
 const variables = {
   ANREDE_NAME: resolveGreetingName(pc.spitzname, pc.contact_name),
   PROFIL_LINK: buildProfileUrl(band.slug),
+  MUSIKER_LINK: `${SITE_URL}/musiker`,
   SCHLUSSNAME: resolveSignoffName(pc.calls_me_as),
 };
 const from = `Alexander Dressler <${senderEmail}>`;
@@ -118,6 +121,10 @@ if (sendResult.error || !sendResult.data?.id) {
 }
 console.log(`Resend hat die Mail angenommen (ID ${sendResult.data.id}).`);
 
+if (noMark) {
+  console.log('--no-mark: "zuletzt angefragt am" bleibt unveraendert.');
+  process.exit(0);
+}
 const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(new Date());
 const upd = await fetch(`${supaUrl}/rest/v1/bands?id=eq.${band.id}&review_requested_at=is.null`, {
   method: 'PATCH',

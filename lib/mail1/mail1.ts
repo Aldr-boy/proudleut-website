@@ -69,11 +69,9 @@ export function resolveSignoffName(callsMeAs: string | null): string {
   return clean(callsMeAs) || MAIL1_DEFAULT_SIGNOFF_NAME;
 }
 
-// Bewusst das bisherige Profil-Format /bands/<slug>: www.proudleut.com zeigt
-// bis zum Domain-Umzug noch auf Webflow (nur /bands/<slug>), danach leitet
-// legacyRedirects.ts /bands/<slug> auf /band/<slug> weiter.
+// Direkter Profil-Pfad /band/<slug> (nach dem Domain-Umzug, ohne Weiterleitung).
 export function buildProfileUrl(slug: string): string {
-  return `${SITE_URL}/bands/${slug}`;
+  return `${SITE_URL}/band/${slug}`;
 }
 
 function esc(s: string): string {
