@@ -134,6 +134,16 @@ export default async function VeranstaltungPage({ params }: Props) {
             />
           </Suspense>
         )}
+        {slug === 'festzelt' && (
+          <div className="pl-container-shell px-4 sm:px-6 pt-8">
+            <Link
+              href="/veranstaltung/festzelt/bayern"
+              className="text-pl-primary text-sm font-medium hover:opacity-80 motion-safe:transition-opacity"
+            >
+              Festzeltbands aus Bayern: Auswahl und Tipps →
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Verwandte Kategorien – immer sichtbar. Bühnenfläche (bg-pl-stage)
