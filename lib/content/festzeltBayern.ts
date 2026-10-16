@@ -1,7 +1,8 @@
 // Inhalt der Themenseite /veranstaltung/festzelt/bayern. Quelle und Wortlaut:
-// docs/festzelt-bayern.md (wörtlich übernommen). Die Bandzeilen kommen
-// bewusst aus dieser Datei, nicht aus der Datenbank; die Slugs dienen nur
-// dazu, jeden Bandnamen mit der Bandseite /band/<slug> zu verlinken.
+// docs/festzelt-bayern.md (Version 2, wörtlich übernommen). Name, Ort,
+// Besetzung und Anlass-Tags der Bandkarten kommen aus den Bandprofilen, die
+// Zeile "claim" aus dieser Datei; die Slugs dienen nur der Auswahl und der
+// Verlinkung der Bands.
 
 export const FESTZELT_BAYERN_PATH = '/veranstaltung/festzelt/bayern';
 
@@ -18,38 +19,33 @@ export const festzeltBayernMeta = {
   canonical: 'https://www.proudleut.com/veranstaltung/festzelt/bayern',
 };
 
-export const festzeltBayernIntro =
-  'In Bayern wird gern und ausgiebig gefeiert – auf Volksfesten und Dulten, bei Kirchweihen, Vereinsfesten und vielen weiteren Anlässen. Die passende Musik gehört dazu: von traditioneller Volksmusik und Brassbands bis zur bayerischen Partyband. Hier findest du Bands, die Festzelt und Festplatz im Programm haben und die wir für solche Feste ausgewählt haben.';
+export const festzeltBayernHero = {
+  imageSrc: '/images/veranstaltung/festzelt-gruendungsfest-wappersdorf.jpg',
+  imageAlt:
+    'Einzug mit Fahnenabordnungen ins Festzelt beim Gründungsfest der Freiwilligen Feuerwehr Wappersdorf, jubelnde Gäste und Konfetti',
+  caption:
+    'Einzug beim Gründungsfest der Freiwilligen Feuerwehr Wappersdorf, 2019. Foto: Florian Schlegel – Photo & more',
+  headline: 'Festzeltbands aus Bayern',
+  audience: 'Für Festwirte, Vereine, Gemeinden und Feuerwehren',
+  intro:
+    'In Bayern wird gern und ausgiebig gefeiert – auf Volksfesten und Dulten, bei Kirchweihen, Vereinsfesten und vielen weiteren Anlässen. Die passende Musik gehört dazu: von traditioneller Volksmusik und Brassbands bis zur bayerischen Partyband. Hier findest du Bands, die Festzelt und Festplatz im Programm haben und die wir für solche Feste ausgewählt haben.',
+  primaryButton: 'Bands ansehen',
+  secondaryButton: 'Alle Festzeltbands ansehen →',
+};
 
-export const festzeltBayernAudience = 'Für Festwirte, Vereine, Gemeinden und Feuerwehren.';
-
-export const festzeltBayernTips = {
-  heading: 'Worauf du bei einer Zeltband achten solltest',
+export const festzeltBayernSteps = {
+  title: 'SO LÄUFT`S AUF PROUDLEUT',
   items: [
-    {
-      lead: 'Spielzeit.',
-      text: 'In Festzelten ist meist gegen Mitternacht Zapfenstreich. Eine Partyband spielt deshalb häufig rund fünf Stunden, zum Beispiel von 19 bis 24 Uhr. Manche Bands spielen nur drei oder vier Stunden. Konzertantere Bands spielen oft nur etwa zwei Stunden, dann muss eine zweite Band den Abend übernehmen.',
-    },
-    {
-      lead: 'Technik und Anlage.',
-      text: 'Nach unserer Erfahrung steht bei großen Festzelten die Technik zunehmend schon, zum Beispiel auf dem Gillamoos, der Dult in Regensburg oder Landshut und in Floß. Das macht die Organisation einfacher und schneller. Wo das nicht so ist, bringt die Band Licht und Ton mit, und das wirkt sich auf die Gage aus.',
-    },
-    {
-      lead: 'Lautstärke.',
-      text: 'Die Lautstärke gibt der Veranstalter oder Festwirt vor, und die Band sollte sich daran halten. Sprecht das vorab ab.',
-    },
-    {
-      lead: 'Bühne und Strom.',
-      text: 'Die Anforderungen an die Bühne stehen im Technical Rider der Band, klärt sie vorab. Standard-Festzeltbühnen bieten nach unserer Erfahrung oft genug Platz, auch für große Besetzungen wie eine Blaskapelle. Als Beispiel für eine einzelne Band: Laut ihrer Bühnenanweisung (Stand Februar 2026) braucht Donnaweda die Bühne fünf Stunden vor Beginn für Aufbau und Soundcheck, mindestens 7 × 4 Meter Fläche und einen eigenen 63-A-Stromanschluss. Andere Bands haben andere Anforderungen.',
-    },
+    'Bands in der Merkliste sammeln, bis zu acht.',
+    'Buchungsanfrage abschicken, an mehrere Bands gleichzeitig.',
+    'Direkt mit der Band weitersprechen.',
   ],
 };
 
 export type FestzeltBayernBand = {
   slug: string;
-  name: string;
-  ort: string;
-  text: string;
+  claim: string;
+  betreut?: boolean;
 };
 
 export type FestzeltBayernGroup = {
@@ -57,7 +53,7 @@ export type FestzeltBayernGroup = {
   bands: FestzeltBayernBand[];
 };
 
-export const festzeltBayernBandsHeading = 'Unsere Zeltbands';
+export const festzeltBayernBetreutHinweis = 'Von mir betreut';
 
 export const festzeltBayernGroups: FestzeltBayernGroup[] = [
   {
@@ -65,107 +61,69 @@ export const festzeltBayernGroups: FestzeltBayernGroup[] = [
     bands: [
       {
         slug: 'donnaweda',
-        name: 'Donnaweda',
-        ort: 'Hemau',
-        text: 'Bayrische Partyband mit fünf Musikern, wiederkehrend auf der Dult in Regensburg und dem Gillamoos in Abensberg, 2024 auch auf der Flosser Kirwa. Die Band betreue ich selbst.',
+        claim:
+          'Wiederkehrend auf der Dult in Regensburg und dem Gillamoos in Abensberg, 2024 auch auf der Flosser Kirwa.',
+        betreut: true,
       },
-      {
-        slug: 'd-quertreiber',
-        name: 'Quertreiber',
-        ort: 'Ensdorf',
-        text: 'Bayrische Partyband mit fünf Musikern, buchbar für Festzelt, Kirchweih, Volksfest und Vereinsfest.',
-      },
-      {
-        slug: 'groegoetz-weissbir',
-        name: 'Grögötz Weißbir',
-        ort: 'Ensdorf',
-        text: 'Bayrische Partyband mit vier Musikern, „Ein Rausch für die Ohren!", buchbar für Festzelt, Bierfest, Brauereifest und Stadtfest.',
-      },
-      {
-        slug: 'getthatmusic-band',
-        name: 'GetThat!',
-        ort: 'Augsburg',
-        text: 'Partyband mit sieben Musikern, buchbar für Festzelt, Volksfest, Dult und Kirchweih.',
-      },
-      {
-        slug: 'zruck-zu-dir',
-        name: 'zruck zu Dir!',
-        ort: 'Zolling',
-        text: '„Die Partyband aus der Hallertau", fünf Musiker, buchbar für Festzelt, Kirchweih, Dult und Vereinsfest.',
-      },
-      {
-        slug: 'die-haumdaucher',
-        name: 'Die Haumdaucher',
-        ort: 'Pegnitz',
-        text: 'Bayrische Partyband mit sechs Musikern, „Stimmung bis das Zelt abhebt", buchbar für Festzelt, Volksfest, Kirchweih und Sportfest.',
-      },
-      {
-        slug: 'herbn-beets',
-        name: "Herb'n Beets",
-        ort: 'Gangkofen',
-        text: '„Die Partyband aus dem Rottal", fünf Musiker, buchbar für Festzelt, Dult, Gründungsfest und Vereinsfest.',
-      },
+      { slug: 'd-quertreiber', claim: '' },
+      { slug: 'groegoetz-weissbir', claim: '„Ein Rausch für die Ohren!“' },
+      { slug: 'getthatmusic-band', claim: '' },
+      { slug: 'zruck-zu-dir', claim: '„Die Partyband aus der Hallertau“' },
+      { slug: 'die-haumdaucher', claim: '„Stimmung bis das Zelt abhebt“' },
+      { slug: 'herbn-beets', claim: '„Die Partyband aus dem Rottal“' },
     ],
   },
   {
     heading: 'Volksmusik und Blasmusik',
     bands: [
-      {
-        slug: 'blechhilfswerk',
-        name: 'Blechhilfswerk',
-        ort: 'Eichstätt',
-        text: 'Blasmusik mit sieben Musikern, „4 von 5 Zahnärzten empfehlen unsere Blasmusik", buchbar für Festzelt, Bierfest, Brauereifest und Jubiläum.',
-      },
-      {
-        slug: 'tegernseer-tanzlmusi',
-        name: 'Tegernseer Tanzlmusi',
-        ort: 'Kreuth',
-        text: 'Alpenländische Volks- und Wirtshausmusik, als Duo oder Trio buchbar, für Festzelt, Bierfest, Biergarten und Kirchweih.',
-      },
-      {
-        slug: 'dezent-boehmisch',
-        name: 'Dezent Böhmisch',
-        ort: 'Beratzhausen',
-        text: 'Volksmusik, „jung, dynamisch und unverbraucht", buchbar für Festzelt, Kirchweih, Gründungsfest und Vereinsfest.',
-      },
-      {
-        slug: 'boehmisches-verlangen',
-        name: 'Böhmisches Verlangen',
-        ort: 'Erlangen',
-        text: 'Blasmusik „traditionell, böhmisch, modern", sieben Musiker, buchbar für Festzelt, Bierfest, Brauereifest und Stadtfest.',
-      },
+      { slug: 'blechhilfswerk', claim: '„4 von 5 Zahnärzten empfehlen unsere Blasmusik“' },
+      { slug: 'tegernseer-tanzlmusi', claim: 'Alpenländische Volks- und Wirtshausmusik.' },
+      { slug: 'dezent-boehmisch', claim: '„jung, dynamisch und unverbraucht“' },
+      { slug: 'boehmisches-verlangen', claim: '„Blasmusik – traditionell, böhmisch, modern“' },
     ],
   },
   {
     heading: 'Brass',
     bands: [
-      {
-        slug: 'blechstreet-boys',
-        name: 'Blechstreet Boys',
-        ort: 'Memmelsdorf bei Bamberg',
-        text: 'Future-Brass-Partyband mit neun Musikern, buchbar für Festzelt, Brauereifest, Bierfest und Gründungsfest.',
-      },
-      {
-        slug: 'muckasaeck',
-        name: 'Muckasäck',
-        ort: 'Ruderatshofen',
-        text: 'Brass-Partyband, „Mitreis(s)ende Euphorie", buchbar für Festzelt, Bierfest, Brauereifest und Open Air.',
-      },
-      {
-        slug: 'kapelle-quetschnblech',
-        name: 'Quetschnblech',
-        ort: 'Vilsbiburg',
-        text: 'Brass und Volksmusik mit zehn Musikern, „bavarian lifestyle | dancefloor groove", buchbar für Festzelt, Volksfest, Oktoberfest und Frühschoppen.',
-      },
+      { slug: 'blechstreet-boys', claim: 'Future-Brass-Partyband.' },
+      { slug: 'muckasaeck', claim: '„Mitreis(s)ende Euphorie“' },
+      { slug: 'kapelle-quetschnblech', claim: '„bavarian lifestyle | dancefloor groove“' },
     ],
   },
 ];
 
 export const festzeltBayernAllBandsLabel = 'Alle Festzeltbands ansehen';
 
+export const festzeltBayernOrga = {
+  heading: 'Ein großes Fest braucht eine gute Orga. Dies können Fragen im Festzelt in puncto Musik sein',
+  items: [
+    {
+      title: 'Spielzeit: Meist bis Mitternacht',
+      text: 'In Festzelten ist meist gegen Mitternacht Zapfenstreich. Eine Partyband spielt deshalb häufig rund fünf Stunden, zum Beispiel von 19 bis 24 Uhr. Manche Bands spielen nur drei oder vier Stunden. Konzertantere Bands spielen oft nur etwa zwei Stunden, dann muss eine zweite Band den Abend übernehmen.',
+    },
+    {
+      title: 'Technik und Anlage: Steht oft schon',
+      text: 'Nach unserer Erfahrung steht bei großen Festzelten die Technik zunehmend schon, zum Beispiel auf dem Gillamoos, der Dult in Regensburg oder Landshut, oder wie auf der Flosser Kirwa. Das macht die Organisation einfacher und schneller. Wo das nicht so ist, bringt die Band Licht und Ton mit, wobei sich dies natürlich auf die Bandgage auswirkt.',
+    },
+    {
+      title: 'Lautstärke: Der Veranstalter gibt hier den Ton an',
+      text: 'Die Lautstärke gibt der Veranstalter oder Festwirt vor, und die Band sollte sich daran halten. Sprecht das vorab ab.',
+    },
+    {
+      title: 'Bühne und Strom: Im Technical Rider geklärt',
+      text: 'Die Anforderungen an die Bühne stehen im Technical Rider der Band, klärt sie vorab. Standard-Festzeltbühnen bieten nach unserer Erfahrung oft genug Platz, auch für große Besetzungen wie eine Blaskapelle. Als Beispiel für eine einzelne Band: Laut ihrer Bühnenanweisung (Stand Februar 2026) braucht Donnaweda die Bühne fünf Stunden vor Beginn für Aufbau und Soundcheck, mindestens 7 × 4 Meter Fläche und einen eigenen 63-A-Stromanschluss. Andere Bands haben andere Anforderungen.',
+    },
+  ],
+};
+
 export const festzeltBayernPrice = {
   heading: 'Preisorientierung',
   text: 'Die Gage hängt vor allem von der Bekanntheit der Band ab. Nach unseren Erfahrungen liegen weniger bekannte Zeltbands bei etwa 1.500 bis 2.800 € ohne Licht- und Tonanlage, regional bekannte Bands eher bei 3.500 bis 5.500 €. Nach oben gibt es kein Ende, sehr bekannte Bands kosten deutlich mehr. Bringt die Band Licht und Ton mit, wirkt sich das auf die Gage aus. Lass dir im Angebot bestätigen, was enthalten ist.',
+  cards: [
+    { label: 'Weniger bekannte Zeltbands', value: 'etwa 1.500 bis 2.800 €', note: '(ohne Licht- und Tonanlage)' },
+    { label: 'Regional bekannte Bands', value: 'etwa 3.500 bis 5.500 €', note: '' },
+    { label: 'Sehr bekannte Bands', value: 'deutlich mehr', note: '(Nach oben gibt es kein Ende.)' },
+  ],
 };
 
 export const festzeltBayernFaq = {
@@ -187,6 +145,12 @@ export const festzeltBayernFaq = {
         'Ja, und das ist oft sinnvoll. Konzertantere Bands spielen nur etwa zwei Stunden, dann übernimmt eine zweite Band, und bei mehrtägigen Festen spielt häufig an jedem Tag eine andere. Du kannst bis zu acht Bands in der Merkliste sammeln und gleichzeitig anfragen. So findest du schneller eine freie Band und bekommst einen guten Überblick über die Preise.',
     },
   ],
+};
+
+export const festzeltBayernClosing = {
+  heading: 'Bands merken und anfragen',
+  text: 'Sammle bis zu acht Bands in der Merkliste und frag sie gleichzeitig an.',
+  button: 'Alle Festzeltbands ansehen',
 };
 
 // Bands der Auswahl, die in der übergebenen Menge aktiver Slugs vorkommen
