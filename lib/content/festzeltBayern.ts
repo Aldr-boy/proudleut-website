@@ -59,12 +59,7 @@ export const festzeltBayernGroups: FestzeltBayernGroup[] = [
   {
     heading: 'Bayrische Partybands',
     bands: [
-      {
-        slug: 'donnaweda',
-        claim:
-          'Wiederkehrend auf der Dult in Regensburg und dem Gillamoos in Abensberg, 2024 auch auf der Flosser Kirwa.',
-        betreut: true,
-      },
+      { slug: 'donnaweda', claim: '' },
       { slug: 'd-quertreiber', claim: '' },
       { slug: 'groegoetz-weissbir', claim: '' },
       { slug: 'getthatmusic-band', claim: '' },

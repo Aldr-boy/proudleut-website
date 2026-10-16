@@ -19,8 +19,7 @@ schritte:
 auswahl_intern:
   Bayrische Partybands:
     - slug: donnaweda
-      claim: "Wiederkehrend auf der Dult in Regensburg und dem Gillamoos in Abensberg, 2024 auch auf der Flosser Kirwa."
-      betreut: true
+      claim: ""
     - slug: d-quertreiber
       claim: ""
     - slug: groegoetz-weissbir
