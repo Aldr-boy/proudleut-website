@@ -27,6 +27,9 @@ export type SitemapSourceData = {
   categorySlugs: Array<string | null | undefined>
   bandSlugs: Array<string | null | undefined>
   peopleSlugs: Array<string | null | undefined>
+  // Zusaetzliche indexierbare Themenseiten (z. B. /veranstaltung/festzelt/bayern);
+  // der Aufrufer uebergibt sie nur, wenn sie die Mindestzahl Bands erreichen.
+  themePaths?: string[]
 }
 
 // Reine, ohne Netzwerk testbare Sitemap-Aufbaulogik (Paket 2). app/sitemap.ts
@@ -61,5 +64,9 @@ export function buildSitemapEntries(data: SitemapSourceData): MetadataRoute.Site
     url: absoluteUrl(`/musiker/${slug}`),
   }))
 
-  return [...staticEntries, ...categoryEntries, ...bandEntries, ...peopleEntries]
+  const themeEntries: MetadataRoute.Sitemap = (data.themePaths ?? []).map((path) => ({
+    url: absoluteUrl(path),
+  }))
+
+  return [...staticEntries, ...categoryEntries, ...themeEntries, ...bandEntries, ...peopleEntries]
 }
