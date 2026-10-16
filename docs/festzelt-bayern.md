@@ -13,42 +13,42 @@ hero:
   button_sekundaer_ziel: https://www.proudleut.com/bands?anlass=festzelt
 schritte_titel: SO LÄUFT`S AUF PROUDLEUT
 schritte:
-  - Bands in der Merkliste sammeln, bis zu acht.
+  - Bands mit dem Herz in der Merkliste sammeln, bis zu acht.
   - Buchungsanfrage abschicken, an mehrere Bands gleichzeitig.
   - Direkt mit der Band weitersprechen.
 auswahl_intern:
-  Partybands:
+  Bayrische Partybands:
     - slug: donnaweda
       claim: "Wiederkehrend auf der Dult in Regensburg und dem Gillamoos in Abensberg, 2024 auch auf der Flosser Kirwa."
       betreut: true
     - slug: d-quertreiber
       claim: ""
     - slug: groegoetz-weissbir
-      claim: "„Ein Rausch für die Ohren!“"
+      claim: ""
     - slug: getthatmusic-band
       claim: ""
     - slug: zruck-zu-dir
-      claim: "„Die Partyband aus der Hallertau“"
+      claim: ""
     - slug: die-haumdaucher
-      claim: "„Stimmung bis das Zelt abhebt“"
+      claim: ""
     - slug: herbn-beets
-      claim: "„Die Partyband aus dem Rottal“"
+      claim: ""
   Volksmusik und Blasmusik:
     - slug: blechhilfswerk
-      claim: "„4 von 5 Zahnärzten empfehlen unsere Blasmusik“"
+      claim: ""
     - slug: tegernseer-tanzlmusi
-      claim: "Alpenländische Volks- und Wirtshausmusik."
+      claim: ""
     - slug: dezent-boehmisch
-      claim: "„jung, dynamisch und unverbraucht“"
+      claim: ""
     - slug: boehmisches-verlangen
-      claim: "„Blasmusik – traditionell, böhmisch, modern“"
+      claim: ""
   Brass:
     - slug: blechstreet-boys
-      claim: "Future-Brass-Partyband."
+      claim: ""
     - slug: muckasaeck
-      claim: "„Mitreis(s)ende Euphorie“"
+      claim: ""
     - slug: kapelle-quetschnblech
-      claim: "„bavarian lifestyle | dancefloor groove“"
+      claim: ""
 betreut_hinweis: Von mir betreut
 ---
 
@@ -58,9 +58,9 @@ Für Festwirte, Vereine, Gemeinden und Feuerwehren
 
 In Bayern wird gern und ausgiebig gefeiert – auf Volksfesten und Dulten, bei Kirchweihen, Vereinsfesten und vielen weiteren Anlässen. Die passende Musik gehört dazu: von traditioneller Volksmusik und Brassbands bis zur bayerischen Partyband. Hier findest du Bands, die Festzelt und Festplatz im Programm haben und die wir für solche Feste ausgewählt haben.
 
-## Partybands
+## Bayrische Partybands
 
-(Bandkarten aus auswahl_intern, Gruppe Partybands)
+(Bandkarten aus auswahl_intern, Gruppe Bayrische Partybands)
 
 ## Volksmusik und Blasmusik
 
@@ -108,8 +108,8 @@ Ja, und das ist oft sinnvoll. Konzertantere Bands spielen nur etwa zwei Stunden,
 
 ## Abschluss
 
-Bands merken und anfragen
+Gefällt dir eine Band? Merk sie dir.
 
-Sammle bis zu acht Bands in der Merkliste und frag sie gleichzeitig an.
+Tippe bei einer Band auf das Herz. In deiner Merkliste sammelst du bis zu acht Bands, schickst eine Buchungsanfrage an alle gleichzeitig und sprichst danach direkt mit den Bands.
 
 [Alle Festzeltbands ansehen](https://www.proudleut.com/bands?anlass=festzelt)

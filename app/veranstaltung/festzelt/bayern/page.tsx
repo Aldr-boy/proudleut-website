@@ -9,7 +9,6 @@ import {
   FESTZELT_BAYERN_ALL_BANDS_URL,
   FESTZELT_BAYERN_MIN_BANDS,
   countFestzeltBayernBands,
-  festzeltBayernAllBandsLabel,
   festzeltBayernBetreutHinweis,
   festzeltBayernClosing,
   festzeltBayernFaq,
@@ -25,6 +24,8 @@ export const revalidate = 300;
 
 const BTN_PRIMARY =
   'inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-pl-accent text-pl-on-accent text-base font-semibold hover:bg-pl-accent-hover motion-safe:transition-colors';
+const BTN_SECONDARY_ON_LIGHT =
+  'inline-flex items-center justify-center px-6 py-3.5 rounded-full border border-pl-soft text-pl-text text-base font-semibold hover:border-pl-accent hover:text-pl-accent motion-safe:transition-colors';
 const BTN_SECONDARY_ON_STAGE =
   'inline-flex items-center justify-center px-6 py-3.5 rounded-full border border-pl-on-stage-muted text-pl-on-stage text-base font-semibold hover:border-pl-accent-light hover:bg-pl-stage-elevated motion-safe:transition-colors';
 
@@ -82,7 +83,7 @@ export default async function FestzeltBayernPage() {
       {/* Kopf: Vollbild-Foto, dunkle Abdeckung (links stark, rechts schwach),
           auf dem Handy zusätzlich eine gleichmäßige Abdeckung für die
           Lesbarkeit. Bildnachweis unter dem Block "So läuft's". */}
-      <section className="relative overflow-hidden bg-pl-stage" aria-labelledby="festzelt-bayern-h1">
+      <section className="relative overflow-hidden bg-pl-stage min-h-screen min-h-svh flex flex-col justify-end" aria-labelledby="festzelt-bayern-h1">
         <Image
           src={hero.imageSrc}
           alt={hero.imageAlt}
@@ -100,7 +101,7 @@ export default async function FestzeltBayernPage() {
           }}
         />
         <div className="absolute inset-0 bg-pl-stage/40 pointer-events-none md:hidden" />
-        <div className="relative z-10 pl-container-shell px-4 sm:px-6 pt-28 md:pt-36 pb-12 md:pb-20">
+        <div className="relative z-10 w-full pl-container-shell px-4 sm:px-6 pt-28 md:pt-36 pb-12 md:pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-10 lg:gap-16 items-end">
             <div className="max-w-[640px]">
               <h1
@@ -184,14 +185,11 @@ export default async function FestzeltBayernPage() {
               </div>
             </div>
           ))}
-          <p className="mt-10">
-            <a
-              href={FESTZELT_BAYERN_ALL_BANDS_URL}
-              className="text-pl-accent underline hover:text-pl-accent-link-hover"
-            >
-              {festzeltBayernAllBandsLabel}
-            </a>
-          </p>
+          <div className="mt-10">
+            <Button href={FESTZELT_BAYERN_ALL_BANDS_URL} className={BTN_SECONDARY_ON_LIGHT}>
+              {festzeltBayernHero.secondaryButton}
+            </Button>
+          </div>
         </div>
       </section>
 

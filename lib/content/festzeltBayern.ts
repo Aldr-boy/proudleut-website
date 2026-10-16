@@ -36,7 +36,7 @@ export const festzeltBayernHero = {
 export const festzeltBayernSteps = {
   title: 'SO LÄUFT`S AUF PROUDLEUT',
   items: [
-    'Bands in der Merkliste sammeln, bis zu acht.',
+    'Bands mit dem Herz in der Merkliste sammeln, bis zu acht.',
     'Buchungsanfrage abschicken, an mehrere Bands gleichzeitig.',
     'Direkt mit der Band weitersprechen.',
   ],
@@ -57,7 +57,7 @@ export const festzeltBayernBetreutHinweis = 'Von mir betreut';
 
 export const festzeltBayernGroups: FestzeltBayernGroup[] = [
   {
-    heading: 'Partybands',
+    heading: 'Bayrische Partybands',
     bands: [
       {
         slug: 'donnaweda',
@@ -66,33 +66,31 @@ export const festzeltBayernGroups: FestzeltBayernGroup[] = [
         betreut: true,
       },
       { slug: 'd-quertreiber', claim: '' },
-      { slug: 'groegoetz-weissbir', claim: '„Ein Rausch für die Ohren!“' },
+      { slug: 'groegoetz-weissbir', claim: '' },
       { slug: 'getthatmusic-band', claim: '' },
-      { slug: 'zruck-zu-dir', claim: '„Die Partyband aus der Hallertau“' },
-      { slug: 'die-haumdaucher', claim: '„Stimmung bis das Zelt abhebt“' },
-      { slug: 'herbn-beets', claim: '„Die Partyband aus dem Rottal“' },
+      { slug: 'zruck-zu-dir', claim: '' },
+      { slug: 'die-haumdaucher', claim: '' },
+      { slug: 'herbn-beets', claim: '' },
     ],
   },
   {
     heading: 'Volksmusik und Blasmusik',
     bands: [
-      { slug: 'blechhilfswerk', claim: '„4 von 5 Zahnärzten empfehlen unsere Blasmusik“' },
-      { slug: 'tegernseer-tanzlmusi', claim: 'Alpenländische Volks- und Wirtshausmusik.' },
-      { slug: 'dezent-boehmisch', claim: '„jung, dynamisch und unverbraucht“' },
-      { slug: 'boehmisches-verlangen', claim: '„Blasmusik – traditionell, böhmisch, modern“' },
+      { slug: 'blechhilfswerk', claim: '' },
+      { slug: 'tegernseer-tanzlmusi', claim: '' },
+      { slug: 'dezent-boehmisch', claim: '' },
+      { slug: 'boehmisches-verlangen', claim: '' },
     ],
   },
   {
     heading: 'Brass',
     bands: [
-      { slug: 'blechstreet-boys', claim: 'Future-Brass-Partyband.' },
-      { slug: 'muckasaeck', claim: '„Mitreis(s)ende Euphorie“' },
-      { slug: 'kapelle-quetschnblech', claim: '„bavarian lifestyle | dancefloor groove“' },
+      { slug: 'blechstreet-boys', claim: '' },
+      { slug: 'muckasaeck', claim: '' },
+      { slug: 'kapelle-quetschnblech', claim: '' },
     ],
   },
 ];
-
-export const festzeltBayernAllBandsLabel = 'Alle Festzeltbands ansehen';
 
 export const festzeltBayernOrga = {
   heading: 'Ein großes Fest braucht eine gute Orga. Dies können Fragen im Festzelt in puncto Musik sein',
@@ -148,8 +146,8 @@ export const festzeltBayernFaq = {
 };
 
 export const festzeltBayernClosing = {
-  heading: 'Bands merken und anfragen',
-  text: 'Sammle bis zu acht Bands in der Merkliste und frag sie gleichzeitig an.',
+  heading: 'Gefällt dir eine Band? Merk sie dir.',
+  text: 'Tippe bei einer Band auf das Herz. In deiner Merkliste sammelst du bis zu acht Bands, schickst eine Buchungsanfrage an alle gleichzeitig und sprichst danach direkt mit den Bands.',
   button: 'Alle Festzeltbands ansehen',
 };
 
