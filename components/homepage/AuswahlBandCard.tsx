@@ -102,10 +102,11 @@ export default function AuswahlBandCard({
           das Merk-Herz liegt darueber (z-10) und ist kein Kind des Links. */}
       <Link
         href={`/band/${band.slug}`}
-        aria-label={`Zum Bandprofil: ${band.name}`}
         className="absolute inset-0 z-0 focus:outline-none focus-visible:outline-2
                    focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--pl-accent)]"
-      />
+      >
+        <span className="sr-only">Zum Bandprofil: {band.name}</span>
+      </Link>
     </div>
   );
 }

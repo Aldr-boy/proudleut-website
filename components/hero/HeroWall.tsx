@@ -37,6 +37,7 @@ export type HeroWallImage = {
   id: string
   url: string
   heroFocus: string | null
+  alt?: string
 }
 
 // Reale Seitenverhaeltnisse aus dem Hero-Studio-Code (Abschnitt 1,
@@ -135,7 +136,7 @@ function Tile({
           Elemente aus heroWallPreloadLinks.ts (siehe HeroImageWall). */}
       <Image
         src={slot.image.url}
-        alt=""
+        alt={slot.image.alt ?? ''}
         fill
         className={`object-cover ${objectPositionClass}`}
         sizes={sizes}
