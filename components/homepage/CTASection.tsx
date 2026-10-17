@@ -15,7 +15,7 @@ export default function CTASection() {
     <section className="relative overflow-hidden pt-24 md:pt-36 pb-16 md:pb-24 px-4 sm:px-6 text-center">
       <Image
         src="/images/referenz-events/donnaweda-gruendungsfest-stimmung.webp"
-        alt=""
+        alt="Feiernde Gäste mit erhobenen Armen in einem geschmückten Festzelt, im Hintergrund spielt Donnaweda auf der Bühne."
         fill
         className="object-cover object-[center_55%] pointer-events-none"
         sizes="100vw"
