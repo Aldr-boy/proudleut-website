@@ -144,6 +144,16 @@ export default async function VeranstaltungPage({ params }: Props) {
             </Link>
           </div>
         )}
+        {slug === 'hochzeit' && (
+          <div className="pl-container-shell px-4 sm:px-6 pt-8">
+            <Link
+              href="/veranstaltung/hochzeit/oberpfalz"
+              className="text-pl-primary text-sm font-medium hover:opacity-80 motion-safe:transition-opacity"
+            >
+              Hochzeitsbands aus der Oberpfalz: Auswahl und Tipps →
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Verwandte Kategorien – immer sichtbar. Bühnenfläche (bg-pl-stage)

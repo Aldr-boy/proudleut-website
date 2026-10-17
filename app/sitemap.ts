@@ -9,6 +9,12 @@ import {
   countFestzeltBayernBands,
   resolveFestzeltBayernGroups,
 } from '@/lib/content/festzeltBayern'
+import {
+  HOCHZEIT_OBERPFALZ_MIN_BANDS,
+  HOCHZEIT_OBERPFALZ_PATH,
+  countHochzeitOberpfalzBands,
+  resolveHochzeitOberpfalzGroups,
+} from '@/lib/content/hochzeitOberpfalz'
 
 // Gleicher Revalidierungstakt wie der bestehende ISR-Rhythmus fuer
 // Airtable-/Kategoriedaten im Projekt (siehe CLAUDE.md, "alle 5-10
@@ -27,11 +33,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const bandSlugs = ((bandsData ?? []) as SlugRow[]).map((b) => b.slug)
   const activeSlugs = new Set(bandSlugs.filter((s): s is string => !!s))
   const festzeltBayernBands = countFestzeltBayernBands(resolveFestzeltBayernGroups(activeSlugs))
+  const hochzeitOberpfalzBands = countHochzeitOberpfalzBands(resolveHochzeitOberpfalzGroups(activeSlugs))
 
   return buildSitemapEntries({
     categorySlugs: CATEGORIES.map((c) => c.slug),
     bandSlugs,
     peopleSlugs: ((peopleData ?? []) as SlugRow[]).map((p) => p.slug),
-    themePaths: festzeltBayernBands >= FESTZELT_BAYERN_MIN_BANDS ? [FESTZELT_BAYERN_PATH] : [],
+    themePaths: [
+      ...(festzeltBayernBands >= FESTZELT_BAYERN_MIN_BANDS ? [FESTZELT_BAYERN_PATH] : []),
+      ...(hochzeitOberpfalzBands >= HOCHZEIT_OBERPFALZ_MIN_BANDS ? [HOCHZEIT_OBERPFALZ_PATH] : []),
+    ],
   })
 }
