@@ -10,6 +10,7 @@ import {
   HOCHZEIT_OBERPFALZ_ALL_BANDS_URL,
   HOCHZEIT_OBERPFALZ_MIN_BANDS,
   countHochzeitOberpfalzBands,
+  hochzeitOberpfalzBlasmusik,
   hochzeitOberpfalzClosing,
   hochzeitOberpfalzFaq,
   hochzeitOberpfalzHero,
@@ -178,6 +179,25 @@ export default async function HochzeitOberpfalzPage() {
             <Button href={HOCHZEIT_OBERPFALZ_ALL_BANDS_URL} className={BTN_SECONDARY_ON_LIGHT}>
               {HOCHZEIT_OBERPFALZ_ALL_BANDS_LABEL}
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Blasmusik und Volksmusik: Links auf die Bandprofile (dort sitzt das Anfrageformular) */}
+      <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6" aria-labelledby="hochzeit-oberpfalz-blasmusik">
+        <div className="pl-container-shell">
+          <div className="max-w-[820px]">
+            <h2 id="hochzeit-oberpfalz-blasmusik" className="text-2xl md:text-3xl font-bold text-pl-text mb-4">
+              {hochzeitOberpfalzBlasmusik.heading}
+            </h2>
+            <p className="text-pl-text-muted leading-relaxed">{hochzeitOberpfalzBlasmusik.text}</p>
+            <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              {hochzeitOberpfalzBlasmusik.bands.map((b) => (
+                <Button key={b.slug} href={`/band/${b.slug}`} className={BTN_SECONDARY_ON_LIGHT}>
+                  {b.name} ansehen →
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </section>

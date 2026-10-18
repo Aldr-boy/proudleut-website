@@ -76,6 +76,18 @@ export const hochzeitOberpfalzGroups: HochzeitOberpfalzGroup[] = [
   },
 ];
 
+// Abschnitt Blasmusik und Volksmusik: Wortlaut aus dem Auftrag. Die Bands
+// verweisen auf ihr bestehendes Profil (/band/<slug>).
+export const hochzeitOberpfalzBlasmusik = {
+  heading: 'Blasmusik und Volksmusik für eure Hochzeit',
+  text: 'Ihr sucht Blasmusik oder Volksmusik für eure Hochzeit in der Oberpfalz? Dezent Böhmisch, Rüscherl Muse und die Seubersdorfer Blasmusik spielen zu ganz unterschiedlichen Momenten: zum Weißwurstfrühstück, beim Kirchenzug, zum Auszug aus der Kirche, beim Sektempfang oder zu einem anderen Moment eurer Feier. Schaut euch die Kapellen an und sendet der, die euch gefällt, über das Anfrageformular auf ihrem Profil eine Anfrage. Besetzung und Ablauf stimmt ihr dann direkt mit der Kapelle ab.',
+  bands: [
+    { slug: 'dezent-boehmisch', name: 'Dezent Böhmisch' },
+    { slug: 'ruescherl-muse', name: 'Rüscherl Muse' },
+    { slug: 'seubersdorfer-blasmusik', name: 'Seubersdorfer Blasmusik' },
+  ],
+};
+
 export const hochzeitOberpfalzTips = {
   heading: 'Worauf es bei der Band ankommt',
   items: [
