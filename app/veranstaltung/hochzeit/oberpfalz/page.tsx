@@ -10,7 +10,7 @@ import {
   HOCHZEIT_OBERPFALZ_ALL_BANDS_URL,
   HOCHZEIT_OBERPFALZ_MIN_BANDS,
   countHochzeitOberpfalzBands,
-  hochzeitOberpfalzBlasmusik,
+  hochzeitOberpfalzIntroSection,
   hochzeitOberpfalzClosing,
   hochzeitOberpfalzFaq,
   hochzeitOberpfalzHero,
@@ -18,6 +18,7 @@ import {
   hochzeitOberpfalzPrice,
   hochzeitOberpfalzSteps,
   hochzeitOberpfalzTips,
+  resolveHochzeitOberpfalzBlasmusik,
   resolveHochzeitOberpfalzGroups,
 } from '@/lib/content/hochzeitOberpfalz';
 
@@ -74,6 +75,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HochzeitOberpfalzPage() {
   const rows = await loadRows();
   const groups = resolveHochzeitOberpfalzGroups(activeSlugsOf(rows));
+  const blasmusik = resolveHochzeitOberpfalzBlasmusik(activeSlugsOf(rows));
   const bandBySlug = new Map(
     rows.map((row) => [row.slug as string, normalizeBandFromSupabase(row)] as const)
   );
@@ -156,6 +158,17 @@ export default async function HochzeitOberpfalzPage() {
         </div>
       </section>
 
+      {/* Einleitung unter dem Kopf */}
+      <section className="bg-pl-paper py-12 md:py-16 px-4 sm:px-6">
+        <div className="pl-container-shell">
+          <div className="max-w-[820px] space-y-4 text-pl-text-muted leading-relaxed">
+            {hochzeitOberpfalzIntroSection.map((para) => (
+              <p key={para}>{para}</p>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Bandkarten in den drei Gruppen der Auswahl */}
       <section id="bands" className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6 scroll-mt-24">
         <div className="pl-container-shell">
@@ -183,24 +196,27 @@ export default async function HochzeitOberpfalzPage() {
         </div>
       </section>
 
-      {/* Blasmusik und Volksmusik: Links auf die Bandprofile (dort sitzt das Anfrageformular) */}
-      <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6" aria-labelledby="hochzeit-oberpfalz-blasmusik">
-        <div className="pl-container-shell">
-          <div className="max-w-[820px]">
-            <h2 id="hochzeit-oberpfalz-blasmusik" className="text-2xl md:text-3xl font-bold text-pl-text mb-4">
-              {hochzeitOberpfalzBlasmusik.heading}
+      {/* Blasmusik und Volksmusik: Bandkarten wie oben, Anfrage auf dem Profil */}
+      {blasmusik && (
+        <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6" aria-labelledby="hochzeit-oberpfalz-blasmusik">
+          <div className="pl-container-shell">
+            <h2 id="hochzeit-oberpfalz-blasmusik" className="text-2xl md:text-3xl font-bold text-pl-text mb-6">
+              {blasmusik.heading}
             </h2>
-            <p className="text-pl-text-muted leading-relaxed">{hochzeitOberpfalzBlasmusik.text}</p>
-            <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
-              {hochzeitOberpfalzBlasmusik.bands.map((b) => (
-                <Button key={b.slug} href={`/band/${b.slug}`} className={BTN_SECONDARY_ON_LIGHT}>
-                  {b.name} ansehen →
-                </Button>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {blasmusik.bands.map((entry) => {
+                const band = bandBySlug.get(entry.slug);
+                if (!band) return null;
+                return (
+                  <div key={entry.slug}>
+                    <BandCard band={band} showMerkButton />
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Kacheln: Worauf es bei der Band ankommt */}
       <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6">

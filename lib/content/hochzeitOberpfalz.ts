@@ -28,7 +28,7 @@ export const hochzeitOberpfalzHero = {
   caption: 'Bayrische Partyband Donnaweda bei einer Hochzeit im Landgasthof Wild in Hagenhill, August 2016.',
   headline: 'Hochzeitsbands in der Oberpfalz',
   intro:
-    'Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die wir für Hochzeiten ausgewählt haben. Eine Hochzeit kann ein langer Tag sein. Ein möglicher Ablauf: (freie) Trauung, Sektempfang, Kaffee und Kuchen, Brautentführung, Abendessen, Eröffnungstanz und Party bis in die Nacht. Jedes Paar plant das anders und gute Bands haben für jede Situation den passenden Plan.',
+    'Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die wir für Hochzeiten ausgewählt haben.',
   primaryButton: 'Bands ansehen',
 };
 
@@ -76,15 +76,21 @@ export const hochzeitOberpfalzGroups: HochzeitOberpfalzGroup[] = [
   },
 ];
 
-// Abschnitt Blasmusik und Volksmusik: Wortlaut aus dem Auftrag. Die Bands
-// verweisen auf ihr bestehendes Profil (/band/<slug>).
-export const hochzeitOberpfalzBlasmusik = {
+// Einleitung direkt unter dem Kopf (drei Absätze, ohne Überschrift).
+export const hochzeitOberpfalzIntroSection = [
+  'Eure Hochzeit kann musikalisch ganz unterschiedlich klingen: von der feierlichen Begleitung bei der Trauung über entspannte Musik beim Sektempfang bis zur ausgelassenen Party am Abend. Vielleicht spielt eine Akustikband bei der Trauung, eine Blasmusik beim Weißwurstfrühstück oder beim Kirchenzug – und später sorgt eine Partyband für Stimmung auf der Tanzfläche.',
+  'Ein möglicher Ablauf reicht von der (freien) Trauung über Sektempfang, Kaffee und Kuchen und Abendessen bis zum Eröffnungstanz und zur Party. Manche Paare planen auch eine Brautentführung. Jede Hochzeit läuft anders. Besprecht mit den Bands, welche Besetzung und Musik zu eurem Ablauf passen.',
+  'Auf dieser Seite findet ihr Bands aus der Oberpfalz für unterschiedliche Teile eurer Hochzeit – von der Trauung und dem Empfang bis zur Feier am Abend. Schaut euch die Vorschläge an und fragt die Bands, die euch interessieren, direkt über ihr Profil an.',
+];
+
+// Abschnitt Blasmusik und Volksmusik: Bandkarten wie in den anderen Gruppen.
+export const hochzeitOberpfalzBlasmusik: HochzeitOberpfalzGroup = {
   heading: 'Blasmusik und Volksmusik für eure Hochzeit',
-  text: 'Ihr sucht Blasmusik oder Volksmusik für eure Hochzeit in der Oberpfalz? Dezent Böhmisch, Rüscherl Muse und die Seubersdorfer Blasmusik spielen zu ganz unterschiedlichen Momenten: zum Weißwurstfrühstück, beim Kirchenzug, zum Auszug aus der Kirche, beim Sektempfang oder zu einem anderen Moment eurer Feier. Schaut euch die Kapellen an und sendet der, die euch gefällt, über das Anfrageformular auf ihrem Profil eine Anfrage. Besetzung und Ablauf stimmt ihr dann direkt mit der Kapelle ab.',
   bands: [
-    { slug: 'dezent-boehmisch', name: 'Dezent Böhmisch' },
-    { slug: 'ruescherl-muse', name: 'Rüscherl Muse' },
-    { slug: 'seubersdorfer-blasmusik', name: 'Seubersdorfer Blasmusik' },
+    { slug: 'dezent-boehmisch' },
+    { slug: 'ruescherl-muse' },
+    { slug: 'seubersdorfer-blasmusik' },
+    { slug: 'broeslschmarrn-duo' },
   ],
 };
 
@@ -162,6 +168,11 @@ export function resolveHochzeitOberpfalzGroups(activeSlugs: ReadonlySet<string>)
   return hochzeitOberpfalzGroups
     .map((g) => ({ ...g, bands: g.bands.filter((b) => activeSlugs.has(b.slug)) }))
     .filter((g) => g.bands.length > 0);
+}
+
+export function resolveHochzeitOberpfalzBlasmusik(activeSlugs: ReadonlySet<string>): HochzeitOberpfalzGroup | null {
+  const bands = hochzeitOberpfalzBlasmusik.bands.filter((b) => activeSlugs.has(b.slug));
+  return bands.length > 0 ? { ...hochzeitOberpfalzBlasmusik, bands } : null;
 }
 
 export function countHochzeitOberpfalzBands(groups: HochzeitOberpfalzGroup[]): number {
