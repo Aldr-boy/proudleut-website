@@ -15,6 +15,18 @@ import { getBandFinderThemeImages } from '@/lib/bands/bandFinderThemeImages';
 
 export const revalidate = 300;
 
+// Verweis auf die Themenseite (Super-Collection) der jeweiligen Hauptseite.
+const COLLECTION_LINKS: Record<string, { href: string; label: string }> = {
+  hochzeit: {
+    href: '/veranstaltung/hochzeit/oberpfalz',
+    label: 'Hochzeitsbands aus der Oberpfalz: Auswahl und Tipps →',
+  },
+  festzelt: {
+    href: '/veranstaltung/festzelt/bayern',
+    label: 'Festzeltbands aus Bayern: Auswahl und Tipps →',
+  },
+};
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -91,6 +103,8 @@ export default async function VeranstaltungPage({ params }: Props) {
   // Treffer innerhalb der bereits anlassgefilterten Grundmenge.
   const regions = REGION_ORDER.filter((r) => bands.some((b) => getBandRegionBucket(b) === r));
 
+  const collectionLink = COLLECTION_LINKS[slug];
+
   const h1 = category.h1Title ?? category.title;
   const subtitleText = heroData?.subtitle ?? category.description ?? null;
 
@@ -108,6 +122,20 @@ export default async function VeranstaltungPage({ params }: Props) {
           backHref="/bands"
           backLabel="← Zurück zur Bandübersicht"
         />
+        {collectionLink && (
+          // Direkt unter dem Seitenkopf statt hinter dem langen Bandraster;
+          // gleicher Hintergrund wie der Kopf, damit kein Bruch entsteht.
+          <div className="bg-pl-paper">
+            <div className="pl-container-shell px-4 sm:px-6 pb-4">
+              <Link
+                href={collectionLink.href}
+                className="text-pl-primary text-sm font-medium hover:opacity-80 motion-safe:transition-opacity"
+              >
+                {collectionLink.label}
+              </Link>
+            </div>
+          </div>
+        )}
         {bands.length === 0 ? (
           <div className="pl-container-shell px-4 sm:px-6 py-12">
             <p className="text-pl-text-muted text-lg mb-2">
@@ -133,26 +161,6 @@ export default async function VeranstaltungPage({ params }: Props) {
               themeImages={themeImages}
             />
           </Suspense>
-        )}
-        {slug === 'festzelt' && (
-          <div className="pl-container-shell px-4 sm:px-6 pt-8">
-            <Link
-              href="/veranstaltung/festzelt/bayern"
-              className="text-pl-primary text-sm font-medium hover:opacity-80 motion-safe:transition-opacity"
-            >
-              Festzeltbands aus Bayern: Auswahl und Tipps →
-            </Link>
-          </div>
-        )}
-        {slug === 'hochzeit' && (
-          <div className="pl-container-shell px-4 sm:px-6 pt-8">
-            <Link
-              href="/veranstaltung/hochzeit/oberpfalz"
-              className="text-pl-primary text-sm font-medium hover:opacity-80 motion-safe:transition-opacity"
-            >
-              Hochzeitsbands aus der Oberpfalz: Auswahl und Tipps →
-            </Link>
-          </div>
         )}
       </section>
 
