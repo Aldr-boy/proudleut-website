@@ -28,7 +28,7 @@ export const festzeltBayernHero = {
   headline: 'Festzeltbands aus Bayern',
   audience: 'Für Festwirte, Vereine, Gemeinden und Feuerwehren',
   intro:
-    'In Bayern wird gern und ausgiebig gefeiert – auf Volksfesten und Dulten, bei Kirchweihen, Vereinsfesten und vielen weiteren Anlässen. Die passende Musik gehört dazu: von traditioneller Volksmusik und Brassbands bis zur bayerischen Partyband. Hier findest du Bands, die Festzelt und Festplatz im Programm haben und die wir für solche Feste ausgewählt haben.',
+    'In Bayern wird gern und ausgiebig gefeiert: auf Volksfest und Dult, bei Kirchweih und Gründungsfest. Hier findest du Bands von Volksmusik und Brass bis zur bayerischen Partyband, die es lieben, ein Fest- oder Bierzelt zum Beben zu bringen.',
   primaryButton: 'Bands ansehen',
   secondaryButton: 'Alle Festzeltbands ansehen →',
 };
