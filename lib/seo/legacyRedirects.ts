@@ -167,6 +167,27 @@ function buildLegacyRedirects(): LegacyRedirect[] {
   add('/bands/:slug', '/band/:slug');
   add('/en/bands/:slug', '/band/:slug');
 
+  // Search Console "Nicht gefunden (404)", Export vom 12.10.2026: alte Bandadressen
+  // /<bereich>/<name> -> Profil. Slug-Abweichungen: diegseeawepsn -> die-gseea-wepsn,
+  // niceties-band -> nice-ties-band. emotion-two und boarischn-boum gibt es nicht mehr
+  // (kein Profil in Supabase) -> passende Anlass-Seite.
+  add('/festzelt/blechhilfswerk', '/band/blechhilfswerk');
+  add('/festzelt/de-gaudimacha', '/band/de-gaudimacha');
+  add('/festzelt/letsfetz-band', '/band/letsfetz-band');
+  add('/hochzeitsband/campfire-band', '/band/campfire-band');
+  add('/hochzeitsband/d-quertreiber', '/band/d-quertreiber');
+  add('/hochzeitsband/diegseeawepsn', '/band/die-gseea-wepsn');
+  add('/partyband/niceties-band', '/band/nice-ties-band');
+  add('/trauung/emotion-two', '/bands?anlass=trauung');
+  add('/hochzeitsband/boarischn-boum', '/veranstaltung/hochzeit');
+
+  // Weitere 404-Adressen aus demselben Export.
+  add('/hochzeitsband', '/veranstaltung/hochzeit');
+  add('/veranstaltung', '/bands');
+  add('/home', '/');
+  add('/band-finder', '/bands');
+  add('/directory/cotton-club', '/bands'); // altes Verzeichnis, kein Profil "cotton-club"
+
   // Auffangnetz fuer Adressen dieser alten Bereiche, die nicht in der Sitemap standen.
   add('/band-kategorie/:slug', '/bands');
   add('/band-finder/:slug', '/bands');
