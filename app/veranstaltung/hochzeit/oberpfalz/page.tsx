@@ -8,8 +8,11 @@ import { DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import {
   HOCHZEIT_OBERPFALZ_ALL_BANDS_LABEL,
   HOCHZEIT_OBERPFALZ_ALL_BANDS_URL,
+  HOCHZEIT_OBERPFALZ_GROUP_ANCHORS,
+  HOCHZEIT_OBERPFALZ_GROUP_LINES,
   HOCHZEIT_OBERPFALZ_MIN_BANDS,
   countHochzeitOberpfalzBands,
+  hochzeitOberpfalzIntroSection,
   hochzeitOberpfalzClosing,
   hochzeitOberpfalzFaq,
   hochzeitOberpfalzHero,
@@ -17,6 +20,7 @@ import {
   hochzeitOberpfalzPrice,
   hochzeitOberpfalzSteps,
   hochzeitOberpfalzTips,
+  resolveHochzeitOberpfalzBlasmusik,
   resolveHochzeitOberpfalzGroups,
 } from '@/lib/content/hochzeitOberpfalz';
 
@@ -72,7 +76,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HochzeitOberpfalzPage() {
   const rows = await loadRows();
-  const groups = resolveHochzeitOberpfalzGroups(activeSlugsOf(rows));
+  const baseGroups = resolveHochzeitOberpfalzGroups(activeSlugsOf(rows));
+  const blasmusik = resolveHochzeitOberpfalzBlasmusik(activeSlugsOf(rows));
+  // Blasmusik steht direkt nach der ersten Gruppe (Trauung, Empfang und Essen).
+  const groups = blasmusik
+    ? [...baseGroups.slice(0, 1), blasmusik, ...baseGroups.slice(1)]
+    : baseGroups;
   const bandBySlug = new Map(
     rows.map((row) => [row.slug as string, normalizeBandFromSupabase(row)] as const)
   );
@@ -155,13 +164,45 @@ export default async function HochzeitOberpfalzPage() {
         </div>
       </section>
 
+      {/* Einleitung unter dem Kopf: drei Phasen, jede springt zum passenden Bandbereich */}
+      <section className="bg-pl-paper py-12 md:py-16 px-4 sm:px-6">
+        <div className="pl-container-shell">
+          <p className="text-xl md:text-2xl font-semibold text-pl-text mb-6 max-w-[820px]">
+            {hochzeitOberpfalzIntroSection.lead}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {hochzeitOberpfalzIntroSection.phases.map((phase) => (
+              <a
+                key={phase.title}
+                href={phase.href}
+                className="block rounded-xl bg-pl-elevated border border-pl-soft p-6 shadow-pl-photo hover:border-pl-accent motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+              >
+                <h2 className="text-lg font-semibold text-pl-text mb-2">{phase.title}</h2>
+                <p className="text-sm text-pl-text-muted leading-relaxed">{phase.moments}</p>
+                <p className="mt-3 text-pl-text leading-relaxed">{phase.music}</p>
+              </a>
+            ))}
+          </div>
+          <p className="mt-6 text-pl-text-muted leading-relaxed max-w-[820px]">
+            {hochzeitOberpfalzIntroSection.closing}
+          </p>
+        </div>
+      </section>
+
       {/* Bandkarten in den drei Gruppen der Auswahl */}
       <section id="bands" className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6 scroll-mt-24">
         <div className="pl-container-shell">
           {groups.map((group, gi) => (
-            <div key={group.heading} className={gi > 0 ? 'mt-14 md:mt-16' : ''}>
-              <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-6">{group.heading}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+              key={group.heading}
+              id={HOCHZEIT_OBERPFALZ_GROUP_ANCHORS[group.heading]}
+              className={`scroll-mt-24 ${gi > 0 ? 'mt-14 md:mt-16' : ''}`}
+            >
+              <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-2">{group.heading}</h2>
+              <p className="text-pl-text-muted leading-relaxed mb-6">
+                {HOCHZEIT_OBERPFALZ_GROUP_LINES[group.heading]}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                 {group.bands.map((entry, bi) => {
                   const band = bandBySlug.get(entry.slug);
                   if (!band) return null;

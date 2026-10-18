@@ -17,7 +17,7 @@ export const HOCHZEIT_OBERPFALZ_ALL_BANDS_LABEL = 'Alle Hochzeitsbands aus der O
 export const hochzeitOberpfalzMeta = {
   title: 'Hochzeitsbands Oberpfalz: Trauung bis Tanz – proudleut.com',
   description:
-    'Hochzeitsbands aus der Oberpfalz: Musik für Trauung, Sektempfang und Tanz, von uns ausgewählt. Mit Preisorientierung und Tipps. Bands merken und anfragen.',
+    'Hochzeitsbands aus der Oberpfalz: Akustikbands, Blasmusik, Volksmusik und Partybands für Trauung, Sektempfang und Tanz. Von uns ausgewählt, direkt anfragen.',
   canonical: 'https://www.proudleut.com/veranstaltung/hochzeit/oberpfalz',
 };
 
@@ -28,7 +28,7 @@ export const hochzeitOberpfalzHero = {
   caption: 'Bayrische Partyband Donnaweda bei einer Hochzeit im Landgasthof Wild in Hagenhill, August 2016.',
   headline: 'Hochzeitsbands in der Oberpfalz',
   intro:
-    'Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die wir für Hochzeiten ausgewählt haben. Eine Hochzeit kann ein langer Tag sein. Ein möglicher Ablauf: (freie) Trauung, Sektempfang, Kaffee und Kuchen, Brautentführung, Abendessen, Eröffnungstanz und Party bis in die Nacht. Jedes Paar plant das anders und gute Bands haben für jede Situation den passenden Plan.',
+    'Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die wir für Hochzeiten ausgewählt haben.',
   primaryButton: 'Bands ansehen',
 };
 
@@ -75,6 +75,59 @@ export const hochzeitOberpfalzGroups: HochzeitOberpfalzGroup[] = [
     ],
   },
 ];
+
+// Erste Section unter dem Kopf: Einstiegssatz, drei Phasen-Karten (springen zum
+// passenden Bandbereich, Anker siehe HOCHZEIT_OBERPFALZ_GROUP_ANCHORS) und Schlusssatz.
+export const hochzeitOberpfalzIntroSection = {
+  lead: 'Zu jedem Moment eurer Hochzeit passt andere Musik.',
+  phases: [
+    {
+      title: 'Vormittag',
+      moments: 'Weißwurstfrühstück · Kirchenzug',
+      music: 'Blasmusik für Weißwurstfrühstück und Kirchenzug',
+      href: '#blasmusik',
+    },
+    {
+      title: 'Trauung & Empfang',
+      moments: 'Trauung · Auszug · Sektempfang',
+      music: 'Akustikband oder Blasmusik',
+      href: '#trauung-empfang-essen',
+    },
+    {
+      title: 'Abend',
+      moments: 'Abendessen · Brautentführung · Eröffnungstanz · Party',
+      music: 'Partybands für Eröffnungstanz und Party',
+      href: '#partybands',
+    },
+  ],
+  closing: 'Jede Hochzeit läuft anders. Besprecht mit den Bands, was zu eurem Ablauf passt.',
+};
+
+// Sprungmarken der Bandbereiche (Schlüssel: Überschrift der Gruppe).
+// Kurze Zeile unter der Überschrift jeder Gruppe (Schlüssel: Überschrift).
+export const HOCHZEIT_OBERPFALZ_GROUP_LINES: Record<string, string> = {
+  'Trauung, Empfang und Essen': 'Ruhig und persönlich: Musik für Trauung, Sektempfang und Essen.',
+  'Blasmusik und Volksmusik für eure Hochzeit': 'Zünftig zum Weißwurstfrühstück, beim Kirchenzug und zum Auszug.',
+  'Tanz am Abend: Bayrische Partybands': 'Bayrisch und lebendig für Eröffnungstanz und Party.',
+  'Tanz am Abend: Pop und Cover': 'Hits und Klassiker für eine volle Tanzfläche.',
+};
+
+export const HOCHZEIT_OBERPFALZ_GROUP_ANCHORS: Record<string, string> = {
+  'Trauung, Empfang und Essen': 'trauung-empfang-essen',
+  'Blasmusik und Volksmusik für eure Hochzeit': 'blasmusik',
+  'Tanz am Abend: Bayrische Partybands': 'partybands',
+};
+
+// Abschnitt Blasmusik und Volksmusik: Bandkarten wie in den anderen Gruppen.
+export const hochzeitOberpfalzBlasmusik: HochzeitOberpfalzGroup = {
+  heading: 'Blasmusik und Volksmusik für eure Hochzeit',
+  bands: [
+    { slug: 'dezent-boehmisch' },
+    { slug: 'ruescherl-muse' },
+    { slug: 'seubersdorfer-blasmusik' },
+    { slug: 'broeslschmarrn-duo' },
+  ],
+};
 
 export const hochzeitOberpfalzTips = {
   heading: 'Worauf es bei der Band ankommt',
@@ -150,6 +203,11 @@ export function resolveHochzeitOberpfalzGroups(activeSlugs: ReadonlySet<string>)
   return hochzeitOberpfalzGroups
     .map((g) => ({ ...g, bands: g.bands.filter((b) => activeSlugs.has(b.slug)) }))
     .filter((g) => g.bands.length > 0);
+}
+
+export function resolveHochzeitOberpfalzBlasmusik(activeSlugs: ReadonlySet<string>): HochzeitOberpfalzGroup | null {
+  const bands = hochzeitOberpfalzBlasmusik.bands.filter((b) => activeSlugs.has(b.slug));
+  return bands.length > 0 ? { ...hochzeitOberpfalzBlasmusik, bands } : null;
 }
 
 export function countHochzeitOberpfalzBands(groups: HochzeitOberpfalzGroup[]): number {
