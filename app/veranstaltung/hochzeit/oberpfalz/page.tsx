@@ -9,6 +9,7 @@ import {
   HOCHZEIT_OBERPFALZ_ALL_BANDS_LABEL,
   HOCHZEIT_OBERPFALZ_ALL_BANDS_URL,
   HOCHZEIT_OBERPFALZ_GROUP_ANCHORS,
+  HOCHZEIT_OBERPFALZ_GROUP_LINES,
   HOCHZEIT_OBERPFALZ_MIN_BANDS,
   countHochzeitOberpfalzBands,
   hochzeitOberpfalzIntroSection,
@@ -197,8 +198,11 @@ export default async function HochzeitOberpfalzPage() {
               id={HOCHZEIT_OBERPFALZ_GROUP_ANCHORS[group.heading]}
               className={`scroll-mt-24 ${gi > 0 ? 'mt-14 md:mt-16' : ''}`}
             >
-              <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-6">{group.heading}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-2">{group.heading}</h2>
+              <p className="text-pl-text-muted leading-relaxed mb-6">
+                {HOCHZEIT_OBERPFALZ_GROUP_LINES[group.heading]}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                 {group.bands.map((entry, bi) => {
                   const band = bandBySlug.get(entry.slug);
                   if (!band) return null;

@@ -104,6 +104,14 @@ export const hochzeitOberpfalzIntroSection = {
 };
 
 // Sprungmarken der Bandbereiche (Schlüssel: Überschrift der Gruppe).
+// Kurze Zeile unter der Überschrift jeder Gruppe (Schlüssel: Überschrift).
+export const HOCHZEIT_OBERPFALZ_GROUP_LINES: Record<string, string> = {
+  'Trauung, Empfang und Essen': 'Ruhig und persönlich: Musik für Trauung, Sektempfang und Essen.',
+  'Blasmusik und Volksmusik für eure Hochzeit': 'Zünftig zum Weißwurstfrühstück, beim Kirchenzug und zum Auszug.',
+  'Tanz am Abend: Bayrische Partybands': 'Bayrisch und lebendig für Eröffnungstanz und Party.',
+  'Tanz am Abend: Pop und Cover': 'Hits und Klassiker für eine volle Tanzfläche.',
+};
+
 export const HOCHZEIT_OBERPFALZ_GROUP_ANCHORS: Record<string, string> = {
   'Trauung, Empfang und Essen': 'trauung-empfang-essen',
   'Blasmusik und Volksmusik für eure Hochzeit': 'blasmusik',
