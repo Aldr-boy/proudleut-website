@@ -76,12 +76,39 @@ export const hochzeitOberpfalzGroups: HochzeitOberpfalzGroup[] = [
   },
 ];
 
-// Einleitung direkt unter dem Kopf (drei Absätze, ohne Überschrift).
-export const hochzeitOberpfalzIntroSection = [
-  'Eure Hochzeit kann musikalisch ganz unterschiedlich klingen: von der feierlichen Begleitung bei der Trauung über entspannte Musik beim Sektempfang bis zur ausgelassenen Party am Abend. Vielleicht spielt eine Akustikband bei der Trauung, eine Blasmusik beim Weißwurstfrühstück oder beim Kirchenzug – und später sorgt eine Partyband für Stimmung auf der Tanzfläche.',
-  'Ein möglicher Ablauf reicht von der (freien) Trauung über Sektempfang, Kaffee und Kuchen und Abendessen bis zum Eröffnungstanz und zur Party. Manche Paare planen auch eine Brautentführung. Jede Hochzeit läuft anders. Besprecht mit den Bands, welche Besetzung und Musik zu eurem Ablauf passen.',
-  'Auf dieser Seite findet ihr Bands aus der Oberpfalz für unterschiedliche Teile eurer Hochzeit – von der Trauung und dem Empfang bis zur Feier am Abend. Schaut euch die Vorschläge an und fragt die Bands, die euch interessieren, direkt über ihr Profil an.',
-];
+// Erste Section unter dem Kopf: Einstiegssatz, drei Phasen-Karten (springen zum
+// passenden Bandbereich, Anker siehe HOCHZEIT_OBERPFALZ_GROUP_ANCHORS) und Schlusssatz.
+export const hochzeitOberpfalzIntroSection = {
+  lead: 'Zu jedem Moment eurer Hochzeit passt andere Musik.',
+  phases: [
+    {
+      title: 'Vormittag',
+      moments: 'Weißwurstfrühstück · Kirchenzug',
+      music: 'Blasmusik für Weißwurstfrühstück und Kirchenzug',
+      href: '#blasmusik',
+    },
+    {
+      title: 'Trauung & Empfang',
+      moments: 'Trauung · Auszug · Sektempfang',
+      music: 'Akustikband oder Blasmusik',
+      href: '#trauung-empfang-essen',
+    },
+    {
+      title: 'Abend',
+      moments: 'Abendessen · Brautentführung · Eröffnungstanz · Party',
+      music: 'Partybands für Eröffnungstanz und Party',
+      href: '#partybands',
+    },
+  ],
+  closing: 'Jede Hochzeit läuft anders. Besprecht mit den Bands, was zu eurem Ablauf passt.',
+};
+
+// Sprungmarken der Bandbereiche (Schlüssel: Überschrift der Gruppe).
+export const HOCHZEIT_OBERPFALZ_GROUP_ANCHORS: Record<string, string> = {
+  'Trauung, Empfang und Essen': 'trauung-empfang-essen',
+  'Blasmusik und Volksmusik für eure Hochzeit': 'blasmusik',
+  'Tanz am Abend: Bayrische Partybands': 'partybands',
+};
 
 // Abschnitt Blasmusik und Volksmusik: Bandkarten wie in den anderen Gruppen.
 export const hochzeitOberpfalzBlasmusik: HochzeitOberpfalzGroup = {

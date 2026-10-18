@@ -8,6 +8,7 @@ import { DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import {
   HOCHZEIT_OBERPFALZ_ALL_BANDS_LABEL,
   HOCHZEIT_OBERPFALZ_ALL_BANDS_URL,
+  HOCHZEIT_OBERPFALZ_GROUP_ANCHORS,
   HOCHZEIT_OBERPFALZ_MIN_BANDS,
   countHochzeitOberpfalzBands,
   hochzeitOberpfalzIntroSection,
@@ -74,8 +75,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HochzeitOberpfalzPage() {
   const rows = await loadRows();
-  const groups = resolveHochzeitOberpfalzGroups(activeSlugsOf(rows));
+  const baseGroups = resolveHochzeitOberpfalzGroups(activeSlugsOf(rows));
   const blasmusik = resolveHochzeitOberpfalzBlasmusik(activeSlugsOf(rows));
+  // Blasmusik steht direkt nach der ersten Gruppe (Trauung, Empfang und Essen).
+  const groups = blasmusik
+    ? [...baseGroups.slice(0, 1), blasmusik, ...baseGroups.slice(1)]
+    : baseGroups;
   const bandBySlug = new Map(
     rows.map((row) => [row.slug as string, normalizeBandFromSupabase(row)] as const)
   );
@@ -158,14 +163,28 @@ export default async function HochzeitOberpfalzPage() {
         </div>
       </section>
 
-      {/* Einleitung unter dem Kopf */}
+      {/* Einleitung unter dem Kopf: drei Phasen, jede springt zum passenden Bandbereich */}
       <section className="bg-pl-paper py-12 md:py-16 px-4 sm:px-6">
         <div className="pl-container-shell">
-          <div className="max-w-[820px] space-y-4 text-pl-text-muted leading-relaxed">
-            {hochzeitOberpfalzIntroSection.map((para) => (
-              <p key={para}>{para}</p>
+          <p className="text-xl md:text-2xl font-semibold text-pl-text mb-6 max-w-[820px]">
+            {hochzeitOberpfalzIntroSection.lead}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {hochzeitOberpfalzIntroSection.phases.map((phase) => (
+              <a
+                key={phase.title}
+                href={phase.href}
+                className="block rounded-xl bg-pl-elevated border border-pl-soft p-6 shadow-pl-photo hover:border-pl-accent motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+              >
+                <h2 className="text-lg font-semibold text-pl-text mb-2">{phase.title}</h2>
+                <p className="text-sm text-pl-text-muted leading-relaxed">{phase.moments}</p>
+                <p className="mt-3 text-pl-text leading-relaxed">{phase.music}</p>
+              </a>
             ))}
           </div>
+          <p className="mt-6 text-pl-text-muted leading-relaxed max-w-[820px]">
+            {hochzeitOberpfalzIntroSection.closing}
+          </p>
         </div>
       </section>
 
@@ -173,7 +192,11 @@ export default async function HochzeitOberpfalzPage() {
       <section id="bands" className="bg-pl-canvas py-16 md:py-24 px-4 sm:px-6 scroll-mt-24">
         <div className="pl-container-shell">
           {groups.map((group, gi) => (
-            <div key={group.heading} className={gi > 0 ? 'mt-14 md:mt-16' : ''}>
+            <div
+              key={group.heading}
+              id={HOCHZEIT_OBERPFALZ_GROUP_ANCHORS[group.heading]}
+              className={`scroll-mt-24 ${gi > 0 ? 'mt-14 md:mt-16' : ''}`}
+            >
               <h2 className="text-2xl md:text-3xl font-bold text-pl-text mb-6">{group.heading}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {group.bands.map((entry, bi) => {
@@ -195,28 +218,6 @@ export default async function HochzeitOberpfalzPage() {
           </div>
         </div>
       </section>
-
-      {/* Blasmusik und Volksmusik: Bandkarten wie oben, Anfrage auf dem Profil */}
-      {blasmusik && (
-        <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6" aria-labelledby="hochzeit-oberpfalz-blasmusik">
-          <div className="pl-container-shell">
-            <h2 id="hochzeit-oberpfalz-blasmusik" className="text-2xl md:text-3xl font-bold text-pl-text mb-6">
-              {blasmusik.heading}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {blasmusik.bands.map((entry) => {
-                const band = bandBySlug.get(entry.slug);
-                if (!band) return null;
-                return (
-                  <div key={entry.slug}>
-                    <BandCard band={band} showMerkButton />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Kacheln: Worauf es bei der Band ankommt */}
       <section className="bg-pl-paper py-16 md:py-24 px-4 sm:px-6">
