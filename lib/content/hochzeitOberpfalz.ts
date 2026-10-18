@@ -17,7 +17,7 @@ export const HOCHZEIT_OBERPFALZ_ALL_BANDS_LABEL = 'Alle Hochzeitsbands aus der O
 export const hochzeitOberpfalzMeta = {
   title: 'Hochzeitsbands Oberpfalz: Trauung bis Tanz – proudleut.com',
   description:
-    'Hochzeitsbands aus der Oberpfalz: Musik für Trauung, Sektempfang und Tanz, von uns ausgewählt. Mit Preisorientierung und Tipps. Bands merken und anfragen.',
+    'Hochzeitsbands aus der Oberpfalz: Akustikbands, Blasmusik, Volksmusik und Partybands für Trauung, Sektempfang und Tanz. Von uns ausgewählt, direkt anfragen.',
   canonical: 'https://www.proudleut.com/veranstaltung/hochzeit/oberpfalz',
 };
 
