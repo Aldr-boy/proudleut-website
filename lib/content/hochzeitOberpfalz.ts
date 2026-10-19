@@ -28,7 +28,7 @@ export const hochzeitOberpfalzHero = {
   caption: 'Bayrische Partyband Donnaweda bei einer Hochzeit im Landgasthof Wild in Hagenhill, August 2016.',
   headline: 'Hochzeitsbands in der Oberpfalz',
   intro:
-    'Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die wir für Hochzeiten ausgewählt haben.',
+    'Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die auf Hochzeiten spielen.',
   primaryButton: 'Bands ansehen',
 };
 
@@ -138,7 +138,7 @@ export const hochzeitOberpfalzTips = {
     },
     {
       title: 'Wünsche vorher klären',
-      text: 'Klärt vorher, was ihr wollt: bayerische Partyband oder Pop und Cover, Brautentführung ja oder nein, ganzer Tag oder nur Abend.',
+      text: 'Ihr wisst, was euch guttut und wie ihr euren Hochzeitstag verbringen wollt! Brautentführung ja oder nein? Musik über den ganzen Tag (Trauung, Empfang, Kaffee und Kuchen) oder nur die Party am Abend? Besprecht den Ablauf und eure Wünsche offen mit eurer Band. Sie sind die Profis und kennen sich mit Hochzeiten aus.',
     },
     {
       title: 'Ablauf und Absprachen',
