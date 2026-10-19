@@ -37,7 +37,7 @@ auswahl_intern:
 
 # Hochzeitsbands in der Oberpfalz
 
-Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die wir für Hochzeiten ausgewählt haben. Eine Hochzeit kann ein langer Tag sein. Ein möglicher Ablauf: (freie) Trauung, Sektempfang, Kaffee und Kuchen, Brautentführung, Abendessen, Eröffnungstanz und Party bis in die Nacht. Jedes Paar plant das anders und gute Bands haben für jede Situation den passenden Plan.
+Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hier findest du Bands aus der Region, die auf Hochzeiten spielen. Eine Hochzeit kann ein langer Tag sein. Ein möglicher Ablauf: (freie) Trauung, Sektempfang, Kaffee und Kuchen, Brautentführung, Abendessen, Eröffnungstanz und Party bis in die Nacht. Jedes Paar plant das anders und gute Bands haben für jede Situation den passenden Plan.
 
 ## Trauung, Empfang und Essen
 
@@ -59,7 +59,7 @@ Du heiratest in der Oberpfalz und suchst Livemusik, die zu eurer Feier passt? Hi
 Eine Hochzeitsband sollte sich als Dienstleister für euren Tag verstehen. Das musikalische Handwerk muss sitzen! Entscheidend ist, dass sie euch und euren Gästen hilft, einen wunderbaren Hochzeitstag zu erleben.
 
 ### Wünsche vorher klären
-Klärt vorher, was ihr wollt: bayerische Partyband oder Pop und Cover, Brautentführung ja oder nein, ganzer Tag oder nur Abend.
+Ihr wisst, was euch guttut und wie ihr euren Hochzeitstag verbringen wollt! Brautentführung ja oder nein? Musik über den ganzen Tag (Trauung, Empfang, Kaffee und Kuchen) oder nur die Party am Abend? Besprecht den Ablauf und eure Wünsche offen mit eurer Band. Sie sind die Profis und kennen sich mit Hochzeiten aus.
 
 ### Ablauf und Absprachen
 Geht den Ablauf mit der Band gemeinsam durch. Zumeist ist 2 oder 3 Wochen vor der Hochzeit ein guter Zeitpunkt für so ein Hochzeitsgespräch, da sich normalerweise nicht mehr viel ändert. So erhält die Band alle passenden und wichtigen Infos.
