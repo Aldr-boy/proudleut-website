@@ -17,7 +17,7 @@ import { Resend } from 'resend';
 import { SITE_URL } from '../lib/seo/metadata.ts';
 import { resolveGreetingName, resolveSignoffName, buildProfileUrl } from '../lib/mail1/mail1.ts';
 
-const ALLOWED_SLUGS = ['freunde-des-brautpaares', 'donnaweda', 'aufzundn', 'baerntreiber-band', 'heimatfieber', 'bigbeat-band', 'onesee', 'hob-nou'];
+const ALLOWED_SLUGS = ['freunde-des-brautpaares', 'donnaweda', 'aufzundn', 'baerntreiber-band', 'heimatfieber', 'bigbeat-band', 'onesee', 'hob-nou', 'hochdruck-boehmische', 'seubersdorfer-blasmusik', 'dezent-boehmisch', 'hulzstoussboum', 'blechhilfswerk', 'gaudinockerl', 'broeslschmarrn-duo', 'd-rieder', 'hundskrippln', 'urner-musi'];
 // Kennung der Resend-Vorlage mail1-profil-pruefen (kein Geheimnis).
 const TEMPLATE_ID = '89ad911c-24f6-49b2-bc39-c04e7a9da91e';
 
