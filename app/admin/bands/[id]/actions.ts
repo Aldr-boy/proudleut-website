@@ -1483,8 +1483,9 @@ const HERO_ALT_MAX = 150
 // Speichert die Bildbeschreibung (media_assets.alt_text) des Hero-Bildes,
 // ohne das Bild selbst anzufassen. Die Zeile wird mit derselben
 // Konfliktaufloesung wie beim Upload bestimmt (mehrdeutig -> Abbruch ohne
-// Schreiben). Leeres Feld: der beim Upload vergebene Standardtext
-// "<Bandname> live" wird wiederhergestellt.
+// Schreiben). Leeres Feld (auch nur Leerzeichen): alt_text wird auf NULL
+// gesetzt -- die oeffentliche Bandseite gibt dann ihren Ersatztext
+// "Livefoto von <Bandname>" aus (normalizeBand.ts).
 export async function updateBandHeroImageAltAction(formData: FormData): Promise<never> {
   await requireAdminSession()
 
@@ -1517,7 +1518,7 @@ export async function updateBandHeroImageAltAction(formData: FormData): Promise<
 
   const { error: updateError } = await client
     .from('media_assets')
-    .update({ alt_text: altText === '' ? `${bandRow.name} live` : altText })
+    .update({ alt_text: altText === '' ? null : altText })
     .eq('id', resolution.row.id)
     .eq('band_id', bandRow.id)
     .eq('role', 'hero')
