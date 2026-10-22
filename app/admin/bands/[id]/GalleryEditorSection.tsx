@@ -2,15 +2,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import Image from 'next/image'
-import { addBandGalleryImageAction, deleteBandGalleryImageAction, moveBandGalleryImageAction } from './actions'
+import {
+  addBandGalleryImageAction,
+  deleteBandGalleryImageAction,
+  moveBandGalleryImageAction,
+  updateBandGalleryImageAltAction,
+} from './actions'
 
 const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp'
 const MAX_GALLERY_IMAGES = 10
+const MAX_ALT_LENGTH = 150
 
 export type GalleryImageData = {
   id: string
   url: string
   alt: string
+  // Gespeicherter alt_text (leer, wenn keiner gespeichert ist) -- fuer das Eingabefeld.
+  altText: string
 }
 
 function TinySubmitButton({ children, title }: { children: React.ReactNode; title: string }) {
@@ -54,7 +62,8 @@ function GalleryItem({
   isLast: boolean
 }) {
   return (
-    <div className="flex items-center gap-3 border border-gray-200 rounded-lg p-2">
+    <div className="border border-gray-200 rounded-lg p-2">
+    <div className="flex items-center gap-3">
       <div className="relative w-20 h-14 rounded-md overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
         <Image src={image.url} alt={image.alt} fill className="object-cover" sizes="80px" />
       </div>
@@ -82,6 +91,27 @@ function GalleryItem({
           <TinySubmitButton title="Bild löschen">Löschen</TinySubmitButton>
         </form>
       </div>
+    </div>
+    <form action={updateBandGalleryImageAltAction} className="mt-2">
+      <input type="hidden" name="band_id" value={bandId} />
+      <input type="hidden" name="media_asset_id" value={image.id} />
+      <label htmlFor={`gallery_alt_${image.id}`} className="block text-xs font-medium text-gray-600 mb-1">
+        Bildbeschreibung
+      </label>
+      <div className="flex gap-2">
+        <input
+          key={image.altText}
+          id={`gallery_alt_${image.id}`}
+          name="alt_text"
+          type="text"
+          maxLength={MAX_ALT_LENGTH}
+          defaultValue={image.altText}
+          className="flex-1 min-w-0 px-2 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-900"
+        />
+        <TinySubmitButton title="Bildbeschreibung speichern">Speichern</TinySubmitButton>
+      </div>
+      <p className="mt-1 text-xs text-gray-400">Beschreibe kurz, was auf dem Foto zu sehen ist</p>
+    </form>
     </div>
   )
 }

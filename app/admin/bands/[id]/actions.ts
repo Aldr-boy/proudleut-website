@@ -2098,6 +2098,50 @@ export async function deleteBandGalleryImageAction(formData: FormData): Promise<
   redirect(`/admin/bands/${bandRow.id}?gallery_saved=1`)
 }
 
+const GALLERY_ALT_MAX = 150
+
+// Speichert die Bildbeschreibung (media_assets.alt_text) eines Galeriebildes.
+// Die Zeile wird ueber id UND band_id UND role='gallery' getroffen (0 Treffer
+// = Fehler, nie stiller Erfolg). Leeres Feld: der beim Upload vergebene
+// Standardtext "<Bandname> live" wird wiederhergestellt -- so bleibt die
+// oeffentliche Ausgabe wie bisher.
+export async function updateBandGalleryImageAltAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const media_asset_id = str(formData, 'media_asset_id')
+  const altText = str(formData, 'alt_text')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug, name')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?gallery_error=gallery_band_not_found`)
+  if (!media_asset_id) galleryErrorRedirect(bandRow.id, 'gallery_target_required')
+  if (altText.length > GALLERY_ALT_MAX) galleryErrorRedirect(bandRow.id, 'gallery_alt_too_long')
+
+  const { data: updatedRows, error: updateError } = await client
+    .from('media_assets')
+    .update({ alt_text: altText === '' ? `${bandRow.name} live` : altText })
+    .eq('id', media_asset_id)
+    .eq('band_id', bandRow.id)
+    .eq('role', 'gallery')
+    .select('id')
+
+  if (updateError) galleryErrorRedirect(bandRow.id, 'db_error')
+  if (!updatedRows || updatedRows.length === 0) galleryErrorRedirect(bandRow.id, 'gallery_target_not_found')
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+
+  redirect(`/admin/bands/${bandRow.id}?gallery_saved=1`)
+}
+
 export async function moveBandGalleryImageAction(formData: FormData): Promise<never> {
   await requireAdminSession()
 
