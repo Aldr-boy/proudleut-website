@@ -253,7 +253,8 @@ const GALLERY_ERROR_MESSAGES: Record<string, string> = {
   gallery_target_wrong_band: 'Dieses Galeriebild gehört nicht zu dieser Band – bitte Seite neu laden.',
   gallery_target_wrong_role: 'Dieser Medieneintrag ist kein Galeriebild – bitte Seite neu laden.',
   gallery_invalid_direction: 'Unbekannte Verschieben-Aktion.',
-  db_error:                  'Datenbankfehler – bitte erneut versuchen.',
+  gallery_alt_too_long:      'Die Bildbeschreibung darf höchstens 150 Zeichen lang sein.',
+  db_error:                 'Datenbankfehler – bitte erneut versuchen.',
 }
 
 type ActiveEventType = {
@@ -863,6 +864,7 @@ export default async function AdminBandDetailPage({
     id: row.id,
     url: row.url,
     alt: row.alt_text ?? `${band.name} live`,
+    altText: row.alt_text ?? '',
   }))
 
   // Banddokumente (Paket 2C): gleiches Fail-closed-Prinzip wie Galerie --
