@@ -16,11 +16,62 @@ function stripMarkdownForJsonLd(text: string): string {
     .trim();
 }
 
+const DESCRIPTION_MAX_LENGTH = 300;
+
+// Entfernt unsichtbare Formatierungszeichen (Zero-Width-Space/-Non-Joiner, Word-Joiner und
+// verwandte unsichtbare Operatoren, Richtungsmarken, weiche Trennstriche, BOM). Ein
+// Zero-Width-Joiner bleibt nur erhalten, wenn er zwei Emoji verbindet (gültige Emoji-Sequenz,
+// z. B. 👨‍👩‍👧); jeder andere Joiner (z. B. hinter einem Satzzeichen) wird entfernt. Der
+// Emoji-Präsentationsselektor U+FE0F wird nicht angefasst.
+function removeInvisibleChars(text: string): string {
+  return text
+    .replace(/[­᠎​‌‎‏‪-‮⁠-⁤⁦-⁩﻿]/g, '')
+    .replace(
+      /(\p{Extended_Pictographic}[️\u{1F3FB}-\u{1F3FF}]*)‍(?=\p{Extended_Pictographic})|‍/gu,
+      (match, emojiBefore?: string) => (emojiBefore ? match : ''),
+    );
+}
+
+// Kürzt auf maximal DESCRIPTION_MAX_LENGTH Zeichen, nie mitten im Wort: passt der Text, bleibt er
+// unverändert; sonst am letzten Satzende innerhalb der Grenze, ohne Satzende am letzten ganzen
+// Wort mit angehängtem „…“ (zählt zur Grenze).
+function truncateDescription(text: string): string {
+  if (text.length <= DESCRIPTION_MAX_LENGTH) return text;
+
+  // Ein Satzende direkt an der Grenze zählt noch mit, wenn danach ein Leerzeichen folgt.
+  const head = text.slice(0, DESCRIPTION_MAX_LENGTH + 1);
+  let sentenceEnd = -1;
+  for (const m of head.matchAll(/[.!?]["“”„'’)\]»]*(?=\s)/g)) {
+    const end = m.index + m[0].length;
+    if (end <= DESCRIPTION_MAX_LENGTH) sentenceEnd = end;
+  }
+  if (sentenceEnd > 0) return text.slice(0, sentenceEnd);
+
+  const room = DESCRIPTION_MAX_LENGTH - 1;
+  let cut = text.slice(0, room);
+  if (!/\s/.test(text.charAt(room))) {
+    const lastSpace = cut.search(/\s\S*$/);
+    if (lastSpace <= 0) return '';
+    cut = cut.slice(0, lastSpace);
+  }
+  return `${cut.replace(/[\s,;:–-]+$/, '')}…`;
+}
+
+function buildBandDescription(description: string): string {
+  const prepared = removeInvisibleChars(stripMarkdownForJsonLd(description))
+    .replace(/ {2,}/g, ' ')
+    .trim();
+  return truncateDescription(prepared);
+}
+
 /**
  * MusicGroup JSON-LD für ein Bandprofil generieren.
  *
  * Gibt nur Felder aus, für die sinnvolle Daten vorhanden sind.
  * Keine leeren Strings, keine Platzhalter.
+ *
+ * @id: identisch zur kanonischen Profil-URL, gleiches Muster wie beim
+ * Musiker-Steckbrief (generatePersonJsonLd).
  *
  * Hinweis: Referenz-Events werden im Durchstich NICHT als MusicEvent
  * ins JSON-LD aufgenommen. Ein bloßes Jahr (z. B. "2024") ist kein
@@ -38,8 +89,12 @@ export function generateBandJsonLd(band: Band) {
     band.socialLinks.youtube,
   ].filter(Boolean);
 
-  // Genre aus Kategorie und Eventtypen
-  const genre = [band.category, ...band.eventTypes].filter(Boolean);
+  // Genre: nur die Bandart (Anlässe gehören nicht in genre)
+  const bandart = band.category ?? band.bandartNames[0];
+  const genre = bandart ? [bandart] : [];
+
+  const url = absoluteUrl(`/band/${band.slug}`);
+  const description = band.description ? buildBandDescription(band.description) : undefined;
 
   // Location nur wenn sinnvolle Daten vorhanden
   const hasLocation = band.location.city || band.location.state;
@@ -58,11 +113,12 @@ export function generateBandJsonLd(band: Band) {
   return {
     '@context': 'https://schema.org',
     '@type': 'MusicGroup',
+    '@id': url,
     name: band.name,
-    url: absoluteUrl(`/band/${band.slug}`),
+    url,
     ...(sameAs.length > 0 && { sameAs }),
     ...(genre.length > 0 && { genre }),
-    ...(band.description && { description: stripMarkdownForJsonLd(band.description).slice(0, 300) }),
+    ...(description && { description }),
     ...(band.heroImage && { image: band.heroImage.url }),
     ...(location && { location }),
   };
@@ -81,9 +137,9 @@ export function generateBandJsonLd(band: Band) {
  * @id/url: nutzen dieselbe absolute, zentrale URL-Quelle (absoluteUrl aus
  * lib/seo/metadata.ts) wie das bestehende Canonical-/Metadata-Verhalten der
  * Musikerseite -- keine hartkodierte Domain. Es gibt im Projekt aktuell
- * keine gesonderte @id-Fragment-Konvention (auch generateBandJsonLd oben
- * setzt keine @id) -- @id ist deshalb bewusst identisch zur kanonischen
- * Profil-URL, ohne ein neues Fragment zu erfinden.
+ * keine gesonderte @id-Fragment-Konvention -- @id ist deshalb bewusst
+ * identisch zur kanonischen Profil-URL, ohne ein neues Fragment zu
+ * erfinden (generateBandJsonLd oben nutzt dasselbe Muster).
  *
  * jobTitle: uebernimmt exakt den bereits im Musiker-Hero berechneten und
  * sichtbar ausgegebenen Rollenwert (siehe app/musiker/[slug]/page.tsx,
@@ -91,9 +147,9 @@ export function generateBandJsonLd(band: Band) {
  * Wert nicht uebergeben (Hero zeigt keine Rolle), bleibt jobTitle weg.
  *
  * memberOf: eine MusicGroup je oeffentlich sichtbarer Membership, mit
- * name/url aus den bestehenden Banddaten. Bewusst KEINE @id -- die
- * bestehenden Bandseiten setzen selbst keine (siehe generateBandJsonLd
- * oben), also wird hier auch keine neue erfunden.
+ * name/url aus den bestehenden Banddaten. Bewusst ohne @id (nur name/url,
+ * unveraendert); die Band-@id steht auf der Bandseite selbst
+ * (generateBandJsonLd oben) und ist identisch zu dieser url.
  *
  * sameAs: Hauptwebsite + zusaetzliche oeffentliche Links, aber nur gueltige
  * absolute https-URLs, keine proudleut-internen URLs, keine Duplikate.
