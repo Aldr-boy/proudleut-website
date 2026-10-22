@@ -164,6 +164,8 @@ const HERO_IMAGE_ERROR_MESSAGES: Record<string, string> = {
   hero_image_ambiguous:        'Datenkonflikt: Für diese Band sind mehrere Hero-Bilder ohne eindeutige Reihenfolge hinterlegt. Bitte außerhalb dieses Editors klären.',
   hero_image_upload_failed:    'Upload fehlgeschlagen – bitte erneut versuchen.',
   hero_image_db_update_failed: 'Bild wurde hochgeladen, aber die Zuordnung konnte nicht gespeichert werden – bitte erneut versuchen.',
+  hero_image_alt_too_long:     'Die Bildbeschreibung darf höchstens 150 Zeichen lang sein.',
+  hero_image_no_image:         'Es ist noch kein Hero-Bild vorhanden – bitte zuerst ein Bild hochladen.',
   db_error:                    'Datenbankfehler – bitte erneut versuchen.',
 }
 
@@ -845,7 +847,11 @@ export default async function AdminBandDetailPage({
   const heroImageLoadError = !!heroMediaAssetsError
   const heroRowResolution = resolvePubliclyUsedMediaRow(heroMediaAssetsRaw ?? [])
   const currentHeroImage = heroRowResolution.kind === 'resolved'
-    ? { url: heroRowResolution.row.url, alt: heroRowResolution.row.alt_text ?? `${band.name} live` }
+    ? {
+        url: heroRowResolution.row.url,
+        alt: heroRowResolution.row.alt_text ?? `${band.name} live`,
+        altText: heroRowResolution.row.alt_text ?? '',
+      }
     : null
 
   // Thumbnail fuer die Anzeige: eigenstaendige Konfliktaufloesung, unabhaengig

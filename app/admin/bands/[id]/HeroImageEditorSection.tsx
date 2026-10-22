@@ -2,9 +2,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import Image from 'next/image'
-import { updateBandHeroImageAction } from './actions'
+import { updateBandHeroImageAction, updateBandHeroImageAltAction } from './actions'
 
 const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp'
+const MAX_ALT_LENGTH = 150
+
+function AltSubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {pending ? 'Wird gespeichert …' : 'Speichern'}
+    </button>
+  )
+}
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus()
@@ -28,7 +42,8 @@ export function HeroImageEditorSection({
 }: {
   bandId: string
   // aktuelles Hero-Bild dieser Band, oder null (Empty State)
-  heroImage: { url: string; alt: string } | null
+  // altText = gespeicherter alt_text (leer, wenn keiner gespeichert ist) -- fuer das Eingabefeld
+  heroImage: { url: string; alt: string; altText: string } | null
   // true, wenn das Laden der media_assets-Zeilen fehlgeschlagen ist -- darf
   // NIE als "kein Hero-Bild vorhanden" interpretiert werden (fail-closed).
   loadError?: boolean
@@ -104,6 +119,28 @@ export function HeroImageEditorSection({
           </div>
         )}
       </div>
+
+      {heroImage && (
+        <form action={updateBandHeroImageAltAction} className="mb-4 max-w-sm">
+          <input type="hidden" name="band_id" value={bandId} />
+          <label htmlFor="hero_alt_text" className="block text-sm font-medium text-gray-700 mb-1">
+            Bildbeschreibung
+          </label>
+          <div className="flex gap-2">
+            <input
+              key={heroImage.altText}
+              id="hero_alt_text"
+              name="alt_text"
+              type="text"
+              maxLength={MAX_ALT_LENGTH}
+              defaultValue={heroImage.altText}
+              className="flex-1 min-w-0 px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white text-gray-900"
+            />
+            <AltSubmitButton />
+          </div>
+          <p className="mt-1 text-xs text-gray-400">Beschreibe kurz, was auf dem Foto zu sehen ist</p>
+        </form>
+      )}
 
       <form action={updateBandHeroImageAction} className="space-y-3">
         <input type="hidden" name="band_id" value={bandId} />
