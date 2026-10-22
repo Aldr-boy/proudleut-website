@@ -26,6 +26,8 @@ export default function ImpressumPage() {
               Am Rohrfeld 24
               <br />
               92360 Mühlhausen
+              <br />
+              Deutschland
             </p>
 
             <h2 className={h2Class}>Kontakt</h2>
@@ -49,20 +51,8 @@ export default function ImpressumPage() {
               {'Verbraucher\u00ADstreit\u00ADbeilegung/Universal\u00ADschlichtungs\u00ADstelle'}
             </h2>
             <p className={pClass}>
-              Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
-              Verbraucherschlichtungsstelle teilzunehmen.
-            </p>
-
-            <p className={`${pClass} mt-4`}>
-              Quelle:{' '}
-              <a
-                href="https://www.e-recht24.de/impressum-generator.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${linkClass} [overflow-wrap:anywhere]`}
-              >
-                https://www.e-recht24.de/impressum-generator.html
-              </a>
+              Wir sind zur Teilnahme an einem Streitbeilegungsverfahren vor einer
+              Verbraucherschlichtungsstelle weder verpflichtet noch bereit.
             </p>
           </div>
         </div>
