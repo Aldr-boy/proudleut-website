@@ -1478,6 +1478,60 @@ function heroImageErrorRedirect(bandId: string, code: string): never {
   redirect(`/admin/bands/${bandId}?hero_image_error=${code}`)
 }
 
+const HERO_ALT_MAX = 150
+
+// Speichert die Bildbeschreibung (media_assets.alt_text) des Hero-Bildes,
+// ohne das Bild selbst anzufassen. Die Zeile wird mit derselben
+// Konfliktaufloesung wie beim Upload bestimmt (mehrdeutig -> Abbruch ohne
+// Schreiben). Leeres Feld (auch nur Leerzeichen): alt_text wird auf NULL
+// gesetzt -- die oeffentliche Bandseite gibt dann ihren Ersatztext
+// "Livefoto von <Bandname>" aus (normalizeBand.ts).
+export async function updateBandHeroImageAltAction(formData: FormData): Promise<never> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const altText = str(formData, 'alt_text')
+  if (!band_id) redirect('/admin/bands')
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client
+    .from('bands')
+    .select('id, slug, name')
+    .eq('id', band_id)
+    .maybeSingle()
+
+  if (!bandRow) redirect(`/admin/bands?hero_image_error=hero_image_band_not_found`)
+  if (altText.length > HERO_ALT_MAX) heroImageErrorRedirect(bandRow.id, 'hero_image_alt_too_long')
+
+  const { data: existingHeroRows, error: heroLoadError } = await client
+    .from('media_assets')
+    .select('id, url, alt_text, role, sort_order, source_provider')
+    .eq('band_id', bandRow.id)
+    .eq('role', 'hero')
+
+  if (heroLoadError) heroImageErrorRedirect(bandRow.id, 'hero_image_load_failed')
+
+  const resolution = resolvePubliclyUsedMediaRow(existingHeroRows ?? [])
+  if (resolution.kind === 'ambiguous') heroImageErrorRedirect(bandRow.id, 'hero_image_ambiguous')
+  if (resolution.kind !== 'resolved' || !resolution.row) heroImageErrorRedirect(bandRow.id, 'hero_image_no_image')
+
+  const { error: updateError } = await client
+    .from('media_assets')
+    .update({ alt_text: altText === '' ? null : altText })
+    .eq('id', resolution.row.id)
+    .eq('band_id', bandRow.id)
+    .eq('role', 'hero')
+
+  if (updateError) heroImageErrorRedirect(bandRow.id, 'db_error')
+
+  revalidatePath(`/admin/bands/${bandRow.id}`)
+  revalidatePath(`/band/${bandRow.slug}`)
+  for (const { path, type } of BAND_CARD_REVALIDATION_PATHS) revalidatePath(path, type)
+
+  redirect(`/admin/bands/${bandRow.id}?hero_image_saved=1`)
+}
+
 export async function updateBandHeroImageAction(formData: FormData): Promise<never> {
   await requireAdminSession()
 
