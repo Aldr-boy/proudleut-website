@@ -37,7 +37,7 @@ export const CURRENT_DATENSCHUTZ_VERSION = 'v2-2026-10';
 // lib/anfrage/service.ts, Retry-Dispatch). Eine spaetere Aenderung an der
 // Band-Mail-Gestaltung erhoeht BAND_TEMPLATE_VERSION auf einen neuen Wert,
 // veraendert v1/v2 aber nicht rueckwirkend.
-export const BAND_TEMPLATE_VERSION = 'v2';
+export const BAND_TEMPLATE_VERSION = 'v3';
 export const CONFIRMATION_TEMPLATE_VERSION = 'v3';
 
 export const ANFRAGE_SENDER_EMAIL = 'anfrage@proudleut.com';
