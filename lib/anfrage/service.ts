@@ -11,6 +11,8 @@ import {
   renderHtmlFromTextSnapshot,
 } from './templates.ts';
 import type { BandMailV2Content, ConfirmationMailV2Content } from './templates.ts';
+import { renderConfirmationMailV3Html } from './confirmationMailV3.ts';
+import { ensureMailThumbnail } from './mailThumbnails.ts';
 import { buildBandMailIdempotencyKey, buildConfirmationIdempotencyKey } from './idempotencyKeys.ts';
 import { sendMailViaResend } from './mailSend.ts';
 import type { ResendEmailsClient } from './mailSend.ts';
@@ -220,9 +222,14 @@ export async function sendAndPersistBandMail(
 // Relation: anfrage_bands.anfrage_id existiert bereits (indiziert), genauso
 // wie anfrage_bands.band_id -> bands(slug). Gleiche Array/Objekt-Union aus
 // demselben PostgREST-Grund wie bei AnfrageBandSendRow.bands.
+type ConfirmationBandRow = {
+  slug: string;
+  media_assets?: { role: string; url: string | null; sort_order: number | null }[] | null;
+};
+
 type AnfrageConfirmationRowAnfrageBand = {
   band_name_snapshot: string;
-  bands: { slug: string } | { slug: string }[] | null;
+  bands: ConfirmationBandRow | ConfirmationBandRow[] | null;
 };
 
 export type AnfrageConfirmationRow = {
@@ -253,7 +260,7 @@ export type AnfrageConfirmationRow = {
 // Confirmation-Retry) -- verhindert, dass eine Stelle die fuer v2 noetigen
 // Felder vergisst.
 const CONFIRMATION_SELECT =
-  'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at, confirmation_template_version, vorname, anlass, datum_text, location, plz_ort, nachricht, anfrage_bands(band_name_snapshot, bands(slug))';
+  'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at, confirmation_template_version, vorname, anlass, datum_text, location, plz_ort, nachricht, anfrage_bands(band_name_snapshot, bands(slug, media_assets(role, url, sort_order)))';
 
 // Waehlt anhand der auf der Zeile gespeicherten confirmation_template_version
 // den passenden Renderer und ruft Resend auf -- exakt dasselbe Muster wie
@@ -262,6 +269,7 @@ const CONFIRMATION_SELECT =
 // CONFIRMATION_TEMPLATE_VERSION). Eine unbekannte Version sendet NICHTS
 // (fail closed) und nutzt denselben bestehenden 'fehlgeschlagen'-Pfad.
 async function renderAndSendConfirmation(
+  client: SupabaseClient,
   row: AnfrageConfirmationRow,
   getResendClient: () => ResendEmailsClient
 ): Promise<MailSendOutcome> {
@@ -269,7 +277,7 @@ async function renderAndSendConfirmation(
 
   if (row.confirmation_template_version === 'v1') {
     html = renderHtmlFromTextSnapshot(row.confirmation_subject, row.confirmation_body_text);
-  } else if (row.confirmation_template_version === CONFIRMATION_TEMPLATE_VERSION) {
+  } else if (row.confirmation_template_version === 'v2' || row.confirmation_template_version === 'v3') {
     const bandRefs = (row.anfrage_bands ?? []).map((ab) => {
       const bandRow = Array.isArray(ab.bands) ? ab.bands[0] : ab.bands;
       return { name: ab.band_name_snapshot, slug: bandRow?.slug ?? '' };
@@ -289,7 +297,19 @@ async function renderAndSendConfirmation(
       plzOrt: row.plz_ort,
       nachricht: row.nachricht,
     };
-    html = renderConfirmationMailV2Html(content);
+    if (row.confirmation_template_version === 'v2') {
+      html = renderConfirmationMailV2Html(content);
+    } else {
+      // Bandfoto: hero, sonst thumbnail, sonst erstes Galeriebild (wie auf der Bandseite).
+      const sourceUrls = (row.anfrage_bands ?? []).map((ab) => {
+        const bandRow = Array.isArray(ab.bands) ? ab.bands[0] : ab.bands;
+        const media = [...(bandRow?.media_assets ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+        const pick = (role: string) => media.find((m) => m.role === role && m.url)?.url ?? null;
+        return pick('hero') ?? pick('thumbnail') ?? pick('gallery');
+      });
+      const thumbs = await Promise.all(bandRefs.map((b, i) => ensureMailThumbnail(client, b.slug, sourceUrls[i])));
+      html = renderConfirmationMailV3Html({ ...content, bands: bandRefs.map((b, i) => ({ ...b, thumbUrl: thumbs[i] })) });
+    }
   } else {
     console.error('[anfrage] Unbekannte Confirmation-Template-Version -- fail closed, kein Versand', {
       anfrage_id: row.id,
@@ -338,7 +358,7 @@ export async function sendAndPersistConfirmation(
     return;
   }
 
-  const outcome = await renderAndSendConfirmation(row, getResendClient);
+  const outcome = await renderAndSendConfirmation(client, row, getResendClient);
 
   const patch = computeFinalStatusPatch(outcome, attemptTimeIso);
   const { error: patchError } = await client
@@ -629,7 +649,7 @@ export async function retryConfirmation(anfrageId: string, deps: AnfrageServiceD
   // werden und folgen weiterhin ausschliesslich der bestehenden
   // Eligibility-Logik oben.
   if (
-    row.confirmation_template_version === CONFIRMATION_TEMPLATE_VERSION &&
+    row.confirmation_template_version !== 'v1' &&
     !(await areAllBandsSent(deps.client, anfrageId))
   ) {
     return { ok: false, reason: 'bands_not_complete' };

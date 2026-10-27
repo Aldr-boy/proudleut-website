@@ -386,12 +386,12 @@ const CONFIRMATION_THREE_BANDS: ConfirmationMailV2Content = {
 
 test('renderConfirmationMailV2: Betreff bei genau einer Band', () => {
   const { subject } = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
-  assert.equal(subject, 'Deine Anfrage an Donnaweda ist raus')
+  assert.equal(subject, 'proudleut.com | deine Anfrage an Donnaweda ist unterwegs')
 })
 
 test('renderConfirmationMailV2: Betreff bei mehreren Bands', () => {
   const { subject } = renderConfirmationMailV2(CONFIRMATION_THREE_BANDS)
-  assert.equal(subject, 'Deine Anfrage an 3 Bands ist raus')
+  assert.equal(subject, 'proudleut.com | deine 3 Anfragen sind unterwegs')
 })
 
 test('renderConfirmationMailV2: korrekter Singular in "Wie geht\'s jetzt weiter"', () => {
@@ -446,10 +446,9 @@ test('renderConfirmationMailV2: Rechtlinks direkt auf /impressum und /datenschut
   assert.match(bodyText, new RegExp(LEGAL_LINKS.datenschutzUrl.replace(/\//g, '\\/')))
 })
 
-test('renderConfirmationMailV2Html: Betreff bei einer Band identisch zu Plain-Text-Betreff', () => {
-  const plain = renderConfirmationMailV2(CONFIRMATION_ONE_BAND)
+test('renderConfirmationMailV2Html: Ueberschrift bei einer Band bleibt eingefroren', () => {
   const html = renderConfirmationMailV2Html(CONFIRMATION_ONE_BAND)
-  assert.match(html, new RegExp(`<h1[^>]*>\\s*${plain.subject.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\s*<\\/h1>`))
+  assert.match(html, /<h1[^>]*>\s*Deine Anfrage an Donnaweda ist raus\s*<\/h1>/)
 })
 
 test('renderConfirmationMailV2Html: Betreff bei mehreren Bands', () => {
@@ -622,7 +621,7 @@ test('renderConfirmationMailV2Html: Logo-/Portrait-Assets identisch zur Bandmail
 test('renderConfirmationMailV2Html: Plain Text und HTML inhaltlich aequivalent (gleiche Kernaussagen)', () => {
   const plain = renderConfirmationMailV2(CONFIRMATION_THREE_BANDS)
   const html = renderConfirmationMailV2Html(CONFIRMATION_THREE_BANDS)
-  assert.equal(plain.subject, 'Deine Anfrage an 3 Bands ist raus')
+  assert.equal(plain.subject, 'proudleut.com | deine 3 Anfragen sind unterwegs')
   assert.match(html, /Deine Anfrage an 3 Bands ist raus/)
   for (const band of CONFIRMATION_THREE_BANDS.bands) {
     assert.match(plain.bodyText, new RegExp(band.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))

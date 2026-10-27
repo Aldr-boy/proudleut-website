@@ -38,7 +38,7 @@ export const CURRENT_DATENSCHUTZ_VERSION = 'v2-2026-10';
 // Band-Mail-Gestaltung erhoeht BAND_TEMPLATE_VERSION auf einen neuen Wert,
 // veraendert v1/v2 aber nicht rueckwirkend.
 export const BAND_TEMPLATE_VERSION = 'v2';
-export const CONFIRMATION_TEMPLATE_VERSION = 'v2';
+export const CONFIRMATION_TEMPLATE_VERSION = 'v3';
 
 export const ANFRAGE_SENDER_EMAIL = 'anfrage@proudleut.com';
 export const ANFRAGE_SENDER_NAME = 'proudleut.com';
@@ -54,6 +54,10 @@ export const BAND_MAIL_LOGO_URL =
   'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media/proudleut/proudleut_Logo_rgb_72dpi.png';
 export const BAND_MAIL_PORTRAIT_URL =
   'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media/proudleut/Alexander%20Dressler.jpg';
+// Signaturfoto der Bestaetigung v3: 144x144 px JPEG (Anzeige 72 px,
+// doppelte Aufloesung), nicht das Original.
+export const CONFIRMATION_MAIL_PORTRAIT_URL =
+  'https://bfyucjjyarvqeftqqihm.supabase.co/storage/v1/object/public/band-media/proudleut/Alexander%20Dressler-144.jpg';
 
 // /datenschutz (app/datenschutz/page.tsx) und /impressum
 // (app/impressum/page.tsx) sind seit Block "Impressum und Datenschutz"
