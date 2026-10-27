@@ -167,8 +167,8 @@ export type ConfirmationMailV2Content = {
 export function renderConfirmationMailV2(content: ConfirmationMailV2Content): RenderedMail {
   const isSingle = content.bands.length === 1;
   const subject = isSingle
-    ? `Deine Anfrage an ${content.bands[0].name} ist raus`
-    : `Deine Anfrage an ${content.bands.length} Bands ist raus`;
+    ? `proudleut.com | deine Anfrage an ${content.bands[0].name} ist unterwegs`
+    : `proudleut.com | deine ${content.bands.length} Anfragen sind unterwegs`;
 
   const bandLines = content.bands.map((b) => `- ${b.name}: ${buildBandPageUrl(b.slug)}`);
   const nachrichtVorhanden = !!content.nachricht && content.nachricht.trim() !== '';
@@ -208,7 +208,7 @@ export function renderConfirmationMailV2(content: ConfirmationMailV2Content): Re
   return { subject, bodyText };
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
