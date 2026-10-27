@@ -12,6 +12,7 @@ import {
 } from './templates.ts';
 import type { BandMailV2Content, ConfirmationMailV2Content } from './templates.ts';
 import { renderConfirmationMailV3Html } from './confirmationMailV3.ts';
+import { renderBandMailV3Html } from './bandMailV3.ts';
 import { ensureMailThumbnail } from './mailThumbnails.ts';
 import { buildBandMailIdempotencyKey, buildConfirmationIdempotencyKey } from './idempotencyKeys.ts';
 import { sendMailViaResend } from './mailSend.ts';
@@ -111,7 +112,7 @@ async function renderAndSendBandMail(
 
   if (row.template_version === 'v1') {
     html = renderHtmlFromTextSnapshot(row.subject, row.body_text);
-  } else if (row.template_version === BAND_TEMPLATE_VERSION) {
+  } else if (row.template_version === 'v2' || row.template_version === 'v3') {
     const anfrageRow = Array.isArray(row.anfragen) ? row.anfragen[0] : row.anfragen;
     if (!anfrageRow) {
       return {
@@ -134,7 +135,7 @@ async function renderAndSendBandMail(
       nachricht: anfrageRow.nachricht,
       anfrageZeitpunkt: row.created_at,
     };
-    html = renderBandMailV2Html(content);
+    html = row.template_version === 'v2' ? renderBandMailV2Html(content) : renderBandMailV3Html(content);
   } else {
     console.error('[anfrage] Unbekannte Band-Template-Version -- fail closed, kein Versand', {
       anfrage_band_id: row.id,
