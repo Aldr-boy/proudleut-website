@@ -80,8 +80,8 @@ function bandCard(b: ConfirmationMailV3Band, index: number): string {
 function step(n: string, text: string, bold: boolean): string {
   return `
                 <tr>
-                  <td valign="top" width="34" style="width:34px;padding:2px 0;font-size:16px;line-height:1.4;font-weight:bold;color:#734b8b;">${n}</td>
-                  <td valign="top" style="padding:2px 0;font-size:16px;line-height:1.4;${bold ? 'font-weight:bold;' : ''}color:#1a1a1a;">${text}</td>
+                  <td valign="top" width="34" style="width:34px;padding:4px 0;font-size:16px;line-height:1.5;font-weight:bold;color:#734b8b;">${n}</td>
+                  <td valign="top" style="padding:4px 0;font-size:16px;line-height:1.5;${bold ? 'font-weight:bold;' : ''}color:#1a1a1a;">${text}</td>
                 </tr>`;
 }
 
@@ -102,7 +102,7 @@ export function renderConfirmationMailV3Html(content: ConfirmationMailV3Content)
 
   const datum = parseSingleDate(content.datumText);
   const datumBlock = datum
-    ? `<div style="margin:0 0 14px 0;font-size:64px;line-height:1;font-weight:bold;letter-spacing:-0.04em;color:#1a1a1a;">${datum.tag}<span style="padding-left:10px;font-size:15px;line-height:1;font-weight:bold;letter-spacing:0;color:#734b8b;">${datum.monat} ${datum.jahr}</span></div>`
+    ? `<div style="margin:0 0 4px 0;font-size:64px;line-height:1;font-weight:bold;letter-spacing:-0.04em;color:#1a1a1a;">${datum.tag}<span style="padding-left:10px;font-size:15px;line-height:1;font-weight:bold;letter-spacing:0;color:#734b8b;">${datum.monat} ${datum.jahr}</span></div>`
     : '';
 
   const detailRows = (
@@ -117,8 +117,8 @@ export function renderConfirmationMailV3Html(content: ConfirmationMailV3Content)
     .map(
       (r) => `
                         <tr>
-                          <td valign="top" width="90" style="width:90px;padding:3px 12px 3px 0;font-size:16px;line-height:1.6;color:#77706b;">${r.label}</td>
-                          <td valign="top" style="padding:3px 0;font-size:16px;line-height:1.6;color:#1a1a1a;word-break:normal;overflow-wrap:normal;">${escapeHtml(r.value)}</td>
+                          <td valign="top" width="90" style="width:90px;padding:4px 12px 4px 0;font-size:16px;line-height:1.5;color:#77706b;">${r.label}</td>
+                          <td valign="top" style="padding:4px 0;font-size:16px;line-height:1.5;color:#1a1a1a;word-break:normal;overflow-wrap:normal;">${escapeHtml(r.value)}</td>
                         </tr>`
     )
     .join('');
@@ -199,7 +199,7 @@ export function renderConfirmationMailV3Html(content: ConfirmationMailV3Content)
 
           <tr>
             <td class="pl-px pl-gap" style="padding:56px 36px 0 36px;">
-              <div style="${LABEL}margin-bottom:16px;">Deine Veranstaltung</div>
+              <div style="${LABEL}margin-bottom:13px;">Deine Veranstaltung</div>
               ${datumBlock}
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${detailRows}
               </table>
@@ -209,10 +209,10 @@ ${nachrichtBlock}
 
           <tr>
             <td class="pl-px pl-gap" style="padding:56px 36px 0 36px;">
-              <div style="${LABEL}margin-bottom:8px;">Wie geht's jetzt weiter?</div>
+              <div style="${LABEL}margin-bottom:12px;">Wie geht's jetzt weiter?</div>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${step('1', 'Deine Anfrage ist raus.', true)}${step('2', weiterSatz, false)}${step('3', 'Ihr klärt alles Weitere direkt miteinander.', false)}
               </table>
-              <div style="margin-top:6px;padding-left:34px;font-size:14px;line-height:1.6;color:#77706b;">Mit deiner Anfrage ist noch keine Buchung verbunden.</div>
+              <div style="margin-top:10px;padding-left:34px;font-size:14px;line-height:1.6;color:#77706b;">Mit deiner Anfrage ist noch keine Buchung verbunden.</div>
             </td>
           </tr>
 
