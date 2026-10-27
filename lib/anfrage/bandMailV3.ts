@@ -19,7 +19,9 @@ export function renderBandMailV3Html(content: BandMailV2Content): string {
   const safeBandName = escapeHtml(content.bandName);
   const veranstalterName = [content.vorname, content.nachname].filter(Boolean).join(' ');
   const safeVeranstalterName = escapeHtml(veranstalterName);
-  const safeVorname = escapeHtml(content.vorname);
+  // Spitzname ersetzt den Vornamen nur im Fliesstext; Kontaktblock und
+  // Antwort-Entwurf nutzen weiter Vor- und Nachname.
+  const safeVorname = escapeHtml(content.spitzname || content.vorname);
   const safeEmail = escapeHtml(content.email);
   const safeBandUrl = content.bandSlug ? escapeHtml(`${SITE_URL}/band/${content.bandSlug}`) : null;
 

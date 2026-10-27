@@ -65,12 +65,14 @@ export function renderBandMail(input: NormalizedAnfrageInput, band: ResolvedBand
 // v1-Retry-Pfad als eingefrorene Referenz bestehen.
 export function renderBandMailV2(input: NormalizedAnfrageInput, band: ResolvedBand): RenderedMail {
   const veranstalterName = [input.vorname, input.nachname].filter(Boolean).join(' ');
+  // Spitzname ersetzt den Vornamen nur dort, wo die Band den Veranstalter anspricht.
+  const anrede = input.spitzname || input.vorname;
   const subject = `Neue Anfrage über proudleut.com für ${band.name}`;
 
   const bodyText = joinNonEmpty([
     `Servus ${band.name},`,
     '',
-    `über eure Bandseite bei proudleut hat euch ${input.vorname} eine neue Anfrage geschickt.`,
+    `über eure Bandseite bei proudleut hat euch ${anrede} eine neue Anfrage geschickt.`,
     `Bandseite: ${buildBandPageUrl(band.slug)}`,
     '',
     'Veranstaltung:',
@@ -80,7 +82,7 @@ export function renderBandMailV2(input: NormalizedAnfrageInput, band: ResolvedBa
     line('PLZ & Ort', input.plzOrt),
     '',
     input.nachricht
-      ? `Nachricht von ${input.vorname}:\n${input.nachricht}`
+      ? `Nachricht von ${anrede}:\n${input.nachricht}`
       : 'Keine persönliche Nachricht hinterlassen.',
     '',
     'Kontakt:',
@@ -88,9 +90,9 @@ export function renderBandMailV2(input: NormalizedAnfrageInput, band: ResolvedBa
     line('E-Mail', input.email),
     line('Telefon', input.telefon),
     '',
-    `Ihr könnt auch einfach auf diese E-Mail antworten – eure Antwort geht direkt an ${input.vorname}.`,
+    `Ihr könnt auch einfach auf diese E-Mail antworten – eure Antwort geht direkt an ${anrede}.`,
     '',
-    `Bitte gebt ${input.vorname} möglichst zeitnah direkt Bescheid – ob es für euch passt oder nicht. So gibt es schnell Klarheit.`,
+    `Bitte gebt ${anrede} möglichst zeitnah direkt Bescheid – ob es für euch passt oder nicht. So gibt es schnell Klarheit.`,
     '',
     'Wenn ich euch bei der Anfrage unterstützen kann, meldet euch einfach bei mir.',
     '',
@@ -151,6 +153,8 @@ export type ConfirmationBandRef = {
 
 export type ConfirmationMailV2Content = {
   vorname: string;
+  // Optional: ersetzt den Vornamen ausschliesslich in der Anrede ("Servus ...").
+  spitzname?: string | null;
   bands: ConfirmationBandRef[];
   anlass: string | null;
   datumText: string;
@@ -174,7 +178,7 @@ export function renderConfirmationMailV2(content: ConfirmationMailV2Content): Re
   const nachrichtVorhanden = !!content.nachricht && content.nachricht.trim() !== '';
 
   const bodyText = joinNonEmpty([
-    `Servus ${content.vorname},`,
+    `Servus ${content.spitzname || content.vorname},`,
     '',
     isSingle
       ? 'vielen Dank für deine Anfrage über proudleut.com. Wir haben deine Anfrage an folgende Band weitergeleitet:'
@@ -250,6 +254,8 @@ export type BandMailV2Content = {
   bandSlug: string | null;
   vorname: string;
   nachname: string | null;
+  // Optional: ersetzt den Vornamen nur im Fliesstext der V3-Band-Mail.
+  spitzname?: string | null;
   email: string;
   telefon: string | null;
   anlass: string | null;
