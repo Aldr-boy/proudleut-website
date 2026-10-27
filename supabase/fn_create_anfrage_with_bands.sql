@@ -74,7 +74,7 @@ begin
   v_id := (p_anfrage->>'id')::uuid;
 
   insert into public.anfragen (
-    id, idempotency_key, vorname, nachname, email, telefon, anlass, datum_text,
+    id, idempotency_key, vorname, nachname, spitzname, email, telefon, anlass, datum_text,
     location, plz_ort, nachricht, gaestezahl, spielzeit, source, status,
     datenschutz_accepted_at, datenschutz_version,
     confirmation_recipient, confirmation_reply_to, confirmation_status,
@@ -85,6 +85,7 @@ begin
     v_key,
     p_anfrage->>'vorname',
     p_anfrage->>'nachname',
+    p_anfrage->>'spitzname',
     p_anfrage->>'email',
     p_anfrage->>'telefon',
     p_anfrage->>'anlass',

@@ -5,6 +5,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SLUG_REGEX = /^[a-z0-9-]+$/;
 const IDEMPOTENCY_KEY_REGEX = /^[A-Za-z0-9_-]+$/;
 const CRLF_REGEX = /[\r\n]/;
+const CONTROL_CHARS_REGEX = /[\u0000-\u001f\u007f]/;
 const MIN_SUBMIT_TIME_MS = 3000;
 
 function isNonEmptyString(v: unknown): v is string {
@@ -109,6 +110,17 @@ export function parseAnfrageSubmission(raw: unknown): ParseResult {
     return { ok: false, reason: 'validation', message: 'Nachname ist zu lang' };
   }
 
+  // Optionaler Spitzname: nur fuer die Anrede in den Mails. Mehrfach-Leerraum
+  // (auch Zeilenumbrueche) wird zu einem Leerzeichen, uebrige Steuerzeichen
+  // werden abgelehnt.
+  const spitzname = trimOrEmpty(body.spitzname).replace(/\s+/g, ' ');
+  if (spitzname.length > MAX_LENGTHS.spitzname) {
+    return { ok: false, reason: 'validation', message: 'Spitzname ist zu lang' };
+  }
+  if (CONTROL_CHARS_REGEX.test(spitzname)) {
+    return { ok: false, reason: 'validation', message: 'Ungültige Eingabe' };
+  }
+
   const email = trimOrEmpty(body.email);
   if (!email || !isValidEmail(email)) {
     return { ok: false, reason: 'validation', message: 'Bitte gib eine gültige E-Mail-Adresse ein' };
@@ -175,6 +187,7 @@ export function parseAnfrageSubmission(raw: unknown): ParseResult {
       nachricht: nachricht || null,
       vorname,
       nachname: nachname || null,
+      spitzname: spitzname || null,
       email,
       telefon: telefon || null,
     },

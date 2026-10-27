@@ -9,6 +9,7 @@ export const MAX_BANDS_PER_ANFRAGE = 8;
 export const MAX_LENGTHS = {
   vorname: 100,
   nachname: 100,
+  spitzname: 60,
   email: 254,
   telefon: 40,
   anlass: 200,

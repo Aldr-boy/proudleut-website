@@ -10,6 +10,7 @@ export type AnfrageSubmissionPayload = {
   nachricht: string;
   vorname: string;
   nachname: string;
+  spitzname?: string;
   email: string;
   telefon: string;
   datenschutz: boolean;
@@ -30,6 +31,7 @@ export type NormalizedAnfrageInput = {
   nachricht: string | null;
   vorname: string;
   nachname: string | null;
+  spitzname?: string | null;
   email: string;
   telefon: string | null;
 };

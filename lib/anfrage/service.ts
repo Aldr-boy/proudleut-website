@@ -65,6 +65,7 @@ type AnfrageBandSendRowAnfrage = {
   location: string | null;
   telefon: string | null;
   vorname: string;
+  spitzname?: string | null;
   nachname: string | null;
   nachricht: string | null;
 };
@@ -126,6 +127,7 @@ async function renderAndSendBandMail(
       bandSlug: bandRow?.slug ?? null,
       vorname: anfrageRow.vorname,
       nachname: anfrageRow.nachname,
+      spitzname: anfrageRow.spitzname,
       email: row.reply_to,
       telefon: anfrageRow.telefon,
       anlass: anfrageRow.anlass,
@@ -248,6 +250,7 @@ export type AnfrageConfirmationRow = {
   // Fuer den v2-HTML-Renderer benoetigt -- dieselben, nach Erstschreiben nie
   // mehr veraenderten anfragen-Spalten wie bei AnfrageBandSendRowAnfrage.
   vorname: string;
+  spitzname?: string | null;
   anlass: string | null;
   datum_text: string;
   location: string | null;
@@ -261,7 +264,7 @@ export type AnfrageConfirmationRow = {
 // Confirmation-Retry) -- verhindert, dass eine Stelle die fuer v2 noetigen
 // Felder vergisst.
 const CONFIRMATION_SELECT =
-  'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at, confirmation_template_version, vorname, anlass, datum_text, location, plz_ort, nachricht, anfrage_bands(band_name_snapshot, bands(slug, media_assets(role, url, sort_order)))';
+  'id, confirmation_recipient, confirmation_reply_to, confirmation_subject, confirmation_body_text, confirmation_provider_idempotency_key, confirmation_attempts, confirmation_status, confirmation_last_attempt_at, created_at, confirmation_template_version, vorname, spitzname, anlass, datum_text, location, plz_ort, nachricht, anfrage_bands(band_name_snapshot, bands(slug, media_assets(role, url, sort_order)))';
 
 // Waehlt anhand der auf der Zeile gespeicherten confirmation_template_version
 // den passenden Renderer und ruft Resend auf -- exakt dasselbe Muster wie
@@ -291,6 +294,7 @@ async function renderAndSendConfirmation(
     }
     const content: ConfirmationMailV2Content = {
       vorname: row.vorname,
+      spitzname: row.spitzname,
       bands: bandRefs,
       anlass: row.anlass,
       datumText: row.datum_text,
@@ -415,7 +419,7 @@ async function sendAllBandMailsAndConfirmation(
   const { data: bandRows } = await client
     .from('anfrage_bands')
     .select(
-      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at, template_version, band_name_snapshot, anfragen(anlass, datum_text, plz_ort, location, telefon, vorname, nachname, nachricht), bands(slug)'
+      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at, template_version, band_name_snapshot, anfragen(anlass, datum_text, plz_ort, location, telefon, vorname, spitzname, nachname, nachricht), bands(slug)'
     )
     .eq('anfrage_id', anfrageId);
 
@@ -485,6 +489,7 @@ export async function submitAnfrage(
 
   const confirmationRendered = renderConfirmationMailV2({
     vorname: input.vorname,
+    spitzname: input.spitzname,
     bands: resolved.bands.map((band) => ({ name: band.name, slug: band.slug })),
     anlass: input.anlass,
     datumText: input.datumText,
@@ -516,6 +521,7 @@ export async function submitAnfrage(
     idempotency_key: input.idempotencyKey,
     vorname: input.vorname,
     nachname: input.nachname,
+    spitzname: input.spitzname,
     email: input.email,
     telefon: input.telefon,
     anlass: input.anlass,
@@ -578,7 +584,7 @@ export async function retryBandSend(anfrageBandId: string, deps: AnfrageServiceD
   const { data: row } = await deps.client
     .from('anfrage_bands')
     .select(
-      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at, template_version, band_name_snapshot, anfragen(anlass, datum_text, plz_ort, location, telefon, vorname, nachname, nachricht), bands(slug)'
+      'id, anfrage_id, recipient_email, reply_to, subject, body_text, provider_idempotency_key, send_status, attempts, last_attempt_at, created_at, template_version, band_name_snapshot, anfragen(anlass, datum_text, plz_ort, location, telefon, vorname, spitzname, nachname, nachricht), bands(slug)'
     )
     .eq('id', anfrageBandId)
     .maybeSingle();

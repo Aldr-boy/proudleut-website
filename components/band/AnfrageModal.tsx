@@ -37,6 +37,7 @@ type AnfrageFormState = {
   nachricht: string;
   vorname: string;
   nachname: string;
+  spitzname: string;
   email: string;
   telefon: string;
   datenschutz: boolean;
@@ -55,6 +56,7 @@ const EMPTY_FORM: AnfrageFormState = {
   nachricht: '',
   vorname: '',
   nachname: '',
+  spitzname: '',
   email: '',
   telefon: '',
   datenschutz: false,
@@ -229,6 +231,7 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
           nachricht: form.nachricht,
           vorname: form.vorname,
           nachname: form.nachname,
+          spitzname: form.spitzname,
           email: form.email,
           telefon: form.telefon,
           firmaHidden,
@@ -525,6 +528,22 @@ export function AnfrageModal({ bands, isOpen, onClose, onSuccess, allowBandRemov
                     className={inputClass}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="af-spitzname" className="block text-sm text-[#ede8e3] mb-1">
+                  Spitzname{' '}
+                  <span className="text-[#6b5f65] font-normal">(optional)</span>
+                </label>
+                <input
+                  id="af-spitzname"
+                  type="text"
+                  maxLength={60}
+                  value={form.spitzname}
+                  onChange={(e) => set('spitzname', e.target.value)}
+                  placeholder="Wie dürfen dich die Bands ansprechen?"
+                  className={inputClass}
+                />
               </div>
 
               <div>

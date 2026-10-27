@@ -185,7 +185,7 @@ export function renderConfirmationMailV3Html(content: ConfirmationMailV3Content)
 
           <tr>
             <td class="pl-px" style="padding:28px 36px 0 36px;font-size:16px;line-height:1.7;color:#1a1a1a;">
-              <p style="margin:0 0 10px 0;">Servus <strong>${escapeHtml(content.vorname)}</strong>,</p>
+              <p style="margin:0 0 10px 0;">Servus <strong>${escapeHtml(content.spitzname || content.vorname)}</strong>,</p>
               <p style="margin:0;">${intro}</p>
             </td>
           </tr>
