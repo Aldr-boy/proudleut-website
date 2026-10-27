@@ -64,7 +64,6 @@ export function renderBandMail(input: NormalizedAnfrageInput, band: ResolvedBand
 // Anfragen nicht mehr aufgerufen (siehe service.ts), bleibt aber fuer den
 // v1-Retry-Pfad als eingefrorene Referenz bestehen.
 export function renderBandMailV2(input: NormalizedAnfrageInput, band: ResolvedBand): RenderedMail {
-  const veranstalterName = [input.vorname, input.nachname].filter(Boolean).join(' ');
   // Spitzname ersetzt den Vornamen nur dort, wo die Band den Veranstalter anspricht.
   const anrede = input.spitzname || input.vorname;
   const subject = `Neue Anfrage über proudleut.com für ${band.name}`;
@@ -86,7 +85,7 @@ export function renderBandMailV2(input: NormalizedAnfrageInput, band: ResolvedBa
       : 'Keine persönliche Nachricht hinterlassen.',
     '',
     'Kontakt:',
-    line('Name', veranstalterName || null),
+    line('Name', formatKontaktName(input.vorname, input.spitzname, input.nachname) || null),
     line('E-Mail', input.email),
     line('Telefon', input.telefon),
     '',
@@ -210,6 +209,14 @@ export function renderConfirmationMailV2(content: ConfirmationMailV2Content): Re
   ]);
 
   return { subject, bodyText };
+}
+
+// Name im Kontaktblock der Band-Mail: Josef „Stoan" Müller. Ohne Spitzname
+// bleibt es bei Vor- und Nachname. Rueckgabe ist ungeschuetzter Text, der
+// Aufrufer escaped fuer HTML.
+export function formatKontaktName(vorname: string, spitzname: string | null | undefined, nachname: string | null): string {
+  const nick = spitzname && spitzname.trim() !== '' ? `„${spitzname.trim()}“` : '';
+  return [vorname, nick, nachname].filter(Boolean).join(' ');
 }
 
 export function escapeHtml(value: string): string {

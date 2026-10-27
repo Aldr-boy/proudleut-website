@@ -1,6 +1,6 @@
 import { LEGAL_LINKS, BAND_MAIL_LOGO_URL, CONFIRMATION_MAIL_PORTRAIT_URL } from './constants.ts';
 import { SITE_URL } from '../seo/metadata.ts';
-import { buildReplyMailto, buildTelHref, escapeHtml } from './templates.ts';
+import { buildReplyMailto, buildTelHref, escapeHtml, formatKontaktName } from './templates.ts';
 import type { BandMailV2Content } from './templates.ts';
 
 const LABEL = 'font-size:11px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#77706b;';
@@ -18,7 +18,7 @@ function has(v: string | null | undefined): v is string {
 export function renderBandMailV3Html(content: BandMailV2Content): string {
   const safeBandName = escapeHtml(content.bandName);
   const veranstalterName = [content.vorname, content.nachname].filter(Boolean).join(' ');
-  const safeVeranstalterName = escapeHtml(veranstalterName);
+  const safeVeranstalterName = escapeHtml(formatKontaktName(content.vorname, content.spitzname, content.nachname));
   // Spitzname ersetzt den Vornamen nur im Fliesstext; Kontaktblock und
   // Antwort-Entwurf nutzen weiter Vor- und Nachname.
   const safeVorname = escapeHtml(content.spitzname || content.vorname);
