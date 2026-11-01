@@ -187,6 +187,10 @@ function buildLegacyRedirects(): LegacyRedirect[] {
   add('/bayrische-partyband/Boarischn-Boum', '/bands');
   add('/bayrische-partyband/boarischn-boum', '/bands');
 
+  // non-stop hat sich aufgeloest (archiviert, nicht veroeffentlicht) -> Bandübersicht.
+  // Weiterleitungen greifen vor der Bandseite /band/[slug] und bleiben auch nach dem Archivieren wirksam.
+  add('/band/non-stop', '/bands');
+
   // Weitere 404-Adressen aus demselben Export.
   add('/hochzeitsband', '/veranstaltung/hochzeit');
   add('/veranstaltung', '/bands');
