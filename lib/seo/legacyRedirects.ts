@@ -108,7 +108,8 @@ const BAND_FINDER_SLUGS = [
 ];
 
 // Alte Bandprofile (DE bzw. nur EN-Sitemap), zu denen es auf der neuen Seite kein Profil gibt.
-const BAND_ONLY_OLD: string[] = ['glory-times', 'brugger-buam', 'soulmaid-music'];
+// gruppe-montana hat sich aufgeloest (nicht mehr buchbar) -> Bandübersicht.
+const BAND_ONLY_OLD: string[] = ['glory-times', 'brugger-buam', 'soulmaid-music', 'gruppe-montana'];
 
 function finderTarget(slug: string): string {
   for (const [bandartSlug, bandart] of Object.entries(FINDER_BANDART)) {
@@ -180,6 +181,10 @@ function buildLegacyRedirects(): LegacyRedirect[] {
   add('/partyband/niceties-band', '/band/nice-ties-band');
   add('/trauung/emotion-two', '/bands?anlass=trauung');
   add('/hochzeitsband/boarischn-boum', '/veranstaltung/hochzeit');
+
+  // Boarischn Boum hat sich aufgeloest (nicht mehr buchbar) -> Bandübersicht.
+  // Next.js vergleicht Pfade ohne Gross-/Kleinschreibung, daher deckt ein Eintrag beide Varianten ab.
+  add('/bayrische-partyband/boarischn-boum', '/bands');
 
   // Weitere 404-Adressen aus demselben Export.
   add('/hochzeitsband', '/veranstaltung/hochzeit');
