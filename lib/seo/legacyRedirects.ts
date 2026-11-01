@@ -183,7 +183,8 @@ function buildLegacyRedirects(): LegacyRedirect[] {
   add('/hochzeitsband/boarischn-boum', '/veranstaltung/hochzeit');
 
   // Boarischn Boum hat sich aufgeloest (nicht mehr buchbar) -> Bandübersicht.
-  // Next.js vergleicht Pfade ohne Gross-/Kleinschreibung, daher deckt ein Eintrag beide Varianten ab.
+  // Auf Vercel ist der Vergleich gross-/kleinschreibungsabhaengig -> beide Schreibweisen eintragen.
+  add('/bayrische-partyband/Boarischn-Boum', '/bands');
   add('/bayrische-partyband/boarischn-boum', '/bands');
 
   // Weitere 404-Adressen aus demselben Export.
