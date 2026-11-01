@@ -306,3 +306,16 @@ unberührt.
   bleibt unverändert
 - Der Start erfolgt über einen technischen Durchstich: erst Datenfluss, Typen, Bilder und Vercel,
   dann vollständige Seiten und Designsystem
+
+### Supabase: Rechte für neue Tabellen
+
+- Jede neue Tabelle in `public` bekommt ihre Rechte (`grant`) in **derselben SQL-Datei**, die
+  sie anlegt – nie in einer späteren oder separaten Datei
+- Reihenfolge in der Datei: Tabelle anlegen → RLS aktivieren → Standardrechte für `anon` und
+  `authenticated` mit `revoke all` entziehen → nur die nötigen Rechte vergeben
+  (`anon`: meist nur `select`, `service_role`: nur das, was der Code wirklich nutzt)
+- `service_role` braucht eigene Tabellenrechte, auch wenn es RLS umgeht (RLS ersetzt keine
+  `grant`s). Fehlen sie, entsteht „permission denied"
+- Bekommt eine Rolle bewusst keine Rechte (z. B. `authenticated`, solange es keine
+  Benutzerkonten gibt), das kurz in einem Kommentar in der Datei festhalten
+- Nicht mehr freigeben als nötig; bestehende RLS-Regeln dabei nicht ändern
