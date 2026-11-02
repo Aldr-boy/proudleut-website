@@ -99,60 +99,66 @@ export function BandHero({ band, hasVideo, facts }: Props) {
 
   return (
     <>
-      {/* Mobil (unter md): .pl-hero-scene (app/globals.css) = min-height 100svh
-          mit 100vh-Fallback, der Hero waechst mit dem Inhalt. Ab md feste Hoehe
-          100svh, begrenzt auf 560-900 px; beide Divs (dieses und der
-          Content-Block) tragen die Klasse, weil der Content-Block als einziges
-          Flow-Kind die gerenderte Hoehe bestimmt. */}
-      <div className="pl-hero-scene relative w-full md:h-[100svh] md:min-h-[560px] md:max-h-[900px] bg-pl-stage overflow-hidden">
-        {hasDistinctMobileImage ? (
-          <>
-            <Image
-              src={mobileImage!.url}
-              alt={mobileImage!.alt}
-              fill
-              priority
-              className="object-cover object-center md:hidden"
-              style={mobileImageStyle}
-              sizes="100vw"
-            />
+      {/* Handy (unter md): Bandfoto oben als Kasten mit abgerundeten Ecken, die
+          Hoehe folgt dem Seitenverhaeltnis des Fotos (h-auto, nichts wird
+          abgeschnitten); Logo, Genre · Ort, Name und Hashtag stehen darunter
+          auf schwarzem Grund, kein Text auf dem Foto. Anfrage-Button und
+          Herz stehen nur in der festen Leiste (BandFloatingCta). Ab md wie
+          bisher: feste Hoehe 100svh, begrenzt auf 560-900 px, Foto als
+          Vollbild mit Verlauf und Text darueber. */}
+      <div className="relative w-full bg-pl-text md:bg-pl-stage md:h-[100svh] md:min-h-[560px] md:max-h-[900px] overflow-hidden pt-[calc(var(--pl-nav-height)+1rem)] md:pt-0">
+        <div className="relative mx-4 sm:mx-6 rounded-2xl overflow-hidden md:mx-0 md:rounded-none md:absolute md:inset-0">
+          {hasDistinctMobileImage ? (
+            <>
+              <Image
+                src={mobileImage!.url}
+                alt={mobileImage!.alt}
+                width={mobileImage!.width ?? 1600}
+                height={mobileImage!.height ?? 1067}
+                priority
+                className="block w-full h-auto md:hidden"
+                sizes="100vw"
+              />
+              <Image
+                src={heroImage.url}
+                alt={heroImage.alt}
+                width={heroImage.width ?? 1600}
+                height={heroImage.height ?? 1067}
+                className="hidden md:block md:w-full md:h-full object-cover"
+                style={desktopImageStyle}
+                sizes="100vw"
+              />
+            </>
+          ) : (
             <Image
               src={heroImage.url}
               alt={heroImage.alt}
-              fill
-              className="hidden md:block object-cover"
-              style={desktopImageStyle}
+              width={heroImage.width ?? 1600}
+              height={heroImage.height ?? 1067}
+              priority
+              className={
+                objectPositionVars
+                  ? 'block w-full h-auto md:h-full object-cover md:object-[var(--hero-pos-desktop)]'
+                  : 'block w-full h-auto md:h-full object-cover object-center'
+              }
+              style={objectPositionVars}
               sizes="100vw"
             />
-          </>
-        ) : (
-          <Image
-            src={heroImage.url}
-            alt={heroImage.alt}
-            fill
-            priority
-            className={
-              objectPositionVars
-                ? 'object-cover object-[var(--hero-pos-mobile)] md:object-[var(--hero-pos-desktop)]'
-                : 'object-cover object-center'
-            }
-            style={objectPositionVars}
-            sizes="100vw"
+          )}
+
+          {/* Gradient overlay (nur ab md): dunkelt von unten (und links, fuer den Text), lässt oben transparent */}
+          <div
+            className="hidden md:block absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to top, rgba(18,16,26,0.94) 0%, rgba(18,16,26,0.6) 28%, rgba(18,16,26,0.12) 62%, transparent 100%), linear-gradient(to right, rgba(18,16,26,0.45) 0%, transparent 50%)',
+            }}
           />
-        )}
+        </div>
 
-        {/* Gradient overlay: dunkelt von unten (und links, fuer den Text), lässt oben transparent */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(to top, rgba(18,16,26,0.94) 0%, rgba(18,16,26,0.6) 28%, rgba(18,16,26,0.12) 62%, transparent 100%), linear-gradient(to right, rgba(18,16,26,0.45) 0%, transparent 50%)',
-          }}
-        />
-
-        {/* Content – bündig unten */}
-        <div className="pl-hero-scene relative z-10 flex items-end h-full">
-          <div className="w-full pl-container-shell px-4 sm:px-6 pb-8 md:pb-14">
+        {/* Content – Handy: unter dem Foto; ab md bündig unten im Bild */}
+        <div className="relative z-10 md:flex md:items-end md:h-full">
+          <div className="w-full pl-container-shell px-4 sm:px-6 pt-5 pb-6 md:pt-0 md:pb-14">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 md:gap-10">
               <div className="min-w-0">
                 {/* Logo -- klein, direkt ueber dem Bandnamen verankert (Hero-
@@ -187,18 +193,23 @@ export function BandHero({ band, hasVideo, facts }: Props) {
                   </p>
                 )}
 
-                {/* Handy: Pille unter dem Claim, ueber dem Anfrage-Button */}
+                {/* Handy: Pille unter dem Hashtag */}
                 {hasVideo && (
-                  <div className="md:hidden mb-4">
-                    <HeroVideoPill tone="image" bandName={band.name} />
+                  <div className="md:hidden">
+                    <HeroVideoPill tone="light" bandName={band.name} />
                   </div>
                 )}
 
-                <HeroCTA
-                  name={band.name}
-                  slug={band.slug}
-                  anfrageEventTypes={band.anfrageEventTypes ?? []}
-                />
+                {/* Handy ausgeblendet: dort uebernimmt die feste Leiste
+                    (BandFloatingCta); ein nicht darstellbarer Hero-Button
+                    gilt dort als "passiert", die Leiste ist von Anfang an da. */}
+                <div className="hidden md:block">
+                  <HeroCTA
+                    name={band.name}
+                    slug={band.slug}
+                    anfrageEventTypes={band.anfrageEventTypes ?? []}
+                  />
+                </div>
               </div>
 
               {/* Desktop: Pille unten rechts im Bild */}

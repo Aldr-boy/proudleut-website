@@ -135,7 +135,10 @@ export function BandFloatingCta({
       // --- nur lesen ---
       const viewportHeight = window.innerHeight;
       const merklisteHeight = document.getElementById('merkliste-bar')?.offsetHeight ?? 0;
-      const heroEl = hasHeroButton ? document.getElementById(heroButtonId) : null;
+      // Unter md (768 px) gibt es keinen Hero-Button (BandHero.tsx): dort gilt er
+      // als passiert, die Leiste ist von Anfang an da.
+      const heroButtonUsed = hasHeroButton && window.matchMedia('(min-width: 768px)').matches;
+      const heroEl = heroButtonUsed ? document.getElementById(heroButtonId) : null;
       const ctaEl = document.getElementById(ctaButtonId);
       const heroRect = heroEl?.getBoundingClientRect() ?? null;
       const ctaRect = ctaEl?.getBoundingClientRect() ?? null;
@@ -148,7 +151,7 @@ export function BandFloatingCta({
       const pillRect = document.querySelector('[data-nav-footprint]')?.getBoundingClientRect() ?? null;
 
       const barOn = computeBarVisible({
-        hasHeroButton,
+        hasHeroButton: heroButtonUsed,
         hero: heroRect,
         pill: pillRect,
         cta: ctaRect,
@@ -241,7 +244,7 @@ export function BandFloatingCta({
       <div
         inert={!visible}
         className={`lg:hidden fixed inset-x-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
-                    border-pl-soft px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
+                    border-pl-soft max-md:bg-pl-text/95 max-md:border-white/10 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
                     ${
                       visible
                         ? `transition-[opacity,transform,bottom] duration-[220ms] ease-out ${visibleClasses}`
@@ -263,7 +266,7 @@ export function BandFloatingCta({
             slug={slug}
             anfrageEventTypes={anfrageEventTypes}
             tone="light"
-            className="w-12 h-12"
+            className="w-12 h-12 max-md:border-white/60 max-md:text-pl-on-stage"
           />
         </div>
       </div>
