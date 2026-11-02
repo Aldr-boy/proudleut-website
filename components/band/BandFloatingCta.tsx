@@ -135,7 +135,10 @@ export function BandFloatingCta({
       // --- nur lesen ---
       const viewportHeight = window.innerHeight;
       const merklisteHeight = document.getElementById('merkliste-bar')?.offsetHeight ?? 0;
-      const heroEl = hasHeroButton ? document.getElementById(heroButtonId) : null;
+      // Unter md (768 px) gibt es keinen Hero-Button (BandHero.tsx): dort gilt er
+      // als passiert, die Leiste ist von Anfang an da.
+      const heroButtonUsed = hasHeroButton && window.matchMedia('(min-width: 768px)').matches;
+      const heroEl = heroButtonUsed ? document.getElementById(heroButtonId) : null;
       const ctaEl = document.getElementById(ctaButtonId);
       const heroRect = heroEl?.getBoundingClientRect() ?? null;
       const ctaRect = ctaEl?.getBoundingClientRect() ?? null;
@@ -148,7 +151,7 @@ export function BandFloatingCta({
       const pillRect = document.querySelector('[data-nav-footprint]')?.getBoundingClientRect() ?? null;
 
       const barOn = computeBarVisible({
-        hasHeroButton,
+        hasHeroButton: heroButtonUsed,
         hero: heroRect,
         pill: pillRect,
         cta: ctaRect,
