@@ -102,11 +102,11 @@ export function BandHero({ band, hasVideo, facts }: Props) {
       {/* Handy (unter md): Bandfoto oben als Kasten mit abgerundeten Ecken, die
           Hoehe folgt dem Seitenverhaeltnis des Fotos (h-auto, nichts wird
           abgeschnitten); Logo, Genre · Ort, Name und Hashtag stehen darunter
-          auf dem hellen Grund, kein Text auf dem Foto. Anfrage-Button und
+          auf schwarzem Grund, kein Text auf dem Foto. Anfrage-Button und
           Herz stehen nur in der festen Leiste (BandFloatingCta). Ab md wie
           bisher: feste Hoehe 100svh, begrenzt auf 560-900 px, Foto als
           Vollbild mit Verlauf und Text darueber. */}
-      <div className="relative w-full bg-pl-paper md:bg-pl-stage md:h-[100svh] md:min-h-[560px] md:max-h-[900px] overflow-hidden pt-[calc(var(--pl-nav-height)+1rem)] md:pt-0">
+      <div className="relative w-full bg-pl-text md:bg-pl-stage md:h-[100svh] md:min-h-[560px] md:max-h-[900px] overflow-hidden pt-[calc(var(--pl-nav-height)+1rem)] md:pt-0">
         <div className="relative mx-4 sm:mx-6 rounded-2xl overflow-hidden md:mx-0 md:rounded-none md:absolute md:inset-0">
           {hasDistinctMobileImage ? (
             <>
@@ -178,17 +178,17 @@ export function BandHero({ band, hasVideo, facts }: Props) {
                 )}
 
                 {metaLine && (
-                  <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.08em] text-pl-accent-deep md:text-pl-accent-light mb-3">
+                  <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.08em] text-pl-accent-light mb-3">
                     {metaLine}
                   </p>
                 )}
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-[-0.035em] text-pl-text md:text-pl-on-stage leading-[1.02] mb-3">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-[-0.035em] text-pl-on-stage leading-[1.02] mb-3">
                   {band.name}
                 </h1>
 
                 {subtitle && (
-                  <p className="text-lg md:text-2xl text-pl-text-muted md:text-pl-on-stage/90 font-medium max-w-2xl mb-5 md:mb-6 leading-snug">
+                  <p className="text-lg md:text-2xl text-pl-on-stage/90 font-medium max-w-2xl mb-5 md:mb-6 leading-snug">
                     {subtitle}
                   </p>
                 )}
