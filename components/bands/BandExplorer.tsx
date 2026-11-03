@@ -88,6 +88,7 @@ function buildUrl(params: {
 }
 
 const PLZ_RE = /^\d{4,5}$/;
+const SEARCH_DEBOUNCE_MS = 280;
 const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
 type OpenPanel = 'anlass' | 'region' | 'bandtyp' | 'mood' | null;
@@ -113,7 +114,18 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
   // (Hydration-Mismatch-Risiko). Die eigentliche Zufallssortierung fuer
   // Nutzer bleibt unveraendert im Mount-Effekt direkt darunter erhalten.
   const [shuffled, setShuffled] = useState<Band[]>(bands);
+  // `query` = angewendeter Suchstand (Filter, Chips, URL). `inputValue` = was
+  // gerade im Suchfeld steht -- aendert sich bei jedem Tastendruck sofort und
+  // wird erst nach kurzer Tipppause nach `query` und in die URL uebernommen.
   const [query, setQuery] = useState<string>(() => searchParams.get('suche') ?? '');
+  const [inputValue, setInputValue] = useState<string>(() => searchParams.get('suche') ?? '');
+  // Suchstaende, die das Feld selbst in die URL geschrieben hat und deren Echo
+  // (neue searchParams) noch aussteht. Ein solches Echo darf das Feld nicht
+  // auf einen aelteren Stand zuruecksetzen.
+  const pendingOwnSucheRef = useRef<string[]>([]);
+  // Immer die aktuellste buildFilterUrl-Version (der Debounce-Timer soll keine
+  // inzwischen geaenderten Dropdown-Filter mit altem Stand ueberschreiben).
+  const buildFilterUrlRef = useRef<(o: { suche?: string }) => string>(() => baseRoute);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
     if (lockedOccasion) return lockedOccasion;
     const p = searchParams.get('anlass');
@@ -264,13 +276,36 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     const availableMoodSlugs = bands.flatMap((b) => b.moods.map((m) => m.slug));
     const nextMood = resolveMoodSlugParam(nextMoodRaw, availableMoodSlugs);
 
-    setQuery((prev) => (prev !== nextQuery ? nextQuery : prev));
+    // Echo einer eigenen Such-URL-Aenderung: Suchfeld/Suchstand nicht anfassen
+    // (sonst ueberschreibt ein aelterer Stand die laufende Eingabe). Alles
+    // andere (Back/Forward, Chips, Zuruecksetzen, Links) bleibt Quelle der Wahrheit.
+    const ownIdx = pendingOwnSucheRef.current.indexOf(nextQuery);
+    if (ownIdx !== -1) {
+      pendingOwnSucheRef.current.splice(0, ownIdx + 1);
+    } else {
+      pendingOwnSucheRef.current = [];
+      setQuery((prev) => (prev !== nextQuery ? nextQuery : prev));
+      setInputValue((prev) => (prev !== nextQuery ? nextQuery : prev));
+    }
     setSelectedCategory((prev) => (prev !== nextCat ? nextCat : prev));
     setSelectedRegion((prev) => (prev !== nextReg ? nextReg : prev));
     setSelectedBandtyp((prev) => (prev !== nextBandtyp ? nextBandtyp : prev));
     setSelectedMood((prev) => (prev !== nextMood ? nextMood : prev));
     setRadiusKm(0);
   }, [searchParamString, lockedOccasion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Suchfeld -> Suchstand/URL erst nach kurzer Tipppause (Debounce).
+  useEffect(() => {
+    if (inputValue === query) return;
+    const timer = setTimeout(() => {
+      if ((searchParams.get('suche') ?? '') !== inputValue) {
+        pendingOwnSucheRef.current.push(inputValue);
+      }
+      setQuery(inputValue);
+      router.replace(buildFilterUrlRef.current({ suche: inputValue }), { scroll: false });
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [inputValue, query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sticky-Zugang "Auswahl verfeinern" -- Sichtbarkeit ausschliesslich
   // ueber zwei IntersectionObserver auf dedizierten 1px-Sentinels
@@ -401,6 +436,8 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
 
   const resetFilters = useCallback(() => {
     setQuery('');
+    setInputValue('');
+    pendingOwnSucheRef.current = [];
     if (!lockedOccasion) setSelectedCategory(null);
     setSelectedRegion(null);
     setSelectedBandtyp(null);
@@ -453,6 +490,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
       label: `Suche: „${query}"`,
       onRemove: () => {
         setQuery('');
+        setInputValue('');
         router.replace(buildFilterUrl({ suche: '' }), { scroll: false });
       },
     });
@@ -464,7 +502,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
       onRemove: () => {
         setSelectedCategory(null);
         router.push(
-          buildUrl({ anlass: null, region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+          buildUrl({ anlass: null, region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood }),
           { scroll: false }
         );
       },
@@ -524,7 +562,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     mood?: string | null;
   }): string {
     const region = overrides.region !== undefined ? overrides.region : selectedRegion;
-    const suche = overrides.suche !== undefined ? overrides.suche : query;
+    const suche = overrides.suche !== undefined ? overrides.suche : inputValue;
     const bandtyp = overrides.bandtyp !== undefined ? overrides.bandtyp : selectedBandtyp;
     const mood = overrides.mood !== undefined ? overrides.mood : selectedMood;
     if (lockedOccasion) {
@@ -532,6 +570,10 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     }
     return buildUrl({ anlass: selectedCategory, region, suche, bandtyp, mood });
   }
+
+  useEffect(() => {
+    buildFilterUrlRef.current = buildFilterUrl;
+  });
 
   // Sechs Themen-Kacheln des neuen Suchkopfs -- Href/Aktiv-Status kommen
   // aus der ausgelagerten, direkt getesteten resolveBandFinderThemeNav()
@@ -543,7 +585,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
   const themeNavItems = resolveBandFinderThemeNav(
     lockedOccasion,
     selectedCategory,
-    { region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood },
+    { region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood },
     buildFinderFilterUrl,
     buildOccasionNavUrl
   ).map((theme) => ({ ...theme, image: themeImages[theme.key] }));
@@ -574,15 +616,8 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
         </svg>
         <input
           type="search"
-          value={query}
-          onChange={(e) => {
-            const next = e.target.value;
-            setQuery(next);
-            router.replace(
-              buildFilterUrl({ suche: next }),
-              { scroll: false }
-            );
-          }}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           placeholder="Bandname, Ort oder PLZ"
           aria-label="Bands suchen"
           className="flex-1 min-w-0 bg-transparent text-pl-text placeholder:text-pl-text-hint text-sm focus:outline-none"
@@ -872,7 +907,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                   onClick={() => {
                     setOpenPanel(null);
                     router.push(
-                      buildFinderFilterUrl('/bands', { region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+                      buildFinderFilterUrl('/bands', { region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood }),
                       { scroll: false }
                     );
                   }}
@@ -898,7 +933,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                         setOpenPanel(null);
                         if (active) return;
                         router.push(
-                          buildOccasionNavUrl(cat.slug, { region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+                          buildOccasionNavUrl(cat.slug, { region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood }),
                           { scroll: false }
                         );
                         return;
@@ -907,7 +942,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                       setSelectedCategory(next);
                       setOpenPanel(null);
                       router.push(
-                        buildUrl({ anlass: next, region: selectedRegion, suche: query, bandtyp: selectedBandtyp, mood: selectedMood }),
+                        buildUrl({ anlass: next, region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood }),
                         { scroll: false }
                       );
                     }}
