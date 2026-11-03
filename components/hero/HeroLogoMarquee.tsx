@@ -52,6 +52,9 @@ const LOGO_RAW_HEIGHT: Record<string, number> = {
   'Bigband Steinbach': 46,
   Birddogs: 52,
   'Blechstreet Boys': 52,
+  // Quadratisches Logo (600x598) -- hoeher als die breiten Wortmarken,
+  // damit die Schrift lesbar bleibt (Desktop 48px, Mobile 36px).
+  "Stix'n Stones": 72,
   "D'Quertreiber": 50,
   Donnaweda: 34,
   'San2 & His Soul Patrol': 44,
