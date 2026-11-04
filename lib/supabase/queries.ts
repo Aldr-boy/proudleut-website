@@ -76,3 +76,11 @@ export async function getAllBandsFromSupabase() {
 
   return { data, error }
 }
+
+// Nur die Slugs aller aktiven Bands -- bewusst schlank (keine Joins), weil
+// der Footer sie auf jeder Seite braucht, um zu entscheiden, ob eine
+// Themenseite veroeffentlicht ist (lib/content/themePages.ts).
+export async function getActiveBandSlugsFromSupabase() {
+  const { data, error } = await supabase.from('bands').select('slug').eq('status', 'active')
+  return { data, error }
+}

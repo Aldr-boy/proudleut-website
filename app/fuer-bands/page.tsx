@@ -18,7 +18,7 @@ export const revalidate = 300;
 const DEMO_BAND_SLUG = 'san2-and-his-soul-patrol';
 
 export const metadata: Metadata = {
-  title: 'Für Bands – proudleut',
+  title: 'Für Bands',
   description:
     'Ihr seid eine Liveband, ein Ensemble oder ein Solo-Act? proudleut zeigt euch mit echtem Profil, Live-Eindruck und direktem Kontakt für Veranstalter.',
   openGraph: {

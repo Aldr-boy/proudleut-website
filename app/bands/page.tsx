@@ -21,7 +21,7 @@ const REGION_GROUPING_THRESHOLD = 20;
 // Auftrag "Fehlende Canonicals vor dem Domain-Cutover beheben": bisher
 // fehlte hier alternates.canonical komplett. Title/Description unveraendert.
 export const metadata: Metadata = {
-  title: 'Livebands entdecken – proudleut',
+  title: 'Livebands entdecken',
   description:
     'Entdecke Livebands und Acts für Hochzeiten, Feste, Firmenfeiern und besondere Events auf proudleut.',
   alternates: { canonical: absoluteUrl('/bands') },

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 
 export const metadata: Metadata = {
-  title: 'Über proudleut – proudleut',
+  title: 'Über proudleut',
   description:
     'Warum es proudleut gibt, wer dahintersteht und wie proudleut Veranstaltern und Bands hilft, zueinander zu finden.',
   openGraph: {

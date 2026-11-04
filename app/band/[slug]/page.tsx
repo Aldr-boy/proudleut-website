@@ -6,6 +6,7 @@ import { normalizeBandFromSupabase } from '@/lib/supabase/normalizeBand';
 import { generateBandJsonLd } from '@/lib/seo/jsonLd';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import { getSimilarBands } from '@/lib/bands/similarBands';
+import { getThemePagesForBand } from '@/lib/content/themePages';
 import { getSoloFirstName } from '@/lib/bands/solo';
 import { SimilarBandCard } from '@/components/band/SimilarBandCard';
 import { BandHero } from '@/components/band/BandHero';
@@ -97,6 +98,24 @@ export default async function BandPage({ params }: PageProps) {
   const websiteUrl = safeUrl(band.websiteUrl);
   const embedUrl = getYouTubeEmbedUrl(band.youtubeVideoUrl);
   const similarBands = getSimilarBands(band, allBands);
+  // Link auf eine Themenseite nur, wenn die Band dort aufgefuehrt und die Seite veroeffentlicht ist.
+  const themePageLinks = getThemePagesForBand(
+    band.slug,
+    new Set(allBands.filter((b) => b.status === 'active').map((b) => b.slug)),
+  );
+  const themePageLinkList =
+    themePageLinks.length > 0 ? (
+      <p className="mt-5 text-sm text-pl-text-muted">
+        {themePageLinks.map((t, i) => (
+          <span key={t.path}>
+            {i > 0 ? ' · ' : null}
+            <Link href={t.path} className="underline underline-offset-4 hover:text-pl-text motion-safe:transition-colors">
+              {t.bandPageLabel} →
+            </Link>
+          </span>
+        ))}
+      </p>
+    ) : null;
   const hasVideo = embedUrl !== null;
   const facts = getBandFacts(band);
   // Ohne Bandbild zeigt BandHero einen kurzen Kopf ohne Anfrage-Button.
@@ -172,6 +191,7 @@ export default async function BandPage({ params }: PageProps) {
               >
                 Mehr Livebands entdecken →
               </Link>
+              {themePageLinkList}
             </div>
           </div>
         </section>
@@ -189,6 +209,7 @@ export default async function BandPage({ params }: PageProps) {
             >
               Alle Bands entdecken
             </Link>
+            {themePageLinkList}
           </div>
         </section>
       )}
