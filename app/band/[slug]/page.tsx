@@ -7,6 +7,7 @@ import { generateBandJsonLd } from '@/lib/seo/jsonLd';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import { getSimilarBands } from '@/lib/bands/similarBands';
 import { getThemePagesForBand } from '@/lib/content/themePages';
+import { buildBandTitle } from '@/lib/seo/bandTitle';
 import { getSoloFirstName } from '@/lib/bands/solo';
 import { SimilarBandCard } from '@/components/band/SimilarBandCard';
 import { BandHero } from '@/components/band/BandHero';
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : DEFAULT_SOCIAL_IMAGE;
 
   return {
-    title: band.name,
+    title: buildBandTitle(band.name, band.primaryBandart),
     description,
     alternates: { canonical: canonicalUrl },
     openGraph: {
