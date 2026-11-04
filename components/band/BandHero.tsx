@@ -6,6 +6,9 @@ import { resolveHeroImagePresentation, resolveMobileHeroImage } from '@/lib/band
 import { HeroCTA } from './HeroCTA';
 import { HeroVideoPill } from './HeroVideoPill';
 
+// Handy: hoechstes Seitenverhaeltnis (Breite:Hoehe) des Bildbereichs.
+const MOBILE_MAX_RATIO = 1.6;
+
 type Props = { band: Band; hasVideo: boolean; facts: BandFact[] };
 
 // Steckbrief (Herkunft, Besetzung, Stil) als normale Liste im Seitenfluss
@@ -82,13 +85,13 @@ export function BandHero({ band, hasVideo, facts }: Props) {
   const hasDistinctMobileImage = !!mobileImage && mobileImage.url !== heroImage.url;
 
   // Handy: Bildbereich im Seitenverhaeltnis des Bildes, begrenzt auf 1:1 bis
-  // 2:1 -- eine Regel fuer alle Baender. Innerhalb (und hoeher als 1:1):
-  // vollstaendig (contain, dunkle Seitenflaechen); breiter als 2:1: fuellt den
+  // 1,6:1 -- eine Regel fuer alle Baender. Innerhalb (und hoeher als 1:1):
+  // vollstaendig (contain, dunkle Seitenflaechen); breiter als 1,6:1: fuellt den
   // Bereich und wird links/rechts mittig angeschnitten (cover).
   const mobileSource = mobileImage ?? heroImage;
   const naturalRatio = (mobileSource.width ?? 1600) / (mobileSource.height ?? 1067);
-  const stageRatio = Math.min(2, Math.max(1, naturalRatio));
-  const mobileFit = naturalRatio > 2 ? 'object-cover' : 'object-contain';
+  const stageRatio = Math.min(MOBILE_MAX_RATIO, Math.max(1, naturalRatio));
+  const mobileFit = naturalRatio > MOBILE_MAX_RATIO ? 'object-cover' : 'object-contain';
   const stageStyle = { '--hero-ar': stageRatio } as React.CSSProperties;
 
   const desktopImageStyle = presentation.desktopObjectPosition
