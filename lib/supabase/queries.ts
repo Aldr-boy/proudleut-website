@@ -23,7 +23,7 @@ export async function getBandFromSupabase(slug: string) {
       reference_events (*),
       band_documents (*),
       band_event_types ( event_types (*) ),
-      band_band_types ( band_types (*) ),
+      band_band_types ( is_primary, band_types (*) ),
       band_lineups ( lineups (*) ),
       band_moods ( sort_order, moods (*) ),
       band_repertoire_styles ( sort_order, repertoire_styles (*) ),
