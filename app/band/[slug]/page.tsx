@@ -17,6 +17,7 @@ import { BandPeopleSection } from '@/components/band/BandPeopleSection';
 import { BandContactSection } from '@/components/band/BandContactSection';
 import { BandCtaSection } from '@/components/band/BandCtaSection';
 import { BandFloatingCta } from '@/components/band/BandFloatingCta';
+import { HidePrivacyFloatButton } from '@/components/band/HidePrivacyFloatButton';
 import { BandGallerySection } from '@/components/band/BandGallerySection';
 import { getYouTubeEmbedUrl } from '@/lib/youtube';
 import { getBandFacts } from '@/lib/bands/bandFacts';
@@ -123,7 +124,7 @@ export default async function BandPage({ params }: PageProps) {
   const hasHeroButton = Boolean(band.heroImage);
 
   return (
-    <article className="bg-pl-canvas pb-24 lg:pb-0">
+    <article className="bg-pl-canvas pb-24 max-md:pb-[calc(6.25rem+env(safe-area-inset-bottom))] lg:pb-0">
       {/* JSON-LD – produktiv, kein Debug */}
       <script
         type="application/ld+json"
@@ -155,6 +156,8 @@ export default async function BandPage({ params }: PageProps) {
       {/* Abschluss-CTA; Faktenleiste und Bottom-Bar weichen am Anfrage-Button
           dieser Karte (BandFloatingCta, ctaButtonId). Über "Mehr von" bleiben sie sichtbar. */}
       <BandCtaSection band={band} />
+
+      <HidePrivacyFloatButton />
 
       <BandFloatingCta
         name={band.name}

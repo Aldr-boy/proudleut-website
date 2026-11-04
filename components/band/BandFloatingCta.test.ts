@@ -110,7 +110,7 @@ test('Breakpoint 1024 px: untere Anfrageleiste bis 1023 px (lg:hidden) mit Inhal
   assert.match(source, /<div className="flex items-center gap-2 md:max-w-\[640px\] md:mx-auto">/)
   assert.ok(!/hidden md:block fixed|md:hidden fixed/.test(source), 'keine md-Grenze mehr an der Bottom-Bar')
   assert.match(hero, /<dl className="lg:hidden md:max-w-\[640px\] bg-pl-canvas px-5 md:px-6 pt-4 pb-2">/)
-  assert.match(page, /<article className="bg-pl-canvas pb-24 lg:pb-0">/)
+  assert.match(page, /<article className="bg-pl-canvas pb-24 max-md:pb-\[calc\(6\.25rem\+env\(safe-area-inset-bottom\)\)\] lg:pb-0">/)
 })
 
 test('Kompakte Pille: per createPortal in den Header-Slot (useHeaderSlot), gleicher Modal-Zustand (setModalOpen), Desktop-Leiste entfernt', () => {
