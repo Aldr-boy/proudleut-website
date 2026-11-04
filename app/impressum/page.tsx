@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Impressum – proudleut',
+  title: 'Impressum',
   description: 'Impressum und Anbieterkennzeichnung von proudleut.com.',
   alternates: {
     canonical: '/impressum',

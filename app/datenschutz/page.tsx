@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Datenschutzerklärung – proudleut',
+  title: 'Datenschutzerklärung',
   description: 'Datenschutzerklärung von proudleut.com.',
   alternates: {
     canonical: '/datenschutz',
