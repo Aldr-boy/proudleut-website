@@ -14,7 +14,7 @@ export function BandGallerySection({ band }: Props) {
   if (band.gallery.length === 0) return null;
 
   return (
-    <section className="bg-pl-canvas px-4 sm:px-6 pb-16 md:pb-20">
+    <section className="hidden md:block bg-pl-canvas px-4 sm:px-6 pb-16 md:pb-20">
       <div className="pl-container-shell">
         <BandGallery band={band} />
       </div>

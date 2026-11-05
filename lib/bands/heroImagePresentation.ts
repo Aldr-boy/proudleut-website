@@ -64,3 +64,9 @@ export function resolveMobileHeroImage(
   const match = candidates.find((img) => img.url.includes(entry.mobileImageUrlContains!));
   return match ?? band.heroImage;
 }
+
+// Handy-Header (BandHero.tsx / BandHeroGallery.tsx): ein gemeinsames Format fuer
+// alle Bandfotos. Seitenverhaeltnis (Breite / Hoehe) und Bildausschnitt hier
+// an einer Stelle aendern.
+export const MOBILE_HERO_RATIO = 4 / 3;
+export const MOBILE_HERO_OBJECT_POSITION = '50% 35%';
