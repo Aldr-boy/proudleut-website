@@ -14,7 +14,8 @@ type Props = { images: ImageAsset[] };
 // MOBILE_HERO_OBJECT_POSITION). Wischbar per Scroll-Snap; Zaehler unten rechts
 // nur bei mehreren Folien. Antippen oeffnet die Vergroesserung (GalleryLightbox).
 // Die untersten 28 px liegen unter der Aubergine-Flaeche (BandHero.tsx), der
-// Zaehler sitzt deshalb darueber.
+// Zaehler sitzt als Lasche mittig auf deren Oberkante (halb Bild, halb Flaeche,
+// 3 px Ring in Flaechenfarbe); z-20 liegt ueber der Flaeche (z-10).
 export function BandHeroGallery({ images }: Props) {
   const [index, setIndex] = useState(0);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -22,11 +23,11 @@ export function BandHeroGallery({ images }: Props) {
 
   return (
     <div
-      className="relative md:hidden aspect-(--hero-ar) overflow-hidden"
+      className="relative md:hidden aspect-(--hero-ar)"
       style={{ '--hero-ar': MOBILE_HERO_RATIO } as React.CSSProperties}
     >
       <div
-        className={`flex h-full ${multi ? 'overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : ''}`}
+        className={`flex h-full ${multi ? 'overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : 'overflow-hidden'}`}
         onScroll={
           multi
             ? (e) => {
@@ -61,7 +62,7 @@ export function BandHeroGallery({ images }: Props) {
       {multi && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute right-4 bottom-10 rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold tabular-nums text-white"
+          className="pointer-events-none absolute left-1/2 bottom-7 z-20 -translate-x-1/2 translate-y-1/2 flex h-7 items-center rounded-[14px] bg-[#f3eee6] px-[13px] text-[12.5px] font-semibold tracking-[0.04em] tabular-nums text-[#231b21] ring-[3px] ring-pl-text"
         >
           {index + 1} / {images.length}
         </span>
