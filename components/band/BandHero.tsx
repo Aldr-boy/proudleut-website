@@ -4,6 +4,8 @@ import type { BandFact } from '@/lib/bands/bandFacts';
 import { formatLocation } from '@/lib/utils/formatLocation';
 import { resolveHeroImagePresentation, resolveMobileHeroImage } from '@/lib/bands/heroImagePresentation';
 import { BandHeroGallery } from './BandHeroGallery';
+import { absoluteUrl } from '@/lib/seo/metadata';
+import { BandShareButton } from './BandShareButton';
 import { HeroCTA } from './HeroCTA';
 import { HeroVideoPill } from './HeroVideoPill';
 
@@ -126,6 +128,7 @@ export function BandHero({ band, hasVideo, facts }: Props) {
         {/* Content – Handy: aubergine Flaeche mit runden Ecken, ueberlappt den Bildrand,
             28 px, zentriert; ab md bündig unten im Bild */}
         <div className="relative z-10 max-md:-mt-7 max-md:rounded-t-[28px] max-md:bg-pl-text md:flex md:items-end md:h-full">
+          <BandShareButton name={band.name} tagline={subtitle} url={absoluteUrl(`/band/${band.slug}`)} />
           <div className="w-full pl-container-shell px-6 pt-[38px] pb-[34px] md:pt-0 md:pb-14">
             <div className="flex flex-col items-center text-center md:flex-row md:items-end md:justify-between md:text-left gap-6 md:gap-10">
               <div className="min-w-0 flex flex-col items-center gap-3 md:block">
