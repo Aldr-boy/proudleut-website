@@ -20,7 +20,7 @@ function MobileFactsList({ facts }: { facts: BandFact[] }) {
   return (
     <dl className="lg:hidden md:max-w-[640px] bg-pl-canvas px-5 md:px-6 pt-4 pb-2">
       {facts.map((f) => (
-        <div key={f.label} className="flex justify-between gap-4 py-[13px] border-b border-pl-soft text-[15px]">
+        <div key={f.label} className="flex justify-between gap-4 py-[13px] border-b border-pl-soft last:border-b-0 text-[15px]">
           <dt className="text-pl-text-muted">{f.label}</dt>
           <dd className="font-bold text-pl-text text-right">{f.value}</dd>
         </div>
