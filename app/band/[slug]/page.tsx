@@ -8,6 +8,8 @@ import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo
 import { getSimilarBands } from '@/lib/bands/similarBands';
 import { getThemePagesForBand } from '@/lib/content/themePages';
 import { buildBandTitle } from '@/lib/seo/bandTitle';
+import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from '@/lib/seo/socialImage';
+import { formatLocation } from '@/lib/utils/formatLocation';
 import { getSoloFirstName } from '@/lib/bands/solo';
 import { SimilarBandCard } from '@/components/band/SimilarBandCard';
 import { BandHero } from '@/components/band/BandHero';
@@ -53,13 +55,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     band.shortDescription ||
     `${band.name} – Liveband bei proudleut`;
   const canonicalUrl = absoluteUrl(`/band/${band.slug}`);
+  // Link-Vorschau (WhatsApp u. a.): Titel "<Bandname> · proudleut", Beschreibung =
+  // Spruch, ohne Spruch die Genre-Zeile wie im Header; Bild = Hauptbild auf
+  // 1200x630 zugeschnitten (og.jpg/route.ts), ohne Hauptbild das allgemeine Bild.
+  const socialTitle = `${band.name} · proudleut`;
+  const genreLine = [band.category, formatLocation(band.location)].filter(Boolean).join(' · ');
+  const socialDescription = band.shortDescriptionExplicit || genreLine || description;
   const socialImage = isAbsoluteHttpsUrl(band.heroImage?.url)
     ? {
-        url: band.heroImage!.url,
-        alt: band.heroImage!.alt,
-        ...(band.heroImage!.width && band.heroImage!.height
-          ? { width: band.heroImage!.width, height: band.heroImage!.height }
-          : {}),
+        url: absoluteUrl(`/band/${band.slug}/og.jpg`),
+        width: SOCIAL_IMAGE_WIDTH,
+        height: SOCIAL_IMAGE_HEIGHT,
+        alt: `${band.name} – Bandfoto`,
       }
     : DEFAULT_SOCIAL_IMAGE;
 
@@ -68,16 +75,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description,
     alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: band.name,
-      description,
+      title: socialTitle,
+      description: socialDescription,
       url: canonicalUrl,
       type: 'website',
+      siteName: 'proudleut',
+      locale: 'de_DE',
       images: [socialImage],
     },
     twitter: {
       card: 'summary_large_image',
-      title: band.name,
-      description,
+      title: socialTitle,
+      description: socialDescription,
       images: [socialImage.url],
     },
   };
