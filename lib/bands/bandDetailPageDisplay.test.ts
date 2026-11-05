@@ -92,11 +92,11 @@ test('Reihenfolge: Hero, Text, Zeilenraster, "Mehr von", Fotos, Abschluss-CTA; o
   // der Provider endet vor "Mehr von" und umschliesst die Galerie nicht
   assert.ok(idx('</VideoModalProvider>') < idx('<BandContactSection'))
   assert.match(gallerySectionSource, /if \(band\.gallery\.length === 0\) return null;/)
-  assert.match(gallerySectionSource, /<section className="bg-pl-canvas px-4 sm:px-6 pb-16 md:pb-20">/)
+  assert.match(gallerySectionSource, /<section className="hidden md:block bg-pl-canvas px-4 sm:px-6 pb-16 md:pb-20">/)
 })
 
 test('Artikel reserviert unteren Seitenabstand fuer die mobile Sticky-Bottom-CTA (Anfrage + Herz, siehe BandFloatingCta)', () => {
-  assert.match(pageSource, /<article className="bg-pl-canvas pb-24 lg:pb-0">/)
+  assert.match(pageSource, /<article className="bg-pl-canvas pb-24 max-md:pb-\[calc\(6\.25rem\+env\(safe-area-inset-bottom\)\)\] lg:pb-0">/)
 })
 
 test('Reihenfolge am Seitenende: Zeilenraster, "Mehr von", Abschluss-CTA, BandFloatingCta', () => {

@@ -5,6 +5,7 @@ import { createPortal, flushSync } from 'react-dom';
 import { AnfrageModal } from './AnfrageModal';
 import { BandMerkHeart } from './BandMerkHeart';
 import { Button } from '@/components/ui/Button';
+import { openSettings } from '@/lib/consent';
 import { useAnfrageStore } from '@/stores/anfrageStore';
 import type { BandAnfrageEventType } from '@/lib/types/band';
 import type { BandFact } from '@/lib/bands/bandFacts';
@@ -244,7 +245,7 @@ export function BandFloatingCta({
       <div
         inert={!visible}
         className={`lg:hidden fixed inset-x-0 z-40 bg-pl-elevated/95 backdrop-blur-sm border-t
-                    border-pl-soft max-md:bg-pl-text/95 max-md:border-white/10 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
+                    border-pl-soft max-md:bg-pl-text/95 max-md:border-white/10 max-md:rounded-t-[24px] px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]
                     ${
                       visible
                         ? `transition-[opacity,transform,bottom] duration-[220ms] ease-out ${visibleClasses}`
@@ -253,10 +254,25 @@ export function BandFloatingCta({
         style={{ bottom: `${merklisteBarHeight}px` }}
       >
         <div className="flex items-center gap-2 md:max-w-[640px] md:mx-auto">
+          {/* Nur Handy: ersetzt das schwebende Datenschutz-Symbol des CMP
+              (siehe HidePrivacyFloatButton.tsx) und oeffnet dessen Einstellungen. */}
+          <button
+            type="button"
+            onClick={() => void openSettings()}
+            aria-label="Datenschutz-Einstellungen"
+            className="md:hidden shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-full
+                       border-[1.5px] border-white/30 text-pl-on-stage/85 focus-visible:outline-2
+                       focus-visible:outline-offset-2 focus-visible:outline-pl-accent-light"
+          >
+            <svg width="18" height="20" viewBox="0 0 24 26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 1.5l9 3.4v6.6c0 6-3.9 10.6-9 12.9-5.1-2.3-9-6.9-9-12.9V4.9z" />
+              <path d="M8 12.5l3 3 5.5-6" />
+            </svg>
+          </button>
           <Button
             onClick={() => setModalOpen(true)}
             aria-label={`${name} unverbindlich anfragen`}
-            className="flex-1 inline-flex items-center justify-center px-6 py-3.5 rounded-full text-sm font-semibold
+            className="flex-1 inline-flex items-center justify-center px-6 py-3.5 max-md:py-0 max-md:h-[54px] rounded-full text-sm max-md:text-[17px] font-semibold max-md:font-bold
                        bg-pl-accent text-pl-on-accent hover:bg-pl-accent-hover"
           >
             Unverbindlich anfragen
@@ -266,7 +282,7 @@ export function BandFloatingCta({
             slug={slug}
             anfrageEventTypes={anfrageEventTypes}
             tone="light"
-            className="w-12 h-12 max-md:border-white/60 max-md:text-pl-on-stage"
+            className="w-12 h-12 max-md:w-[54px] max-md:h-[54px] max-md:border-white/60 max-md:text-pl-on-stage"
           />
         </div>
       </div>

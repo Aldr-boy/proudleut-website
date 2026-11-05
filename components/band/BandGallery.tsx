@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import type { Band } from '@/lib/types/band';
 import type { ImageAsset } from '@/lib/types/image';
-import { chunkMobilePairs, desktopGalleryComposition, quadrantSplit } from '@/lib/bands/bandGalleryLayout';
+import { desktopGalleryComposition, quadrantSplit } from '@/lib/bands/bandGalleryLayout';
 import { GalleryLightbox } from './GalleryLightbox';
 
 type Props = { band: Band };
@@ -36,7 +36,6 @@ export function BandGallery({ band }: Props) {
         </span>
       </div>
 
-      <MobileGallery images={images} onOpen={setOpenIndex} />
       <DesktopGallery images={images} onOpen={setOpenIndex} />
 
       <GalleryLightbox
@@ -54,33 +53,6 @@ type GalleryCellProps = {
   index: number;
   onOpen: (index: number) => void;
 };
-
-// Mobile: eigene Komposition ("nicht das Desktop-Raster verkleinern").
-// Leitbild volle Breite oben, danach die restlichen Bilder in 2er-Zeilen;
-// ein uebrig bleibendes ungerades Bild bekommt am Ende die volle Breite.
-// Skaliert ohne Sonderfall auf jede Bildanzahl (bei genau 1 Bild bleibt
-// "rest" leer -- nur das Leitbild).
-function MobileGallery({ images, onOpen }: { images: ImageAsset[]; onOpen: (index: number) => void }) {
-  const [leitbild, ...rest] = images;
-  const pairs = chunkMobilePairs(rest);
-
-  return (
-    <div className="md:hidden space-y-3">
-      <GalleryTile img={leitbild} index={0} onOpen={onOpen} className="aspect-[16/10] w-full" />
-      {pairs.map((pair, i) =>
-        pair.length === 2 ? (
-          <div key={i} className="grid grid-cols-2 gap-3">
-            {pair.map((img, j) => (
-              <GalleryTile key={j} img={img} index={1 + i * 2 + j} onOpen={onOpen} className="aspect-[3/2]" />
-            ))}
-          </div>
-        ) : (
-          <GalleryTile key={i} img={pair[0]} index={1 + i * 2} onOpen={onOpen} className="aspect-[16/9] w-full" />
-        )
-      )}
-    </div>
-  );
-}
 
 function DesktopGallery({ images, onOpen }: { images: ImageAsset[]; onOpen: (index: number) => void }) {
   const composition = desktopGalleryComposition(images.length);

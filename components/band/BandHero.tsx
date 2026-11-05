@@ -3,6 +3,7 @@ import type { Band } from '@/lib/types/band';
 import type { BandFact } from '@/lib/bands/bandFacts';
 import { formatLocation } from '@/lib/utils/formatLocation';
 import { resolveHeroImagePresentation, resolveMobileHeroImage } from '@/lib/bands/heroImagePresentation';
+import { BandHeroGallery } from './BandHeroGallery';
 import { HeroCTA } from './HeroCTA';
 import { HeroVideoPill } from './HeroVideoPill';
 
@@ -74,81 +75,47 @@ export function BandHero({ band, hasVideo, facts }: Props) {
   const heroImage = band.heroImage;
   const presentation = resolveHeroImagePresentation(band.slug);
   const mobileImage = resolveMobileHeroImage(band);
-  // Nur wenn tatsaechlich ein abweichendes mobiles Motiv konfiguriert UND
-  // gefunden wurde, werden zwei <Image>-Varianten gerendert (siehe
-  // lib/bands/heroImagePresentation.ts) -- der Standardfall (kein Eintrag,
-  // die weit ueberwiegende Mehrheit der Baender) bleibt bei einem einzigen
-  // priorisierten Bild, ohne Performance-Nachteil.
-  const hasDistinctMobileImage = !!mobileImage && mobileImage.url !== heroImage.url;
+
+  // Handy: Galerie im Header (BandHeroGallery). Erste Folie = Hauptbild (bei
+  // konfiguriertem mobilen Motiv dieses), danach die Buehnenfotos in ihrer
+  // Reihenfolge; ein Bild, das schon als Hauptbild steht, kommt nicht doppelt.
+  const firstSlide = mobileImage ?? heroImage;
+  const slides = [
+    firstSlide,
+    ...band.gallery.filter((g) => g.url !== firstSlide.url && g.url !== heroImage.url),
+  ];
 
   const desktopImageStyle = presentation.desktopObjectPosition
     ? { objectPosition: presentation.desktopObjectPosition }
     : undefined;
-  const mobileImageStyle = presentation.mobileObjectPosition
-    ? { objectPosition: presentation.mobileObjectPosition }
-    : undefined;
-  // Dasselbe Bild auf beiden Breakpoint-Gruppen, nur der Bildausschnitt
-  // unterscheidet sich -- object-position wird ueber CSS-Variablen je
-  // Breakpoint umgeschaltet statt ueber ein zweites Bildelement.
-  const objectPositionVars = presentation.desktopObjectPosition || presentation.mobileObjectPosition
-    ? ({
-        '--hero-pos-mobile': presentation.mobileObjectPosition ?? presentation.desktopObjectPosition ?? 'center',
-        '--hero-pos-desktop': presentation.desktopObjectPosition ?? 'center',
-      } as React.CSSProperties)
-    : undefined;
 
   return (
     <>
-      {/* Handy (unter md): Bandfoto oben als Kasten mit abgerundeten Ecken, die
-          Hoehe folgt dem Seitenverhaeltnis des Fotos (h-auto, nichts wird
-          abgeschnitten); Logo, Genre · Ort, Name und Hashtag stehen darunter
-          auf schwarzem Grund, kein Text auf dem Foto. Anfrage-Button und
+      {/* Handy (unter md): Galerie ganz oben, laeuft hinter der Navigation; die
+          Aubergine-Flaeche mit runden Ecken liegt direkt auf dem Bild
+          (ueberlappt dessen untersten Rand); Genre · Ort, Name und Hashtag
+          stehen zentriert darauf, kein Text auf dem Foto. Anfrage-Button und
           Herz stehen nur in der festen Leiste (BandFloatingCta). Ab md wie
           bisher: feste Hoehe 100svh, begrenzt auf 560-900 px, Foto als
           Vollbild mit Verlauf und Text darueber. */}
-      <div className="relative w-full bg-pl-text md:bg-pl-stage md:h-[100svh] md:min-h-[560px] md:max-h-[900px] overflow-hidden pt-[calc(var(--pl-nav-height)+1rem)] md:pt-0">
-        <div className="relative mx-4 sm:mx-6 rounded-2xl overflow-hidden md:mx-0 md:rounded-none md:absolute md:inset-0">
-          {hasDistinctMobileImage ? (
-            <>
-              <Image
-                src={mobileImage!.url}
-                alt={mobileImage!.alt}
-                width={mobileImage!.width ?? 1600}
-                height={mobileImage!.height ?? 1067}
-                priority
-                className="block w-full h-auto md:hidden"
-                sizes="100vw"
-              />
-              <Image
-                src={heroImage.url}
-                alt={heroImage.alt}
-                width={heroImage.width ?? 1600}
-                height={heroImage.height ?? 1067}
-                className="hidden md:block md:w-full md:h-full object-cover"
-                style={desktopImageStyle}
-                sizes="100vw"
-              />
-            </>
-          ) : (
-            <Image
-              src={heroImage.url}
-              alt={heroImage.alt}
-              width={heroImage.width ?? 1600}
-              height={heroImage.height ?? 1067}
-              priority
-              className={
-                objectPositionVars
-                  ? 'block w-full h-auto md:h-full object-cover md:object-[var(--hero-pos-desktop)]'
-                  : 'block w-full h-auto md:h-full object-cover object-center'
-              }
-              style={objectPositionVars}
-              sizes="100vw"
-            />
-          )}
+      <div className="relative w-full bg-pl-text md:bg-pl-stage md:h-[100svh] md:min-h-[560px] md:max-h-[900px] overflow-hidden">
+        <BandHeroGallery images={slides} />
 
-          {/* Gradient overlay (nur ab md): dunkelt von unten (und links, fuer den Text), lässt oben transparent */}
+        <div className="hidden md:block absolute inset-0">
+          <Image
+            src={heroImage.url}
+            alt={heroImage.alt}
+            width={heroImage.width ?? 1600}
+            height={heroImage.height ?? 1067}
+            priority
+            className="block w-full h-full object-cover"
+            style={desktopImageStyle}
+            sizes="100vw"
+          />
+
+          {/* Gradient overlay: dunkelt von unten (und links, fuer den Text), lässt oben transparent */}
           <div
-            className="hidden md:block absolute inset-0"
+            className="absolute inset-0"
             style={{
               background:
                 'linear-gradient(to top, rgba(18,16,26,0.94) 0%, rgba(18,16,26,0.6) 28%, rgba(18,16,26,0.12) 62%, transparent 100%), linear-gradient(to right, rgba(18,16,26,0.45) 0%, transparent 50%)',
@@ -156,16 +123,18 @@ export function BandHero({ band, hasVideo, facts }: Props) {
           />
         </div>
 
-        {/* Content – Handy: unter dem Foto; ab md bündig unten im Bild */}
-        <div className="relative z-10 md:flex md:items-end md:h-full">
-          <div className="w-full pl-container-shell px-4 sm:px-6 pt-5 pb-6 md:pt-0 md:pb-14">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 md:gap-10">
-              <div className="min-w-0">
+        {/* Content – Handy: aubergine Flaeche mit runden Ecken, ueberlappt den Bildrand,
+            28 px, zentriert; ab md bündig unten im Bild */}
+        <div className="relative z-10 max-md:-mt-7 max-md:rounded-t-[28px] max-md:bg-pl-text md:flex md:items-end md:h-full">
+          <div className="w-full pl-container-shell px-6 pt-[38px] pb-[34px] md:pt-0 md:pb-14">
+            <div className="flex flex-col items-center text-center md:flex-row md:items-end md:justify-between md:text-left gap-6 md:gap-10">
+              <div className="min-w-0 flex flex-col items-center gap-3 md:block">
                 {/* Logo -- klein, direkt ueber dem Bandnamen verankert (Hero-
                     Variante "Name fuehrt"); Groesse bewusst generisch, object-
                     contain leitet die Bildform aus der Datei ab, siehe
                     bandHeroLogoAspectRatio.test.ts. Rein bedingtes Rendering. */}
                 {band.logo && (
+                  <div className="hidden md:block">
                   <div className="relative w-32 h-10 sm:w-40 sm:h-12 md:w-48 md:h-14 mb-3">
                     <Image
                       src={band.logo.url}
@@ -175,27 +144,28 @@ export function BandHero({ band, hasVideo, facts }: Props) {
                       sizes="192px"
                     />
                   </div>
+                  </div>
                 )}
 
                 {metaLine && (
-                  <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.08em] text-pl-accent-light mb-3">
+                  <p className="text-[12.5px] md:text-sm leading-[1.55] md:leading-normal font-bold uppercase tracking-[0.14em] md:tracking-[0.08em] text-pl-accent-light max-w-[330px] md:max-w-none text-balance md:text-wrap mb-0 md:mb-3">
                     {metaLine}
                   </p>
                 )}
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-[-0.035em] text-pl-on-stage leading-[1.02] mb-3">
+                <h1 className="text-[46px] md:text-6xl lg:text-7xl font-extrabold tracking-[-0.035em] text-pl-on-stage leading-[1.02] text-balance md:text-wrap mb-0 md:mb-3">
                   {band.name}
                 </h1>
 
                 {subtitle && (
-                  <p className="text-lg md:text-2xl text-pl-on-stage/90 font-medium max-w-2xl mb-5 md:mb-6 leading-snug">
+                  <p className="text-lg md:text-2xl text-pl-on-stage/90 font-normal md:font-medium max-w-[320px] md:max-w-2xl text-balance md:text-wrap mb-0 md:mb-6 leading-[1.38] md:leading-snug">
                     {subtitle}
                   </p>
                 )}
 
                 {/* Handy: Pille unter dem Hashtag */}
                 {hasVideo && (
-                  <div className="md:hidden">
+                  <div className="md:hidden mt-3">
                     <HeroVideoPill tone="light" bandName={band.name} />
                   </div>
                 )}
