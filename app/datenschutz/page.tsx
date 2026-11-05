@@ -74,6 +74,7 @@ export default function DatenschutzPage() {
             <p className={pClass}>Die Verarbeitung erfolgt auf Basis unseres berechtigten Interesses an der statistischen Auswertung des Nutzungsverhaltens zu Optimierungszwecken gemäß Art. 6 Abs. 1 lit. f DSGVO.</p>
             <p className={pClass}>Wir haben mit dem Anbieter einen Auftragsverarbeitungsvertrag geschlossen, der den Schutz der Daten unserer Seitenbesucher sicherstellt und eine unberechtigte Weitergabe an Dritte untersagt.</p>
             <p className={pClass}>Bei einer Datenübermittlung an den Anbieterstandort ist ein angemessenes Datenschutzniveau durch einen Angemessenheitsbeschluss der Europäischen Kommission gewährleistet.</p>
+            <p className={pClass}>Zusätzlich erfassen wir über Fathom Analytics bestimmte Interaktionen auf unserer Website, etwa das Antippen des Teilen-Knopfs, als Ereignisse. Diese Auswertung dient ebenfalls der statistischen Analyse und Optimierung unseres Angebots. Für die Verarbeitung durch Fathom gelten die oben beschriebenen Hinweise.</p>
             <h2 className={h2Class}>6) Einwilligungsverwaltung und eingebettete Inhalte</h2>
             <h3 id="usercentrics" className={`${h3Class} scroll-mt-24`}>6.1 Usercentrics (Einwilligungsverwaltung)</h3>
             <p className={pClass}>Zur Verwaltung deiner Einwilligungen nutzen wir das Consent-Management-Tool „Usercentrics“ des folgenden Anbieters: Usercentrics GmbH, Sendlinger Straße 7, 80331 München, Deutschland.</p>
@@ -113,7 +114,7 @@ export default function DatenschutzPage() {
             <p className={pClass}>Bei der Verarbeitung von personenbezogenen Daten auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO werden diese Daten so lange gespeichert, bis du dein Widerspruchsrecht nach Art. 21 Abs. 1 DSGVO ausübst, es sei denn, wir können zwingende schutzwürdige Gründe für die Verarbeitung nachweisen, die deine Interessen, Rechte und Freiheiten überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen.</p>
             <p className={pClass}>Bei der Verarbeitung von personenbezogenen Daten zum Zwecke der Direktwerbung auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO werden diese Daten so lange gespeichert, bis du dein Widerspruchsrecht nach Art. 21 Abs. 2 DSGVO ausübst.</p>
             <p className={pClass}>Sofern sich aus den sonstigen Informationen dieser Erklärung über spezifische Verarbeitungssituationen nichts anderes ergibt, werden gespeicherte personenbezogene Daten im Übrigen dann gelöscht, wenn sie für die Zwecke, für die sie erhoben oder auf sonstige Weise verarbeitet wurden, nicht mehr notwendig sind.</p>
-            <p className={pClass}>Stand: 04.10.2026</p>
+            <p className={pClass}>Stand: 05.11.2026</p>
           </div>
         </div>
       </section>
