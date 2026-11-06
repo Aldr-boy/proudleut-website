@@ -14,6 +14,7 @@ import type {
 import { compareBandDocuments } from '../bands/bandDocumentsSort.ts'
 import { compareReferenceEvents } from '../bands/bandReferenceEventsSort.ts'
 import { normalizePersonCredits } from '../people/normalizePerson.ts'
+import { PUBLIC_PROFILE_OVERRIDES } from '../bands/publicProfileOverrides.ts'
 
 type Row = Record<string, unknown>
 
@@ -192,7 +193,8 @@ export function normalizeBandFromSupabase(row: unknown): Band {
   // moods = dieselben Zuordnungen als klar typisierte {name, slug}-Struktur
   // fuer den stabilen Slug-Abgleich (z. B. /bands?mood=<slug>).
   const moods = normalizeMoodAssignments(r.band_moods)
-  const klingtNach = moods.map(m => m.name)
+  const override = PUBLIC_PROFILE_OVERRIDES[str(r.slug) ?? '']
+  const klingtNach = override?.klingtNach ?? moods.map(m => m.name)
 
   // musikalischVerortet = repertoire_styles
   const musikalischVerortet = asArr(r.band_repertoire_styles as Row[] | null)
@@ -382,6 +384,9 @@ export function normalizeBandFromSupabase(row: unknown): Band {
 
     category:     bandartNames[0],
     primaryBandart,
+    bandartLabel: override?.bandartLabel,
+    hideLocation: override?.hideLocation,
+    besetzungLabel: override?.besetzungLabel,
     bandartNames,
     bandartSlugs,
     lineupType: LINEUP_TYPES.find(t => t === r.lineup_type),

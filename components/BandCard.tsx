@@ -39,7 +39,7 @@ function buildChips(band: Band): string[] {
   }
   // Primaere Bandart steht als Pill im Bild (siehe unten) -- nicht doppelt.
   if (band.category !== band.primaryBandart) tryAdd(band.category);
-  tryAdd(band.location.administrativeRegion);
+  if (!band.hideLocation) tryAdd(band.location.administrativeRegion);
 
   return chips;
 }
@@ -48,7 +48,7 @@ export default function BandCard({ band, priority, showMerkButton }: BandCardPro
   const image = band.thumbnailImage ?? band.heroImage;
   const alt = image?.alt ?? `Livefoto von ${band.name}`;
   const subtitle = band.shortDescription?.trim();
-  const city = band.location?.city?.trim() || band.location?.district?.trim();
+  const city = band.hideLocation ? undefined : band.location?.city?.trim() || band.location?.district?.trim();
   const chips = buildChips(band);
 
   return (

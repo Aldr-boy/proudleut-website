@@ -55,7 +55,7 @@ export default async function BandsPage() {
     const entry = {
       slug: band.slug,
       name: band.name,
-      place: band.location?.city?.trim() || band.location?.district?.trim() || undefined,
+      place: band.hideLocation ? undefined : band.location?.city?.trim() || band.location?.district?.trim() || undefined,
     };
     regionOf.set(band.slug, band.location?.administrativeRegion?.trim() ?? '');
     const type = band.primaryBandart?.trim();

@@ -59,7 +59,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Spruch, ohne Spruch die Genre-Zeile wie im Header; Bild = Hauptbild auf
   // 1200x630 zugeschnitten (og.jpg/route.ts), ohne Hauptbild das allgemeine Bild.
   const socialTitle = `${band.name} · proudleut`;
-  const genreLine = [band.category, formatLocation(band.location)].filter(Boolean).join(' · ');
+  const genreLine = [band.bandartLabel ?? band.category, band.hideLocation ? '' : formatLocation(band.location)]
+    .filter(Boolean)
+    .join(' · ');
   const socialDescription = band.shortDescriptionExplicit || genreLine || description;
   const socialImage = isAbsoluteHttpsUrl(band.heroImage?.url)
     ? {
@@ -71,7 +73,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : DEFAULT_SOCIAL_IMAGE;
 
   return {
-    title: buildBandTitle(band.name, band.primaryBandart),
+    title: buildBandTitle(band.name, band.bandartLabel ?? band.primaryBandart),
     description,
     alternates: { canonical: canonicalUrl },
     openGraph: {

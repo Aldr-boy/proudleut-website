@@ -90,14 +90,14 @@ export function generateBandJsonLd(band: Band) {
   ].filter(Boolean);
 
   // Genre: nur die Bandart (Anlässe gehören nicht in genre)
-  const bandart = band.category ?? band.bandartNames[0];
+  const bandart = band.bandartLabel ?? band.category ?? band.bandartNames[0];
   const genre = bandart ? [bandart] : [];
 
   const url = absoluteUrl(`/band/${band.slug}`);
   const description = band.description ? buildBandDescription(band.description) : undefined;
 
   // Location nur wenn sinnvolle Daten vorhanden
-  const hasLocation = band.location.city || band.location.state;
+  const hasLocation = !band.hideLocation && (band.location.city || band.location.state);
   const location = hasLocation
     ? {
         '@type': 'Place' as const,

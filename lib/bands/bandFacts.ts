@@ -13,7 +13,8 @@ export const BESETZUNG_FALLBACK_MAX_LENGTH = 24;
 // kurze Freitext wedding_constellation als Fallback (wie zuvor in der Fakten-
 // spalte von BandDescription). Zu lange Texte entfallen, ebenso der
 // Platzhalterwert "fix" (ohne Aussagekraft als Besetzung).
-function resolveBesetzung(band: Pick<Band, 'weddingInfo'>): string {
+function resolveBesetzung(band: Pick<Band, 'weddingInfo' | 'besetzungLabel'>): string {
+  if (band.besetzungLabel) return band.besetzungLabel;
   const size = band.weddingInfo?.bandSize;
   if (size) return size;
   const constellation = band.weddingInfo?.constellation?.trim();
@@ -24,10 +25,10 @@ function resolveBesetzung(band: Pick<Band, 'weddingInfo'>): string {
 // Faktenleiste/Steckbrief unter dem Hero (Herkunft, Besetzung, Stil). Fehlende
 // Werte entfallen einzeln, keine leeren Zellen.
 export function getBandFacts(
-  band: Pick<Band, 'location' | 'weddingInfo' | 'musikalischVerortet'>,
+  band: Pick<Band, 'location' | 'hideLocation' | 'weddingInfo' | 'besetzungLabel' | 'musikalischVerortet'>,
 ): BandFact[] {
   const facts: BandFact[] = [
-    { label: 'Herkunft', value: formatLocation(band.location) },
+    { label: 'Herkunft', value: band.hideLocation ? '' : formatLocation(band.location) },
     { label: 'Besetzung', value: resolveBesetzung(band) },
     { label: 'Stil', value: band.musikalischVerortet[0] ?? '' },
   ];
