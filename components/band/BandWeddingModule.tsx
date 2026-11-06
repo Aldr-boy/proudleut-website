@@ -56,7 +56,7 @@ export function BandWeddingModule({ band }: Props) {
                 className="flex items-center justify-between gap-3 py-2.5 text-sm border-b border-pl-soft first:pt-0 last:border-b-0 last:pb-0"
               >
                 <span className="text-pl-text-muted">{label}</span>
-                <strong className="text-pl-text">{value}</strong>
+                <strong className="text-pl-text text-right">{value}</strong>
               </div>
             ))}
           </div>
