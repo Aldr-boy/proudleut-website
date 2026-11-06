@@ -37,8 +37,8 @@ function MobileFactsList({ facts }: { facts: BandFact[] }) {
 // Ohne Bandbild: kurzer Kopf statt Vollbild-Hero, ohne Anfrage-Button (die
 // Leiste ist dann von Anfang an sichtbar und traegt den einzigen Button).
 export function BandHero({ band, hasVideo, facts }: Props) {
-  const locationText = formatLocation(band.location);
-  const metaLine = [band.category, locationText].filter(Boolean).join(' · ');
+  const locationText = band.hideLocation ? '' : formatLocation(band.location);
+  const metaLine = [band.bandartLabel ?? band.category, locationText].filter(Boolean).join(' · ');
   // shortDescriptionExplicit statt shortDescription (Auftrag "Kein Slogan
   // -> kein Text im Hero"): OHNE den main_text-Kuerzungs-Fallback, siehe
   // lib/supabase/normalizeBand.ts. Fehlt er, faellt die Textzeile komplett

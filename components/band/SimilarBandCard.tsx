@@ -17,7 +17,7 @@ type Props = {
 // daneben steht. Server-Komponente; nur MerkHeartButton ist Client-Code.
 export function SimilarBandCard({ band }: Props) {
   const image = band.thumbnailImage ?? band.heroImage;
-  const city = band.location?.city?.trim();
+  const city = band.hideLocation ? undefined : band.location?.city?.trim();
 
   return (
     <div

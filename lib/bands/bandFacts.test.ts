@@ -50,3 +50,14 @@ test('Besetzung: nur Leerzeichen oder fehlende weddingInfo -> keine Besetzung', 
   assert.equal(besetzung(band({ constellation: '   ' })), undefined)
   assert.equal(besetzung(band(undefined)), undefined)
 })
+
+test('Besetzung: besetzungLabel hat Vorrang und ist von der Laengengrenze ausgenommen', () => {
+  const b = { ...band({ constellation: 'x' }), besetzungLabel: '1 bis 12 Musiker/innen + DJ-Services' } as FactsInput
+  assert.equal(besetzung(b), '1 bis 12 Musiker/innen + DJ-Services')
+})
+
+test('Herkunft: hideLocation blendet die Herkunft aus, ohne andere Fakten zu beeinflussen', () => {
+  const b = { ...band({ bandSize: '6 Personen' }), hideLocation: true } as FactsInput
+  const labels = getBandFacts(b).map((f) => f.label)
+  assert.deepEqual(labels, ['Besetzung', 'Stil'])
+})

@@ -177,6 +177,13 @@ export type Band = {
   // Nur gesetzt, wenn band_band_types.is_primary tatsaechlich gepflegt ist
   // (category ist ohne Primaerart nur die erste Bandart nach sort_order).
   primaryBandart?: string;
+  // Abweichende Bezeichnung nur fuer Profilkopf/Titel/Vorschau, siehe
+  // lib/bands/publicProfileOverrides.ts.
+  bandartLabel?: string;
+  // Ort nicht anzeigen (Suche arbeitet weiter mit location), siehe oben.
+  hideLocation?: boolean;
+  // Besetzung fuer die Faktenleiste, siehe oben.
+  besetzungLabel?: string;
   bandartNames: string[];
   bandartSlugs: string[];
   // Besetzungsart (bands.lineup_type); leer/unbekannt wird wie 'band' behandelt.
