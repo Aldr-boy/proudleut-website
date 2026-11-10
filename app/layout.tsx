@@ -64,6 +64,12 @@ export default async function RootLayout({
       {!isStudio && !isAdmin && (
         <head>
           {/* Usercentrics CMP: nur loader.js, kein autoblocker.js; vor Fremdskripten. */}
+          {/* Fruehe Verbindung zu den Servern, die der Loader ohnehin aufruft
+              (Banner-Text ist der LCP-Kandidat der mobilen Startseite). Keine
+              zusaetzlichen Anfragen, nur frueherer Verbindungsaufbau. */}
+          <link rel="preconnect" href="https://v1.api.service.cmp.usercentrics.eu" />
+          <link rel="preconnect" href="https://app.usercentrics.eu" />
+          <link rel="preconnect" href="https://uct.service.usercentrics.eu" />
           <script
             id="usercentrics-cmp"
             src="https://web.cmp.usercentrics.eu/ui/loader.js"
