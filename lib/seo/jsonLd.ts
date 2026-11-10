@@ -191,6 +191,39 @@ export function generatePersonJsonLd(
   };
 }
 
+// Oeffentlich sichtbare Kontakt-E-Mail (Impressum, Datenschutz, Ueber mich,
+// Startseite). Nur Angaben, die auf der Website ohnehin oeffentlich stehen.
+const ORGANIZATION_EMAIL = 'alexander@proudleut.com';
+
+/**
+ * WebSite-JSON-LD fuer die Startseite. Bewusst minimal: nur name und url,
+ * keine SearchAction. url = SITE_URL, identisch zum Canonical der Startseite
+ * (Next.js rendert es ohne abschliessenden Schraegstrich).
+ */
+export function generateWebSiteJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'proudleut',
+    url: SITE_URL,
+  };
+}
+
+/**
+ * Organization-JSON-LD fuer die Startseite. Bewusst minimal: name, url und die
+ * oeffentlich sichtbare E-Mail -- keine Telefonnummer, Postadresse, sameAs
+ * oder Bewertungen.
+ */
+export function generateOrganizationJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'proudleut',
+    url: SITE_URL,
+    email: ORGANIZATION_EMAIL,
+  };
+}
+
 /**
  * Sicheres JSON.stringify fuer die Ausgabe via dangerouslySetInnerHTML in
  * einem <script type="application/ld+json">-Tag. `<`, `>` und `&` werden zu
