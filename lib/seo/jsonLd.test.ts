@@ -1,6 +1,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { generatePersonJsonLd, safeJsonLdString } from './jsonLd.ts'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
+import {
+  generateOrganizationJsonLd,
+  generatePersonJsonLd,
+  generateWebSiteJsonLd,
+  safeJsonLdString,
+} from './jsonLd.ts'
+import { absoluteUrl, SITE_URL } from './metadata.ts'
 import type { PublicPerson } from '../people/normalizePerson.ts'
 
 // Minimale, vollstaendig getypte PublicPerson-Fixture -- alle Tests
@@ -147,4 +156,48 @@ test('generatePersonJsonLd + safeJsonLdString: Sonderzeichen und HTML-aehnliche 
 test('safeJsonLdString: escaped alle drei Zeichen konsistent', () => {
   const serialized = safeJsonLdString({ a: '<b>&</b>' })
   assert.equal(serialized, '{"a":"\\u003cb\\u003e\\u0026\\u003c/b\\u003e"}')
+})
+
+test('Startseite WebSite-JSON-LD: exakt @context/@type/name/url, url = kanonische Adresse (Canonical der Startseite)', () => {
+  const ld = generateWebSiteJsonLd()
+  assert.deepEqual(ld, {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'proudleut',
+    url: 'https://www.proudleut.com',
+  })
+  // Next.js rendert das Canonical der Startseite ohne abschliessenden Schraegstrich (= origin).
+  assert.equal(ld.url, new URL(absoluteUrl('/')).origin)
+  assert.equal(ld.url, SITE_URL)
+})
+
+test('Startseite Organization-JSON-LD: exakt @context/@type/name/url/email, nichts weiter', () => {
+  const ld = generateOrganizationJsonLd()
+  assert.deepEqual(ld, {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'proudleut',
+    url: 'https://www.proudleut.com',
+    email: 'alexander@proudleut.com',
+  })
+  assert.deepEqual(Object.keys(ld), ['@context', '@type', 'name', 'url', 'email'])
+  assert.equal(ld.url, generateWebSiteJsonLd().url)
+})
+
+test('Startseite JSON-LD: gueltiges JSON nach safeJsonLdString-Roundtrip, ohne SearchAction/sameAs/Telefon/Adresse', () => {
+  for (const ld of [generateWebSiteJsonLd(), generateOrganizationJsonLd()]) {
+    const serialized = safeJsonLdString(ld)
+    assert.deepEqual(JSON.parse(serialized), ld)
+    assert.doesNotMatch(serialized, /SearchAction|potentialAction|sameAs|telephone|address|aggregateRating|<\/script/i)
+  }
+})
+
+test('Startseite (app/page.tsx): gibt WebSite und Organization als zwei ld+json-Skripte aus', () => {
+  const src = readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '../../app/page.tsx'),
+    'utf8',
+  )
+  assert.equal((src.match(/type="application\/ld\+json"/g) ?? []).length, 2)
+  assert.match(src, /safeJsonLdString\(generateWebSiteJsonLd\(\)\)/)
+  assert.match(src, /safeJsonLdString\(generateOrganizationJsonLd\(\)\)/)
 })

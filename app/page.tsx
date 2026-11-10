@@ -18,6 +18,7 @@ import VeranstalterStatement from '@/components/homepage/VeranstalterStatement';
 import FAQ from '@/components/homepage/FAQ';
 import CTASection from '@/components/homepage/CTASection';
 import { absoluteUrl } from '@/lib/seo/metadata';
+import { generateOrganizationJsonLd, generateWebSiteJsonLd, safeJsonLdString } from '@/lib/seo/jsonLd';
 
 export const revalidate = 300;
 
@@ -144,6 +145,15 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* JSON-LD: WebSite + Organization (minimal, nur oeffentlich sichtbare Angaben) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdString(generateWebSiteJsonLd()) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLdString(generateOrganizationJsonLd()) }}
+      />
       <HeroWall images={heroPool}>
         <HeroContent />
       </HeroWall>
