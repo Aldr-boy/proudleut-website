@@ -5,6 +5,7 @@ import { formatLocation } from '@/lib/utils/formatLocation';
 import { resolveHeroImagePresentation, resolveMobileHeroImage } from '@/lib/bands/heroImagePresentation';
 import { BandHeroGallery } from './BandHeroGallery';
 import { absoluteUrl } from '@/lib/seo/metadata';
+import { toProxiedBandLogoUrl } from '@/lib/bandLogos/svgLogoProxy';
 import { BandShareButton } from './BandShareButton';
 import { HeroCTA } from './HeroCTA';
 import { HeroVideoPill } from './HeroVideoPill';
@@ -140,7 +141,7 @@ export function BandHero({ band, hasVideo, facts }: Props) {
                   <div className="hidden md:block">
                   <div className="relative w-32 h-10 sm:w-40 sm:h-12 md:w-48 md:h-14 mb-3">
                     <Image
-                      src={band.logo.url}
+                      src={toProxiedBandLogoUrl(band.logo.url, process.env.NEXT_PUBLIC_SUPABASE_URL)}
                       alt={band.logo.alt}
                       fill
                       className="object-contain object-left"
