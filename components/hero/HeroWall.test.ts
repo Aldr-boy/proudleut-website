@@ -72,7 +72,7 @@ test('Handy: Abdunklung ueber einzeln aenderbare Zahlen, Textbereich mindestens 
   assert.ok(all >= 0.18 && all < text, 'Gesamt-Abdunklung mindestens wie Desktop (0.18), aber heller als Textbereich')
   const fade = Number(source.match(/const HERO_WALL_MOBILE_FADE_START = ([0-9.]+)/)![1])
   const start = Number(source.match(/const HERO_WALL_MOBILE_TEXT_START = ([0-9.]+)/)![1])
-  assert.ok(fade < start && start <= 50, 'Textabdunklung ist spaetestens bei 50 % der Hoehe voll')
+  assert.ok(fade < start && start <= 60, 'Textabdunklung ist spaetestens bei 60 % der Hoehe voll')
 })
 
 test('children (HeroContent) wird unveraendert als Slot eingehaengt -- HeroWall selbst rendert keinen eigenen Text', () => {
@@ -132,7 +132,7 @@ test('Pause-Button: aria-pressed, verstaendlicher aria-label, steuert data-hero-
   assert.match(source, /onClick=\{onToggle\}/)
   assert.match(source, /onToggle=\{\(\) => setPaused\(\(p\) => !p\)\}/g)
   const toggleCount = source.match(/onToggle=\{\(\) => setPaused\(\(p\) => !p\)\}/g) ?? []
-  assert.equal(toggleCount.length, 2, 'beide Pause-Button-Instanzen (Mobile auf dem Mosaik, ab md am Szenencontainer) muessen denselben Toggle-Handler bekommen')
+  assert.equal(toggleCount.length, 1, 'die einzige Pause-Button-Instanz (ab md am Szenencontainer) bekommt den Toggle-Handler')
 })
 
 test('Pause-Button ist per Tastatur erreichbar (<button>) und hat sichtbaren Fokus (focus-visible:ring)', () => {
@@ -281,24 +281,13 @@ test('Pause-Button: EINE gemeinsame Implementierung (PauseButton), unabhängig v
 // CTA/Logozeile. Jetzt zwei Renderstellen derselben PauseButton-Funktion
 // -- je eine per CSS-Breakpoint sichtbar, nie beide gleichzeitig --,
 // Zustand/Handler/Label bleiben aus EINER Quelle.
-test('Pause-Button: Mobile-Instanz auf dem Mosaik (oberhalb des dunklen Auslaufs), ab md unveraendert am Szenencontainer -- nie beide gleichzeitig sichtbar', () => {
-  const mobileClassName = 'absolute top-[32%] right-4 z-30 flex md:hidden'
+test('Pause-Button: nur noch EINE Instanz, ab md am Szenencontainer -- auf dem Handy (unter md) gibt es keine', () => {
   const desktopClassName = 'absolute bottom-20 right-4 z-30 hidden md:flex'
-  const mobileIdx = source.indexOf(mobileClassName)
   const desktopIdx = source.indexOf(desktopClassName)
-  assert.ok(mobileIdx >= 0, 'Mobile-Pause-Button (auf dem Mosaik, ab md ausgeblendet) nicht gefunden')
-  assert.ok(desktopIdx >= 0, 'Desktop-Pause-Button (unveraenderte Position, auf Mobile ausgeblendet) nicht gefunden')
-  // Beide Positionsklassen muessen tatsaechlich an einer <PauseButton
-  // .../>-Stelle haengen, nicht irgendwo sonst im Text vorkommen.
-  assert.match(source.slice(Math.max(0, mobileIdx - 200), mobileIdx), /<PauseButton/)
+  assert.ok(desktopIdx >= 0, 'Desktop-/Tablet-Pause-Button nicht gefunden')
   assert.match(source.slice(Math.max(0, desktopIdx - 200), desktopIdx), /<PauseButton/)
-  // Die Mobile-Instanz ist Kind der Bildspalte (siehe MobileEdgeFade-Kind-
-  // Kommentar) -- `top-[32%]` bezieht sich dadurch auf deren tatsaechliche
-  // Hoehe, nicht auf den ganzen Szenencontainer. Die Desktop-Instanz bleibt
-  // danach, am Szenencontainer verankert.
-  const imageColumnStart = source.indexOf('<HeroImageWall')
-  assert.ok(mobileIdx > imageColumnStart, 'Mobile-Pause-Button muss Kind der Bildspalte sein')
-  assert.ok(desktopIdx > mobileIdx, 'Desktop-Instanz bleibt danach, am Szenencontainer verankert')
+  assert.equal((source.match(/<PauseButton/g) ?? []).length, 1, 'genau eine <PauseButton>-Stelle')
+  assert.ok(!source.includes('z-30 flex md:hidden'), 'keine Handy-Instanz (flex md:hidden)')
 })
 
 // Regressionsschutz fuer einen real aufgetretenen Bug: die PauseButton-

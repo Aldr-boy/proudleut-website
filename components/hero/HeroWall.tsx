@@ -86,8 +86,8 @@ const HERO_WALL_EXTRA_DIM = 0.18
 // uebergangen).
 const HERO_WALL_MOBILE_DIM_ALL = 0.18
 const HERO_WALL_MOBILE_DIM_TEXT = 0.94
-const HERO_WALL_MOBILE_FADE_START = 15
-const HERO_WALL_MOBILE_TEXT_START = 45
+const HERO_WALL_MOBILE_FADE_START = 25
+const HERO_WALL_MOBILE_TEXT_START = 58
 
 function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
   return (
@@ -590,23 +590,9 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
               NICHT hier, sondern auf Szenenebene neben GradientOverlay --
               siehe dort. */}
           <MobileEdgeFade />
-          {/* Pause-Button, Mobile-Position (Nachbesserung "Feinschliff
-              Bandzeile Runde 2", Abschnitt 2): auf Mobile stand der
-              Button bisher am Szenencontainer (bottom-20 right-4) direkt
-              neben CTA/Logozeile und konkurrierte visuell mit dem CTA.
-              Jetzt: Kind DIESER Bildspalte, `top-[32%]` -- ein Prozentwert
-              relativ zur tatsaechlichen Spaltenhoehe (min-h-[42svh]/
-              [48svh], keine feste Content-Hoehe sonst) und damit bewusst
-              VOR dem bei 40% beginnenden dunklen Auslauf (MobileEdgeFade)
-              positioniert: der Button sitzt dadurch klar auf dem
-              Bildbereich, nicht im abgedunkelten Streifen. `md:hidden` --
-              ab md uebernimmt die zweite, unveraenderte Instanz weiter
-              unten am Szenencontainer (siehe dort). */}
-          <PauseButton
-            paused={paused}
-            onToggle={() => setPaused((p) => !p)}
-            className="absolute top-[32%] right-4 z-30 flex md:hidden"
-          />
+          {/* Auf dem Handy gibt es keine Pause-Taste mehr (Auftrag "Handy-Hero
+              feinjustieren"): die Logozeile laeuft dort einfach durch. Die
+              Desktop-/Tablet-Taste (ab md) steht weiter unten am Szenencontainer. */}
         </div>
 
         <GradientOverlay />
