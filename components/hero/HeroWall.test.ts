@@ -72,7 +72,7 @@ test('children (HeroContent) wird unveraendert als Slot eingehaengt -- HeroWall 
 
 test('Bildplatz-Zuordnung nutzt ausschliesslich die gemeinsame Komposition (buildHeroWallTracks) -- keine zweite Implementierung', () => {
   assert.match(source, /import \{[^}]*buildHeroWallTracks[^}]*\} from '@\/lib\/heroWall\/heroWallComposition'/)
-  assert.match(source, /buildHeroWallTracks\(images, breakpoint\)/)
+  assert.match(source, /buildHeroWallTracks\(list, breakpoint\)/)
   assert.doesNotMatch(source, /Math\.random\(\)|\.shuffle\(|sort\(\(\) =>/i, 'keine Zufalls-/Shuffle-Logik erlaubt')
   assert.doesNotMatch(source, /% pool\.length|% images\.length/, 'kein Modulo-Wrap mehr -- das war die abgeloeste Logik')
 })

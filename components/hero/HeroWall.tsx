@@ -5,6 +5,7 @@ import Image from 'next/image'
 import type { ReactNode } from 'react'
 import {
   buildHeroWallTracks,
+  HERO_WALL_SLOT_COUNT,
   HERO_WALL_TRACK_COUNT,
   type HeroWallBreakpoint,
   type HeroWallSlot,
@@ -12,6 +13,7 @@ import {
 import { resolveHeroFocus } from '@/lib/heroWall/resolveHeroFocus'
 import { HeroLogoMarquee } from './HeroLogoMarquee'
 import { buildHeroWallPreloadDescriptors } from './heroWallPreloadLinks'
+import { extendHeroWallPool, HERO_WALL_EXTRA_IMAGES } from '@/lib/heroWall/heroWallExtras'
 
 // Startseiten-Hero-Redesign, Nachgang "Komposition & weiche Übergänge":
 // Text und Bildwelt sind keine zwei nebeneinander liegenden Flex-Spalten
@@ -62,7 +64,7 @@ const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
   mobile: [6, 34, 0],
   tablet: [8, 46, 0],
   tabletWide: [10, 70, 0, 52],
-  desktop: [8, 105, 0, 76, 10],
+  desktop: [8, 105, 0, 76, 10, 60, 0, 90],
 }
 
 function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
@@ -151,7 +153,7 @@ const MEASURED_BASE_VW: Record<'tablet' | 'tabletWide' | 'desktop', number> = {
   // Kachelbreite entsprechend hochgerechnet (25.2/18.2/13.5 * 100 / Breite).
   tablet: 39.4,
   tabletWide: 29.4,
-  desktop: 23.3,
+  desktop: 14.6,
 }
 
 // object-cover-Bedarf (siehe fix/hero-wall-sizes fuer die volle
@@ -187,7 +189,10 @@ const PRELOAD_SIZES_BY_BREAKPOINT: Record<HeroWallBreakpoint, string> = {
 }
 
 function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint: HeroWallBreakpoint }) {
-  const tracks = buildHeroWallTracks(images, breakpoint)
+  // Desktop hat mehr Bildplaetze als der Pool Bilder: Zusatzfotos + Wiederholung
+  // (siehe heroWallExtras.ts). Kleinere Breakpoints zeigen unveraendert den Pool.
+  const list = breakpoint === 'desktop' ? extendHeroWallPool(images, HERO_WALL_EXTRA_IMAGES, HERO_WALL_SLOT_COUNT.desktop) : images
+  const tracks = buildHeroWallTracks(list, breakpoint)
   const offsets = TRACK_OFFSET_PX[breakpoint]
   const isMobile = breakpoint === 'mobile'
   const flatSizes = BREAKPOINT_SIZES[breakpoint]
