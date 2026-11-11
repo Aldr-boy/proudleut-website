@@ -67,9 +67,9 @@ const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
   desktop: [8, 105, 0, 76, 10, 60, 0, 90],
 }
 
-// Zusaetzliche Abdunklung ueber der gesamten Desktop-Bildwand (0 = keine, 0.12 =
-// 12 %). Ein einzelner Wert, hier leicht aenderbar.
-const HERO_WALL_EXTRA_DIM = 0.12
+// Zusaetzliche Abdunklung ueber der gesamten Desktop-Bildwand (0 = keine, 0.18 =
+// 18 %). Ein einzelner Wert, hier leicht aenderbar.
+const HERO_WALL_EXTRA_DIM = 0.18
 
 function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
   return (
