@@ -195,7 +195,8 @@ export function extendHeroWallPool<T extends { id: string }>(
       pool.length,
       tracks,
       perTrack,
-      2
+      2,
+      [0, perTrack]
     )
     layoutCache.set(key, layout)
   }
@@ -208,7 +209,9 @@ export function computeHeroWallLayout(
   poolLength: number,
   tracks: number,
   perTrack: number,
-  restarts: number
+  restarts: number,
+  // Plaetze, die fest Poolbild <Platz> behalten (Desktop: Preload-Ziele)
+  pinned: readonly number[] = []
 ): number[] {
   const n = tracks * perTrack
   const count = groups.length
@@ -233,8 +236,7 @@ export function computeHeroWallLayout(
       fixed.add(s)
     }
   }
-  fixSlot(0, 0)
-  fixSlot(perTrack, perTrack)
+  for (const s of pinned) fixSlot(s, s)
   const placed = new Set<number>([...fixed].map((s) => out[s]))
 
   // Startbelegung
@@ -359,35 +361,69 @@ function mulberry32(seed: number): () => number {
   }
 }
 
-// Handy-Auswahl (Auftrag "Bildwand auch auf dem Handy"): nur sechs grosse
-// Kacheln, 2 Spuren x 3 Plaetze (Platz = Spur * 3 + Position). Handgewaehlt
-// nach Motiv: hoechstens zwei "schwere" Bilder (Publikum/Buehne), und die
-// beruehren sich nicht (auch nicht diagonal); kein Foto doppelt, keine
-// zwei gleichen Motivgruppen nebeneinander. Platz 0 (oben links) ist die
-// Kachel, die die Seite beim Laden vorab holt.
-//  Spur 0: Saustoimusi (gruppe), Heimatfieber (studio), Muckasaeck (buehne)
-//  Spur 1: Zruck zu dir (publikum), May Vibes (portrait), Urner Musi (gruppe)
-const MOBILE_IDS = [
-  '8452972d-5782-47c4-bb04-6c9b729c4cdc',
-  'a6057943-fb89-4457-9934-9ec5fa34e72d',
-  '2d336543-2be4-471c-a005-2d8bdd3192cd',
-  '5a671bde-a840-434e-9a80-759d99b9dbad',
-  'fc0a5568-bb6b-4ea8-8e25-0c1ea2e451d5',
-  'ffd7da93-4de4-4d6c-99a8-b961e1eab65a',
-] as const
+// ---- Handy ----
+// Handy-Wand (Auftrag "Handy-Hero reparieren, feinteiliger"): 4 Spuren x 6
+// Plaetze (Platz = Spur * 6 + Position), jede Kachel einzeln, kleiner als die
+// Desktop-Kacheln relativ zur Breite. Gleiche Regeln wie Desktop (schwere
+// Motive beruehren sich nie, auch nicht diagonal; kein Foto neben sich selbst),
+// nur ohne feste Plaetze: oben links steht das, was die Anordnung ergibt, und
+// genau dieses Bild wird beim Laden vorab geholt (siehe HeroWall.tsx).
+// Einzelner Wert fuer die Kachelgroesse am Handy: Spurenzahl in
+// heroWallComposition.ts (HERO_WALL_TRACK_COUNT.mobile, aktuell 4).
+export const HERO_WALL_MOBILE_TRACKS = HERO_WALL_TRACK_COUNT.mobile
+export const HERO_WALL_MOBILE_PER_TRACK = HERO_WALL_IMAGES_PER_TRACK.mobile
 
-// Liefert die 6 Handy-Bilder in Platzreihenfolge. Fehlt eines der gewaehlten
-// Bilder im Pool (z. B. nach einer Aenderung im Admin), wird der Platz mit dem
-// naechsten noch unbenutzten Poolbild gefuellt -- nie leer, nie doppelt.
-export function mobileHeroWallImages<T extends { id: string }>(pool: readonly T[]): T[] {
-  const byId = new Map(pool.map((x) => [x.id, x]))
-  const used = new Set<string>()
-  const out: (T | undefined)[] = MOBILE_IDS.map((id) => {
-    const x = byId.get(id)
-    if (x) used.add(id)
-    return x
-  })
-  const spare = pool.filter((x) => !used.has(x.id))
-  let si = 0
-  return out.map((x) => x ?? spare[si++]).filter((x): x is T => x !== undefined)
+// Fertig berechnete Handy-Anordnung (800 Durchlaeufe), Platz = Spur * 6 +
+// Position. Enthaelt nur 6 der 12 "schweren" Fotos (so viele Plaetze gibt es).
+const BAKED_MOBILE_LAYOUT: readonly string[] = [
+  'e97828b4-8627-425b-a4fb-9d779e5ef5a0', // Spur 0
+  'fc0a5568-bb6b-4ea8-8e25-0c1ea2e451d5',
+  'd3985920-eff1-4c05-ad88-6c12d0df917a',
+  'extra-hulzstoussboum-hochzeit',
+  '5a671bde-a840-434e-9a80-759d99b9dbad',
+  'f2cb97be-5abd-4877-ad5e-68ae1f706b8c',
+  '8452972d-5782-47c4-bb04-6c9b729c4cdc', // Spur 1
+  '56f65522-ac42-4c6c-987b-b4c2f112636d',
+  'd9e8c8e8-9b71-43ee-a26c-b2ac112fefdc',
+  'extra-lpc-unplugged',
+  'fbb4b8ff-b7f5-4038-bafc-314f0e50b0a0',
+  'd953ee02-3459-4952-af37-f8013c35e1a9',
+  '2d336543-2be4-471c-a005-2d8bdd3192cd', // Spur 2
+  'a6057943-fb89-4457-9934-9ec5fa34e72d',
+  '7341f362-ee22-4f27-80a4-1500a10adba5',
+  '2f109928-b4b1-424a-aa8c-c714fc441903',
+  '8f8d394d-0826-4fd1-8a32-2028aee704a2',
+  '56f65522-ac42-4c6c-987b-b4c2f112636d',
+  'extra-hulzstoussboum-hochzeit', // Spur 3
+  'd953ee02-3459-4952-af37-f8013c35e1a9',
+  'f2cb97be-5abd-4877-ad5e-68ae1f706b8c',
+  'ffd7da93-4de4-4d6c-99a8-b961e1eab65a',
+  'fc0a5568-bb6b-4ea8-8e25-0c1ea2e451d5',
+  '8452972d-5782-47c4-bb04-6c9b729c4cdc',
+]
+
+const mobileCache = new Map<string, number[]>()
+
+export function mobileHeroWallImages<T extends { id: string }>(pool: readonly T[], extras: readonly T[]): T[] {
+  const seen = new Set<string>()
+  const images = [...pool, ...extras].filter((x) => (seen.has(x.id) ? false : (seen.add(x.id), true)))
+  if (images.length === 0) return []
+  const slotCount = HERO_WALL_MOBILE_TRACKS * HERO_WALL_MOBILE_PER_TRACK
+  const byId = new Map(images.map((x) => [x.id, x]))
+  if (BAKED_MOBILE_LAYOUT.length === slotCount && BAKED_MOBILE_LAYOUT.every((id) => byId.has(id))) {
+    return BAKED_MOBILE_LAYOUT.map((id) => byId.get(id)!)
+  }
+  const key = images.map((x) => x.id).join(',')
+  let layout = mobileCache.get(key)
+  if (!layout) {
+    layout = computeHeroWallLayout(
+      images.map((x) => HERO_MOTIF_GROUP_BY_ID[x.id] ?? 'gruppe'),
+      pool.length,
+      HERO_WALL_MOBILE_TRACKS,
+      HERO_WALL_MOBILE_PER_TRACK,
+      2
+    )
+    mobileCache.set(key, layout)
+  }
+  return layout.map((i) => images[i])
 }

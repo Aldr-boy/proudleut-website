@@ -63,13 +63,16 @@ test('Bilderwelt-Wrapper: liegt auf Mobile UND ab md absolut hinter dem Text (ue
 })
 
 test('Handy: Abdunklung ueber einzeln aenderbare Zahlen, Textbereich mindestens so dunkel wie Desktop links (0.92)', () => {
-  for (const name of ['HERO_WALL_MOBILE_DIM_TOP', 'HERO_WALL_MOBILE_DIM_TEXT', 'HERO_WALL_MOBILE_FADE_START', 'HERO_WALL_MOBILE_TEXT_START']) {
+  for (const name of ['HERO_WALL_MOBILE_DIM_ALL', 'HERO_WALL_MOBILE_DIM_TEXT', 'HERO_WALL_MOBILE_FADE_START', 'HERO_WALL_MOBILE_TEXT_START']) {
     assert.match(source, new RegExp(`const ${name} = [0-9.]+`), name)
   }
   const text = Number(source.match(/const HERO_WALL_MOBILE_DIM_TEXT = ([0-9.]+)/)![1])
   assert.ok(text >= 0.92, 'Textbereich muss mindestens so dunkel sein wie Desktop links')
-  const top = Number(source.match(/const HERO_WALL_MOBILE_DIM_TOP = ([0-9.]+)/)![1])
-  assert.ok(top < text, 'oben heller als im Textbereich')
+  const all = Number(source.match(/const HERO_WALL_MOBILE_DIM_ALL = ([0-9.]+)/)![1])
+  assert.ok(all >= 0.18 && all < text, 'Gesamt-Abdunklung mindestens wie Desktop (0.18), aber heller als Textbereich')
+  const fade = Number(source.match(/const HERO_WALL_MOBILE_FADE_START = ([0-9.]+)/)![1])
+  const start = Number(source.match(/const HERO_WALL_MOBILE_TEXT_START = ([0-9.]+)/)![1])
+  assert.ok(fade < start && start <= 50, 'Textabdunklung ist spaetestens bei 50 % der Hoehe voll')
 })
 
 test('children (HeroContent) wird unveraendert als Slot eingehaengt -- HeroWall selbst rendert keinen eigenen Text', () => {
@@ -310,4 +313,12 @@ test('PauseButton setzt selbst kein unbedingtes flex/inline-flex -- display komm
   const end = source.indexOf('\n}', source.indexOf('return (', start))
   const body = source.slice(start, end)
   assert.doesNotMatch(body, /className=\{`(?:(?!\$\{className\})[\s\S])*\b(?:inline-flex|flex)\b/, 'PauseButton darf display nur ueber die uebergebene className setzen')
+})
+
+test('Handy-Abdunklung: kein verschachteltes Template-Literal mit Prozent (wurde im Produktions-Build zu ungueltigem CSS), Werte per Funktion zusammengesetzt', () => {
+  const start = source.indexOf('const MOBILE_DIM_BACKGROUND')
+  const end = source.indexOf('function MobileEdgeFade')
+  const block = source.slice(start, end)
+  assert.doesNotMatch(block, /`/, 'keine Template-Literale in MOBILE_DIM_BACKGROUND')
+  assert.match(source, /style={{ background: MOBILE_DIM_BACKGROUND }}/)
 })

@@ -17,7 +17,9 @@ test('Konstanten: Desktop 8 Tracks x 5 = 40 Bildplaetze, definiert die kanonisch
 })
 
 test('kleinere Breakpoints sind ein Prefix der Desktop-Slotzahl (Ausblenden statt Neu-Zuordnung)', () => {
-  assert.ok(HERO_WALL_SLOT_COUNT.mobile < HERO_WALL_SLOT_COUNT.tablet)
+  // Handy hat seit "Handy-Hero feinteiliger" eine eigene Wand (4 x 6 Plaetze,
+  // eigene Anordnung in heroWallExtras.ts) und ist kein Praefix mehr.
+  assert.equal(HERO_WALL_SLOT_COUNT.mobile, 24)
   assert.ok(HERO_WALL_SLOT_COUNT.tablet <= HERO_WALL_SLOT_COUNT.tabletWide)
   assert.ok(HERO_WALL_SLOT_COUNT.tabletWide < HERO_WALL_SLOT_COUNT.desktop)
 })
@@ -59,12 +61,12 @@ test('buildHeroWallTracks: dieselbe Zuordnung auf jedem Breakpoint -- Bildplatz 
 
 test('buildHeroWallTracks: kein Modulo-Wrap, keine Wiederholung -- fehlende Poolbilder ergeben null (Platzhalter)', () => {
   const pool = ['a', 'b', 'c']
-  const tracks = buildHeroWallTracks(pool, 'mobile')
+  const tracks = buildHeroWallTracks(pool, 'tablet')
   const flat = tracks.flat()
-  assert.equal(flat.length, 6, 'mobile hat 6 Bildplaetze (3 Tracks x 2)')
+  assert.equal(flat.length, 9, 'tablet hat 9 Bildplaetze (3 Tracks x 3)')
   assert.deepEqual(
     flat.map((s) => s.image),
-    ['a', 'b', 'c', null, null, null]
+    ['a', 'b', 'c', null, null, null, null, null, null]
   )
   // Keine Wiederholung: jedes vorhandene Bild kommt hoechstens einmal vor.
   const nonNull = flat.map((s) => s.image).filter((img): img is string => img !== null)
@@ -92,7 +94,7 @@ test('countUsedHeroWallSlots: meldet transparent genutzte/ungenutzte Bildplaetze
 })
 
 test('countUsedHeroWallSlots: mit explizitem Breakpoint fuer den Admin-Vorschau-Umschalter -- Beispiel aus dem Auftrag ("29 ausgewaehlt - 20 im Desktop-Hero verwendet - 9 weitere ausgewaehlt")', () => {
-  assert.deepEqual(countUsedHeroWallSlots(29, 'mobile'), { used: 6, total: 6, unused: 23 })
+  assert.deepEqual(countUsedHeroWallSlots(29, 'mobile'), { used: 24, total: 24, unused: 5 })
   assert.deepEqual(countUsedHeroWallSlots(29, 'tablet'), { used: 9, total: 9, unused: 20 })
   assert.deepEqual(countUsedHeroWallSlots(29, 'desktop'), { used: 29, total: 40, unused: 0 })
 })
