@@ -49,20 +49,27 @@ test('Textflaeche steht im Dokumentfluss vor der Bilderwelt (Mobile: Text zuerst
 // Szenencontainer (löst die harte Flex-Spalten-Kante ab) -- auf Mobile
 // bleibt die Bildwelt weiterhin ein normaler Flow-Block ohne jede
 // absolute/fixed Positionierung (unpräfigierte Basisklassen).
-test('Bilderwelt-Wrapper: auf Mobile normaler Flow-Block mit eigener Mindesthoehe (kein unpräfigiertes absolute/fixed), ab md bewusst absolute (überlappende Ebene)', () => {
-  const wallWrapperMatch = source.match(/<div className="relative order-1 md:order-none w-full min-h-\[42svh\][^"]*">/)
+test('Bilderwelt-Wrapper: liegt auf Mobile UND ab md absolut hinter dem Text (ueber den ganzen Hero), ohne eigenen z-Index auf Mobile', () => {
+  const wallWrapperMatch = source.match(/<div className="absolute inset-0 overflow-hidden md:inset-y-0[^"]*">/)
   assert.ok(wallWrapperMatch, 'Bilderwelt-Wrapper-Div nicht gefunden')
   const classes = wallWrapperMatch[0]
-  assert.match(classes, /min-h-\[42svh\]/, 'Bilderwelt braucht eine eigene Mindesthoehe auf Mobile (Dokumentfluss statt fester Position)')
-  // Keine UNPRAEFIGIERTE (Mobile-wirksame) absolute/fixed-Klasse.
-  assert.doesNotMatch(classes, /(^|\s)absolute\b|(^|\s)fixed\b/)
-  // Ab md bewusst absolute -- Kernbestandteil der Ueberlappungs-/Gradient-Loesung.
-  assert.match(classes, /md:absolute/)
-  assert.match(classes, /md:inset-y-0/)
-  // Nachbesserung "Feinschliff Bandzeile": auf Mobile per CSS `order`
-  // VOR der Textflaeche (Mosaik oben, Text darunter), ab md wirkungslos.
-  assert.match(classes, /order-1/)
-  assert.match(classes, /md:order-none/)
+  // Handy: volle Hoehe/Breite des Heroes. Kein z-Index auf Mobile, damit der
+  // Pause-Button (z-30) in der Bildspalte weiter ueber dem Verlauf liegt.
+  const list = classes.match(/className="([^"]*)"/)![1].split(' ')
+  assert.ok(list.includes('absolute') && list.includes('inset-0'), 'Mobile: absolut ueber die ganze Flaeche')
+  assert.ok(!list.some((c) => /^z-[0-9]+$/.test(c)), 'kein unpraefigierter z-Index')
+  assert.match(classes, /md:left-0/)
+  assert.match(classes, /md:w-full/)
+})
+
+test('Handy: Abdunklung ueber einzeln aenderbare Zahlen, Textbereich mindestens so dunkel wie Desktop links (0.92)', () => {
+  for (const name of ['HERO_WALL_MOBILE_DIM_TOP', 'HERO_WALL_MOBILE_DIM_TEXT', 'HERO_WALL_MOBILE_FADE_START', 'HERO_WALL_MOBILE_TEXT_START']) {
+    assert.match(source, new RegExp(`const ${name} = [0-9.]+`), name)
+  }
+  const text = Number(source.match(/const HERO_WALL_MOBILE_DIM_TEXT = ([0-9.]+)/)![1])
+  assert.ok(text >= 0.92, 'Textbereich muss mindestens so dunkel sein wie Desktop links')
+  const top = Number(source.match(/const HERO_WALL_MOBILE_DIM_TOP = ([0-9.]+)/)![1])
+  assert.ok(top < text, 'oben heller als im Textbereich')
 })
 
 test('children (HeroContent) wird unveraendert als Slot eingehaengt -- HeroWall selbst rendert keinen eigenen Text', () => {

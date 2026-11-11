@@ -46,7 +46,8 @@ export const HERO_WALL_PRELOAD_MEDIA: Record<HeroWallBreakpoint, string> = {
 // pruefen". Nur EIN mobiler Preload -- keine Messung begruendet eine
 // zweite mobile Kachel.
 const EAGER_POOL_INDICES: Record<HeroWallBreakpoint, number[]> = {
-  mobile: [1 * HERO_WALL_IMAGES_PER_TRACK.mobile + 1],
+  // Handy: oberste linke Kachel (Track 0, Position 0) der Handy-Liste.
+  mobile: [0 * HERO_WALL_IMAGES_PER_TRACK.mobile + 0],
   tablet: [0 * HERO_WALL_IMAGES_PER_TRACK.tablet + 0, 1 * HERO_WALL_IMAGES_PER_TRACK.tablet + 0],
   tabletWide: [0 * HERO_WALL_IMAGES_PER_TRACK.tabletWide + 0, 1 * HERO_WALL_IMAGES_PER_TRACK.tabletWide + 0],
   desktop: [0 * HERO_WALL_IMAGES_PER_TRACK.desktop + 0, 1 * HERO_WALL_IMAGES_PER_TRACK.desktop + 0],
@@ -66,12 +67,14 @@ export type HeroWallPreloadDescriptor = {
 // entsteht.
 export function buildHeroWallPreloadDescriptors(
   images: HeroWallImage[],
-  sizesByBreakpoint: Record<HeroWallBreakpoint, string>
+  sizesByBreakpoint: Record<HeroWallBreakpoint, string>,
+  // Optional: eigene Bildliste je Breakpoint (Handy zeigt eine eigene Auswahl).
+  imagesByBreakpoint: Partial<Record<HeroWallBreakpoint, HeroWallImage[]>> = {}
 ): HeroWallPreloadDescriptor[] {
   const descriptors: HeroWallPreloadDescriptor[] = []
   for (const breakpoint of Object.keys(EAGER_POOL_INDICES) as HeroWallBreakpoint[]) {
     for (const poolIndex of EAGER_POOL_INDICES[breakpoint]) {
-      const image = images[poolIndex]
+      const image = (imagesByBreakpoint[breakpoint] ?? images)[poolIndex]
       if (!image) continue
       const { props } = getImageProps({
         src: image.url,

@@ -13,7 +13,7 @@ import {
 import { resolveHeroFocus } from '@/lib/heroWall/resolveHeroFocus'
 import { HeroLogoMarquee } from './HeroLogoMarquee'
 import { buildHeroWallPreloadDescriptors } from './heroWallPreloadLinks'
-import { extendHeroWallPool, HERO_WALL_EXTRA_IMAGES } from '@/lib/heroWall/heroWallExtras'
+import { extendHeroWallPool, HERO_WALL_EXTRA_IMAGES, mobileHeroWallImages } from '@/lib/heroWall/heroWallExtras'
 
 // Startseiten-Hero-Redesign, Nachgang "Komposition & weiche Übergänge":
 // Text und Bildwelt sind keine zwei nebeneinander liegenden Flex-Spalten
@@ -61,7 +61,7 @@ const ASPECT_BY_POSITION = [
 // (dort nicht verifiziert), sondern proportional abgeleitet für dieselbe
 // unregelmäßige Wirkung bei weniger Spuren.
 const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
-  mobile: [6, 34, 0],
+  mobile: [0, 56],
   tablet: [8, 46, 0],
   tabletWide: [10, 70, 0, 52],
   desktop: [8, 105, 0, 76, 10, 60, 0, 90],
@@ -70,6 +70,17 @@ const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
 // Zusaetzliche Abdunklung ueber der gesamten Desktop-Bildwand (0 = keine, 0.18 =
 // 18 %). Ein einzelner Wert, hier leicht aenderbar.
 const HERO_WALL_EXTRA_DIM = 0.18
+
+// Handy: Bildwand liegt ueber dem ganzen Hero (Auftrag "Bildwand auch auf dem
+// Handy"), oben klar, nach unten dunkler. Einzeln aenderbare Zahlen:
+//  HERO_WALL_MOBILE_DIM_TOP       Abdunklung ganz oben (0.18 = wie Desktop-Zusatz)
+//  HERO_WALL_MOBILE_DIM_TEXT      Abdunklung im Textbereich (Desktop links: ~0.93)
+//  HERO_WALL_MOBILE_FADE_START    ab hier (% der Hero-Hoehe) wird es dunkler
+//  HERO_WALL_MOBILE_TEXT_START    ab hier (% der Hero-Hoehe) ist es voll dunkel
+const HERO_WALL_MOBILE_DIM_TOP = 0.18
+const HERO_WALL_MOBILE_DIM_TEXT = 0.94
+const HERO_WALL_MOBILE_FADE_START = 18
+const HERO_WALL_MOBILE_TEXT_START = 50
 
 function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
   return (
@@ -124,7 +135,7 @@ const BREAKPOINT_WRAPPER_CLASS: Record<HeroWallBreakpoint, string> = {
 }
 
 const BREAKPOINT_SIZES: Record<HeroWallBreakpoint, string> = {
-  mobile: '33vw',
+  mobile: '60vw',
   tablet: '20vw',
   tabletWide: '15vw',
   desktop: '12vw',
@@ -195,7 +206,12 @@ const PRELOAD_SIZES_BY_BREAKPOINT: Record<HeroWallBreakpoint, string> = {
 function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint: HeroWallBreakpoint }) {
   // Desktop hat mehr Bildplaetze als der Pool Bilder: Zusatzfotos + Wiederholung
   // (siehe heroWallExtras.ts). Kleinere Breakpoints zeigen unveraendert den Pool.
-  const list = breakpoint === 'desktop' ? extendHeroWallPool(images, HERO_WALL_EXTRA_IMAGES, HERO_WALL_SLOT_COUNT.desktop) : images
+  const list =
+    breakpoint === 'desktop'
+      ? extendHeroWallPool(images, HERO_WALL_EXTRA_IMAGES, HERO_WALL_SLOT_COUNT.desktop)
+      : breakpoint === 'mobile'
+        ? mobileHeroWallImages(images)
+        : images
   const tracks = buildHeroWallTracks(list, breakpoint)
   const offsets = TRACK_OFFSET_PX[breakpoint]
   const isMobile = breakpoint === 'mobile'
@@ -214,7 +230,7 @@ function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint:
               key={slot.index}
               slot={slot}
               aspectClass={ASPECT_BY_POSITION[p % ASPECT_BY_POSITION.length]}
-              sizes={isMobile ? flatSizes : sizesByPosition![p % sizesByPosition!.length]}
+              sizes={isMobile ? (p === 0 ? flatSizes : '40vw') : sizesByPosition![p % sizesByPosition!.length]}
             />
           ))}
         </div>
@@ -347,10 +363,11 @@ function MobileEdgeFade() {
       className="pointer-events-none absolute inset-0 z-10 md:hidden"
       style={{
         background:
-          'linear-gradient(0deg,' +
-          'rgba(18,16,26,1) 0%,' +
-          'rgba(18,16,26,0) 60%,' +
-          'rgba(18,16,26,0) 100%)',
+          'linear-gradient(180deg,' +
+          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TOP}) 0%,` +
+          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TOP}) ${HERO_WALL_MOBILE_FADE_START}%,` +
+          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TEXT}) ${HERO_WALL_MOBILE_TEXT_START}%,` +
+          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TEXT}) 100%)`,
       }}
     />
   )
@@ -424,7 +441,7 @@ function HeroImageWall({ images }: { images: HeroWallImage[] }) {
     // bleibt overflow-hidden lokal bestehen, dort ist die Bildwelt ein
     // eigener, nicht ueberlappender Block im Dokumentfluss.
     <div className="absolute inset-0 overflow-hidden md:overflow-visible">
-      {buildHeroWallPreloadDescriptors(images, PRELOAD_SIZES_BY_BREAKPOINT).map((d) => (
+      {buildHeroWallPreloadDescriptors(images, PRELOAD_SIZES_BY_BREAKPOINT, { mobile: mobileHeroWallImages(images) }).map((d) => (
         <link key={d.key} rel="preload" as="image" media={d.media} imageSrcSet={d.imageSrcSet} imageSizes={d.imageSizes} fetchPriority="high" />
       ))}
       {/* Rotationscontainer: eigenes, ueberdimensioniertes Element (10-12%
@@ -503,7 +520,7 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
           Breakpoint (Review-Fix #1): waechst ueber den svh-Wert hinaus,
           wenn der gemessene Text-Inhalt mehr Platz braucht. */}
       <div
-        className="pl-hero-scene relative flex flex-col md:block md:min-h-[max(68svh,var(--pl-hero-content-min-h,0px))] lg:min-h-[max(80svh,var(--pl-hero-content-min-h,0px))] xl:min-h-[max(100svh,var(--pl-hero-content-min-h,0px))]"
+        className="pl-hero-scene relative flex flex-col justify-end md:block md:min-h-[max(68svh,var(--pl-hero-content-min-h,0px))] lg:min-h-[max(80svh,var(--pl-hero-content-min-h,0px))] xl:min-h-[max(100svh,var(--pl-hero-content-min-h,0px))]"
         data-hero-wall-paused={paused}
         style={contentMinHeightPx != null ? { ['--pl-hero-content-min-h' as string]: `${contentMinHeightPx}px` } : undefined}
       >
@@ -549,7 +566,7 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
             absolute, ueberlappt bewusst in die Textzone hinein (verifizierte
             Studio-Referenz: left 47%/width 60% Basis, 48%/58% ab 1700px --
             hier anteilig auf unsere Breakpoints uebertragen). */}
-        <div className="relative order-1 md:order-none w-full min-h-[42svh] sm:min-h-[48svh] flex-1 md:flex-none overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-0 md:w-full">
+        <div className="absolute inset-0 overflow-hidden md:inset-y-0 md:z-0 md:overflow-visible md:left-0 md:w-full">
           <HeroImageWall images={images} />
           {/* Kind DIESER Spalte (nicht des gesamten Szenencontainers) --
               nur so bezieht sich die Uebergangstiefe auf die tatsaechliche
