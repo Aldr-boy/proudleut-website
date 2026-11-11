@@ -94,29 +94,43 @@ test('kleiner/leerer Pool: kein Absturz, keine Luecken', () => {
   assert.ok(tiny.every((v) => v && v.id === 'x'))
 })
 
-// ---- Handy-Auswahl ----
-import { mobileHeroWallImages } from './heroWallExtras.ts'
+// ---- Handy ----
+import { mobileHeroWallImages, HERO_WALL_MOBILE_TRACKS, HERO_WALL_MOBILE_PER_TRACK } from './heroWallExtras.ts'
 
-test('Handy: genau 6 Bilder, keine Duplikate, keine Luecken', () => {
-  const m = mobileHeroWallImages(pool)
-  assert.equal(m.length, 6)
-  assert.equal(new Set(m.map((x) => x.id)).size, 6)
+const M_T = HERO_WALL_MOBILE_TRACKS
+const M_P = HERO_WALL_MOBILE_PER_TRACK
+const mob = mobileHeroWallImages(pool, extras)
+const mdist = (a: number, b: number) =>
+  Math.hypot(Math.floor(a / M_P) - Math.floor(b / M_P), (a % M_P) - (b % M_P))
+
+test('Handy: 4 Spuren x 6 Plaetze, alle gefuellt', () => {
+  assert.equal(M_T, 4)
+  assert.equal(mob.length, M_T * M_P)
+  assert.ok(mob.every((x) => x && x.id))
 })
 
-test('Handy: Publikums-/Buehnenbilder beruehren sich nie (2 Spuren x 3 Plaetze, auch diagonal)', () => {
-  const m = mobileHeroWallImages(pool)
-  const at = (s: number) => ({ t: Math.floor(s / 3), p: s % 3 })
-  for (let i = 0; i < 6; i++)
-    for (let j = i + 1; j < 6; j++) {
-      const near = Math.abs(at(i).t - at(j).t) <= 1 && Math.abs(at(i).p - at(j).p) <= 1
-      if (near) assert.ok(!(heavy(m[i].id) && heavy(m[j].id)), `Platz ${i}/${j}`)
-    }
+test('Handy: dasselbe Foto liegt nie neben sich selbst (auch nicht diagonal)', () => {
+  for (let i = 0; i < mob.length; i++)
+    for (let j = i + 1; j < mob.length; j++)
+      if (mdist(i, j) < 1.5) assert.notEqual(mob[i].id, mob[j].id, `Platz ${i}/${j}`)
 })
 
-test('Handy: fehlt ein gewaehltes Bild im Pool, wird mit unbenutztem Poolbild aufgefuellt (nie leer, nie doppelt)', () => {
-  const reduced = pool.filter((x) => x.id !== '8452972d-5782-47c4-bb04-6c9b729c4cdc')
-  const m = mobileHeroWallImages(reduced)
-  assert.equal(m.length, 6)
-  assert.equal(new Set(m.map((x) => x.id)).size, 6)
-  assert.deepEqual(mobileHeroWallImages([]), [])
+test('Handy: Publikums-/Buehnenbilder beruehren sich nie (auch nicht diagonal)', () => {
+  for (let i = 0; i < mob.length; i++)
+    for (let j = i + 1; j < mob.length; j++)
+      if (mdist(i, j) < 1.5) assert.ok(!(heavy(mob[i].id) && heavy(mob[j].id)), `Platz ${i}/${j}`)
+})
+
+test('Handy: Wiederholungen liegen mindestens 3 Plaetze auseinander', () => {
+  let min = Infinity
+  for (let i = 0; i < mob.length; i++)
+    for (let j = i + 1; j < mob.length; j++) if (mob[i].id === mob[j].id) min = Math.min(min, mdist(i, j))
+  assert.ok(min >= 3, `kleinster Abstand: ${min}`)
+})
+
+test('Handy: leerer/kleiner Pool ohne Absturz, ohne Luecken', () => {
+  assert.deepEqual(mobileHeroWallImages([], []), [])
+  const tiny = mobileHeroWallImages([{ id: 'x' }, { id: 'y' }], [])
+  assert.equal(tiny.length, M_T * M_P)
+  assert.ok(tiny.every((v) => v && v.id))
 })

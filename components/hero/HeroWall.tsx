@@ -61,7 +61,7 @@ const ASPECT_BY_POSITION = [
 // (dort nicht verifiziert), sondern proportional abgeleitet für dieselbe
 // unregelmäßige Wirkung bei weniger Spuren.
 const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
-  mobile: [0, 56],
+  mobile: [0, 48, 14, 70],
   tablet: [8, 46, 0],
   tabletWide: [10, 70, 0, 52],
   desktop: [8, 105, 0, 76, 10, 60, 0, 90],
@@ -71,16 +71,23 @@ const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
 // 18 %). Ein einzelner Wert, hier leicht aenderbar.
 const HERO_WALL_EXTRA_DIM = 0.18
 
-// Handy: Bildwand liegt ueber dem ganzen Hero (Auftrag "Bildwand auch auf dem
-// Handy"), oben klar, nach unten dunkler. Einzeln aenderbare Zahlen:
-//  HERO_WALL_MOBILE_DIM_TOP       Abdunklung ganz oben (0.18 = wie Desktop-Zusatz)
-//  HERO_WALL_MOBILE_DIM_TEXT      Abdunklung im Textbereich (Desktop links: ~0.93)
-//  HERO_WALL_MOBILE_FADE_START    ab hier (% der Hero-Hoehe) wird es dunkler
-//  HERO_WALL_MOBILE_TEXT_START    ab hier (% der Hero-Hoehe) ist es voll dunkel
-const HERO_WALL_MOBILE_DIM_TOP = 0.18
+// Handy: Bildwand liegt ueber dem ganzen Hero, oben klar, nach unten dunkler.
+// Einzeln aenderbare Zahlen (Anteile 0 bis 1, Prozent der Hero-Hoehe):
+//  HERO_WALL_MOBILE_DIM_ALL       Gesamt-Abdunklung ueber dem ganzen Handy-Hero
+//                                 (Desktop-Zusatz: 0.18)
+//  HERO_WALL_MOBILE_DIM_TEXT      zusaetzliche Abdunklung im Textbereich (Desktop
+//                                 links hinter der Headline: ~0.93 insgesamt)
+//  HERO_WALL_MOBILE_FADE_START    ab hier (% der Hoehe) wird es dunkler
+//  HERO_WALL_MOBILE_TEXT_START    ab hier (% der Hoehe) ist die Textabdunklung voll
+// Kachelgroesse Handy: Anzahl Spuren HERO_WALL_TRACK_COUNT.mobile (lib/heroWall/
+// heroWallComposition.ts, aktuell 4 = Kachel etwa 29 % der Bildschirmbreite;
+// 3 = etwa 39 %, 5 = etwa 23 %). Danach die Handy-Anordnung neu berechnen
+// lassen (BAKED_MOBILE_LAYOUT in heroWallExtras.ts wird dann automatisch
+// uebergangen).
+const HERO_WALL_MOBILE_DIM_ALL = 0.18
 const HERO_WALL_MOBILE_DIM_TEXT = 0.94
-const HERO_WALL_MOBILE_FADE_START = 18
-const HERO_WALL_MOBILE_TEXT_START = 50
+const HERO_WALL_MOBILE_FADE_START = 15
+const HERO_WALL_MOBILE_TEXT_START = 45
 
 function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
   return (
@@ -135,7 +142,7 @@ const BREAKPOINT_WRAPPER_CLASS: Record<HeroWallBreakpoint, string> = {
 }
 
 const BREAKPOINT_SIZES: Record<HeroWallBreakpoint, string> = {
-  mobile: '60vw',
+  mobile: '34vw',
   tablet: '20vw',
   tabletWide: '15vw',
   desktop: '12vw',
@@ -203,6 +210,10 @@ const PRELOAD_SIZES_BY_BREAKPOINT: Record<HeroWallBreakpoint, string> = {
   desktop: SIZES_BY_POSITION_NON_MOBILE.desktop[0],
 }
 
+// Handy: Kacheln in den oberen Reihen (klar sichtbar) bekommen etwas groessere
+// Bilddateien, die unteren (unter dem dunklen Verlauf) sehr kleine.
+const MOBILE_SIZES_BY_POSITION = ['34vw', '40vw', '30vw']
+
 function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint: HeroWallBreakpoint }) {
   // Desktop hat mehr Bildplaetze als der Pool Bilder: Zusatzfotos + Wiederholung
   // (siehe heroWallExtras.ts). Kleinere Breakpoints zeigen unveraendert den Pool.
@@ -210,12 +221,11 @@ function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint:
     breakpoint === 'desktop'
       ? extendHeroWallPool(images, HERO_WALL_EXTRA_IMAGES, HERO_WALL_SLOT_COUNT.desktop)
       : breakpoint === 'mobile'
-        ? mobileHeroWallImages(images)
+        ? mobileHeroWallImages(images, HERO_WALL_EXTRA_IMAGES)
         : images
   const tracks = buildHeroWallTracks(list, breakpoint)
   const offsets = TRACK_OFFSET_PX[breakpoint]
   const isMobile = breakpoint === 'mobile'
-  const flatSizes = BREAKPOINT_SIZES[breakpoint]
   const sizesByPosition = isMobile ? null : SIZES_BY_POSITION_NON_MOBILE[breakpoint]
   return (
     <div className={`${BREAKPOINT_WRAPPER_CLASS[breakpoint]} items-center h-full w-full gap-3 md:gap-4`}>
@@ -230,7 +240,7 @@ function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint:
               key={slot.index}
               slot={slot}
               aspectClass={ASPECT_BY_POSITION[p % ASPECT_BY_POSITION.length]}
-              sizes={isMobile ? (p === 0 ? flatSizes : '40vw') : sizesByPosition![p % sizesByPosition!.length]}
+              sizes={isMobile ? (MOBILE_SIZES_BY_POSITION[p] ?? '20vw') : sizesByPosition![p % sizesByPosition!.length]}
             />
           ))}
         </div>
@@ -356,19 +366,24 @@ function GradientOverlay() {
 // auf die Hero-Hintergrundfarbe ab -- die Logozeile darunter (siehe
 // HeroLogoMarquee) steht dadurch auf durchgehend dunklem Grund, nicht auf
 // dem Foto. Kein filter:blur() -- reine Farbüberlagerung.
+// Zwei Lagen: gleichmaessige Gesamt-Abdunklung + Verlauf nach unten. Werte per
+// Funktion zusammengesetzt (kein verschachteltes Template-Literal): eine
+// solche Schreibweise wurde im Produktions-Build falsch zusammengefasst und
+// ergab ungueltiges CSS (Abdunklung wirkte nicht).
+const dark = (alpha: number) => 'rgba(18,16,26,' + String(alpha) + ')'
+const MOBILE_DIM_BACKGROUND = [
+  'linear-gradient(' + dark(HERO_WALL_MOBILE_DIM_ALL) + ',' + dark(HERO_WALL_MOBILE_DIM_ALL) + ')',
+  'linear-gradient(180deg,' +
+    dark(0) + ' ' + String(HERO_WALL_MOBILE_FADE_START) + '%,' +
+    dark(HERO_WALL_MOBILE_DIM_TEXT) + ' ' + String(HERO_WALL_MOBILE_TEXT_START) + '%)',
+].join(',')
+
 function MobileEdgeFade() {
   return (
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 z-10 md:hidden"
-      style={{
-        background:
-          'linear-gradient(180deg,' +
-          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TOP}) 0%,` +
-          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TOP}) ${HERO_WALL_MOBILE_FADE_START}%,` +
-          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TEXT}) ${HERO_WALL_MOBILE_TEXT_START}%,` +
-          `rgba(18,16,26,${HERO_WALL_MOBILE_DIM_TEXT}) 100%)`,
-      }}
+      style={{ background: MOBILE_DIM_BACKGROUND }}
     />
   )
 }
@@ -441,7 +456,7 @@ function HeroImageWall({ images }: { images: HeroWallImage[] }) {
     // bleibt overflow-hidden lokal bestehen, dort ist die Bildwelt ein
     // eigener, nicht ueberlappender Block im Dokumentfluss.
     <div className="absolute inset-0 overflow-hidden md:overflow-visible">
-      {buildHeroWallPreloadDescriptors(images, PRELOAD_SIZES_BY_BREAKPOINT, { mobile: mobileHeroWallImages(images) }).map((d) => (
+      {buildHeroWallPreloadDescriptors(images, PRELOAD_SIZES_BY_BREAKPOINT, { mobile: mobileHeroWallImages(images, HERO_WALL_EXTRA_IMAGES) }).map((d) => (
         <link key={d.key} rel="preload" as="image" media={d.media} imageSrcSet={d.imageSrcSet} imageSizes={d.imageSizes} fetchPriority="high" />
       ))}
       {/* Rotationscontainer: eigenes, ueberdimensioniertes Element (10-12%
