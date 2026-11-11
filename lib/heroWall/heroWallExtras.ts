@@ -358,3 +358,36 @@ function mulberry32(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
 }
+
+// Handy-Auswahl (Auftrag "Bildwand auch auf dem Handy"): nur sechs grosse
+// Kacheln, 2 Spuren x 3 Plaetze (Platz = Spur * 3 + Position). Handgewaehlt
+// nach Motiv: hoechstens zwei "schwere" Bilder (Publikum/Buehne), und die
+// beruehren sich nicht (auch nicht diagonal); kein Foto doppelt, keine
+// zwei gleichen Motivgruppen nebeneinander. Platz 0 (oben links) ist die
+// Kachel, die die Seite beim Laden vorab holt.
+//  Spur 0: Saustoimusi (gruppe), Heimatfieber (studio), Muckasaeck (buehne)
+//  Spur 1: Zruck zu dir (publikum), May Vibes (portrait), Urner Musi (gruppe)
+const MOBILE_IDS = [
+  '8452972d-5782-47c4-bb04-6c9b729c4cdc',
+  'a6057943-fb89-4457-9934-9ec5fa34e72d',
+  '2d336543-2be4-471c-a005-2d8bdd3192cd',
+  '5a671bde-a840-434e-9a80-759d99b9dbad',
+  'fc0a5568-bb6b-4ea8-8e25-0c1ea2e451d5',
+  'ffd7da93-4de4-4d6c-99a8-b961e1eab65a',
+] as const
+
+// Liefert die 6 Handy-Bilder in Platzreihenfolge. Fehlt eines der gewaehlten
+// Bilder im Pool (z. B. nach einer Aenderung im Admin), wird der Platz mit dem
+// naechsten noch unbenutzten Poolbild gefuellt -- nie leer, nie doppelt.
+export function mobileHeroWallImages<T extends { id: string }>(pool: readonly T[]): T[] {
+  const byId = new Map(pool.map((x) => [x.id, x]))
+  const used = new Set<string>()
+  const out: (T | undefined)[] = MOBILE_IDS.map((id) => {
+    const x = byId.get(id)
+    if (x) used.add(id)
+    return x
+  })
+  const spare = pool.filter((x) => !used.has(x.id))
+  let si = 0
+  return out.map((x) => x ?? spare[si++]).filter((x): x is T => x !== undefined)
+}

@@ -93,3 +93,30 @@ test('kleiner/leerer Pool: kein Absturz, keine Luecken', () => {
   assert.equal(tiny.length, 40)
   assert.ok(tiny.every((v) => v && v.id === 'x'))
 })
+
+// ---- Handy-Auswahl ----
+import { mobileHeroWallImages } from './heroWallExtras.ts'
+
+test('Handy: genau 6 Bilder, keine Duplikate, keine Luecken', () => {
+  const m = mobileHeroWallImages(pool)
+  assert.equal(m.length, 6)
+  assert.equal(new Set(m.map((x) => x.id)).size, 6)
+})
+
+test('Handy: Publikums-/Buehnenbilder beruehren sich nie (2 Spuren x 3 Plaetze, auch diagonal)', () => {
+  const m = mobileHeroWallImages(pool)
+  const at = (s: number) => ({ t: Math.floor(s / 3), p: s % 3 })
+  for (let i = 0; i < 6; i++)
+    for (let j = i + 1; j < 6; j++) {
+      const near = Math.abs(at(i).t - at(j).t) <= 1 && Math.abs(at(i).p - at(j).p) <= 1
+      if (near) assert.ok(!(heavy(m[i].id) && heavy(m[j].id)), `Platz ${i}/${j}`)
+    }
+})
+
+test('Handy: fehlt ein gewaehltes Bild im Pool, wird mit unbenutztem Poolbild aufgefuellt (nie leer, nie doppelt)', () => {
+  const reduced = pool.filter((x) => x.id !== '8452972d-5782-47c4-bb04-6c9b729c4cdc')
+  const m = mobileHeroWallImages(reduced)
+  assert.equal(m.length, 6)
+  assert.equal(new Set(m.map((x) => x.id)).size, 6)
+  assert.deepEqual(mobileHeroWallImages([]), [])
+})
