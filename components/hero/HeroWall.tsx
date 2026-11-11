@@ -67,6 +67,10 @@ const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
   desktop: [8, 105, 0, 76, 10, 60, 0, 90],
 }
 
+// Zusaetzliche Abdunklung ueber der gesamten Desktop-Bildwand (0 = keine, 0.12 =
+// 12 %). Ein einzelner Wert, hier leicht aenderbar.
+const HERO_WALL_EXTRA_DIM = 0.12
+
 function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
   return (
     <div
@@ -295,20 +299,31 @@ function PauseButton({
 // Ebene auf Szenenebene -- siehe dort.
 function GradientOverlay() {
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10 hidden md:block"
-      style={{
-        background:
-          'linear-gradient(90deg,' +
-          'rgba(18,16,26,0.92) 0%,' +
-          'rgba(18,16,26,0.88) 25%,' +
-          'rgba(18,16,26,0.76) 45%,' +
-          'rgba(18,16,26,0.48) 65%,' +
-          'rgba(18,16,26,0.18) 85%,' +
-          'rgba(18,16,26,0.06) 100%)',
-      }}
-    />
+    <>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 hidden md:block"
+        style={{
+          background:
+            'linear-gradient(90deg,' +
+            'rgba(18,16,26,0.92) 0%,' +
+            'rgba(18,16,26,0.88) 25%,' +
+            'rgba(18,16,26,0.76) 45%,' +
+            'rgba(18,16,26,0.48) 65%,' +
+            'rgba(18,16,26,0.18) 85%,' +
+            'rgba(18,16,26,0.06) 100%)',
+        }}
+      />
+      {/* Zusaetzliche, gleichmaessige Abdunklung der Bildwand (nur Desktop ab
+          xl, dort stehen die kleineren Kacheln): daempft helle Buehnenlichter
+          und Farben. Liegt unter dem Text (z-20), Headline/Button bleiben
+          unberuehrt. Wert zentral in HERO_WALL_EXTRA_DIM. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 hidden xl:block"
+        style={{ backgroundColor: `rgba(18,16,26,${HERO_WALL_EXTRA_DIM})` }}
+      />
+    </>
   )
 }
 
