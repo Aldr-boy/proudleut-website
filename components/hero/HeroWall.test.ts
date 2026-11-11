@@ -72,7 +72,7 @@ test('children (HeroContent) wird unveraendert als Slot eingehaengt -- HeroWall 
 
 test('Bildplatz-Zuordnung nutzt ausschliesslich die gemeinsame Komposition (buildHeroWallTracks) -- keine zweite Implementierung', () => {
   assert.match(source, /import \{[^}]*buildHeroWallTracks[^}]*\} from '@\/lib\/heroWall\/heroWallComposition'/)
-  assert.match(source, /buildHeroWallTracks\(images, breakpoint\)/)
+  assert.match(source, /buildHeroWallTracks\(list, breakpoint\)/)
   assert.doesNotMatch(source, /Math\.random\(\)|\.shuffle\(|sort\(\(\) =>/i, 'keine Zufalls-/Shuffle-Logik erlaubt')
   assert.doesNotMatch(source, /% pool\.length|% images\.length/, 'kein Modulo-Wrap mehr -- das war die abgeloeste Logik')
 })
@@ -106,7 +106,7 @@ test('Rotation der gesamten Bildwand sitzt auf einem eigenen Vorfahren-Element, 
   const rotateLineEnd = source.indexOf('>', source.indexOf("transform: 'rotate(-6deg)'"))
   const rotateTag = source.slice(rotateLineStart, rotateLineEnd)
   assert.doesNotMatch(rotateTag, /pl-hero-float/)
-  assert.match(source, /pl-hero-float/, 'Pendel-Klasse muss an anderer Stelle (pro Track) vorkommen')
+  assert.doesNotMatch(source, /pl-hero-float/, 'Bildwand bewegt sich nicht mehr (keine Pendel-Klasse)')
 })
 
 test('Pause-Button: aria-pressed, verstaendlicher aria-label, steuert data-hero-wall-paused', () => {
@@ -114,7 +114,7 @@ test('Pause-Button: aria-pressed, verstaendlicher aria-label, steuert data-hero-
   // Nachgang "Hero-Logozeile": Pause-Button steuert jetzt zusaetzlich die
   // Logozeile (dieselbe Instanz, kein zweiter Regler) -- aria-label
   // benennt beide Bewegungen.
-  assert.match(source, /aria-label=\{paused \? 'Bewegung der Bildwand und Logozeile fortsetzen' : 'Bewegung der Bildwand und Logozeile pausieren'\}/)
+  assert.match(source, /aria-label=\{paused \? 'Bewegung der Logozeile fortsetzen' : 'Bewegung der Logozeile pausieren'\}/)
   assert.match(source, /data-hero-wall-paused=\{paused\}/)
   // Nachbesserung "Feinschliff Bandzeile Runde 2": onClick sitzt jetzt in
   // der geteilten PauseButton-Funktion (onClick={onToggle}), beide

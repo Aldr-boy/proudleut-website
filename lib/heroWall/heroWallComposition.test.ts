@@ -9,11 +9,11 @@ import {
   countUsedHeroWallSlots,
 } from './heroWallComposition.ts'
 
-test('Konstanten: Desktop 5 Tracks x 4 = 20 Bildplaetze, definiert die kanonische Obergrenze', () => {
-  assert.equal(HERO_WALL_TRACK_COUNT.desktop, 5)
-  assert.equal(HERO_WALL_IMAGES_PER_TRACK.desktop, 4)
-  assert.equal(HERO_WALL_SLOT_COUNT.desktop, 20)
-  assert.equal(HERO_WALL_CANONICAL_SLOT_COUNT, 20)
+test('Konstanten: Desktop 8 Tracks x 5 = 40 Bildplaetze, definiert die kanonische Obergrenze', () => {
+  assert.equal(HERO_WALL_TRACK_COUNT.desktop, 8)
+  assert.equal(HERO_WALL_IMAGES_PER_TRACK.desktop, 5)
+  assert.equal(HERO_WALL_SLOT_COUNT.desktop, 40)
+  assert.equal(HERO_WALL_CANONICAL_SLOT_COUNT, 40)
 })
 
 test('kleinere Breakpoints sind ein Prefix der Desktop-Slotzahl (Ausblenden statt Neu-Zuordnung)', () => {
@@ -23,13 +23,13 @@ test('kleinere Breakpoints sind ein Prefix der Desktop-Slotzahl (Ausblenden stat
 })
 
 test('buildHeroWallTracks: Bildplatz n erhaelt Poolbild n (direkte 1:1-Zuordnung, kontinuierlich pro Track)', () => {
-  const pool = Array.from({ length: 20 }, (_, i) => `img-${i}`)
+  const pool = Array.from({ length: 40 }, (_, i) => `img-${i}`)
   const tracks = buildHeroWallTracks(pool, 'desktop')
-  assert.equal(tracks.length, 5)
+  assert.equal(tracks.length, 8)
   tracks.forEach((track, t) => {
-    assert.equal(track.length, 4)
+    assert.equal(track.length, 5)
     track.forEach((slot, p) => {
-      const expectedIndex = t * 4 + p
+      const expectedIndex = t * 5 + p
       assert.equal(slot.index, expectedIndex)
       assert.equal(slot.image, `img-${expectedIndex}`)
     })
@@ -37,7 +37,7 @@ test('buildHeroWallTracks: Bildplatz n erhaelt Poolbild n (direkte 1:1-Zuordnung
 })
 
 test('buildHeroWallTracks: dieselbe Zuordnung auf jedem Breakpoint -- Bildplatz n zeigt ueberall dasselbe Poolbild n, nur weniger Plaetze auf kleineren Screens', () => {
-  const pool = Array.from({ length: 20 }, (_, i) => `img-${i}`)
+  const pool = Array.from({ length: 40 }, (_, i) => `img-${i}`)
   const desktop = buildHeroWallTracks(pool, 'desktop').flat()
   const tabletWide = buildHeroWallTracks(pool, 'tabletWide').flat()
   const tablet = buildHeroWallTracks(pool, 'tablet').flat()
@@ -73,26 +73,26 @@ test('buildHeroWallTracks: kein Modulo-Wrap, keine Wiederholung -- fehlende Pool
 
 test('buildHeroWallTracks: leerer Pool ergibt ausschliesslich Platzhalter, kein Fehler', () => {
   const tracks = buildHeroWallTracks([], 'desktop')
-  assert.equal(tracks.flat().length, 20)
+  assert.equal(tracks.flat().length, 40)
   assert.ok(tracks.flat().every((s) => s.image === null))
 })
 
 test('buildHeroWallTracks: ueberzaehlige Poolbilder ueber die kanonische Obergrenze hinaus werden nicht verwendet', () => {
-  const pool = Array.from({ length: 30 }, (_, i) => `img-${i}`)
+  const pool = Array.from({ length: 50 }, (_, i) => `img-${i}`)
   const tracks = buildHeroWallTracks(pool, 'desktop')
-  assert.equal(tracks.flat().length, 20)
-  assert.equal(tracks.flat().at(-1)?.image, 'img-19')
+  assert.equal(tracks.flat().length, 40)
+  assert.equal(tracks.flat().at(-1)?.image, 'img-39')
 })
 
 test('countUsedHeroWallSlots: meldet transparent genutzte/ungenutzte Bildplaetze fuer den Admin-Editor (Default: Desktop)', () => {
-  assert.deepEqual(countUsedHeroWallSlots(0), { used: 0, total: 20, unused: 0 })
-  assert.deepEqual(countUsedHeroWallSlots(14), { used: 14, total: 20, unused: 0 })
-  assert.deepEqual(countUsedHeroWallSlots(20), { used: 20, total: 20, unused: 0 })
-  assert.deepEqual(countUsedHeroWallSlots(30), { used: 20, total: 20, unused: 10 })
+  assert.deepEqual(countUsedHeroWallSlots(0), { used: 0, total: 40, unused: 0 })
+  assert.deepEqual(countUsedHeroWallSlots(14), { used: 14, total: 40, unused: 0 })
+  assert.deepEqual(countUsedHeroWallSlots(40), { used: 40, total: 40, unused: 0 })
+  assert.deepEqual(countUsedHeroWallSlots(50), { used: 40, total: 40, unused: 10 })
 })
 
 test('countUsedHeroWallSlots: mit explizitem Breakpoint fuer den Admin-Vorschau-Umschalter -- Beispiel aus dem Auftrag ("29 ausgewaehlt - 20 im Desktop-Hero verwendet - 9 weitere ausgewaehlt")', () => {
   assert.deepEqual(countUsedHeroWallSlots(29, 'mobile'), { used: 6, total: 6, unused: 23 })
   assert.deepEqual(countUsedHeroWallSlots(29, 'tablet'), { used: 9, total: 9, unused: 20 })
-  assert.deepEqual(countUsedHeroWallSlots(29, 'desktop'), { used: 20, total: 20, unused: 9 })
+  assert.deepEqual(countUsedHeroWallSlots(29, 'desktop'), { used: 29, total: 40, unused: 0 })
 })

@@ -25,14 +25,14 @@ export const HERO_WALL_TRACK_COUNT: Record<HeroWallBreakpoint, number> = {
   mobile: 3,
   tablet: 3,
   tabletWide: 4,
-  desktop: 5,
+  desktop: 8,
 }
 
 export const HERO_WALL_IMAGES_PER_TRACK: Record<HeroWallBreakpoint, number> = {
   mobile: 2,
   tablet: 3,
   tabletWide: 3,
-  desktop: 4,
+  desktop: 5,
 }
 
 export const HERO_WALL_SLOT_COUNT: Record<HeroWallBreakpoint, number> = {

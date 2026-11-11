@@ -5,6 +5,7 @@ import Image from 'next/image'
 import type { ReactNode } from 'react'
 import {
   buildHeroWallTracks,
+  HERO_WALL_SLOT_COUNT,
   HERO_WALL_TRACK_COUNT,
   type HeroWallBreakpoint,
   type HeroWallSlot,
@@ -12,6 +13,7 @@ import {
 import { resolveHeroFocus } from '@/lib/heroWall/resolveHeroFocus'
 import { HeroLogoMarquee } from './HeroLogoMarquee'
 import { buildHeroWallPreloadDescriptors } from './heroWallPreloadLinks'
+import { extendHeroWallPool, HERO_WALL_EXTRA_IMAGES } from '@/lib/heroWall/heroWallExtras'
 
 // Startseiten-Hero-Redesign, Nachgang "Komposition & weiche Übergänge":
 // Text und Bildwelt sind keine zwei nebeneinander liegenden Flex-Spalten
@@ -62,44 +64,12 @@ const TRACK_OFFSET_PX: Record<HeroWallBreakpoint, number[]> = {
   mobile: [6, 34, 0],
   tablet: [8, 46, 0],
   tabletWide: [10, 70, 0, 52],
-  desktop: [8, 105, 0, 76, 10],
+  desktop: [8, 105, 0, 76, 10, 60, 0, 90],
 }
 
-// Pendel-Bewegung (Nachbesserung "Bewegung behutsam deutlicher machen"):
-// Dauer weiterhin ~17s je Richtung, ease-in-out, unveraendert. Der Weg
-// (Gesamtstrecke zwischen den beiden Umkehrpunkten -- NICHT verdoppelt,
-// die Keyframe pendelt direkt von 0 zu --pl-hero-float-distance und
-// zurueck) ist jetzt je Breakpoint gestuft: Desktop deutlich groesser
-// (30-40px) als Mobile (18-25px), Tablet/tabletWide dazwischen. Die
-// bestehende pl-hero-float-Keyframe (app/globals.css) laeuft bereits
-// 0% -> 50% -> 100% mit ease-in-out und ist strukturell bereits ein
-// "alternate"-Pendeln (hin und zurueck in einem einzigen Zyklus) -- 34s
-// Gesamtdauer ergibt exakt 17s je Richtung.
-const DISTANCE_RANGE_PX: Record<HeroWallBreakpoint, [number, number]> = {
-  mobile: [18, 25],
-  tablet: [22, 29],
-  tabletWide: [26, 34],
-  desktop: [30, 40],
-}
-
-function trackAnimationStyle(trackIndex: number, breakpoint: HeroWallBreakpoint): React.CSSProperties {
-  const [min, max] = DISTANCE_RANGE_PX[breakpoint]
-  // Drei Stufen (0/half/max) ueber den bestehenden %3-Streuungs-Zyklus --
-  // deckt den vorgegebenen Bereich gleichmaessig ab, bleibt aber dieselbe
-  // Streuungslogik wie zuvor (Tracks 3/4 wiederholen das Muster von 0/1,
-  // gewollt fuer die Desktop-5-Spuren-Komposition).
-  const distance = min + (trackIndex % 3) * ((max - min) / 2)
-  // Duration-Streuung bewusst knapper (+1s statt zuvor +2s je Track) --
-  // Auftrag: Dauer bleibt "weiterhin ungefaehr 17 Sekunden je Richtung",
-  // nicht wesentlich beschleunigen oder verlangsamen.
-  const duration = 34 + trackIndex * 1
-  const delay = -(trackIndex * 5) // negativer Delay: startet direkt versetzt, kein Sprung nach Ladeverzögerung
-  return {
-    ['--pl-hero-float-distance' as string]: `-${distance}px`,
-    animationDuration: `${duration}s`,
-    animationDelay: `${delay}s`,
-  }
-}
+// Zusaetzliche Abdunklung ueber der gesamten Desktop-Bildwand (0 = keine, 0.18 =
+// 18 %). Ein einzelner Wert, hier leicht aenderbar.
+const HERO_WALL_EXTRA_DIM = 0.18
 
 function PlaceholderTile({ aspectClass }: { aspectClass: string }) {
   return (
@@ -183,9 +153,11 @@ const ASPECT_RATIO_BY_POSITION = [1.18, 0.7, 0.93, 0.79, 1.05, 1.00]
 // tatsaechliche Layoutbreite zu aendern), uebernommen unveraendert aus
 // fix/hero-wall-sizes. `mobile` bewusst NICHT hier drin -- Auftragsgrenze.
 const MEASURED_BASE_VW: Record<'tablet' | 'tabletWide' | 'desktop', number> = {
-  tablet: 25.2,
-  tabletWide: 18.2,
-  desktop: 13.5,
+  // Bildwand laeuft ab md ueber die volle Szenenbreite (vorher 64/62/58 %):
+  // Kachelbreite entsprechend hochgerechnet (25.2/18.2/13.5 * 100 / Breite).
+  tablet: 39.4,
+  tabletWide: 29.4,
+  desktop: 14.6,
 }
 
 // object-cover-Bedarf (siehe fix/hero-wall-sizes fuer die volle
@@ -221,7 +193,10 @@ const PRELOAD_SIZES_BY_BREAKPOINT: Record<HeroWallBreakpoint, string> = {
 }
 
 function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint: HeroWallBreakpoint }) {
-  const tracks = buildHeroWallTracks(images, breakpoint)
+  // Desktop hat mehr Bildplaetze als der Pool Bilder: Zusatzfotos + Wiederholung
+  // (siehe heroWallExtras.ts). Kleinere Breakpoints zeigen unveraendert den Pool.
+  const list = breakpoint === 'desktop' ? extendHeroWallPool(images, HERO_WALL_EXTRA_IMAGES, HERO_WALL_SLOT_COUNT.desktop) : images
+  const tracks = buildHeroWallTracks(list, breakpoint)
   const offsets = TRACK_OFFSET_PX[breakpoint]
   const isMobile = breakpoint === 'mobile'
   const flatSizes = BREAKPOINT_SIZES[breakpoint]
@@ -231,8 +206,8 @@ function TrackSet({ images, breakpoint }: { images: HeroWallImage[]; breakpoint:
       {tracks.map((track, t) => (
         <div
           key={t}
-          className="pl-hero-float flex flex-1 min-w-0 flex-col gap-3 md:gap-4"
-          style={{ marginTop: offsets[t] ?? 0, ...trackAnimationStyle(t, breakpoint) }}
+          className="flex flex-1 min-w-0 flex-col gap-3 md:gap-4"
+          style={{ marginTop: offsets[t] ?? 0 }}
         >
           {track.map((slot, p) => (
             <Tile
@@ -292,7 +267,7 @@ function PauseButton({
       type="button"
       onClick={onToggle}
       aria-pressed={paused}
-      aria-label={paused ? 'Bewegung der Bildwand und Logozeile fortsetzen' : 'Bewegung der Bildwand und Logozeile pausieren'}
+      aria-label={paused ? 'Bewegung der Logozeile fortsetzen' : 'Bewegung der Logozeile pausieren'}
       className={`items-center justify-center w-9 h-9 rounded-full
                   bg-pl-stage-elevated/80 text-pl-on-stage border border-pl-border-stage backdrop-blur-sm
                   hover:bg-pl-stage-elevated motion-safe:transition-colors
@@ -324,19 +299,31 @@ function PauseButton({
 // Ebene auf Szenenebene -- siehe dort.
 function GradientOverlay() {
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-10 hidden md:block"
-      style={{
-        background:
-          'linear-gradient(90deg,' +
-          'rgba(18,16,26,1) 0%,' +
-          'rgba(18,16,26,1) 39%,' +
-          'rgba(18,16,26,0.96) 44%,' +
-          'rgba(18,16,26,0.61) 50%,' +
-          'rgba(18,16,26,0) 61%)',
-      }}
-    />
+    <>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 hidden md:block"
+        style={{
+          background:
+            'linear-gradient(90deg,' +
+            'rgba(18,16,26,0.92) 0%,' +
+            'rgba(18,16,26,0.88) 25%,' +
+            'rgba(18,16,26,0.76) 45%,' +
+            'rgba(18,16,26,0.48) 65%,' +
+            'rgba(18,16,26,0.18) 85%,' +
+            'rgba(18,16,26,0.06) 100%)',
+        }}
+      />
+      {/* Zusaetzliche, gleichmaessige Abdunklung der Bildwand (nur Desktop ab
+          xl, dort stehen die kleineren Kacheln): daempft helle Buehnenlichter
+          und Farben. Liegt unter dem Text (z-20), Headline/Button bleiben
+          unberuehrt. Wert zentral in HERO_WALL_EXTRA_DIM. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 hidden xl:block"
+        style={{ backgroundColor: `rgba(18,16,26,${HERO_WALL_EXTRA_DIM})` }}
+      />
+    </>
   )
 }
 
@@ -562,7 +549,7 @@ export function HeroWall({ images, children }: { images: HeroWallImage[]; childr
             absolute, ueberlappt bewusst in die Textzone hinein (verifizierte
             Studio-Referenz: left 47%/width 60% Basis, 48%/58% ab 1700px --
             hier anteilig auf unsere Breakpoints uebertragen). */}
-        <div className="relative order-1 md:order-none w-full min-h-[42svh] sm:min-h-[48svh] flex-1 md:flex-none overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-[44%] md:w-[64%] lg:left-[46%] lg:w-[62%] xl:left-[48%] xl:w-[58%]">
+        <div className="relative order-1 md:order-none w-full min-h-[42svh] sm:min-h-[48svh] flex-1 md:flex-none overflow-hidden md:absolute md:inset-y-0 md:z-0 md:min-h-0 md:overflow-visible md:left-0 md:w-full">
           <HeroImageWall images={images} />
           {/* Kind DIESER Spalte (nicht des gesamten Szenencontainers) --
               nur so bezieht sich die Uebergangstiefe auf die tatsaechliche
