@@ -61,7 +61,16 @@ function DesktopGallery({ images, onOpen }: { images: ImageAsset[]; onOpen: (ind
   if (composition === 'single') {
     return (
       <div className="hidden md:block">
-        <GalleryTile img={leitbild} index={0} onOpen={onOpen} className="aspect-[21/9] w-full" />
+        {/* Einzelbild fuellt die volle Containerbreite (max. 1140 px): die
+            Bildgroesse muss dazu passen, sonst wird ein Viertelbreiten-Bild
+            auf volle Breite gezogen (pixelig). */}
+        <GalleryTile
+          img={leitbild}
+          index={0}
+          onOpen={onOpen}
+          className="aspect-[21/9] w-full"
+          sizes="(min-width: 1140px) 1140px, 100vw"
+        />
       </div>
     );
   }
@@ -125,7 +134,8 @@ function GalleryTile({
   onOpen,
   className,
   fill: forceFill,
-}: GalleryCellProps & { className: string; fill?: boolean }) {
+  sizes,
+}: GalleryCellProps & { className: string; fill?: boolean; sizes?: string }) {
   return (
     <button
       type="button"
@@ -138,7 +148,7 @@ function GalleryTile({
         alt={img.alt}
         fill
         className="object-cover motion-safe:transition-transform motion-safe:group-hover:scale-105"
-        sizes={forceFill ? '(min-width: 768px) 40vw, 50vw' : '(min-width: 768px) 25vw, 50vw'}
+        sizes={sizes ?? (forceFill ? '(min-width: 768px) 40vw, 50vw' : '(min-width: 768px) 25vw, 50vw')}
       />
     </button>
   );
