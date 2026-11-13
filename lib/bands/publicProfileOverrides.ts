@@ -22,6 +22,9 @@ export type PublicProfileOverride = {
 };
 
 export const PUBLIC_PROFILE_OVERRIDES: Record<string, PublicProfileOverride> = {
+  'lpc-music': {
+    bandartLabel: 'Liveband',
+  },
   '9to5': {
     bandartLabel: 'Live- und Showband',
     hideLocation: true,
