@@ -12,20 +12,9 @@ import { fetchEventCategoryHero } from '@/sanity/lib/fetchEventCategoryHero';
 import { urlFor } from '@/sanity/lib/image';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import { getBandFinderThemeImages } from '@/lib/bands/bandFinderThemeImages';
+import { getPublishedThemePagesForOccasion } from '@/lib/content/themePages';
 
 export const revalidate = 300;
-
-// Verweis auf die Themenseite (Super-Collection) der jeweiligen Hauptseite.
-const COLLECTION_LINKS: Record<string, { href: string; label: string }> = {
-  hochzeit: {
-    href: '/veranstaltung/hochzeit/oberpfalz',
-    label: 'Hochzeitsbands aus der Oberpfalz: Auswahl und Tipps →',
-  },
-  festzelt: {
-    href: '/veranstaltung/festzelt/bayern',
-    label: 'Festzeltbands aus Bayern: Auswahl und Tipps →',
-  },
-};
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -103,7 +92,12 @@ export default async function VeranstaltungPage({ params }: Props) {
   // Treffer innerhalb der bereits anlassgefilterten Grundmenge.
   const regions = REGION_ORDER.filter((r) => bands.some((b) => getBandRegionBucket(b) === r));
 
-  const collectionLink = COLLECTION_LINKS[slug];
+  // Collections dieses Anlasses (gleiche Quelle und Veroeffentlichungsregel
+  // wie Sitemap und Bandseiten); getAllBandsFromSupabase liefert nur aktive Bands.
+  const collections = getPublishedThemePagesForOccasion(
+    slug,
+    new Set(allBands.map((b) => b.slug)),
+  );
 
   const h1 = category.h1Title ?? category.title;
   const subtitleText = heroData?.subtitle ?? category.description ?? null;
@@ -122,18 +116,31 @@ export default async function VeranstaltungPage({ params }: Props) {
           backHref="/bands"
           backLabel="← Zurück zur Bandübersicht"
         />
-        {collectionLink && (
+        {collections.length > 0 && (
           // Direkt unter dem Seitenkopf statt hinter dem langen Bandraster;
           // gleicher Hintergrund wie der Kopf, damit kein Bruch entsteht.
           <div className="bg-pl-paper">
-            <div className="pl-container-shell px-4 sm:px-6 pb-4">
-              <Link
-                href={collectionLink.href}
-                className="text-pl-primary text-sm font-medium hover:opacity-80 motion-safe:transition-opacity"
-              >
-                {collectionLink.label}
-              </Link>
-            </div>
+            <nav
+              aria-label="Nach Region"
+              className="pl-container-shell px-4 sm:px-6 pb-5 flex flex-wrap items-center gap-x-3 gap-y-2"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wider text-pl-text-muted">
+                Nach Region
+              </span>
+              {collections.map((c) => (
+                <Link
+                  key={c.path}
+                  href={c.path}
+                  className="inline-flex min-h-11 items-center gap-2 px-5 rounded-full bg-pl-elevated border border-pl-soft
+                             text-sm font-semibold text-pl-text hover:border-pl-accent hover:text-pl-accent
+                             motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2
+                             focus-visible:outline-pl-accent"
+                >
+                  {c.regionLabel}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              ))}
+            </nav>
           </div>
         )}
         {bands.length === 0 ? (

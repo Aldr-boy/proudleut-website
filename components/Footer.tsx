@@ -1,10 +1,7 @@
-import { Fragment } from 'react';
 import Link from 'next/link';
 import { ProudleutLogo } from './ProudleutLogo';
 import PrivacySettingsButton from './PrivacySettingsButton';
 import { buildOccasionNavUrl, type FinderFilterParams } from '@/lib/bands/finderRouting';
-import { getActiveBandSlugsFromSupabase } from '@/lib/supabase/queries';
-import { getPublishedThemePages } from '@/lib/content/themePages';
 
 // Footer-Links sind reine Navigation ohne aktive Finder-Filter -- dieselbe
 // buildOccasionNavUrl()-Logik wie im Bandfinder (lib/bands/finderRouting.ts),
@@ -57,20 +54,7 @@ const DIMMED_TEXT_CLASS = 'text-pl-on-stage/80';
 // muss "proudleut" hier woertlich klein bleiben.
 const COLUMN_HEADING_CLASS = 'text-xs font-semibold text-pl-accent-light tracking-wide';
 
-// Unterpunkt unter Hochzeit bzw. Festzelt: kleiner und leicht eingerueckt,
-// gleiche Tap-Hoehe wie die Hauptlinks auf dem Handy.
-const SUB_LINK_CLASS = `block py-2 md:py-0.5 pl-4 text-sm ${DIMMED_TEXT_CLASS} hover:text-pl-on-stage motion-safe:transition-colors ${FOCUS_RING}`;
-
-export default async function Footer() {
-  // Themenseiten-Unterpunkte nur, wenn die Seite veroeffentlicht ist (gleiche
-  // Bedingung wie in der Sitemap). Bei einem Lesefehler entfallen sie einfach --
-  // der Footer darf deshalb nie ausfallen.
-  const { data: slugRows, error: slugError } = await getActiveBandSlugsFromSupabase();
-  const activeSlugs = new Set(
-    slugError ? [] : (slugRows ?? []).map((r) => r.slug).filter((s): s is string => !!s),
-  );
-  const themePages = getPublishedThemePages(activeSlugs);
-
+export default function Footer() {
   const discoverLinks: { label: string; href: string; slug?: string }[] = [
     ...DISCOVER_OCCASION_SLUGS.map((o) => ({
       label: o.label,
@@ -106,16 +90,9 @@ export default async function Footer() {
               <p className={COLUMN_HEADING_CLASS}>Entdecken</p>
               <div className="flex flex-col text-[15px]">
                 {discoverLinks.map((l) => (
-                  <Fragment key={l.label}>
-                    <Link href={l.href} className={NAV_LINK_CLASS}>
-                      {l.label}
-                    </Link>
-                    {themePages.filter((t) => t.occasionSlug === l.slug).map((t) => (
-                      <Link key={t.path} href={t.path} className={SUB_LINK_CLASS}>
-                        {t.footerLabel}
-                      </Link>
-                    ))}
-                  </Fragment>
+                  <Link key={l.label} href={l.href} className={NAV_LINK_CLASS}>
+                    {l.label}
+                  </Link>
                 ))}
               </div>
             </nav>
