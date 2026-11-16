@@ -15,15 +15,15 @@ export type AuswahlBandSummary = Pick<Band, 'slug' | 'name' | 'moods' | 'anfrage
   shortDescription?: string;
   thumbnailImage?: ImageAsset;
   heroImage?: ImageAsset;
-  // "Ort · Region" wie die Herkunft auf der Bandseite; fehlt Ort oder
-  // Region (oder ist die Herkunft ausgeblendet), bleibt das Feld leer.
+  // "Ort · Region" bzw. nur "Ort" (z. B. kreisfreie Staedte), wie die
+  // Herkunft auf der Bandseite; fehlt der Ort oder ist die Herkunft
+  // ausgeblendet, bleibt das Feld leer.
   locationLabel?: string;
 };
 
 function getCardLocationLabel(band: Pick<Band, 'location' | 'hideLocation'>): string | undefined {
   if (band.hideLocation) return undefined;
-  const label = formatLocation(band.location);
-  return label.includes(' · ') ? label : undefined;
+  return formatLocation(band.location) || undefined;
 }
 
 export function toAuswahlBandSummary(band: Band): AuswahlBandSummary {
