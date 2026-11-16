@@ -13,6 +13,8 @@ import { urlFor } from '@/sanity/lib/image';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE } from '@/lib/seo/metadata';
 import { getBandFinderThemeImages } from '@/lib/bands/bandFinderThemeImages';
 import { getPublishedThemePagesForOccasion } from '@/lib/content/themePages';
+import { getOccasionEditorial } from '@/lib/content/occasionEditorial';
+import OccasionEditorial from '@/components/OccasionEditorial';
 
 export const revalidate = 300;
 
@@ -99,6 +101,7 @@ export default async function VeranstaltungPage({ params }: Props) {
     new Set(allBands.map((b) => b.slug)),
   );
 
+  const editorial = getOccasionEditorial(slug);
   const h1 = category.h1Title ?? category.title;
   const subtitleText = heroData?.subtitle ?? category.description ?? null;
 
@@ -170,6 +173,10 @@ export default async function VeranstaltungPage({ params }: Props) {
           </Suspense>
         )}
       </section>
+
+      {/* Optionaler redaktioneller Text (lib/content/occasionEditorial.ts):
+          unter den Bandkarten, vor den verwandten Anlaessen. */}
+      {editorial && <OccasionEditorial content={editorial} />}
 
       {/* Verwandte Kategorien – immer sichtbar. Bühnenfläche (bg-pl-stage)
           jetzt explizit statt ueber den Legacy-Body-Hintergrund geerbt --
