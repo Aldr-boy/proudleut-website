@@ -12,7 +12,7 @@ export const faqGroups: FaqGroup[] = [
       {
         question: "Ist proudleut kostenlos?",
         answer:
-          "Ja. proudleut ist kostenlos. Sprich ohne Gebühren, Provision oder Vermittlungskosten. proudleut soll helfen, gute Livebands sichtbarer zu machen und Veranstaltern die Suche zu erleichtern.",
+          "Ja. proudleut ist kostenlos. Es fallen keine Gebühren, Provisionen oder Vermittlungskosten an. proudleut soll helfen, gute Livebands sichtbarer zu machen und Veranstaltern die Suche zu erleichtern.",
         showOnHomepage: true,
       },
       {

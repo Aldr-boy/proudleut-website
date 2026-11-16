@@ -4,6 +4,7 @@ import type { Band } from '@/lib/types/band';
 import type { ImageAsset } from '@/lib/types/image';
 import { BandartPill } from '@/components/band/BandartPill';
 import { MerkHeartButton } from '@/components/band/MerkHeartButton';
+import { formatLocation } from '@/lib/utils/formatLocation';
 
 // Schlankes Payload-Format fuer "01 -- Auswahl": traegt ausschliesslich die
 // Felder, die diese Card tatsaechlich rendert (Nachfass-Paket "Kuratierte
@@ -14,7 +15,16 @@ export type AuswahlBandSummary = Pick<Band, 'slug' | 'name' | 'moods' | 'anfrage
   shortDescription?: string;
   thumbnailImage?: ImageAsset;
   heroImage?: ImageAsset;
+  // "Ort · Region" wie die Herkunft auf der Bandseite; fehlt Ort oder
+  // Region (oder ist die Herkunft ausgeblendet), bleibt das Feld leer.
+  locationLabel?: string;
 };
+
+function getCardLocationLabel(band: Pick<Band, 'location' | 'hideLocation'>): string | undefined {
+  if (band.hideLocation) return undefined;
+  const label = formatLocation(band.location);
+  return label.includes(' · ') ? label : undefined;
+}
 
 export function toAuswahlBandSummary(band: Band): AuswahlBandSummary {
   return {
@@ -26,6 +36,7 @@ export function toAuswahlBandSummary(band: Band): AuswahlBandSummary {
     moods: band.moods,
     anfrageEventTypes: band.anfrageEventTypes,
     primaryBandart: band.primaryBandart,
+    locationLabel: getCardLocationLabel(band),
   };
 }
 
@@ -83,6 +94,9 @@ export default function AuswahlBandCard({
           <p className="mt-1.5 text-sm leading-relaxed text-pl-text-muted line-clamp-2">
             {band.shortDescription}
           </p>
+        )}
+        {band.locationLabel && (
+          <p className="mt-2 text-xs text-pl-text-muted">{band.locationLabel}</p>
         )}
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3.5">

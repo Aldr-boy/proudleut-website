@@ -42,6 +42,8 @@ export const revalidate = 300;
 // sich ueber die oeffentliche metadata-API nicht umgehen (auch der
 // relative-Pfad-Stil von app/impressum/page.tsx haette denselben Effekt).
 export const metadata: Metadata = {
+  // absolute: ohne das Titel-Template des Root-Layouts.
+  title: { absolute: 'Livebands in Bayern: Hochzeit, Firmenfeier & Festzelt | proudleut' },
   alternates: { canonical: absoluteUrl('/') },
 };
 
