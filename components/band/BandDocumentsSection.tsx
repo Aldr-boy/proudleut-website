@@ -52,7 +52,7 @@ function DocumentCard({ document }: { document: BandDocument }) {
           )}
         </div>
         <a
-          href={document.fileUrl}
+          href={`/api/band-dokument/${document.id}`}
           target="_blank"
           rel="noopener noreferrer"
           className="shrink-0 inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold border border-pl-soft text-pl-text hover:border-pl-accent hover:text-pl-accent motion-safe:transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
