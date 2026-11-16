@@ -8,12 +8,12 @@
 //
 // Ort: nur die Stadt/Gemeinde aus der Herkunftsangabe der Bandseite (ohne
 // Region). Fehlt der Ort (oder ist die Herkunft ausgeblendet), oder wuerde
-// der Titel mit Ort inklusive Suffix laenger als 65 Zeichen (eigene
+// der Titel mit Ort inklusive Suffix laenger als 75 Zeichen (eigene
 // Vorgabe), bleibt der Titel wie ohne Ort.
 
 export const BAND_TITLE_SUFFIX = ' – proudleut.com'
 export const BAND_TITLE_MAX_LENGTH = 70
-export const BAND_TITLE_WITH_CITY_MAX_LENGTH = 65
+export const BAND_TITLE_WITH_CITY_MAX_LENGTH = 75
 
 export function buildBandTitle(
   name: string,
