@@ -21,7 +21,7 @@ test('generateMetadata leitet die Description ueber deriveDescriptionFromText au
 })
 
 test('dieselbe description wird fuer normale Meta-Description UND og:description/twitter:description verwendet (keine getrennte Kopie)', () => {
-  assert.match(source, /return \{\s*\r?\n\s*title: person\.name,\s*\r?\n\s*description,/)
+  assert.match(source, /return \{\s*\r?\n\s*title: pageTitle,\s*\r?\n\s*description,/)
   const openGraphBlock = source.match(/openGraph:\s*\{[\s\S]*?\}/)?.[0] ?? ''
   const twitterBlock = source.match(/twitter:\s*\{[\s\S]*?\}/)?.[0] ?? ''
   assert.match(openGraphBlock, /description,/)

@@ -27,3 +27,24 @@ test('alle 8 Kategorien besitzen weiterhin einen nicht-leeren seoTitle', () => {
     assert.ok(category.seoTitle && category.seoTitle.length > 0, `${category.slug} hat keinen seoTitle mehr`)
   }
 })
+
+test('Seitentitel (pageTitle) von Hochzeit, Firmenfeier und Weihnachtsfeier nennen Bayern, ohne Suffix; Open-Graph-seoTitle bleibt unveraendert', () => {
+  const by = (slug: string) => CATEGORIES.find((c) => c.slug === slug)
+  assert.equal(by('hochzeit')?.pageTitle, 'Hochzeitsbands in Bayern')
+  assert.equal(by('firmenfeier')?.pageTitle, 'Bands für Firmenfeiern in Bayern')
+  assert.equal(by('weihnachtsfeier')?.pageTitle, 'Bands für Weihnachtsfeiern in Bayern')
+  assert.equal(by('firmenfeier')?.seoTitle, 'Bands für Firmenfeier & Business Events')
+  assert.equal(by('weihnachtsfeier')?.seoTitle, 'Bands für Weihnachtsfeiern')
+  for (const c of CATEGORIES) {
+    assert.ok(!c.pageTitle?.includes('proudleut.com'), `${c.slug}: pageTitle darf den Suffix nicht enthalten`)
+  }
+})
+
+test('Meta-Description von Hochzeit ist ersetzt, die Open-Graph-Beschreibung bleibt', () => {
+  const h = CATEGORIES.find((c) => c.slug === 'hochzeit')
+  assert.equal(
+    h?.pageDescription,
+    'Hochzeitsbands in Bayern für Trauung, Sektempfang und Party. Von uns ausgewählt, direkt bei der Band anfragen.',
+  )
+  assert.equal(h?.seoDescription, 'Finde die passende Liveband für deine Hochzeit – persönlich, direkt und mit starken Bands.')
+})

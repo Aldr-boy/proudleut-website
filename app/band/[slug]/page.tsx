@@ -73,7 +73,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : DEFAULT_SOCIAL_IMAGE;
 
   return {
-    title: buildBandTitle(band.name, band.bandartLabel ?? band.primaryBandart),
+    title: buildBandTitle(
+      band.name,
+      band.bandartLabel ?? band.primaryBandart,
+      band.hideLocation ? undefined : band.location?.city,
+    ),
     description,
     alternates: { canonical: canonicalUrl },
     openGraph: {

@@ -7,6 +7,10 @@ export type CategoryConfig = {
   description?: string;
   seoTitle?: string;
   seoDescription?: string;
+  // Optional: eigener <title> bzw. Meta-Description der Seite. Open Graph/Twitter
+  // verwenden weiter seoTitle/seoDescription.
+  pageTitle?: string;
+  pageDescription?: string;
   airtableEventTypes: string[];
   supabaseEventTypeSlugs?: string[];
 };
@@ -18,6 +22,9 @@ export const CATEGORIES: CategoryConfig[] = [
     h1Title: 'Hochzeitsbands',
     description: 'Livebands für Hochzeit, freie Trauung, Sektempfang und Feier.',
     seoTitle: 'Hochzeitsbands',
+    pageTitle: 'Hochzeitsbands in Bayern',
+    pageDescription:
+      'Hochzeitsbands in Bayern für Trauung, Sektempfang und Party. Von uns ausgewählt, direkt bei der Band anfragen.',
     seoDescription:
       'Finde die passende Liveband für deine Hochzeit – persönlich, direkt und mit starken Bands.',
     airtableEventTypes: ['Hochzeit'],
@@ -60,6 +67,7 @@ export const CATEGORIES: CategoryConfig[] = [
     description:
       'Professionelle Livebands für Firmenfeiern, Business Events und besondere Unternehmensabende.',
     seoTitle: 'Bands für Firmenfeier & Business Events',
+    pageTitle: 'Bands für Firmenfeiern in Bayern',
     seoDescription:
       'Livebands für Firmenfeiern, Galas und Business Events – professionell, hochwertig und passgenau.',
     airtableEventTypes: [
@@ -130,6 +138,7 @@ export const CATEGORIES: CategoryConfig[] = [
     description:
       'Livemusik für Weihnachtsfeiern und Jahresabschlüsse – von festlich-leise bis ausgelassen.',
     seoTitle: 'Bands für Weihnachtsfeiern',
+    pageTitle: 'Bands für Weihnachtsfeiern in Bayern',
     seoDescription:
       'Livebands für Weihnachtsfeiern, Jahresabschlussfeiern und festliche Winterabende in Bayern – stimmungsvoll und passgenau für euren Anlass.',
     airtableEventTypes: ['Weihnachtsfeier'],
