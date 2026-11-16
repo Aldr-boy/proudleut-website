@@ -10,6 +10,9 @@ export type FinderFilterParams = {
   suche: string;
   bandtyp: string | null;
   mood: string | null;
+  // Umkreis in km um eine PLZ (25/50/100); wird nur bei der Navigation
+  // zwischen /bands und Anlassseiten mitgegeben. 0/null/fehlt -> kein Param.
+  umkreis?: number | null;
 };
 
 function buildFilterSearchParams(params: FinderFilterParams): URLSearchParams {
@@ -18,6 +21,7 @@ function buildFilterSearchParams(params: FinderFilterParams): URLSearchParams {
   if (params.suche) p.set('suche', params.suche);
   if (params.bandtyp) p.set('bandtyp', params.bandtyp.toLowerCase());
   if (params.mood) p.set('mood', params.mood);
+  if (params.umkreis) p.set('umkreis', String(params.umkreis));
   return p;
 }
 
@@ -46,5 +50,19 @@ export function buildOccasionNavUrl(targetSlug: string, params: FinderFilterPara
   if (params.suche) p.set('suche', params.suche);
   if (params.bandtyp) p.set('bandtyp', params.bandtyp.toLowerCase());
   if (params.mood) p.set('mood', params.mood);
+  if (params.umkreis) p.set('umkreis', String(params.umkreis));
   return `/bands?${p.toString()}`;
+}
+
+// Direkter Aufruf von /bands?anlass=<wert>: Hat der Anlass eine eigene
+// Anlassseite (getCategoryBySlug), ist das Ziel /veranstaltung/<wert>; alle
+// uebrigen Query-Params bleiben erhalten, der anlass-Param entfaellt (R4).
+// Anlaesse ohne Anlassseite (und unbekannte Werte) -> null, kein Redirect.
+export function resolveAnlassRedirect(search: URLSearchParams): string | null {
+  const anlass = search.get('anlass');
+  if (!anlass || !getCategoryBySlug(anlass)) return null;
+  const rest = new URLSearchParams(search);
+  rest.delete('anlass');
+  const qs = rest.toString();
+  return qs ? `/veranstaltung/${anlass}?${qs}` : `/veranstaltung/${anlass}`;
 }

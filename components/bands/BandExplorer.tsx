@@ -11,6 +11,7 @@ import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasio
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import { buildFinderFilterUrl, buildOccasionNavUrl } from '@/lib/bands/finderRouting';
+import { getCategoryBySlug } from '@/lib/categories';
 import { resolveBandFinderThemeNav } from '@/lib/bands/bandFinderThemes';
 import type { BandFinderThemeKey } from '@/lib/bands/bandFinderThemes';
 import type { BandFinderThemeImage } from '@/lib/bands/bandFinderThemeImages';
@@ -93,6 +94,15 @@ const RADIUS_OPTIONS = [25, 50, 100] as const;
 type RadiusKm = 0 | 25 | 50 | 100;
 type OpenPanel = 'anlass' | 'region' | 'bandtyp' | 'mood' | null;
 
+// Umkreis aus der URL (?umkreis=25|50|100): nur zusammen mit einer PLZ als
+// Suchbegriff gueltig, sonst 0. Geschrieben wird er nur bei der Navigation
+// zwischen /bands und Anlassseiten (Auswahl "Wofuer").
+function parseRadiusParam(p: URLSearchParams): RadiusKm {
+  const km = Number(p.get('umkreis'));
+  if (!PLZ_RE.test((p.get('suche') ?? '').trim())) return 0;
+  return (RADIUS_OPTIONS as readonly number[]).includes(km) ? (km as RadiusKm) : 0;
+}
+
 export default function BandExplorer({ bands, regions, lockedOccasion, themeImages }: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -149,7 +159,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     const availableMoodSlugs = bands.flatMap((b) => b.moods.map((m) => m.slug));
     return resolveMoodSlugParam(raw, availableMoodSlugs);
   });
-  const [radiusKm, setRadiusKm] = useState<RadiusKm>(0);
+  const [radiusKm, setRadiusKm] = useState<RadiusKm>(() => parseRadiusParam(searchParams));
   const [centerCoords, setCenterCoords] = useState<[number, number] | null>(null);
   const [plzLoading, setPlzLoading] = useState(false);
   const [visibleCount, setVisibleCount] = useState(24);
@@ -291,7 +301,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
     setSelectedRegion((prev) => (prev !== nextReg ? nextReg : prev));
     setSelectedBandtyp((prev) => (prev !== nextBandtyp ? nextBandtyp : prev));
     setSelectedMood((prev) => (prev !== nextMood ? nextMood : prev));
-    setRadiusKm(0);
+    setRadiusKm(parseRadiusParam(p));
   }, [searchParamString, lockedOccasion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Suchfeld -> Suchstand/URL erst nach kurzer Tipppause (Debounce).
@@ -907,7 +917,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                   onClick={() => {
                     setOpenPanel(null);
                     router.push(
-                      buildFinderFilterUrl('/bands', { region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood }),
+                      buildFinderFilterUrl('/bands', { region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood, umkreis: radiusKm }),
                       { scroll: false }
                     );
                   }}
@@ -925,7 +935,9 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                     role="option"
                     aria-selected={active}
                     onClick={() => {
-                      if (lockedOccasion) {
+                      // Anlass mit eigener Anlassseite fuehrt auch von /bands aus
+                      // dorthin (wie die Kacheln); uebrige Filter bleiben erhalten.
+                      if (lockedOccasion || (!active && getCategoryBySlug(cat.slug))) {
                         // R1: "Wofuer" ist im Veranstaltungsseiten-Kontext
                         // Navigation. Klick auf den bereits aktiven
                         // (gesperrten) Anlass ist bewusst ein No-op -- kein
@@ -933,7 +945,7 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                         setOpenPanel(null);
                         if (active) return;
                         router.push(
-                          buildOccasionNavUrl(cat.slug, { region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood }),
+                          buildOccasionNavUrl(cat.slug, { region: selectedRegion, suche: inputValue, bandtyp: selectedBandtyp, mood: selectedMood, umkreis: radiusKm }),
                           { scroll: false }
                         );
                         return;
