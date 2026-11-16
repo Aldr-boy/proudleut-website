@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { getPublishedThemePages, getThemePagesForBand } from './themePages.ts'
+import { getPublishedThemePages, getPublishedThemePagesForOccasion, getThemePagesForBand } from './themePages.ts'
 import { festzeltBayernGroups, FESTZELT_BAYERN_MIN_BANDS } from './festzeltBayern.ts'
 import { hochzeitOberpfalzGroups, hochzeitOberpfalzBlasmusik, HOCHZEIT_OBERPFALZ_MIN_BANDS } from './hochzeitOberpfalz.ts'
 
@@ -40,9 +40,25 @@ test('Blasmusik-Band der Hochzeitsseite zaehlt als dort aufgefuehrt', () => {
   assert.ok(getThemePagesForBand(hochzeitOberpfalzBlasmusik.bands[0].slug, active).some((t) => t.occasionSlug === 'hochzeit'))
 })
 
-test('Footer ist ein Server-Bauteil und rendert die Unterpunkte im HTML (kein use client)', () => {
-  const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'components', 'Footer.tsx'), 'utf8')
-  assert.ok(!/['"]use client['"]/.test(src))
-  assert.match(src, /export default async function Footer/)
-  assert.match(src, /getPublishedThemePages\(activeSlugs\)/)
+test('Pills pro Anlass: nur veroeffentlichte Collections dieses Anlasses, sonst leer', () => {
+  const active = new Set([...festzeltSlugs, ...hochzeitSlugs])
+  assert.deepEqual(getPublishedThemePagesForOccasion('hochzeit', active).map((t) => t.regionLabel), ['Oberpfalz'])
+  assert.deepEqual(getPublishedThemePagesForOccasion('festzelt', active).map((t) => t.regionLabel), ['Bayern'])
+  assert.deepEqual(getPublishedThemePagesForOccasion('geburtstag', active), [])
+  assert.deepEqual(getPublishedThemePagesForOccasion('hochzeit', new Set()), [])
+})
+
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+test('Footer hat keine Collection-Unterpunkte mehr', () => {
+  const src = readFileSync(path.join(root, 'components', 'Footer.tsx'), 'utf8')
+  assert.ok(!/themePages|SUB_LINK_CLASS/.test(src))
+})
+
+test('Anlass- und Bandseite sind Server-Seiten und lesen aus themePages (Links im HTML)', () => {
+  for (const file of [['app', 'veranstaltung', '[slug]', 'page.tsx'], ['app', 'band', '[slug]', 'page.tsx']]) {
+    const src = readFileSync(path.join(root, ...file), 'utf8')
+    assert.ok(!/['"]use client['"]/.test(src))
+    assert.match(src, /@\/lib\/content\/themePages/)
+  }
 })

@@ -111,24 +111,11 @@ export default async function BandPage({ params }: PageProps) {
   const websiteUrl = safeUrl(band.websiteUrl);
   const embedUrl = getYouTubeEmbedUrl(band.youtubeVideoUrl);
   const similarBands = getSimilarBands(band, allBands);
-  // Link auf eine Themenseite nur, wenn die Band dort aufgefuehrt und die Seite veroeffentlicht ist.
+  // Collections, in denen die Band steht: nur wenn sie dort aufgefuehrt und die Seite veroeffentlicht ist.
   const themePageLinks = getThemePagesForBand(
     band.slug,
     new Set(allBands.filter((b) => b.status === 'active').map((b) => b.slug)),
   );
-  const themePageLinkList =
-    themePageLinks.length > 0 ? (
-      <p className="mt-5 text-sm text-pl-text-muted">
-        {themePageLinks.map((t, i) => (
-          <span key={t.path}>
-            {i > 0 ? ' · ' : null}
-            <Link href={t.path} className="underline underline-offset-4 hover:text-pl-text motion-safe:transition-colors">
-              {t.bandPageLabel} →
-            </Link>
-          </span>
-        ))}
-      </p>
-    ) : null;
   const hasVideo = embedUrl !== null;
   const facts = getBandFacts(band);
   // Ohne Bandbild zeigt BandHero einen kurzen Kopf ohne Anfrage-Button.
@@ -180,6 +167,52 @@ export default async function BandPage({ params }: PageProps) {
         ctaButtonId="cta-anfrage-btn"
       />
 
+      {/* Auswahlen (Collections), in denen die Band steht; entfaellt ohne Treffer */}
+      {themePageLinks.length > 0 && (
+        <section
+          aria-labelledby="band-auswahlen-h2"
+          className="bg-pl-canvas border-t border-pl-soft py-12 md:py-16 px-4 sm:px-6"
+        >
+          <div className="pl-container-shell">
+            <h2
+              id="band-auswahlen-h2"
+              className="text-2xl md:text-[30px] font-extrabold tracking-[-0.025em] leading-tight text-pl-text"
+            >
+              {band.name} ist hier mit dabei
+            </h2>
+            <p className="mt-2 text-pl-text-muted">Mehr Bands für euren Anlass und eure Region.</p>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+              {themePageLinks.map((t) => (
+                <Link
+                  key={t.path}
+                  href={t.path}
+                  className="group flex items-center justify-between gap-4 rounded-[20px] bg-pl-elevated border border-pl-soft
+                             px-6 py-5 hover:border-pl-medium motion-safe:transition-colors
+                             focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pl-accent"
+                >
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-pl-accent-deep">
+                      {t.occasionLabel}
+                    </span>
+                    <span className="text-xl font-extrabold tracking-[-0.01em] text-pl-text leading-snug">
+                      {t.title}
+                    </span>
+                    <span className="text-sm text-pl-text-muted">Auswahl und Tipps</span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="shrink-0 w-11 h-11 rounded-full bg-pl-accent-subtle text-pl-accent-deep flex items-center justify-center
+                               motion-safe:transition-transform group-hover:translate-x-0.5"
+                  >
+                    →
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Ähnliche Bands */}
       {similarBands.length > 0 ? (
         <section className="bg-pl-canvas border-t border-pl-soft py-16 md:py-20 px-4 sm:px-6">
@@ -206,7 +239,6 @@ export default async function BandPage({ params }: PageProps) {
               >
                 Mehr Livebands entdecken →
               </Link>
-              {themePageLinkList}
             </div>
           </div>
         </section>
@@ -224,7 +256,6 @@ export default async function BandPage({ params }: PageProps) {
             >
               Alle Bands entdecken
             </Link>
-            {themePageLinkList}
           </div>
         </section>
       )}

@@ -1,5 +1,6 @@
-// Gemeinsame Sicht auf die beiden Themenseiten (Festzelt Bayern, Hochzeit
-// Oberpfalz) fuer interne Links: Footer und Bandseiten. "Veroeffentlicht"
+// Gemeinsame Sicht auf die Themenseiten (Collections: Festzelt Bayern, Hochzeit
+// Oberpfalz) fuer interne Links: Anlassseiten (Pills) und Bandseiten (Karten).
+// Neue Collection = ein Eintrag in THEME_PAGES. "Veroeffentlicht"
 // heisst exakt dasselbe wie in app/sitemap.ts: Mindestzahl aktiver Bands
 // der Auswahl erreicht. Darunter ist die Seite noindex und steht nicht in
 // der Sitemap -- dann wird sie auch nirgends verlinkt.
@@ -24,9 +25,12 @@ export type ThemePageLink = {
   path: string
   // Zugehoerige Anlass-Slug (Footer-Unterpunkt steht unter diesem Anlass).
   occasionSlug: 'hochzeit' | 'festzelt'
-  footerLabel: string
-  // Linktext auf Bandseiten, nur fuer Bands, die auf der Themenseite stehen.
-  bandPageLabel: string
+  // Anlass als kleine Zeile auf der Bandseiten-Karte.
+  occasionLabel: string
+  // Titel der Collection (Bandseiten-Karte).
+  title: string
+  // Regionsname (Pill auf der Anlassseite).
+  regionLabel: string
 }
 
 type ThemePageDef = ThemePageLink & {
@@ -39,8 +43,9 @@ const THEME_PAGES: ThemePageDef[] = [
   {
     path: HOCHZEIT_OBERPFALZ_PATH,
     occasionSlug: 'hochzeit',
-    footerLabel: 'Hochzeitsbands Oberpfalz',
-    bandPageLabel: 'Mehr Hochzeitsbands aus der Oberpfalz',
+    occasionLabel: 'Hochzeit',
+    title: 'Hochzeitsbands Oberpfalz',
+    regionLabel: 'Oberpfalz',
     published: (active) =>
       countHochzeitOberpfalzBands(resolveHochzeitOberpfalzGroups(active)) >= HOCHZEIT_OBERPFALZ_MIN_BANDS,
     // Die Seite zeigt auch die Gruppe Blasmusik, sie zaehlt aber nicht fuer die Mindestzahl.
@@ -51,21 +56,30 @@ const THEME_PAGES: ThemePageDef[] = [
   {
     path: FESTZELT_BAYERN_PATH,
     occasionSlug: 'festzelt',
-    footerLabel: 'Festzeltbands Bayern',
-    bandPageLabel: 'Mehr Festzeltbands aus Bayern',
+    occasionLabel: 'Festzelt',
+    title: 'Festzeltbands Bayern',
+    regionLabel: 'Bayern',
     published: (active) =>
       countFestzeltBayernBands(resolveFestzeltBayernGroups(active)) >= FESTZELT_BAYERN_MIN_BANDS,
     listedSlugs: new Set(festzeltBayernGroups.flatMap((g) => g.bands.map((b) => b.slug))),
   },
 ]
 
-function toLink({ path, occasionSlug, footerLabel, bandPageLabel }: ThemePageDef): ThemePageLink {
-  return { path, occasionSlug, footerLabel, bandPageLabel }
+function toLink({ path, occasionSlug, occasionLabel, title, regionLabel }: ThemePageDef): ThemePageLink {
+  return { path, occasionSlug, occasionLabel, title, regionLabel }
 }
 
 // Veroeffentlichte Themenseiten (Bedingung wie in der Sitemap).
 export function getPublishedThemePages(activeSlugs: ReadonlySet<string>): ThemePageLink[] {
   return THEME_PAGES.filter((t) => t.published(activeSlugs)).map(toLink)
+}
+
+// Veroeffentlichte Themenseiten eines Anlasses (Pills "Nach Region").
+export function getPublishedThemePagesForOccasion(
+  occasionSlug: string,
+  activeSlugs: ReadonlySet<string>,
+): ThemePageLink[] {
+  return getPublishedThemePages(activeSlugs).filter((t) => t.occasionSlug === occasionSlug)
 }
 
 // Veroeffentlichte Themenseiten, auf denen diese Band tatsaechlich aufgefuehrt
