@@ -242,6 +242,9 @@ Wenn eine Aufgabe URL-Struktur, Routing, Sitemap oder Deployment betrifft:
 - Nur die Dateien anfassen, die für die Aufgabe wirklich relevant sind
 - Keine Änderungen außerhalb des Auftrags
 - Nach der Aufgabe kurz zusammenfassen: was wurde geändert und warum (Completion Report)
+- Claude Code führt für dieses Projekt keine lokalen Seitenstarts (z. B. `npm run dev`,
+  `next start`) und keine lokalen Browser-Sichtprüfungen aus. Sichtprüfungen laufen über eine
+  Vercel-Vorschau (Preview-Deployment des Branches bzw. Pull-Requests).
 - Dev-Server immer per PID beenden (ein normales Stoppen des Hintergrund-Tasks beendet den
   Node-Prozessbaum nicht zuverlässig). Vor jedem `git worktree remove` die node-/next-Prozesse
   mit Bezug zum Worktree-Pfad prüfen und gezielt per PID beenden.
