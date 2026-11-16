@@ -71,3 +71,19 @@ test('resolveAnlassRedirect: Anlaesse ohne Anlassseite, unbekannte Werte und feh
   assert.equal(resolveAnlassRedirect(new URLSearchParams('anlass=gibtsnicht')), null)
   assert.equal(resolveAnlassRedirect(new URLSearchParams('region=oberpfalz')), null)
 })
+
+test('Umkreis: wird bei Navigation zu Anlassseite und zu /bands als umkreis-Param mitgegeben, ohne Umkreis (0/null/fehlt) kein Param', () => {
+  const f = { region: null, suche: '84028', bandtyp: null, mood: null }
+  assert.equal(buildOccasionNavUrl('hochzeit', { ...f, umkreis: 50 }), '/veranstaltung/hochzeit?suche=84028&umkreis=50')
+  assert.equal(buildOccasionNavUrl('trauung', { ...f, umkreis: 25 }), '/bands?anlass=trauung&suche=84028&umkreis=25')
+  assert.equal(buildFinderFilterUrl('/bands', { ...f, umkreis: 100 }), '/bands?suche=84028&umkreis=100')
+  assert.equal(buildOccasionNavUrl('hochzeit', { ...f, umkreis: 0 }), '/veranstaltung/hochzeit?suche=84028')
+  assert.equal(buildOccasionNavUrl('hochzeit', f), '/veranstaltung/hochzeit?suche=84028')
+})
+
+test('resolveAnlassRedirect: umkreis-Param bleibt bei der Weiterleitung erhalten', () => {
+  assert.equal(
+    resolveAnlassRedirect(new URLSearchParams('anlass=gala&suche=84028&umkreis=50')),
+    '/veranstaltung/gala?suche=84028&umkreis=50',
+  )
+})

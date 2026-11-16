@@ -41,11 +41,11 @@ test('URL->State-Sync (Back/Forward) erzwingt lockedOccasion, ignoriert einen ko
 test('Klick auf den bereits aktiven gesperrten Anlass ist ein No-op (kein Abwaehlen, keine Navigation)', () => {
   // Es gibt zwei "if (lockedOccasion) {"-Vorkommen (buildFilterUrl und der
   // Anlass-Panel-Klick-Handler) -- gezielt das zweite (spaetere) pruefen.
-  const firstOccurrence = source.indexOf('if (lockedOccasion) {')
-  assert.ok(firstOccurrence >= 0)
-  const clickStart = source.indexOf('if (lockedOccasion) {', firstOccurrence + 1)
+  // Der Zweig gilt seit "Auswahlfeld fuehrt auf die Anlassseite" auch auf /bands
+  // fuer Anlaesse mit eigener Anlassseite: if (lockedOccasion || (!active && ...)).
+  const clickStart = source.indexOf('if (lockedOccasion || (!active && getCategoryBySlug(cat.slug))) {')
   assert.ok(clickStart >= 0, 'lockedOccasion-Zweig im Anlass-Panel-Klick-Handler nicht gefunden')
-  const clickBody = source.slice(clickStart, clickStart + 700)
+  const clickBody = source.slice(clickStart, clickStart + 900)
   assert.match(clickBody, /if \(active\) return;/, 'Klick auf den bereits aktiven Anlass darf nicht navigieren')
   assert.match(clickBody, /buildOccasionNavUrl\(cat\.slug,/, 'Navigation muss ueber buildOccasionNavUrl erfolgen (R1)')
 })
