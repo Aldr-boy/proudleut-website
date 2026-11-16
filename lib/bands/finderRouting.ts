@@ -48,3 +48,16 @@ export function buildOccasionNavUrl(targetSlug: string, params: FinderFilterPara
   if (params.mood) p.set('mood', params.mood);
   return `/bands?${p.toString()}`;
 }
+
+// Direkter Aufruf von /bands?anlass=<wert>: Hat der Anlass eine eigene
+// Anlassseite (getCategoryBySlug), ist das Ziel /veranstaltung/<wert>; alle
+// uebrigen Query-Params bleiben erhalten, der anlass-Param entfaellt (R4).
+// Anlaesse ohne Anlassseite (und unbekannte Werte) -> null, kein Redirect.
+export function resolveAnlassRedirect(search: URLSearchParams): string | null {
+  const anlass = search.get('anlass');
+  if (!anlass || !getCategoryBySlug(anlass)) return null;
+  const rest = new URLSearchParams(search);
+  rest.delete('anlass');
+  const qs = rest.toString();
+  return qs ? `/veranstaltung/${anlass}?${qs}` : `/veranstaltung/${anlass}`;
+}

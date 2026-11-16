@@ -11,6 +11,7 @@ import { FINDER_OCCASIONS, bandMatchesFinderOccasion } from '@/lib/finderOccasio
 import { getBandRegionBucket, REGION_ORDER } from '@/lib/regions';
 import { resolveMoodSlugParam, bandMatchesMood } from '@/lib/moods/bandMoodFilter';
 import { buildFinderFilterUrl, buildOccasionNavUrl } from '@/lib/bands/finderRouting';
+import { getCategoryBySlug } from '@/lib/categories';
 import { resolveBandFinderThemeNav } from '@/lib/bands/bandFinderThemes';
 import type { BandFinderThemeKey } from '@/lib/bands/bandFinderThemes';
 import type { BandFinderThemeImage } from '@/lib/bands/bandFinderThemeImages';
@@ -925,7 +926,9 @@ export default function BandExplorer({ bands, regions, lockedOccasion, themeImag
                     role="option"
                     aria-selected={active}
                     onClick={() => {
-                      if (lockedOccasion) {
+                      // Anlass mit eigener Anlassseite fuehrt auch von /bands aus
+                      // dorthin (wie die Kacheln); uebrige Filter bleiben erhalten.
+                      if (lockedOccasion || (!active && getCategoryBySlug(cat.slug))) {
                         // R1: "Wofuer" ist im Veranstaltungsseiten-Kontext
                         // Navigation. Klick auf den bereits aktiven
                         // (gesperrten) Anlass ist bewusst ein No-op -- kein

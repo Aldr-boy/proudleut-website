@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildFinderFilterUrl, buildOccasionNavUrl } from './finderRouting.ts'
+import { buildFinderFilterUrl, buildOccasionNavUrl, resolveAnlassRedirect } from './finderRouting.ts'
 
 const NO_FILTERS = { region: null, suche: '', bandtyp: null, mood: null }
 
@@ -54,4 +54,20 @@ test('buildFinderFilterUrl: suche wird nicht lowercased, region/bandtyp werden l
     mood: null,
   })
   assert.equal(url, '/veranstaltung/hochzeit?region=oberpfalz&suche=M%C3%BCnchen&bandtyp=partyband')
+})
+
+test('resolveAnlassRedirect: Anlass mit Anlassseite -> /veranstaltung/<anlass>, uebrige Filter bleiben, anlass-Param entfaellt', () => {
+  assert.equal(resolveAnlassRedirect(new URLSearchParams('anlass=hochzeit')), '/veranstaltung/hochzeit')
+  assert.equal(
+    resolveAnlassRedirect(new URLSearchParams('anlass=weihnachtsfeier&region=oberpfalz&suche=M%C3%BCnchen&bandtyp=partyband&mood=emotional')),
+    '/veranstaltung/weihnachtsfeier?region=oberpfalz&suche=M%C3%BCnchen&bandtyp=partyband&mood=emotional',
+  )
+})
+
+test('resolveAnlassRedirect: Anlaesse ohne Anlassseite, unbekannte Werte und fehlender anlass-Param -> kein Redirect', () => {
+  assert.equal(resolveAnlassRedirect(new URLSearchParams('anlass=trauung&region=oberpfalz')), null)
+  assert.equal(resolveAnlassRedirect(new URLSearchParams('anlass=stadt-und-buergerfest')), null)
+  assert.equal(resolveAnlassRedirect(new URLSearchParams('anlass=konzert-club-festival')), null)
+  assert.equal(resolveAnlassRedirect(new URLSearchParams('anlass=gibtsnicht')), null)
+  assert.equal(resolveAnlassRedirect(new URLSearchParams('region=oberpfalz')), null)
 })

@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { resolveAnlassRedirect } from './lib/bands/finderRouting';
 
 const ADMIN_COOKIE = 'admin_session';
 
@@ -8,6 +9,13 @@ export function middleware(request: NextRequest) {
   requestHeaders.set('x-pathname', request.nextUrl.pathname);
 
   const { pathname } = request.nextUrl;
+
+  // /bands?anlass=<wert>: Anlaesse mit eigener Anlassseite fuehren auf
+  // /veranstaltung/<wert> (uebrige Filter bleiben), siehe lib/bands/finderRouting.ts.
+  if (pathname === '/bands') {
+    const target = resolveAnlassRedirect(request.nextUrl.searchParams);
+    if (target) return NextResponse.redirect(new URL(target, request.url));
+  }
 
   // Admin route protection.
   // Cookie value is compared directly against ADMIN_SECRET (env var, server-side only).
