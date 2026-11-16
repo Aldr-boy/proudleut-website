@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : DEFAULT_SOCIAL_IMAGE;
 
   return {
-    title: category.seoTitle,
-    description: category.seoDescription,
+    title: category.pageTitle ?? category.seoTitle,
+    description: category.pageDescription ?? category.seoDescription,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: socialTitle,

@@ -9,6 +9,8 @@ import { BandChapterHeading } from '@/components/band/BandChapterHeading';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE, SITE_DEFAULT_DESCRIPTION } from '@/lib/seo/metadata';
 import { deriveDescriptionFromText } from '@/lib/seo/deriveDescription';
 import { generatePersonJsonLd, safeJsonLdString } from '@/lib/seo/jsonLd';
+import { buildPersonTitle } from '@/lib/seo/personTitle';
+import { derivePersonHeroRole } from '@/lib/people/personHeroRole';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,8 +61,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // og:description/twitter:description verwendet (keine getrennte Kopie).
   const description = deriveDescriptionFromText(person.bio) ?? SITE_DEFAULT_DESCRIPTION;
 
+  // Seitentitel mit Rolle; og:title/twitter:title bleiben der reine Name.
+  const pageTitle = buildPersonTitle(person.name, derivePersonHeroRole(person));
+
   return {
-    title: person.name,
+    title: pageTitle,
     description,
     alternates: { canonical: canonicalUrl },
     openGraph: {

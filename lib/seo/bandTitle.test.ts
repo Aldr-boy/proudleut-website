@@ -24,3 +24,32 @@ test('Gesamttitel ueber 70 Zeichen: Bandart entfaellt, nichts wird gekuerzt', ()
   assert.equal(buildBandTitle('X', art), 'X')
   assert.equal(buildBandTitle('Ein sehr langer Bandname mit vielen Woertern', 'Blasmusik / Wirtshausmusik / Volksmusik'), 'Ein sehr langer Bandname mit vielen Woertern')
 })
+
+test('Mit Ort: "Name – Bandart aus Ort"', () => {
+  assert.equal(
+    buildBandTitle('Aufzundn', 'Bayrische Partyband', 'Beratzhausen'),
+    'Aufzundn – Bayrische Partyband aus Beratzhausen',
+  )
+})
+
+test('Ohne Ort (fehlt oder leer): Titel wie bisher', () => {
+  assert.equal(buildBandTitle('Aufzundn', 'Bayrische Partyband'), 'Aufzundn – Bayrische Partyband')
+  assert.equal(buildBandTitle('Aufzundn', 'Bayrische Partyband', null), 'Aufzundn – Bayrische Partyband')
+  assert.equal(buildBandTitle('Aufzundn', 'Bayrische Partyband', '  '), 'Aufzundn – Bayrische Partyband')
+})
+
+test('Ohne Bandart bleibt es beim Namen, auch wenn ein Ort vorhanden ist', () => {
+  assert.equal(buildBandTitle('Donnaweda', null, 'Hemau'), 'Donnaweda')
+})
+
+test('Titel mit Ort inklusive Suffix genau 75 Zeichen: Ort bleibt', () => {
+  const city = 'O'.repeat(75 - BAND_TITLE_SUFFIX.length - 'X – Art aus '.length)
+  const title = buildBandTitle('X', 'Art', city)
+  assert.equal(title, `X – Art aus ${city}`)
+  assert.equal((title + BAND_TITLE_SUFFIX).length, 75)
+})
+
+test('Titel mit Ort inklusive Suffix ueber 75 Zeichen: Ort entfaellt, Titel wie bisher', () => {
+  const city = 'O'.repeat(75 - BAND_TITLE_SUFFIX.length - 'X – Art aus '.length + 1)
+  assert.equal(buildBandTitle('X', 'Art', city), 'X – Art')
+})
