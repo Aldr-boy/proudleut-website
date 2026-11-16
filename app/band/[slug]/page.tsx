@@ -178,9 +178,9 @@ export default async function BandPage({ params }: PageProps) {
               id="band-auswahlen-h2"
               className="text-2xl md:text-[30px] font-extrabold tracking-[-0.025em] leading-tight text-pl-text"
             >
-              {band.name} ist Teil dieser Auswahlen
+              {band.name} ist hier mit dabei
             </h2>
-            <p className="mt-2 text-pl-text-muted">Handverlesene Bands für euren Anlass und eure Region.</p>
+            <p className="mt-2 text-pl-text-muted">Mehr Bands für euren Anlass und eure Region.</p>
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               {themePageLinks.map((t) => (
                 <Link
