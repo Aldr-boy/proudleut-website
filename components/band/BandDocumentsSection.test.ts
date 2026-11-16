@@ -64,8 +64,8 @@ test('CTA ist eindeutig als "PDF ansehen" beschriftet', () => {
   assert.match(source, />\s*PDF ansehen\s*</)
 })
 
-test('CTA verlinkt document.fileUrl, oeffnet in neuem Tab mit rel-Attribut (echter Dokumentlink, kein simulierter Button)', () => {
-  assert.match(source, /href=\{document\.fileUrl\}/)
+test('CTA verlinkt /api/band-dokument/<id> (lesbarer Dateiname), oeffnet in neuem Tab mit rel-Attribut (echter Dokumentlink, kein simulierter Button)', () => {
+  assert.match(source, /href=\{`\/api\/band-dokument\/\$\{document\.id\}`\}/)
   assert.match(source, /target="_blank"/)
   assert.match(source, /rel="noopener noreferrer"/)
 })
