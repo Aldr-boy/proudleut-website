@@ -30,7 +30,7 @@ type PlzCoords = Record<string, [number, number]>
 let plzCoordsCache: PlzCoords | null = null
 let plzCoordsPromise: Promise<PlzCoords> | null = null
 
-function loadPlzCoords(): Promise<PlzCoords> {
+export function loadPlzCoords(): Promise<PlzCoords> {
   if (plzCoordsCache) return Promise.resolve(plzCoordsCache)
   if (!plzCoordsPromise) {
     plzCoordsPromise = fetch('/data/plz-coords.json')

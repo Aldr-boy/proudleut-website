@@ -917,6 +917,18 @@ export default async function AdminBandDetailPage({
     locationUsageCount = count ?? 0
   }
 
+  // Vorschlaege fuer "Neuen Ort anlegen": bereits verwendete Schreibweisen
+  // (nur lesend). Ein Fehler ist nicht kritisch -- freie Eingabe bleibt moeglich.
+  const { data: regionSuggestionRows } = await client
+    .from('locations')
+    .select('landkreis, regierungsbezirk, bundesland')
+    .returns<{ landkreis: string | null; regierungsbezirk: string | null; bundesland: string | null }[]>()
+  const regionSuggestions = {
+    landkreis: uniqueSorted((regionSuggestionRows ?? []).map((r) => r.landkreis)),
+    regierungsbezirk: uniqueSorted((regionSuggestionRows ?? []).map((r) => r.regierungsbezirk)),
+    bundesland: uniqueSorted((regionSuggestionRows ?? []).map((r) => r.bundesland)),
+  }
+
   // Vorschlagswert fuer "Zahlen geprueft am" -- bewusst als serverseitig
   // berechneter defaultValue (kein Client-JS noetig), bleibt fuer den
   // Redakteur ueberschreibbar (Auftrag Abschnitt 3: "Vorschlag bleibt
@@ -1021,7 +1033,14 @@ export default async function AdminBandDetailPage({
           bandId={band.id}
           currentLocation={location}
           currentLocationUsageCount={locationUsageCount}
-          successMsg={sp.location_reassign_saved ? 'Home-Location gewechselt.' : undefined}
+          regionSuggestions={regionSuggestions}
+          successMsg={
+            sp.location_reassign_saved === 'created'
+              ? 'Neuer Ort angelegt und als Home-Location zugeordnet.'
+              : sp.location_reassign_saved
+                ? 'Home-Location gewechselt.'
+                : undefined
+          }
           errorMsg={locationReassignErrorMsg ?? undefined}
         />
 
