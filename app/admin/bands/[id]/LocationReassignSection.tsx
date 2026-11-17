@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { searchLocationsAction, reassignLocationAction, type LocationSearchResult } from './actions'
 import type { LocationData } from './LocationEditSection'
+import { NewLocationForm, type RegionSuggestions } from './NewLocationForm'
 
 const SEARCH_ERROR_MESSAGES: Record<string, string> = {
   empty_query: 'Bitte PLZ oder Ort eingeben.',
@@ -12,12 +13,14 @@ export function LocationReassignSection({
   bandId,
   currentLocation,
   currentLocationUsageCount,
+  regionSuggestions,
   successMsg,
   errorMsg,
 }: {
   bandId: string
   currentLocation: LocationData | null
   currentLocationUsageCount: number
+  regionSuggestions: RegionSuggestions
   successMsg?: string
   errorMsg?: string
 }) {
@@ -27,12 +30,14 @@ export function LocationReassignSection({
   const [searchError, setSearchError] = useState('')
   const [selected, setSelected] = useState<LocationSearchResult | null>(null)
   const [successDismissed, setSuccessDismissed] = useState(false)
+  const [creating, setCreating] = useState(false)
 
   async function runSearch() {
     setSuccessDismissed(true)
     setSearching(true)
     setSearchError('')
     setSelected(null)
+    setCreating(false)
     const outcome = await searchLocationsAction(query)
     setSearching(false)
     if (!outcome.ok) {
@@ -45,6 +50,7 @@ export function LocationReassignSection({
 
   function selectResult(r: LocationSearchResult) {
     setSuccessDismissed(true)
+    setCreating(false)
     setSelected(r)
   }
 
@@ -90,7 +96,29 @@ export function LocationReassignSection({
           {searchError && <p className="text-sm text-red-600 mb-4">{searchError}</p>}
 
           {results !== null && results.length === 0 && !searchError && (
-            <p className="text-sm text-gray-400 mb-4">Keine Locations gefunden.</p>
+            <div className="mb-4">
+              <p className="text-sm text-gray-400 mb-2">Keine Locations gefunden.</p>
+              {!creating && (
+                <button
+                  type="button"
+                  onClick={() => setCreating(true)}
+                  className="px-3 py-1.5 text-sm border border-violet-300 text-violet-700 rounded-lg hover:bg-violet-50 transition-colors"
+                >
+                  Neuen Ort anlegen
+                </button>
+              )}
+            </div>
+          )}
+
+          {creating && (
+            <NewLocationForm
+              bandId={bandId}
+              initialPlz={/^d{4,5}$/.test(query.trim()) ? query.trim() : ''}
+              initialCity={/^d{4,5}$/.test(query.trim()) ? '' : query.trim()}
+              suggestions={regionSuggestions}
+              onSelectExisting={selectResult}
+              onCancel={() => setCreating(false)}
+            />
           )}
 
           {results !== null && results.length > 0 && (

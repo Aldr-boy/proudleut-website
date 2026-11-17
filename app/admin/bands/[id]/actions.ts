@@ -1233,6 +1233,147 @@ export async function reassignLocationAction(formData: FormData): Promise<never>
 }
 
 // ─────────────────────────────────────────
+// createLocationAndAssignAction (Neuen Ort anlegen + Home-Location setzen)
+// Schreibt genau eine neue Zeile in locations (INSERT, nie UPDATE/DELETE)
+// und setzt danach bands.home_location_id der aktuellen Band. geo_point wird
+// nicht geschrieben. Vor dem Insert wird serverseitig auf Dubletten geprüft
+// (über searchLocationsAction): gleiche PLZ im selben Land blockiert immer,
+// gleicher Ortsname (ohne Groß-/Kleinschreibung) blockiert, solange nicht
+// bewusst allow_same_name gesetzt ist (z. B. Stadt mit mehreren PLZ).
+// Gibt bei Fehlern/Treffern ein Ergebnis zurück, bei Erfolg redirect.
+// ─────────────────────────────────────────
+
+const NEW_LOCATION_COUNTRIES: Record<string, { country: string; plzPattern: RegExp }> = {
+  de: { country: 'Deutschland', plzPattern: /^\d{5}$/ },
+  at: { country: 'Österreich', plzPattern: /^\d{4}$/ },
+}
+
+export type CreateLocationOutcome =
+  | {
+      ok: false
+      error:
+        | 'invalid_plz'
+        | 'invalid_city'
+        | 'invalid_country'
+        | 'invalid_region'
+        | 'invalid_coordinates'
+        | 'band_not_found'
+        | 'db_error'
+    }
+  | {
+      ok: false
+      error: 'duplicates'
+      plzConflict: boolean
+      matches: LocationSearchResult[]
+    }
+
+async function findDuplicateLocations(
+  plz: string,
+  cityName: string,
+  countryCode: string,
+): Promise<{ ok: true; plzMatches: LocationSearchResult[]; nameMatches: LocationSearchResult[] } | { ok: false }> {
+  const [byPlz, byCity] = await Promise.all([searchLocationsAction(plz), searchLocationsAction(cityName)])
+  if (!byPlz.ok || !byCity.ok) return { ok: false }
+
+  const plzMatches = byPlz.results.filter((r) => r.country_code === countryCode && r.plz === plz)
+  const plzIds = new Set(plzMatches.map((r) => r.id))
+  const wanted = cityName.trim().toLowerCase()
+  const nameMatches = byCity.results.filter(
+    (r) => !plzIds.has(r.id) && r.country_code === countryCode && r.city_name.trim().toLowerCase() === wanted,
+  )
+  return { ok: true, plzMatches, nameMatches }
+}
+
+export async function createLocationAndAssignAction(formData: FormData): Promise<CreateLocationOutcome> {
+  await requireAdminSession()
+
+  const band_id = str(formData, 'band_id')
+  const country_code = str(formData, 'country_code')
+  const plz = str(formData, 'plz')
+  const city_name = str(formData, 'city_name')
+  const landkreis = nullIfEmpty(str(formData, 'landkreis'))
+  const regierungsbezirk = nullIfEmpty(str(formData, 'regierungsbezirk'))
+  const bundesland = nullIfEmpty(str(formData, 'bundesland'))
+  const latStr = str(formData, 'latitude')
+  const lonStr = str(formData, 'longitude')
+  const allowSameName = str(formData, 'allow_same_name') === '1'
+
+  const countryRule = NEW_LOCATION_COUNTRIES[country_code]
+  if (!countryRule) return { ok: false, error: 'invalid_country' }
+  if (!countryRule.plzPattern.test(plz)) return { ok: false, error: 'invalid_plz' }
+  if (!city_name || city_name.length > 200) return { ok: false, error: 'invalid_city' }
+  for (const region of [landkreis, regierungsbezirk, bundesland]) {
+    if (region !== null && region.length > 200) return { ok: false, error: 'invalid_region' }
+  }
+
+  // Koordinaten: gemeinsam gesetzt oder gemeinsam leer, im gültigen Bereich
+  let latitude: number | null = null
+  let longitude: number | null = null
+  if ((latStr !== '') !== (lonStr !== '')) return { ok: false, error: 'invalid_coordinates' }
+  if (latStr !== '' && lonStr !== '') {
+    latitude = parseFloat(latStr)
+    longitude = parseFloat(lonStr)
+    if (
+      !isFinite(latitude) || !isFinite(longitude) ||
+      latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180
+    ) {
+      return { ok: false, error: 'invalid_coordinates' }
+    }
+  }
+
+  const client = createAdminClient()
+
+  const { data: bandRow } = await client.from('bands').select('id').eq('id', band_id).maybeSingle()
+  if (!bandRow) return { ok: false, error: 'band_not_found' }
+
+  const dupes = await findDuplicateLocations(plz, city_name, country_code)
+  if (!dupes.ok) return { ok: false, error: 'db_error' }
+  if (dupes.plzMatches.length > 0 || (dupes.nameMatches.length > 0 && !allowSameName)) {
+    return {
+      ok: false,
+      error: 'duplicates',
+      plzConflict: dupes.plzMatches.length > 0,
+      matches: [...dupes.plzMatches, ...dupes.nameMatches],
+    }
+  }
+
+  const { data: inserted, error: insertError } = await client
+    .from('locations')
+    .insert({
+      plz,
+      city_name,
+      landkreis,
+      regierungsbezirk,
+      bundesland,
+      country: countryRule.country,
+      country_code,
+      latitude,
+      longitude,
+    })
+    .select('id')
+    .single()
+
+  if (insertError || !inserted) {
+    // Unique (country_code, plz) als letzte Sicherung bei gleichzeitigem Anlegen
+    if (insertError?.code === '23505') {
+      const retry = await findDuplicateLocations(plz, city_name, country_code)
+      if (retry.ok && retry.plzMatches.length > 0) {
+        return { ok: false, error: 'duplicates', plzConflict: true, matches: retry.plzMatches }
+      }
+    }
+    return { ok: false, error: 'db_error' }
+  }
+
+  const { error: assignError } = await client
+    .from('bands')
+    .update({ home_location_id: inserted.id as string })
+    .eq('id', band_id)
+  if (assignError) return { ok: false, error: 'db_error' }
+
+  redirect(`/admin/bands/${band_id}?location_reassign_saved=created`)
+}
+
+// ─────────────────────────────────────────
 // updateSimilarBandsAction (RPC public.set_similar_bands)
 // Schreibt ausschliesslich ueber die SECURITY DEFINER RPC -- service_role
 // hat bewusst KEINE INSERT/UPDATE/DELETE-Table-Grants auf band_relations.
