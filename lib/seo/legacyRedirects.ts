@@ -191,6 +191,9 @@ function buildLegacyRedirects(): LegacyRedirect[] {
   // Weiterleitungen greifen vor der Bandseite /band/[slug] und bleiben auch nach dem Archivieren wirksam.
   add('/band/non-stop', '/bands');
 
+  // Urwaidler archiviert (nicht veroeffentlicht) -> Hopfenrocker (Ersatzprofil).
+  add('/band/urwaidler-band', '/band/hopfenrocker');
+
   // Weitere 404-Adressen aus demselben Export.
   add('/hochzeitsband', '/veranstaltung/hochzeit');
   add('/veranstaltung', '/bands');
