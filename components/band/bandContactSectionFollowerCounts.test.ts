@@ -58,8 +58,9 @@ test('jede Pill bleibt genau EIN Link (Label+Zahl in derselben <a>, keine versch
   const liStart = source.indexOf('{links.map(')
   const liEnd = source.indexOf('</ul>', liStart)
   const body = source.slice(liStart, liEnd)
-  const anchorOpenings = body.match(/<a\b/g) ?? []
-  assert.equal(anchorOpenings.length, 1, 'genau ein <a>-Tag pro map()-Aufruf-Template erwartet')
+  // Der Link ist seit dem Fathom-Klickauftrag TrackedExternalLink (rendert genau ein <a>).
+  const anchorOpenings = body.match(/<(a|TrackedExternalLink)\b/g) ?? []
+  assert.equal(anchorOpenings.length, 1, 'genau ein Link pro map()-Aufruf-Template erwartet')
 })
 
 test('Pill (Prototyp E): Label fett, Zahl und Einheit gedaempft (text-pl-text-muted), ohne Icons', () => {
