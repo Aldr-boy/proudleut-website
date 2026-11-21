@@ -1,5 +1,7 @@
 import type { Band } from '@/lib/types/band';
 import { BandRow } from './BandRow';
+import { TrackedExternalLink } from '@/components/analytics/TrackedExternalLink';
+import { bandChannelEventName, type BandChannel } from '@/lib/analytics/outboundEventName';
 import { isFollowerCountVisible, resolveFollowerStandDisplay } from '@/lib/socialLinks/followerCountVisibility';
 import { shouldShowOwnListenersStand } from '@/lib/socialLinks/listenersStandDisplay';
 import { formatFollowerCount, formatStandDate, formatStandMonthYear } from '@/lib/socialLinks/formatFollowerMetrics';
@@ -15,7 +17,7 @@ type FollowerMetric = { count: number; unit: string; checkedAt: string };
 // Follower ein und traegt immer ihr eigenes Erfassungsdatum (rollierender
 // 28-Tage-Wert).
 type ListenersMetric = { count: number; asOf: string };
-type LinkItem = { label: string; href: string; metric?: FollowerMetric; listeners?: ListenersMetric };
+type LinkItem = { label: string; channel: BandChannel; href: string; metric?: FollowerMetric; listeners?: ListenersMetric };
 
 // Zentrale Sichtbarkeitsregel (isFollowerCountVisible) entscheidet, ob
 // diese Plattform ueberhaupt eine Zahl zeigt -- ohne sichtbare Zahl bleibt
@@ -65,11 +67,11 @@ export function BandContactSection({ band, websiteUrl }: Props) {
 
   const links: LinkItem[] = (
     [
-      websiteUrl ? { label: 'Website', href: websiteUrl } : null,
-      band.socialLinks.instagram ? { label: 'Instagram', href: band.socialLinks.instagram, metric: igMetric } : null,
-      band.socialLinks.facebook ? { label: 'Facebook', href: band.socialLinks.facebook, metric: fbMetric } : null,
-      band.socialLinks.youtube ? { label: 'YouTube', href: band.socialLinks.youtube, metric: ytMetric } : null,
-      band.socialLinks.spotify ? { label: 'Spotify', href: band.socialLinks.spotify, listeners: spotifyListeners } : null,
+      websiteUrl ? { label: 'Website', channel: 'website', href: websiteUrl } : null,
+      band.socialLinks.instagram ? { label: 'Instagram', channel: 'instagram', href: band.socialLinks.instagram, metric: igMetric } : null,
+      band.socialLinks.facebook ? { label: 'Facebook', channel: 'facebook', href: band.socialLinks.facebook, metric: fbMetric } : null,
+      band.socialLinks.youtube ? { label: 'YouTube', channel: 'youtube', href: band.socialLinks.youtube, metric: ytMetric } : null,
+      band.socialLinks.spotify ? { label: 'Spotify', channel: 'spotify', href: band.socialLinks.spotify, listeners: spotifyListeners } : null,
     ] as (LinkItem | null)[]
   ).filter((l): l is LinkItem => l !== null);
 
@@ -105,12 +107,11 @@ export function BandContactSection({ band, websiteUrl }: Props) {
         <div className="border-t border-pl-soft pt-6 md:pt-7">
           <BandRow label={`Mehr von ${band.name}`} labelAs="h2" pillAligned>
             <ul className="flex flex-wrap gap-2.5">
-              {links.map(({ label, href, metric, listeners }) => (
+              {links.map(({ label, channel, href, metric, listeners }) => (
                 <li key={label}>
-                  <a
+                  <TrackedExternalLink
                     href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    eventName={bandChannelEventName(band.slug, channel)}
                     aria-label={
                       metric
                         ? `${label}: ${formatFollowerCount(metric.count)} ${metric.unit}`
@@ -149,7 +150,7 @@ export function BandContactSection({ band, websiteUrl }: Props) {
                         )}
                       </span>
                     )}
-                  </a>
+                  </TrackedExternalLink>
                 </li>
               ))}
             </ul>

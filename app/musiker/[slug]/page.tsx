@@ -6,6 +6,8 @@ import { getPersonBySlugFromSupabase } from '@/lib/people/publicQueries';
 import { normalizePersonFromSupabase } from '@/lib/people/normalizePerson';
 import { resolvePersonHeroImagePresentation } from '@/lib/people/heroImagePresentation';
 import { BandChapterHeading } from '@/components/band/BandChapterHeading';
+import { TrackedExternalLink } from '@/components/analytics/TrackedExternalLink';
+import { musikerLinkEventName } from '@/lib/analytics/outboundEventName';
 import { absoluteUrl, isAbsoluteHttpsUrl, DEFAULT_SOCIAL_IMAGE, SITE_DEFAULT_DESCRIPTION } from '@/lib/seo/metadata';
 import { deriveDescriptionFromText } from '@/lib/seo/deriveDescription';
 import { generatePersonJsonLd, safeJsonLdString } from '@/lib/seo/jsonLd';
@@ -281,25 +283,23 @@ export default async function MusikerPage({ params }: PageProps) {
             <BandChapterHeading title={`Mehr von ${firstName}`} />
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               {websiteUrl && (
-                <a
+                <TrackedExternalLink
                   href={websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  eventName={musikerLinkEventName(person.slug, 'website')}
                   className="text-lg font-semibold text-pl-text hover:text-pl-accent motion-safe:transition-colors"
                 >
                   {displayHost(websiteUrl)} ↗
-                </a>
+                </TrackedExternalLink>
               )}
               {additionalLinks.map((link) => (
-                <a
+                <TrackedExternalLink
                   key={link.id}
                   href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  eventName={musikerLinkEventName(person.slug, link.label)}
                   className="text-lg font-semibold text-pl-text hover:text-pl-accent motion-safe:transition-colors"
                 >
                   {link.label} ↗
-                </a>
+                </TrackedExternalLink>
               ))}
             </div>
           </div>
