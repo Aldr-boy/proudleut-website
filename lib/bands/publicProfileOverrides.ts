@@ -35,4 +35,7 @@ export const PUBLIC_PROFILE_OVERRIDES: Record<string, PublicProfileOverride> = {
       'Generationenverbindend',
     ],
   },
+  'lpc-music': {
+    bandartLabel: 'Liveband',
+  },
 };
