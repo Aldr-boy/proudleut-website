@@ -29,6 +29,15 @@ import { createClient } from '@supabase/supabase-js'
 
 const __dir = dirname(fileURLToPath(import.meta.url))
 const TZ = 'Europe/Berlin'
+// Vom Betreiber bestaetigte Testanfragen, fest ueber ihre Kennung (id) ausgeschlossen.
+const BESTAETIGTE_TESTS = new Set([
+  '2f848e29-41a9-4e5f-bc73-eb9bb7499483', // 08.10.2026
+  'e6ed874e-2edf-45c7-af53-0fccd70ccfeb', // 08.10.2026
+  '0a51b766-b0c9-42c5-8b4b-ecc4c2b62b04', // 27.10.2026
+  '4c75dab2-17de-4ecf-8e84-61a1c872bdfd', // 27.10.2026
+  '5beb8505-f715-429a-9abd-a262811b4448', // 27.10.2026
+  'd95c9fb6-64ae-42c7-8813-527121a52410', // 27.10.2026
+])
 const TEST_EMAILS = ['alexander@proudleut.com', 'alexander.dressler@proudleut.com']
 
 function loadEnv() {
@@ -73,6 +82,7 @@ function addDays(ymd, n) {
 const de = (ymd) => ymd.split('-').reverse().join('.')
 
 function testReason(a) {
+  if (BESTAETIGTE_TESTS.has(a.id)) return { kind: 'test', why: 'vom Betreiber als Test bestaetigt' }
   const email = (a.email ?? '').toLowerCase()
   const conf = (a.confirmation_recipient ?? '').toLowerCase()
   if (TEST_EMAILS.includes(email) || TEST_EMAILS.includes(conf)) return { kind: 'test', why: 'eigene E-Mail-Adresse' }
