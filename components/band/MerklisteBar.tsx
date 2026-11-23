@@ -65,12 +65,22 @@ export function MerklisteBar() {
         {/* Links Platz fuer das schwebende Datenschutz-Symbol des CMP (unten
             links, ca. 24-68 px): sonst verdeckt es Symbol und Zahl der Leiste.
             Erst ab xl (Inhaltsbreite zentriert) entfaellt der Abstand. */}
-        <div className="max-w-[1140px] mx-auto pl-[76px] pr-4 sm:pr-6 xl:pl-6 py-3 flex items-center gap-4">
+        {firstAddHintVisible && (
+          <p
+            role="status"
+            className="max-w-[1140px] mx-auto px-4 sm:px-6 pt-3 text-sm leading-snug"
+            style={{ color: 'var(--pl-accent-on-stage)' }}
+          >
+            Du kannst mehrere Bands merken und gemeinsam anfragen.
+          </p>
+        )}
+        <div className="max-w-[1140px] mx-auto pl-[76px] pr-4 sm:pr-6 xl:pl-6 py-3 flex items-center gap-3 sm:gap-4">
           <p
             className="text-sm flex-1 truncate"
             style={{ color: 'var(--pl-text-on-stage)' }}
           >
-            <span className="mr-1.5" aria-hidden="true">🎵</span>
+            {/* Musiksymbol nur ab sm: auf dem Handy braucht der Text den Platz. */}
+            <span className="hidden sm:inline mr-1.5" aria-hidden="true">🎵</span>
             {bands.length === 1 ? '1 Band gemerkt' : `${bands.length} Bands gemerkt`}
             {/* Bandnamen erst ab sm: auf dem Handy bleibt die Zahl vollstaendig lesbar. */}
             <span className="hidden sm:inline">
@@ -87,21 +97,14 @@ export function MerklisteBar() {
               dismissFirstAddHint();
               setModalOpen(true);
             }}
-            className="shrink-0 inline-flex items-center justify-center px-5 py-2 rounded-full
+            className="shrink-0 inline-flex items-center justify-center px-4 sm:px-5 py-2 min-h-11 sm:min-h-0 rounded-full
                        text-sm font-semibold bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
           >
-            Merkliste ansehen
+            {/* Handy: kurzer Knopftext, Mindesthoehe 44 px; ab sm wie bisher. */}
+            <span className="sm:hidden">Merkliste</span>
+            <span className="hidden sm:inline">Merkliste ansehen</span>
           </Button>
         </div>
-        {firstAddHintVisible && (
-          <p
-            role="status"
-            className="max-w-[1140px] mx-auto pl-[76px] pr-4 sm:pr-6 xl:pl-6 pb-3 -mt-1 text-xs"
-            style={{ color: 'var(--pl-accent-on-stage)' }}
-          >
-            Du kannst mehrere Bands merken und gemeinsam anfragen.
-          </p>
-        )}
       </div>
       <div aria-hidden="true" style={{ height: placeholderHeight }} />
 
