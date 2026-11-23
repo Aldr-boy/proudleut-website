@@ -59,7 +59,8 @@ test('"Auswahl aufheben" setzt die Auswahl auf leer zurueck, ohne den Store anzu
 test('Merkliste selbst ist unbegrenzt -- die Acht-Grenze gilt ausschliesslich fuer die Anfrageauswahl (dieselbe Konstante wie die Serververvalidierung)', () => {
   assert.match(flowSource, /import \{ MAX_BANDS_PER_ANFRAGE \} from ['"]@\/lib\/anfrage\/constants['"]/)
   assert.ok(!/bands\.length >= 8/.test(storeSource), 'addBand() darf gemerkte Baender nicht mehr auf 8 begrenzen')
-  assert.match(storeSource, /addBand: \(band\) =>\s*\r?\n\s*set\(\(state\) => \{\s*\r?\n\s*if \(state\.bands\.some\(\(b\) => b\.slug === band\.slug\)\) return state;/)
+  // Weiterhin nur Duplikate verhindern (keine Mengenbegrenzung in addBand).
+  assert.match(storeSource, /addBand: \(band\) => \{\s*\r?\n\s*if \(get\(\)\.bands\.some\(\(b\) => b\.slug === band\.slug\)\) return;/)
 })
 
 test('Auswahl-Toggle ignoriert weitere Klicks, sobald die Anfragegrenze erreicht ist -- bereits ausgewaehlte Baender bleiben abwaehlbar', () => {

@@ -43,6 +43,7 @@ export function MerkHeartButton({ name, slug, anfrageEventTypes }: Props) {
       aria-pressed={isGemerkt}
       aria-label={isGemerkt ? `${name} aus Merkliste entfernen` : `${name} merken`}
       className="absolute top-2.5 right-2.5 z-10 w-9 h-9 rounded-full bg-pl-elevated/90
+                 after:content-[''] after:absolute after:-inset-1 after:rounded-full
                  flex items-center justify-center motion-safe:transition-transform
                  hover:scale-[1.06] focus:outline-none focus-visible:outline-2
                  focus-visible:outline-offset-2 focus-visible:outline-[var(--pl-accent)]"
