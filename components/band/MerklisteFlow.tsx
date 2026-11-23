@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { useAnfrageStore } from '@/stores/anfrageStore';
 import { MAX_BANDS_PER_ANFRAGE } from '@/lib/anfrage/constants';
+import { MULTI_BAND_INQUIRY_STARTED, trackWishlistEvent } from '@/lib/analytics/wishlistEvents';
 import { AnfrageModal, Initials, XIcon } from './AnfrageModal';
 
 type Props = {
@@ -34,7 +35,8 @@ export function MerklisteFlow({ isOpen, onClose }: Props) {
   // Vollstaendiges Schliessen (isOpen -> false, gleich auf welchem Weg)
   // setzt nur die fluechtige Anfrageauswahl zurueck -- die gemerkten
   // Baender selbst bleiben im Store unangetastet. Beim naechsten Oeffnen
-  // startet die Sammlung deshalb wieder ohne Vorauswahl.
+  // startet die Sammlung mit allen gemerkten Baendern vorausgewaehlt (bei
+  // mehr als MAX_BANDS_PER_ANFRAGE ohne Vorauswahl).
   //
   // Bewusst kein useEffect (react-hooks/set-state-in-effect): dies ist das
   // von React selbst dokumentierte Muster "Adjusting state when a prop
@@ -48,6 +50,11 @@ export function MerklisteFlow({ isOpen, onClose }: Props) {
     if (!isOpen) {
       setShowForm(false);
       setSelectedSlugs([]);
+    } else if (bands.length <= MAX_BANDS_PER_ANFRAGE) {
+      // Beim Oeffnen sind alle gemerkten Baender vorausgewaehlt (jede einzeln
+      // abwaehlbar). Bei mehr als MAX_BANDS_PER_ANFRAGE wird bewusst nichts
+      // vorausgewaehlt -- keine willkuerliche Auswahl der ersten acht.
+      setSelectedSlugs(bands.map((b) => b.slug));
     }
   }
 
@@ -56,6 +63,23 @@ export function MerklisteFlow({ isOpen, onClose }: Props) {
   // (dann bereits aktualisierten) Store-Baender, keine separate Pruef-Logik
   // noetig.
   const selectedBands = bands.filter((b) => selectedSlugs.includes(b.slug));
+
+  // Fathom "multi_band_inquiry_started": erst wenn das Formular mit mindestens
+  // zwei ausgewaehlten Baendern tatsaechlich geoeffnet ist (nicht schon beim
+  // Klick), pro Formular-Oeffnung hoechstens einmal (Ref gegen erneutes
+  // Rendern).
+  const startedTrackedRef = useRef(false);
+  const formOpenWithMultiple = showForm && isOpen && selectedBands.length >= 2;
+  useEffect(() => {
+    if (!showForm || !isOpen) {
+      startedTrackedRef.current = false;
+      return;
+    }
+    if (formOpenWithMultiple && !startedTrackedRef.current) {
+      startedTrackedRef.current = true;
+      trackWishlistEvent(MULTI_BAND_INQUIRY_STARTED);
+    }
+  }, [showForm, isOpen, formOpenWithMultiple]);
 
   // Auswahl fuer EINE Anfrage bleibt auf MAX_BANDS_PER_ANFRAGE begrenzt --
   // unabhaengig davon, wie viele Baender insgesamt gemerkt sind. Bereits

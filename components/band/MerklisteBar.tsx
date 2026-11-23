@@ -11,6 +11,16 @@ export function MerklisteBar() {
   const barRef = useRef<HTMLDivElement>(null);
   const [placeholderHeight, setPlaceholderHeight] = useState(0);
   const hasBands = bands.length > 0;
+  const firstAddHintVisible = useAnfrageStore((s) => s.firstAddHintVisible);
+  const dismissFirstAddHint = useAnfrageStore((s) => s.dismissFirstAddHint);
+
+  // Einmaliger Hinweis nach dem ersten Merken: blendet sich nach einigen
+  // Sekunden selbst aus (nur Arbeitsspeicher, keine Speicherung).
+  useEffect(() => {
+    if (!firstAddHintVisible) return;
+    const t = window.setTimeout(dismissFirstAddHint, 7000);
+    return () => window.clearTimeout(t);
+  }, [firstAddHintVisible, dismissFirstAddHint]);
 
   // Platzhalter im normalen Dokumentenfluss reserviert exakt so viel Platz,
   // wie die fixe Leiste am unteren Viewport-Rand tatsaechlich einnimmt (inkl.
@@ -52,28 +62,46 @@ export function MerklisteBar() {
           borderColor: 'rgba(196,168,216,0.15)',
         }}
       >
-        <div className="max-w-[1140px] mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
+        {/* Links Platz fuer das schwebende Datenschutz-Symbol des CMP (unten
+            links, ca. 24-68 px): sonst verdeckt es Symbol und Zahl der Leiste.
+            Erst ab xl (Inhaltsbreite zentriert) entfaellt der Abstand. */}
+        <div className="max-w-[1140px] mx-auto pl-[76px] pr-4 sm:pr-6 xl:pl-6 py-3 flex items-center gap-4">
           <p
             className="text-sm flex-1 truncate"
             style={{ color: 'var(--pl-text-on-stage)' }}
           >
             <span className="mr-1.5" aria-hidden="true">🎵</span>
             {bands.length === 1 ? '1 Band gemerkt' : `${bands.length} Bands gemerkt`}
-            {': '}
-            <span style={{ color: 'var(--pl-accent-on-stage)' }}>
-              {displayNames}
-              {extra > 0 && ` +${extra} weitere`}
+            {/* Bandnamen erst ab sm: auf dem Handy bleibt die Zahl vollstaendig lesbar. */}
+            <span className="hidden sm:inline">
+              {': '}
+              <span style={{ color: 'var(--pl-accent-on-stage)' }}>
+                {displayNames}
+                {extra > 0 && ` +${extra} weitere`}
+              </span>
             </span>
           </p>
 
           <Button
-            onClick={() => setModalOpen(true)}
+            onClick={() => {
+              dismissFirstAddHint();
+              setModalOpen(true);
+            }}
             className="shrink-0 inline-flex items-center justify-center px-5 py-2 rounded-full
                        text-sm font-semibold bg-[var(--pl-accent)] text-[var(--pl-text-on-accent)]"
           >
             Merkliste ansehen
           </Button>
         </div>
+        {firstAddHintVisible && (
+          <p
+            role="status"
+            className="max-w-[1140px] mx-auto pl-[76px] pr-4 sm:pr-6 xl:pl-6 pb-3 -mt-1 text-xs"
+            style={{ color: 'var(--pl-accent-on-stage)' }}
+          >
+            Du kannst mehrere Bands merken und gemeinsam anfragen.
+          </p>
+        )}
       </div>
       <div aria-hidden="true" style={{ height: placeholderHeight }} />
 
