@@ -59,6 +59,21 @@ test('Leiste: Platz links fuer das Datenschutz-Symbol, Zahl bleibt auf dem Handy
   assert.match(bar, /bands\.length === 1 \? '1 Band gemerkt'/)
 })
 
+test('Leiste Handy: Musiksymbol nur ab sm, kuerzerer Knopftext "Merkliste", Knopf mind. 44 px hoch, Desktop-Text unveraendert', () => {
+  assert.match(bar, /<span className="hidden sm:inline mr-1\.5" aria-hidden="true">🎵<\/span>/)
+  assert.match(bar, /<span className="sm:hidden">Merkliste<\/span>/)
+  assert.match(bar, /<span className="hidden sm:inline">Merkliste ansehen<\/span>/)
+  assert.match(bar, /min-h-11 sm:min-h-0/)
+})
+
+test('Hinweis steht als eigene Zeile oberhalb der Leiste (vor der Zeile mit Zahl und Knopf), ohne Einzug fuer das Datenschutz-Symbol', () => {
+  const hintAt = bar.indexOf('role="status"')
+  const rowAt = bar.indexOf('pl-[76px] pr-4 sm:pr-6 xl:pl-6 py-3 flex')
+  assert.ok(hintAt > 0 && rowAt > hintAt, 'Hinweis muss vor der Zeile mit Zahl und Knopf stehen')
+  const hintTag = bar.slice(hintAt, hintAt + 200)
+  assert.ok(!/pl-\[76px\]/.test(hintTag))
+})
+
 test('Herz: Trefferflaeche um 4 px je Seite erweitert (36 -> 44 px), Herz selbst bleibt w-9 h-9', () => {
   assert.match(heart, /w-9 h-9/)
   assert.match(heart, /after:-inset-1/)
